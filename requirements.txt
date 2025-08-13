@@ -1,0 +1,34 @@
+# Core scientific computing and data manipulation
+numpy
+pandas
+xarray
+
+# Deep learning framework
+torch
+torchvision
+
+# Natural Language Processing and Transformers
+transformers>=4.21.0
+
+# Data visualization
+matplotlib
+
+# Progress bars
+tqdm
+
+# YAML configuration parsing
+PyYAML
+
+# HuggingFace Hub for model downloads
+huggingface_hub
+
+# HDF5 file handling for MERRA-2 data
+h5py
+
+# Package version parsing
+packaging
+
+# Additional dependencies for multimodal fusion
+accelerate
+tokenizers
+safetensors
