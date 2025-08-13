@@ -76,6 +76,58 @@ pip install -r requirements.txt
 - `huggingface_hub` - Model downloads
 - `accelerate`, `tokenizers`, `safetensors` - Optimized model handling
 
+### 4. Verified Package Versions
+
+The following package versions have been tested and confirmed to work with this system:
+
+**System Configuration:**
+```
+Operating System: macOS 15.6 (Darwin 24.6.0)
+Architecture: Apple Silicon (arm64)
+Python: 3.13.3 (CPython)
+GPU Support: MPS (Apple Silicon) - CUDA not available
+Platform: macOS-15.6-arm64-arm-64bit-Mach-O
+```
+
+**Package Versions:**
+```
+torch==2.8.0
+torchvision==0.23.0
+transformers==4.55.0
+numpy==2.3.2
+pandas==2.3.1
+xarray==2025.7.1
+matplotlib==3.10.5
+tqdm==4.67.1
+PyYAML==6.0.2
+huggingface_hub==0.34.4
+h5py==3.14.0
+packaging==25.0
+accelerate==1.10.0
+tokenizers==0.21.4
+safetensors==0.6.2
+```
+
+> **System Notes**:
+> - Tested on **Apple Silicon (M-series) Mac** with MPS acceleration
+> - CUDA is not available on this system; PyTorch uses MPS backend for GPU acceleration
+> - For **NVIDIA GPUs** (Linux/Windows), ensure CUDA-compatible PyTorch versions
+> - For **Intel Macs**, standard CPU-only PyTorch should work fine
+
+> **Compatibility**: While newer versions will likely work, these specific versions have been thoroughly tested with the multimodal fusion system. If you encounter issues with different versions, try using these exact versions first.
+
+**Installation Commands:**
+
+For Apple Silicon Macs (recommended):
+```bash
+pip install torch==2.8.0 torchvision==0.23.0 transformers==4.55.0 numpy==2.3.2 pandas==2.3.1 xarray==2025.7.1 matplotlib==3.10.5 tqdm==4.67.1 PyYAML==6.0.2 huggingface_hub==0.34.4 h5py==3.14.0 packaging==25.0 accelerate==1.10.0 tokenizers==0.21.4 safetensors==0.6.2
+```
+
+For CUDA-enabled systems (Linux/Windows with NVIDIA GPU):
+```bash
+pip install torch==2.8.0+cu121 torchvision==0.23.0+cu121 transformers==4.55.0 numpy==2.3.2 pandas==2.3.1 xarray==2025.7.1 matplotlib==3.10.5 tqdm==4.67.1 PyYAML==6.0.2 huggingface_hub==0.34.4 h5py==3.14.0 packaging==25.0 accelerate==1.10.0 tokenizers==0.21.4 safetensors==0.6.2
+```
+
 ## 📥 Data Setup
 
 ### 1. Download Model Weights
