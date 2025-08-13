@@ -20,9 +20,9 @@ from PrithviWxC.dataloaders.merra2 import input_scalers, static_input_scalers
 
 def test_encoder_extraction():
     """Test the encoder extraction functionality."""
-    
+
     print("Testing PrithviWxC Encoder Extraction...")
-    
+
     # Define test configuration
     config = {
         "params": {
@@ -45,19 +45,19 @@ def test_encoder_extraction():
             "parameter_dropout": 0.0,
         }
     }
-    
+
     # Create dummy scalers
     in_channels = config["params"]["in_channels"]
     in_channels_static = config["params"]["in_channels_static"]
-    
+
     in_mu = torch.randn(in_channels)
     in_sig = torch.ones(in_channels)
     static_mu = torch.randn(in_channels_static)
     static_sig = torch.ones(in_channels_static)
     output_scalers = torch.ones(in_channels)
-    
+
     print("Creating encoder model...")
-    
+
     # Create encoder model
     encoder_model = PrithviWxC_Encoder(
         in_channels=config["params"]["in_channels"],
@@ -87,28 +87,28 @@ def test_encoder_extraction():
         encoder_shifting=False,
         checkpoint_encoder=[],
     )
-    
+
     print("Creating test input...")
-    
+
     # Create test input
     batch_size = 1
     test_batch = {
-        'x': torch.randn(batch_size, config["params"]["input_size_time"], 
-                        config["params"]["in_channels"], 
-                        config["params"]["n_lats_px"], 
+        'x': torch.randn(batch_size, config["params"]["input_size_time"],
+                        config["params"]["in_channels"],
+                        config["params"]["n_lats_px"],
                         config["params"]["n_lons_px"]),
-        'static': torch.randn(batch_size, config["params"]["in_channels_static"], 
-                             config["params"]["n_lats_px"], 
+        'static': torch.randn(batch_size, config["params"]["in_channels_static"],
+                             config["params"]["n_lats_px"],
                              config["params"]["n_lons_px"]),
-        'climate': torch.randn(batch_size, config["params"]["in_channels"], 
-                              config["params"]["n_lats_px"], 
+        'climate': torch.randn(batch_size, config["params"]["in_channels"],
+                              config["params"]["n_lats_px"],
                               config["params"]["n_lons_px"]),
         'input_time': torch.tensor([0.0]),
         'lead_time': torch.tensor([18.0]),
     }
-    
+
     print("Testing forward pass...")
-    
+
     # Test forward pass
     encoder_model.eval()
     with torch.no_grad():
@@ -117,26 +117,26 @@ def test_encoder_extraction():
             print(f"✓ Forward pass successful!")
             print(f"  Input shape: {test_batch['x'].shape}")
             print(f"  Output shape: {output.shape}")
-            
+
             # Calculate model size
             total_params = sum(p.numel() for p in encoder_model.parameters())
             print(f"  Total parameters: {total_params:,}")
-            
+
         except Exception as e:
             print(f"✗ Forward pass failed: {e}")
             return False
-    
+
     print("✓ Encoder extraction test completed successfully!")
     return True
 
 
 def demonstrate_usage():
     """Demonstrate how to use the encoder extractor with real data paths."""
-    
+
     print("\n" + "="*60)
     print("USAGE DEMONSTRATION")
     print("="*60)
-    
+
     print("""
 To extract the encoder from a full PrithviWxC model, use:
 
@@ -153,7 +153,7 @@ The extracted encoder can then be used for:
 3. Multimodal fusion with other data types
 4. Transfer learning to new domains
 
-The encoder preserves all the preprocessing, embedding, and 
+The encoder preserves all the preprocessing, embedding, and
 transformer capabilities of the original model.
     """)
 

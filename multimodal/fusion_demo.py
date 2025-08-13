@@ -16,8 +16,8 @@ import warnings
 
 # Import our multimodal fusion classes
 from multimodal.climate_text_fusion import (
-    ClimateTextFusion, 
-    ClimateQuestionAnswering, 
+    ClimateTextFusion,
+    ClimateQuestionAnswering,
     ClimateTextGeneration
 )
 
@@ -25,10 +25,10 @@ from multimodal.climate_text_fusion import (
 def create_dummy_climate_batch(batch_size: int = 2) -> Dict[str, torch.Tensor]:
     """
     Create dummy climate data for testing.
-    
+
     Args:
         batch_size: Number of samples in batch
-        
+
     Returns:
         climate_batch: Dictionary with climate data tensors
     """
@@ -38,7 +38,7 @@ def create_dummy_climate_batch(batch_size: int = 2) -> Dict[str, torch.Tensor]:
     n_static_channels = 4
     n_lats = 720
     n_lons = 1440
-    
+
     return {
         'x': torch.randn(batch_size, n_times, n_channels, n_lats, n_lons),
         'static': torch.randn(batch_size, n_static_channels, n_lats, n_lons),
@@ -53,7 +53,7 @@ def example_multimodal_fusion():
     Example 1: Basic multimodal fusion between climate data and text.
     """
     print("=== Example 1: Basic Multimodal Fusion ===\n")
-    
+
     try:
         # Initialize the fusion model
         # Note: This will use a smaller Llama model for demonstration
@@ -67,30 +67,30 @@ def example_multimodal_fusion():
             freeze_prithvi=True,
             freeze_llama=True
         )
-        
+
         print("✓ Model initialized successfully!")
-        
+
         # Create sample data
         climate_batch = create_dummy_climate_batch(batch_size=2)
         text_inputs = [
             "What is the weather forecast for tomorrow?",
             "Describe the current atmospheric conditions."
         ]
-        
+
         print(f"Climate data shape: {climate_batch['x'].shape}")
         print(f"Text inputs: {text_inputs}")
-        
+
         # Perform multimodal fusion
         print("\nPerforming multimodal fusion...")
-        
+
         with torch.no_grad():
             outputs = fusion_model(climate_batch, text_inputs)
-        
+
         print(f"✓ Fusion completed!")
         print(f"  Fused features shape: {outputs['fused_features'].shape}")
         print(f"  Climate features shape: {outputs['climate_features'].shape}")
         print(f"  Text features shape: {outputs['text_features'].shape}")
-        
+
     except Exception as e:
         print(f"✗ Error in multimodal fusion: {e}")
         print("This is expected if running without GPU or with limited memory.")
@@ -101,20 +101,20 @@ def example_climate_qa():
     Example 2: Climate-aware question answering.
     """
     print("\n=== Example 2: Climate Question Answering ===\n")
-    
+
     print("Note: This example shows the structure for climate QA.")
     print("Actual implementation would require:")
     print("- Properly formatted climate data")
     print("- Real climate questions and answers")
     print("- Training on climate QA datasets")
-    
+
     # Pseudo-code for climate QA
     sample_questions = [
         "Will it rain tomorrow based on this data?",
         "What is the temperature trend?",
         "Are there any extreme weather patterns?"
     ]
-    
+
     print(f"Sample questions: {sample_questions}")
     print("QA model would output probability scores for each question.")
 
@@ -124,18 +124,18 @@ def example_climate_text_generation():
     Example 3: Climate-conditioned text generation.
     """
     print("\n=== Example 3: Climate Text Generation ===\n")
-    
+
     print("Climate text generation would enable:")
     print("- Automated weather report generation")
     print("- Climate data summarization")
     print("- Scientific report writing")
-    
+
     sample_outputs = [
         "Based on the atmospheric pressure patterns and temperature gradients...",
         "The weather forecast indicates a high-pressure system moving in...",
         "Current climate conditions show typical patterns for this season..."
     ]
-    
+
     print("Sample generated texts:")
     for i, text in enumerate(sample_outputs, 1):
         print(f"  {i}. {text}")
@@ -146,17 +146,17 @@ def demonstrate_fusion_modes():
     Demonstrate different fusion strategies.
     """
     print("\n=== Fusion Mode Comparison ===\n")
-    
+
     fusion_modes = {
         'cross_attention': "Uses attention mechanism to align climate and text features",
         'concatenate': "Simply concatenates climate and text features",
         'add': "Projects climate features to text space and adds them"
     }
-    
+
     print("Available fusion modes:")
     for mode, description in fusion_modes.items():
         print(f"  • {mode}: {description}")
-    
+
     print("\nRecommendations:")
     print("  • Use 'cross_attention' for complex reasoning tasks")
     print("  • Use 'concatenate' for simple feature combination")
@@ -168,7 +168,7 @@ def show_practical_applications():
     Show practical applications of climate-text fusion.
     """
     print("\n=== Practical Applications ===\n")
-    
+
     applications = {
         "Weather Forecasting": [
             "Generate human-readable weather reports",
@@ -196,7 +196,7 @@ def show_practical_applications():
             "Answer student questions about weather"
         ]
     }
-    
+
     for application, use_cases in applications.items():
         print(f"**{application}:**")
         for use_case in use_cases:
@@ -209,7 +209,7 @@ def performance_considerations():
     Discuss performance and optimization considerations.
     """
     print("=== Performance Considerations ===\n")
-    
+
     considerations = {
         "Memory Requirements": [
             "PrithviWxC encoder: ~8GB GPU memory",
@@ -232,7 +232,7 @@ def performance_considerations():
             "Cache tokenized text inputs"
         ]
     }
-    
+
     for category, items in considerations.items():
         print(f"**{category}:**")
         for item in items:
@@ -246,7 +246,7 @@ def main():
     """
     print("🌍 Climate-Text Multimodal Fusion Demo 🤖\n")
     print("This demo shows how to combine climate data with text using AI.\n")
-    
+
     # Run examples
     example_multimodal_fusion()
     example_climate_qa()
@@ -254,7 +254,7 @@ def main():
     demonstrate_fusion_modes()
     show_practical_applications()
     performance_considerations()
-    
+
     print("=== Next Steps ===\n")
     print("To use this system with real data:")
     print("1. Prepare your climate datasets in the expected format")
@@ -262,7 +262,7 @@ def main():
     print("3. Fine-tune the fusion model on your specific task")
     print("4. Evaluate performance on held-out test data")
     print("5. Deploy for real-world applications")
-    
+
     print("\n✨ Demo completed! Check the code for implementation details.")
 
 

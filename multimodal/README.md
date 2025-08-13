@@ -133,7 +133,7 @@ The encoder expects input data in the following format:
 - **Climate Baseline (`climate`)**: `[batch, channels, lat, lon]`
   - Climate normals or reference state (for residual mode)
 
-- **Time Information**: 
+- **Time Information**:
   - `input_time`: Hours from reference time
   - `lead_time`: Forecast lead time in hours
 
