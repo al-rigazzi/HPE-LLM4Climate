@@ -38,7 +38,7 @@ This project implements a state-of-the-art multimodal fusion system that bridges
 ## 📋 Prerequisites
 
 - **Python**: 3.8 or higher
-- **GPU**: NVIDIA GPU with CUDA support (recommended for large models)
+- **GPU**: NVIDIA or AMD GPU with CUDA/ROCm support (recommended for large models)
 - **Memory**: At least 16GB RAM (32GB+ recommended for full models)
 - **Storage**: ~50GB free space for model weights and data
 
