@@ -63,7 +63,7 @@ class LocationAwareClimateAnalysis(nn.Module):
         self.spatial_cropper = SpatialCropper(grid_shape)
 
         # Initialize climate-text fusion with encoder path or pre-loaded encoder
-        if prithvi_encoder_path or prithvi_encoder:
+        try:
             self.climate_text_fusion = ClimateTextFusion(
                 prithvi_encoder_path=prithvi_encoder_path,
                 prithvi_encoder=prithvi_encoder,
@@ -79,10 +79,11 @@ class LocationAwareClimateAnalysis(nn.Module):
             )
             # Get dimensions from the fusion model
             self.fusion_dim = self.climate_text_fusion.text_dim
-        else:
-            # For testing/demo without real models
+        except Exception as e:
+            # For testing/demo without real models or on error
             self.climate_text_fusion = None
-            warnings.warn("No Prithvi encoder path or pre-loaded encoder provided. Running in demo mode.")
+            warnings.warn(f"Climate-text fusion initialization failed: {e}. Running in demo mode.")
+            # Keep default fusion_dim
 
         # Location-aware attention
         self.location_attention = LocationAwareAttention(

@@ -583,8 +583,8 @@ class SpatialCropper:
             # Create Gaussian mask centered on region
             lat_center = (lat_min_idx + lat_max_idx) / 2
             lon_center = (lon_min_idx + lon_max_idx) / 2
-            lat_std = (lat_max_idx - lat_min_idx) / focus_strength
-            lon_std = (lon_max_idx - lon_min_idx) / focus_strength
+            lat_std = max(1.0, (lat_max_idx - lat_min_idx) / focus_strength)  # Ensure minimum std
+            lon_std = max(1.0, (lon_max_idx - lon_min_idx) / focus_strength)  # Ensure minimum std
 
             lat_indices = torch.arange(self.n_lats).float()
             lon_indices = torch.arange(self.n_lons).float()
@@ -598,8 +598,8 @@ class SpatialCropper:
             # Create cosine taper mask
             lat_center = (lat_min_idx + lat_max_idx) / 2
             lon_center = (lon_min_idx + lon_max_idx) / 2
-            lat_radius = (lat_max_idx - lat_min_idx) / 2 * focus_strength
-            lon_radius = (lon_max_idx - lon_min_idx) / 2 * focus_strength
+            lat_radius = max(1.0, (lat_max_idx - lat_min_idx) / 2 * focus_strength)  # Ensure minimum radius
+            lon_radius = max(1.0, (lon_max_idx - lon_min_idx) / 2 * focus_strength)  # Ensure minimum radius
 
             for i in range(self.n_lats):
                 for j in range(self.n_lons):
