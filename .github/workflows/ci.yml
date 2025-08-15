@@ -178,20 +178,17 @@ jobs:
     - name: Run location-aware tests
       timeout-minutes: 10
       run: |
-        cd multimodal
-        python -m pytest tests/test_location_aware.py -v --tb=short --timeout=300
+        python -m pytest multimodal/tests/test_location_aware.py -v --tb=short --timeout=300
 
     - name: Run fusion tests
       timeout-minutes: 10
       run: |
-        cd multimodal
-        python -m pytest tests/test_fusion.py -v --tb=short --timeout=300
+        python -m pytest multimodal/tests/test_fusion.py -v --tb=short --timeout=300
 
     - name: Run encoder extractor tests
       timeout-minutes: 10
       run: |
-        cd multimodal
-        python -m pytest tests/test_encoder_extractor.py -v --tb=short --timeout=300
+        python -m pytest multimodal/tests/test_encoder_extractor.py -v --tb=short --timeout=300
 
     - name: Run comprehensive test suite
       timeout-minutes: 15
@@ -199,16 +196,14 @@ jobs:
         echo "🧪 Running comprehensive test suite..."
         echo "==========================================="
 
-        cd multimodal
-
         echo "1. Location-Aware Tests:"
-        python tests/test_location_aware.py
+        python multimodal/tests/test_location_aware.py
 
         echo -e "\n2. Fusion Tests:"
-        python tests/test_fusion.py
+        python multimodal/tests/test_fusion.py
 
         echo -e "\n3. Encoder Extractor Tests:"
-        python tests/test_encoder_extractor.py
+        python multimodal/tests/test_encoder_extractor.py
 
         echo -e "\n✅ All tests completed successfully!"
 
