@@ -7,7 +7,6 @@ This class matches the EXACT architecture of the original model:
 - 11 static channels
 - 2560 embedding dimension
 
-No more size mismatches!
 """
 
 import torch

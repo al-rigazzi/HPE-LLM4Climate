@@ -18,34 +18,34 @@ def check_device_compatibility():
     """Check available devices and their compatibility."""
     print("🔍 Device Compatibility Check")
     print("=" * 30)
-    
+
     print(f"PyTorch version: {torch.__version__}")
     print(f"CUDA available: {torch.cuda.is_available()}")
     print(f"MPS available: {torch.backends.mps.is_available()}")
     print(f"MPS built: {torch.backends.mps.is_built()}")
-    
+
     if torch.backends.mps.is_available():
         print("⚠️  MPS detected - known issues with text generation")
         print("   Solution: Use CPU or explicit device management")
-    
+
     if torch.cuda.is_available():
         print(f"✅ CUDA device: {torch.cuda.get_device_name()}")
-    
+
     print()
 
 def test_mps_fix():
     """Test the MPS device allocation fix."""
     print("🛠️ Testing MPS Fix for Meta-Llama-3-8B")
     print("=" * 40)
-    
+
     try:
         from transformers import AutoTokenizer, AutoModelForCausalLM
-        
+
         print("📥 Loading tokenizer...")
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B")
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
-        
+
         # Method 1: Force CPU (Most Reliable)
         print("\n🔧 Method 1: Force CPU device")
         try:
@@ -56,13 +56,13 @@ def test_mps_fix():
                 trust_remote_code=True,
                 low_cpu_mem_usage=True
             ).to("cpu")
-            
+
             print("   ✅ CPU loading: SUCCESS")
-            
+
             # Test generation
             test_input = "Climate change impacts on agriculture:"
             inputs = tokenizer(test_input, return_tensors="pt").to("cpu")
-            
+
             with torch.no_grad():
                 outputs = model_cpu.generate(
                     **inputs,
@@ -71,18 +71,18 @@ def test_mps_fix():
                     do_sample=True,
                     pad_token_id=tokenizer.eos_token_id
                 )
-            
+
             response = tokenizer.decode(outputs[0], skip_special_tokens=True)
             generated = response[len(test_input):].strip()
             print(f"   🤖 Generated: {generated[:50]}...")
             print("   ✅ CPU generation: SUCCESS")
-            
+
             del model_cpu  # Free memory
             torch.cuda.empty_cache() if torch.cuda.is_available() else None
-            
+
         except Exception as e:
             print(f"   ❌ CPU method error: {e}")
-        
+
         # Method 2: Conditional Device Selection
         print("\n🔧 Method 2: Smart device selection")
         try:
@@ -93,9 +93,9 @@ def test_mps_fix():
             else:
                 device = "cpu"  # Avoid MPS for text generation
                 dtype = torch.float32
-            
+
             print(f"   📱 Selected device: {device}")
-            
+
             model_smart = AutoModelForCausalLM.from_pretrained(
                 "meta-llama/Meta-Llama-3-8B",
                 torch_dtype=dtype,
@@ -103,13 +103,13 @@ def test_mps_fix():
                 trust_remote_code=True,
                 low_cpu_mem_usage=True
             ).to(device)
-            
+
             print(f"   ✅ Smart device loading: SUCCESS")
-            
+
             # Quick test
             test_input = "Arctic ice melting affects:"
             inputs = tokenizer(test_input, return_tensors="pt").to(device)
-            
+
             with torch.no_grad():
                 outputs = model_smart.generate(
                     **inputs,
@@ -117,17 +117,17 @@ def test_mps_fix():
                     do_sample=False,  # Deterministic for testing
                     pad_token_id=tokenizer.eos_token_id
                 )
-            
+
             response = tokenizer.decode(outputs[0], skip_special_tokens=True)
             generated = response[len(test_input):].strip()
             print(f"   🤖 Generated: {generated[:50]}...")
             print(f"   ✅ {device.upper()} generation: SUCCESS")
-            
+
         except Exception as e:
             print(f"   ❌ Smart device error: {e}")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ Test setup error: {e}")
         return False
@@ -136,12 +136,12 @@ def test_location_aware_with_fix():
     """Test location-aware system with MPS fix applied."""
     print(f"\n🌍 Location-Aware System with MPS Fix")
     print("=" * 40)
-    
+
     try:
         from multimodal.location_aware_fusion import LocationAwareClimateAnalysis
-        
+
         print("🚀 Initializing with MPS-safe configuration...")
-        
+
         # Use configuration that avoids MPS issues
         model = LocationAwareClimateAnalysis(
             prithvi_encoder_path=None,  # Demo mode
@@ -152,27 +152,27 @@ def test_location_aware_with_fix():
             freeze_llama=True,
             device="cpu"  # Force CPU to avoid MPS issues
         )
-        
+
         print("✅ Location-aware model initialized with MPS fix!")
-        
+
         # Test with a simple query
         climate_features = torch.randn(1, 100, model.fusion_dim)
         test_query = "Climate risks for Sweden agriculture"
-        
+
         with torch.no_grad():
             result = model.analyze_location_query(
                 climate_features,
                 test_query,
                 return_visualization=False
             )
-        
+
         print(f"📍 Location: {result.get('location', 'N/A')}")
         print(f"⚠️  Risk: {result.get('climate_risk', 'N/A')}")
         print(f"🎯 Confidence: {result.get('overall_confidence', 0):.1%}")
         print("✅ Location-aware analysis: SUCCESS with MPS fix!")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ Location-aware test error: {e}")
         return False
@@ -182,17 +182,17 @@ def main():
     print("🔧 MPS Device Error Fix for Meta-Llama-3-8B")
     print("Resolving: 'Placeholder storage has not been allocated on MPS device!'")
     print()
-    
+
     # Check device compatibility
     check_device_compatibility()
-    
+
     # Test MPS fixes
     mps_fix_success = test_mps_fix()
-    
+
     if mps_fix_success:
         # Test with location-aware system
         location_success = test_location_aware_with_fix()
-        
+
         if location_success:
             print(f"\n🎉 ALL MPS FIXES SUCCESSFUL!")
             print(f"   🔧 MPS error: RESOLVED")
