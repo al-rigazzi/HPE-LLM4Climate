@@ -3,8 +3,8 @@ Multimodal Fusion with PrithviWxC and Llama 3
 
 This module implements multimodal fusion between climate data (using PrithviWxC encoder)
 and text data (using Llama 3). It enables tasks like:
-- Climate report generation
-- Weather-text understanding
+- Climate assessment generation
+- Climate trend understanding
 - Climate-aware question answering
 - Multimodal climate analysis
 
@@ -606,12 +606,12 @@ class ClimateTextGeneration(nn.Module):
     def generate_climate_report(
         self,
         climate_batch: Dict[str, torch.Tensor],
-        prompt: str = "Based on the climate data, generate a weather report:",
+        prompt: str = "Based on the climate data, generate a climate assessment:",
         max_length: int = 200,
         temperature: float = 0.7
     ) -> List[str]:
         """
-        Generate text report conditioned on climate data.
+        Generate climate assessment text conditioned on climate data.
 
         Args:
             climate_batch: Climate data

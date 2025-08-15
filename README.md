@@ -10,11 +10,11 @@ A comprehensive multimodal AI system that combines PrithviWxC climate data proce
 
 This project implements a state-of-the-art multimodal fusion system that bridges climate science and natural language processing. It enables AI applications that can understand both numerical climate data and human language, opening up new possibilities for:
 
-- **Interactive Weather Forecasting**: AI assistants that explain weather patterns in natural language
-- **Climate Report Generation**: Automated generation of professional weather reports
-- **Agricultural Advisory**: Farming recommendations based on weather conditions
-- **Emergency Response**: Automated severe weather alerts and explanations
-- **Climate Education**: Interactive tools for learning about weather phenomena
+- **Climate Trend Analysis**: AI assistants that explain long-term climate patterns and projections
+- **Climate Impact Assessment**: Automated analysis of climate change effects on various sectors
+- **Agricultural Climate Planning**: Long-term farming recommendations based on climate projections
+- **Climate Risk Assessment**: Analysis of future climate risks and adaptation strategies
+- **Climate Education**: Interactive tools for learning about climate science and long-term trends
 
 ## ✨ Key Features
 
@@ -186,14 +186,14 @@ climate_batch = {
     'static': static_data,       # [batch, static_channels, lat, lon]
     'climate': climate_baseline, # [batch, channels, lat, lon]
     'input_time': input_times,   # [batch] - hours from reference
-    'lead_time': lead_times      # [batch] - forecast lead time
+    'lead_time': lead_times      # [batch] - climate projection time horizon
 }
 
 # Prepare text data
 text_inputs = [
-    "What will the weather be like tomorrow?",
-    "Describe the current atmospheric conditions.",
-    "Will it rain this weekend?"
+    "What is the best crop to plant in Sweden in 2050?",
+    "How sustainable will it be to live in Arizona by 2100?",
+    "How much more likely will tornadoes be in 2050 compared to now?"
 ]
 
 # Run multimodal fusion
@@ -211,7 +211,7 @@ python multimodal/practical_example.py
 This demonstrates:
 - Loading a simplified fusion model
 - Processing sample climate and text data
-- Weather sentiment classification
+- Climate impact assessment classification
 - Feature visualization
 
 ## 📁 Project Structure
@@ -261,7 +261,7 @@ All tests should pass with output similar to:
 
 ## 🎯 Usage Examples
 
-### 1. Weather Question Answering
+### 1. Climate Question Answering
 
 ```python
 from multimodal.climate_text_fusion import ClimateQuestionAnswering
@@ -272,50 +272,50 @@ qa_model = ClimateQuestionAnswering(
     llama_model_name='meta-llama/Llama-3.2-1B'
 )
 
-# Ask questions about weather data
+# Ask questions about climate trends
 answer = qa_model.answer_question(
-    climate_data=current_weather_data,
-    question="Will it rain tomorrow morning?"
+    climate_data=historical_climate_data,
+    question="How much more likely will tornadoes be in 2050 compared to now?"
 )
 print(f"Answer: {answer}")
 ```
 
-### 2. Climate Report Generation
+### 2. Climate Assessment Generation
 
 ```python
 from multimodal.climate_text_fusion import ClimateTextGeneration
 
-# Initialize report generator
-report_generator = ClimateTextGeneration(
+# Initialize assessment generator
+assessment_generator = ClimateTextGeneration(
     prithvi_encoder_path='data/weights/prithvi_encoder.pt',
     llama_model_name='meta-llama/Llama-3.2-3B'
 )
 
-# Generate weather report
-report = report_generator.generate_report(
-    climate_data=forecast_data,
-    template="Generate a professional weather forecast for tomorrow:"
+# Generate climate assessment
+report = assessment_generator.generate_report(
+    climate_data=projection_data,
+    template="Generate a climate impact assessment for agriculture in 2050:"
 )
 print(report)
 ```
 
-### 3. Agricultural Advisory
+### 3. Agricultural Climate Planning
 
 ```python
-# Combine weather data with agricultural questions
+# Combine climate projections with agricultural questions
 advisory = qa_model.answer_question(
-    climate_data=farm_weather_data,
-    question="Based on the forecast, when should I plant corn?"
+    climate_data=long_term_climate_data,
+    question="What is the best crop to plant in Sweden considering 2050 climate projections?"
 )
 ```
 
-### 4. Emergency Alerts
+### 4. Climate Risk Assessment
 
 ```python
-# Generate weather warnings
-alert = report_generator.generate_alert(
-    climate_data=severe_weather_data,
-    alert_type="severe_storm"
+# Generate climate risk analysis
+risk_assessment = assessment_generator.generate_assessment(
+    climate_data=future_climate_projections,
+    assessment_type="regional_sustainability"
 )
 ```
 

@@ -146,7 +146,7 @@ def example_usage():
 
     print("\nPotential applications:")
     print("- Climate pattern recognition")
-    print("- Extreme weather detection")
+    print("- Extreme climate event analysis")
     print("- Climate model comparison")
     print("- Multimodal fusion with satellite imagery")
     print("- Transfer learning to regional models")
@@ -167,9 +167,9 @@ def multimodal_fusion_example():
        satellite_features = satellite_encoder(satellite_data)
        fused_features = fusion_layer([climate_features, satellite_features])
 
-    2. Climate + Text (weather reports):
+    2. Climate + Text (climate assessments):
        climate_features = prithvi_encoder(climate_data)
-       text_features = text_encoder(weather_reports)
+       text_features = text_encoder(climate_assessments)
        combined = multimodal_transformer([climate_features, text_features])
 
     3. Climate + Topography:

@@ -73,8 +73,8 @@ def example_multimodal_fusion():
         # Create sample data
         climate_batch = create_dummy_climate_batch(batch_size=2)
         text_inputs = [
-            "What is the weather forecast for tomorrow?",
-            "Describe the current atmospheric conditions."
+            "How will tornado frequency change by 2050?",
+            "What is the best crop to plant in Sweden considering climate projections for 2050?"
         ]
 
         print(f"Climate data shape: {climate_batch['x'].shape}")
@@ -110,9 +110,9 @@ def example_climate_qa():
 
     # Pseudo-code for climate QA
     sample_questions = [
-        "Will it rain tomorrow based on this data?",
-        "What is the temperature trend?",
-        "Are there any extreme weather patterns?"
+        "How much more likely will tornadoes be in 2050 compared to now?",
+        "What is the long-term climate trend for this region?",
+        "How sustainable will agriculture be in this area by 2100?"
     ]
 
     print(f"Sample questions: {sample_questions}")
@@ -126,14 +126,14 @@ def example_climate_text_generation():
     print("\n=== Example 3: Climate Text Generation ===\n")
 
     print("Climate text generation would enable:")
-    print("- Automated weather report generation")
-    print("- Climate data summarization")
-    print("- Scientific report writing")
+    print("- Automated climate assessment generation")
+    print("- Climate trend summarization")
+    print("- Scientific climate impact report writing")
 
     sample_outputs = [
-        "Based on the atmospheric pressure patterns and temperature gradients...",
-        "The weather forecast indicates a high-pressure system moving in...",
-        "Current climate conditions show typical patterns for this season..."
+        "Based on climate model projections and historical trends, tornado frequency is expected to increase by 15-25% by 2050...",
+        "Long-term climate analysis indicates significant changes in agricultural viability for northern European regions...",
+        "Regional sustainability assessments show that southwestern US regions will face increasing challenges by 2100..."
     ]
 
     print("Sample generated texts:")
@@ -170,10 +170,10 @@ def show_practical_applications():
     print("\n=== Practical Applications ===\n")
 
     applications = {
-        "Weather Forecasting": [
-            "Generate human-readable weather reports",
-            "Answer specific weather questions",
-            "Explain forecast uncertainty"
+        "Climate Trend Analysis": [
+            "Generate long-term climate trend reports",
+            "Answer questions about future climate patterns",
+            "Explain climate projection uncertainties"
         ],
         "Climate Research": [
             "Analyze climate pattern descriptions",
@@ -181,19 +181,19 @@ def show_practical_applications():
             "Compare model predictions with observations"
         ],
         "Agriculture": [
-            "Provide crop-specific weather advice",
-            "Generate irrigation recommendations",
-            "Predict growing season conditions"
+            "Provide long-term crop viability assessments",
+            "Generate climate-informed agricultural planning",
+            "Predict future growing season conditions"
         ],
-        "Emergency Management": [
-            "Generate weather alerts and warnings",
-            "Assess risk levels from climate data",
-            "Create evacuation recommendations"
+        "Regional Planning": [
+            "Generate climate risk assessments",
+            "Assess regional sustainability from climate data",
+            "Create long-term adaptation recommendations"
         ],
         "Education": [
-            "Explain climate phenomena in simple terms",
-            "Generate educational content",
-            "Answer student questions about weather"
+            "Explain climate change phenomena in simple terms",
+            "Generate educational climate content",
+            "Answer student questions about climate science"
         ]
     }
 

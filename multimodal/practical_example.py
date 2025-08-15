@@ -56,7 +56,7 @@ class SimplifiedClimateTextFusion(nn.Module):
             nn.Linear(self.text_embed_dim, self.text_embed_dim // 2),
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.Linear(self.text_embed_dim // 2, 3)  # 3 classes: positive, neutral, negative weather
+            nn.Linear(self.text_embed_dim // 2, 3)  # 3 classes: high risk, moderate, low risk climate impact
         )
 
         print("✓ Simplified fusion model initialized")
@@ -124,11 +124,11 @@ def demonstrate_practical_fusion():
         encoder_path='data/weights/prithvi_encoder.pt'
     )
 
-    # Example text inputs related to weather/climate
+    # Example text inputs related to climate trends and projections
     text_inputs = [
-        "The weather forecast shows heavy rainfall expected tomorrow.",
-        "Clear skies and sunny conditions are predicted for the weekend.",
-        "A severe storm warning has been issued for the coastal regions."
+        "What is the best crop to plant in Sweden considering climate projections for 2050?",
+        "How sustainable will it be to live in Arizona by 2100 given climate change?",
+        "How much more likely will tornadoes be in 2050 compared to current trends?"
     ]
 
     print("Sample text inputs:")
@@ -147,7 +147,7 @@ def demonstrate_practical_fusion():
 
     print("Results:")
     predictions = outputs['predictions']
-    class_names = ['Negative Weather', 'Neutral Weather', 'Positive Weather']
+    class_names = ['High Risk Climate Impact', 'Moderate Climate Impact', 'Low Risk Climate Impact']
 
     for i, (text, pred) in enumerate(zip(text_inputs, predictions)):
         probs = torch.softmax(pred, dim=0)
@@ -195,14 +195,14 @@ climate_batch = {
     'static': static_data,       # Land/ocean masks, topography, etc.
     'climate': climate_baseline, # Climate normals
     'input_time': input_times,   # Timestamp information
-    'lead_time': lead_times      # Forecast lead times
+    'lead_time': lead_times      # Climate projection time horizons
 }
 
 # 4. Prepare text data
 text_inputs = [
-    "What will the weather be like tomorrow?",
-    "Describe the current atmospheric conditions.",
-    # ... your domain-specific questions/text
+    "What is the best crop to plant in Sweden considering 2050 climate projections?",
+    "How sustainable will it be to live in Arizona by 2100?",
+    # ... your domain-specific climate questions/text
 ]
 
 # 5. Run fusion
@@ -235,34 +235,34 @@ def show_applications():
     print("="*60)
 
     applications = {
-        "Weather Forecasting Bot": {
-            "description": "AI assistant that answers weather questions using real-time data",
-            "input": "Climate data + 'Will it rain tomorrow in New York?'",
-            "output": "Natural language weather forecast"
+        "Climate Trend Analysis Bot": {
+            "description": "AI assistant that analyzes long-term climate patterns and projections",
+            "input": "Climate data + 'How will tornado frequency change by 2050?'",
+            "output": "Climate trend analysis and projections"
         },
 
-        "Climate Report Generator": {
-            "description": "Automatically generate weather reports from raw data",
-            "input": "Climate data + Report template",
-            "output": "Professional weather reports"
+        "Climate Impact Assessment": {
+            "description": "Automatically assess climate change impacts from data",
+            "input": "Climate data + Assessment template",
+            "output": "Professional climate impact reports"
         },
 
-        "Agricultural Advisory": {
-            "description": "Provide farming advice based on weather conditions",
-            "input": "Climate data + 'When should I plant corn?'",
-            "output": "Crop-specific planting recommendations"
+        "Agricultural Climate Planning": {
+            "description": "Provide long-term farming advice based on climate projections",
+            "input": "Climate data + 'What crops will be viable in Sweden by 2050?'",
+            "output": "Long-term agricultural recommendations"
         },
 
-        "Emergency Alert System": {
-            "description": "Generate weather warnings and alerts",
-            "input": "Climate data + Alert thresholds",
-            "output": "Automated emergency notifications"
+        "Climate Risk Assessment": {
+            "description": "Analyze future climate risks and sustainability",
+            "input": "Climate data + Regional sustainability questions",
+            "output": "Regional climate risk assessments"
         },
 
         "Climate Education": {
-            "description": "Explain weather phenomena to students",
-            "input": "Climate data + 'Why do hurricanes form?'",
-            "output": "Educational explanations with data"
+            "description": "Explain climate trends and phenomena to students",
+            "input": "Climate data + 'How will climate change affect ecosystems?'",
+            "output": "Educational climate science explanations"
         }
     }
 

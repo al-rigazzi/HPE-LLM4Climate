@@ -4,7 +4,7 @@ This directory contains utilities for extracting and working with components of 
 
 ## Overview
 
-The PrithviWxC model is a powerful encoder-decoder architecture for weather and climate modeling. This module provides tools to extract the encoder portion for use in multimodal applications, transfer learning, and feature extraction tasks.
+The PrithviWxC model is a powerful encoder-decoder architecture for climate modeling and analysis. This module provides tools to extract the encoder portion for use in multimodal applications, transfer learning, and feature extraction tasks focused on long-term climate trends and projections.
 
 ## Files
 
@@ -135,7 +135,7 @@ The encoder expects input data in the following format:
 
 - **Time Information**:
   - `input_time`: Hours from reference time
-  - `lead_time`: Forecast lead time in hours
+  - `lead_time`: Climate projection time horizon in hours
 
 ## Output
 
