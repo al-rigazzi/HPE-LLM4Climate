@@ -10,8 +10,13 @@ Usage:
 """
 
 import sys
+import os
 import warnings
 from typing import List, Tuple
+
+# Add project root to Python path for imports
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, project_root)
 
 def test_import(package_name: str, import_statement: str) -> Tuple[bool, str]:
     """Test if a package can be imported."""
@@ -51,10 +56,10 @@ def main():
     # Multimodal system tests
     print("\n🤖 Testing Multimodal System:")
     multimodal_tests = [
-        ("Encoder Extractor", "from multimodal.encoder_extractor import PrithviWxC_Encoder"),
-        ("Climate-Text Fusion", "from multimodal.climate_text_fusion import ClimateTextFusion"),
-        ("Location-Aware Core", "from multimodal.location_aware import GeographicResolver, SpatialCropper"),
-        ("Location-Aware Fusion", "from multimodal.location_aware_fusion import LocationAwareClimateAnalysis"),
+        ("Encoder Extractor", "from multimodal.utils.encoder_extractor import PrithviWxC_Encoder"),
+        ("Climate-Text Fusion", "from multimodal.core.climate_text_fusion import ClimateTextFusion"),
+        ("Location-Aware Core", "from multimodal.core.location_aware import GeographicResolver, SpatialCropper"),
+        ("Location-Aware Fusion", "from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis"),
     ]
 
     for name, import_stmt in multimodal_tests:
@@ -69,7 +74,7 @@ def main():
 
     try:
         # Test geographic resolution
-        from multimodal.location_aware import GeographicResolver
+        from multimodal.core.location_aware import GeographicResolver
 
         # Test local backend
         resolver_local = GeographicResolver(backend='local')
@@ -89,7 +94,7 @@ def main():
             print(f"  ⚠️  GeoPy resolution    : No result (network issue?)")
 
         # Test location-aware analysis
-        from multimodal.location_aware_fusion import LocationAwareClimateAnalysis
+        from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis
         import torch
 
         model = LocationAwareClimateAnalysis()

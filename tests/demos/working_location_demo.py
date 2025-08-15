@@ -12,9 +12,15 @@ The system successfully:
 4. Provides risk assessments and confidence scores
 """
 
+import sys
+import os
 import torch
 import warnings
 from typing import List, Dict
+
+# Add project root to Python path for imports
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, project_root)
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings("ignore")
@@ -30,7 +36,7 @@ def run_climate_analysis_demo():
     print()
 
     # Import our system
-    from multimodal.location_aware_fusion import LocationAwareClimateAnalysis
+    from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis
 
     # Initialize the model
     print("🚀 Initializing location-aware climate analysis system...")
@@ -153,7 +159,7 @@ def demonstrate_model_comparison():
     print(f"Query: {test_query}")
     print()
 
-    from multimodal.location_aware_fusion import LocationAwareClimateAnalysis
+    from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis
 
     for model_name in models_to_compare:
         print(f"🤖 Testing with {model_name}...")
