@@ -310,13 +310,13 @@ python multimodal/test_encoder_extractor.py         # Encoder extraction
 python multimodal/test_location_aware.py           # Geographic processing
 
 # Integration tests
-python test_llama_integration.py                   # Language model integration
-python test_llama_comprehensive.py                 # Advanced system tests
-python test_mps_fix.py                             # Apple Silicon compatibility
+python tests/integration/test_llama_integration.py                   # Language model integration
+python tests/integration/test_llama_comprehensive.py                 # Advanced system tests
+python tests/integration/test_mps_fix.py                             # Apple Silicon compatibility
 
-# Demo and examples
-python multimodal/practical_example.py             # Basic usage demo
-python working_location_demo.py                    # Location-aware demo
+# System verification and demos
+python tests/system/verify_setup.py                # Complete system setup verification
+python tests/demos/working_location_demo.py        # Location-aware demo
 ```
 
 ### ✅ **Validation Results**
