@@ -6,6 +6,40 @@ This directory contains utilities for extracting and working with components of 
 
 The PrithviWxC model is a powerful encoder-decoder architecture for climate modeling and analysis. This module provides tools to extract the encoder portion for use in multimodal applications, transfer learning, and feature extraction tasks focused on long-term climate trends and projections. Additionally, it includes cutting-edge location-aware functionality that enables geographic-specific climate analysis.
 
+## 🍎 Apple Silicon Compatibility
+
+**Full native support for Apple Silicon Macs (M1/M2/M3):**
+- ✅ **Native ARM64 compatibility** - All components tested on macOS 15.6+
+- ✅ **MPS acceleration** - Automatic GPU acceleration for compatible operations
+- ✅ **Intelligent device handling** - CPU fallback for text generation to avoid MPS issues
+- ✅ **Memory optimization** - Efficient memory usage on Apple Silicon architecture
+- ✅ **Geographic processing** - GeoPy and location-aware features fully supported
+
+**Note for Apple Silicon users**: The system automatically handles MPS (Metal Performance Shaders) compatibility by using CPU for large language model text generation while leveraging MPS for other PyTorch operations. This ensures maximum reliability.
+
+## 📦 Dependencies
+
+### Core Requirements
+- `torch>=2.0` - Deep learning framework (MPS support for Apple Silicon)
+- `transformers>=4.21.0` - HuggingFace transformers (Llama 3, BERT, GPT models)
+- `numpy`, `pandas` - Scientific computing
+- `accelerate`, `safetensors` - Optimized model handling
+- `huggingface_hub` - Model downloads
+
+### Location-Aware Features
+- `geopy>=2.3.0` - Geographic data processing (OpenStreetMap/Nominatim)
+- `requests>=2.31.0` - HTTP requests for geographic APIs
+
+### Optional Enhanced Geographic Capabilities
+```bash
+pip install shapely>=1.8.0          # Geometric operations
+pip install geopandas>=0.13.0       # Geographic data analysis
+pip install folium>=0.14.0          # Interactive maps
+pip install pycountry>=22.3.0       # Country/region metadata
+```
+
+These optional packages enable advanced geographic visualizations and enhanced boundary processing.
+
 ## Key Features
 
 ### 🌍 Location-Aware Climate Analysis
