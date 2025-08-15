@@ -11,6 +11,7 @@ A comprehensive multimodal AI system that combines PrithviWxC climate data proce
 This project implements a state-of-the-art multimodal fusion system that bridges climate science and natural language processing. It enables AI applications that can understand both numerical climate data and human language, opening up new possibilities for:
 
 - **Climate Trend Analysis**: AI assistants that explain long-term climate patterns and projections
+- **Location-Aware Climate Analysis**: Geographic-specific climate assessments for regions, countries, or coordinates
 - **Climate Impact Assessment**: Automated analysis of climate change effects on various sectors
 - **Agricultural Climate Planning**: Long-term farming recommendations based on climate projections
 - **Climate Risk Assessment**: Analysis of future climate risks and adaptation strategies
@@ -21,13 +22,21 @@ This project implements a state-of-the-art multimodal fusion system that bridges
 ### 🏗️ Core Components
 - **PrithviWxC Encoder Extraction**: Standalone climate feature encoder (1.97B parameters)
 - **Multimodal Fusion Framework**: Combines climate and text data using multiple fusion strategies
+- **Location-Aware Climate Analysis**: Geographic-specific analysis with spatial attention masking
 - **Transformer Integration**: Support for Llama 3, BERT, and other HuggingFace models
 - **Memory Efficient**: 72% reduction in model size for inference applications
+
+### 🌍 Geographic Intelligence
+- **Multi-Backend Resolution**: GeoPy/Nominatim, GeoNames API, and local database support
+- **Spatial Attention Masking**: Focus analysis on specific geographic regions
+- **Multi-Scale Analysis**: From coordinate-level to global climate assessment
+- **Real-World Data**: Integration with OpenStreetMap and official geographic databases
 
 ### 🔧 Fusion Strategies
 - **Cross-Attention Fusion**: Deep interaction between climate and text features
 - **Concatenation Fusion**: Simple feature combination for fast inference
 - **Additive Fusion**: Element-wise feature integration
+- **Location-Aware Fusion**: Geographic context integration with climate data
 
 ### 🧪 Production Ready
 - Comprehensive test suite (5/5 tests passing)

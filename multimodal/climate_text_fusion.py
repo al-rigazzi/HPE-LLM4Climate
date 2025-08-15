@@ -169,7 +169,8 @@ class ClimateTextFusion(nn.Module):
 
     def __init__(
         self,
-        prithvi_encoder_path: str,
+        prithvi_encoder_path: str = None,
+        prithvi_encoder: torch.nn.Module = None,
         llama_model_name: str = "meta-llama/Llama-3.2-3B-Instruct",
         fusion_mode: str = "cross_attention",
         max_climate_tokens: int = 1024,
@@ -208,8 +209,21 @@ class ClimateTextFusion(nn.Module):
         self.max_climate_tokens = max_climate_tokens
         self.max_text_length = max_text_length
 
-        # Load PrithviWxC encoder
-        self.climate_encoder = self._load_prithvi_encoder(prithvi_encoder_path)
+        # Load or use provided PrithviWxC encoder
+        if prithvi_encoder is not None:
+            self.climate_encoder = prithvi_encoder
+            # Assume pre-loaded encoder has embed_dim attribute
+            if hasattr(prithvi_encoder, 'embed_dim'):
+                self.climate_dim = prithvi_encoder.embed_dim
+            else:
+                # Try to infer from encoder structure
+                self.climate_dim = 1024  # Default Prithvi dimension
+        elif prithvi_encoder_path is not None:
+            self.climate_encoder = self._load_prithvi_encoder(prithvi_encoder_path)
+            self.climate_dim = self.climate_encoder.embed_dim
+        else:
+            raise ValueError("Either prithvi_encoder_path or prithvi_encoder must be provided")
+
         if freeze_prithvi:
             for param in self.climate_encoder.parameters():
                 param.requires_grad = False
@@ -227,7 +241,6 @@ class ClimateTextFusion(nn.Module):
                 param.requires_grad = False
 
         # Get embedding dimensions
-        self.climate_dim = self.climate_encoder.embed_dim
         self.text_dim = self.text_model.config.hidden_size
 
         # Initialize fusion components
@@ -276,6 +289,7 @@ class ClimateTextFusion(nn.Module):
             checkpoint_encoder=[],
         )
 
+        # Load state dict directly (no size mismatches with correct extraction)
         encoder.load_state_dict(checkpoint['model_state_dict'])
         return encoder
 

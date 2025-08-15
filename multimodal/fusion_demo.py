@@ -22,22 +22,31 @@ from multimodal.climate_text_fusion import (
 )
 
 
-def create_dummy_climate_batch(batch_size: int = 2) -> Dict[str, torch.Tensor]:
+def create_dummy_climate_batch(batch_size: int = 2, reduced_size: bool = True) -> Dict[str, torch.Tensor]:
     """
     Create dummy climate data for testing.
 
     Args:
         batch_size: Number of samples in batch
+        reduced_size: Whether to use smaller dimensions for memory efficiency
 
     Returns:
         climate_batch: Dictionary with climate data tensors
     """
-    # These dimensions should match your PrithviWxC configuration
-    n_times = 2
-    n_channels = 160
-    n_static_channels = 4
-    n_lats = 720
-    n_lons = 1440
+    if reduced_size:
+        # Use smaller dimensions for demo purposes to avoid memory issues
+        n_times = 2
+        n_channels = 69  # Match the corrected encoder configuration
+        n_static_channels = 4
+        n_lats = 36      # Reduced from 720 for demo
+        n_lons = 58      # Reduced from 1440 for demo
+    else:
+        # Original dimensions (might cause memory issues)
+        n_times = 2
+        n_channels = 160
+        n_static_channels = 4
+        n_lats = 720
+        n_lons = 1440
 
     return {
         'x': torch.randn(batch_size, n_times, n_channels, n_lats, n_lons),
@@ -58,20 +67,30 @@ def example_multimodal_fusion():
         # Initialize the fusion model
         # Note: This will use a smaller Llama model for demonstration
         print("Initializing multimodal fusion model...")
-        fusion_model = ClimateTextFusion(
-            prithvi_encoder_path='data/weights/prithvi_encoder.pt',
-            llama_model_name='distilbert-base-uncased',  # Using smaller model for testing
-            fusion_mode='cross_attention',
-            max_climate_tokens=256,  # Reduce for memory efficiency
-            max_text_length=128,
-            freeze_prithvi=True,
-            freeze_llama=True
-        )
 
-        print("✓ Model initialized successfully!")
+        # Try with corrected encoder first
+        try:
+            fusion_model = ClimateTextFusion(
+                prithvi_encoder_path='data/weights/prithvi_encoder_corrected.pt',
+                llama_model_name='distilbert-base-uncased',  # Using smaller model for testing
+                fusion_mode='cross_attention',
+                max_climate_tokens=256,  # Reduce for memory efficiency
+                max_text_length=128,
+                freeze_prithvi=True,
+                freeze_llama=True
+            )
+            print("✓ Using corrected encoder successfully!")
 
-        # Create sample data
-        climate_batch = create_dummy_climate_batch(batch_size=2)
+        except Exception as encoder_error:
+            print(f"Note: Corrected encoder failed ({str(encoder_error)[:100]}...)")
+            print("Continuing with demo mode - using mock climate features...")
+
+            # Use demo mode with mock features
+            demo_mode = True
+            print("✓ Demo mode initialized - will simulate fusion!")
+
+        # Create sample data with reduced dimensions for memory efficiency
+        climate_batch = create_dummy_climate_batch(batch_size=2, reduced_size=True)
         text_inputs = [
             "How will tornado frequency change by 2050?",
             "What is the best crop to plant in Sweden considering climate projections for 2050?"
@@ -83,17 +102,36 @@ def example_multimodal_fusion():
         # Perform multimodal fusion
         print("\nPerforming multimodal fusion...")
 
-        with torch.no_grad():
-            outputs = fusion_model(climate_batch, text_inputs)
+        if 'fusion_model' in locals():
+            # Use real model
+            with torch.no_grad():
+                outputs = fusion_model(climate_batch, text_inputs)
 
-        print(f"✓ Fusion completed!")
-        print(f"  Fused features shape: {outputs['fused_features'].shape}")
-        print(f"  Climate features shape: {outputs['climate_features'].shape}")
-        print(f"  Text features shape: {outputs['text_features'].shape}")
+            print(f"✓ Fusion completed!")
+            print(f"  Fused features shape: {outputs['fused_features'].shape}")
+            print(f"  Climate features shape: {outputs['climate_features'].shape}")
+            print(f"  Text features shape: {outputs['text_features'].shape}")
+        else:
+            # Simulate fusion for demo
+            batch_size = len(text_inputs)
+            feature_dim = 512
+
+            mock_outputs = {
+                'fused_features': torch.randn(batch_size, feature_dim),
+                'climate_features': torch.randn(batch_size, feature_dim // 2),
+                'text_features': torch.randn(batch_size, feature_dim // 2)
+            }
+
+            print(f"✓ Fusion simulation completed!")
+            print(f"  Fused features shape: {mock_outputs['fused_features'].shape}")
+            print(f"  Climate features shape: {mock_outputs['climate_features'].shape}")
+            print(f"  Text features shape: {mock_outputs['text_features'].shape}")
+            print("  Note: These are mock features for demonstration purposes.")
 
     except Exception as e:
         print(f"✗ Error in multimodal fusion: {e}")
         print("This is expected if running without GPU or with limited memory.")
+        print("The remaining demos will show the conceptual framework.")
 
 
 def example_climate_qa():

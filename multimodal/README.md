@@ -1,16 +1,45 @@
 # PrithviWxC Multimodal Extensions
 
-This directory contains utilities for extracting and working with components of the PrithviWxC model for multimodal applications.
+This directory contains utilities for extracting and working with components of the PrithviWxC model for multimodal applications, including advanced location-aware climate analysis capabilities.
 
 ## Overview
 
-The PrithviWxC model is a powerful encoder-decoder architecture for climate modeling and analysis. This module provides tools to extract the encoder portion for use in multimodal applications, transfer learning, and feature extraction tasks focused on long-term climate trends and projections.
+The PrithviWxC model is a powerful encoder-decoder architecture for climate modeling and analysis. This module provides tools to extract the encoder portion for use in multimodal applications, transfer learning, and feature extraction tasks focused on long-term climate trends and projections. Additionally, it includes cutting-edge location-aware functionality that enables geographic-specific climate analysis.
+
+## Key Features
+
+### 🌍 Location-Aware Climate Analysis
+- **Geographic Entity Resolution**: Automatically extract and resolve location references from natural language queries
+- **Spatial Attention Masking**: Focus climate model attention on specific geographic regions
+- **Multi-scale Analysis**: Support for coordinates, cities, countries, states, and large regions
+- **Location-aware Fusion**: Combine climate data with text queries and geographic context
+
+### 🤖 Multimodal Fusion
+- **Climate-Text Integration**: Combine climate model outputs with natural language processing
+- **Multiple Fusion Strategies**: Cross-attention, concatenation, and additive fusion modes
+- **Risk Assessment**: Generate climate risk classifications with confidence estimates
+- **Trend Analysis**: Project long-term climate trends for specific regions
 
 ## Files
 
-- `encoder_extractor.py` - Main script for extracting the encoder from a full PrithviWxC model
-- `test_encoder_extractor.py` - Test script to verify the encoder extraction functionality
-- `example_usage.py` - Examples of how to use the extracted encoder
+### Core Components
+- `encoder_extractor.py` - Extract encoder from full PrithviWxC model
+- `climate_text_fusion.py` - Core multimodal fusion framework for climate and text
+- `location_aware.py` - Geographic resolution and spatial attention infrastructure
+- `location_aware_fusion.py` - Location-aware climate analysis system
+
+### Examples and Demos
+- `example_usage.py` - Basic encoder extraction and usage examples
+- `practical_example.py` - Working demonstration of climate-text fusion
+- `fusion_demo.py` - Comprehensive multimodal fusion capabilities
+- `location_aware_example.py` - Complete location-aware analysis demonstration
+
+### Testing
+- `test_encoder_extractor.py` - Test encoder extraction functionality
+- `test_fusion.py` - Test multimodal fusion components
+- `test_location_aware.py` - Comprehensive location-aware system tests
+
+### Utilities
 - `__init__.py` - Package initialization
 
 ## Quick Start
@@ -26,7 +55,108 @@ python multimodal/encoder_extractor.py \
     --vert_scaler_path /data/climatology/musigma_vertical.nc
 ```
 
-### 2. Use the Extracted Encoder
+### 2. Location-Aware Climate Analysis
+
+```python
+from multimodal.location_aware_fusion import LocationAwareClimateAnalysis
+import torch
+
+# Initialize location-aware system
+model = LocationAwareClimateAnalysis()
+
+# Analyze a geographic climate query
+climate_features = torch.randn(1, 1024, 768)  # From Prithvi encoder
+query = "What crops will be viable in Sweden by 2050?"
+
+result = model.analyze_location_query(climate_features, query)
+
+print(f"Location: {result['location']}")
+print(f"Climate Risk: {result['climate_risk']}")
+print(f"Confidence: {result['overall_confidence']:.1%}")
+print(f"Analysis: {result['interpretation']}")
+```
+
+### 3. Basic Multimodal Fusion
+
+```python
+from multimodal.climate_text_fusion import ClimateTextFusion, FusionMode
+
+# Initialize fusion system
+fusion_model = ClimateTextFusion()
+
+# Combine climate data with text query
+result = fusion_model(
+    climate_features=climate_features,
+    text_query="Long-term drought patterns and agricultural sustainability",
+    fusion_mode=FusionMode.CROSS_ATTENTION
+)
+
+features = result['fused_features']  # Combined climate-text features
+assessment = result['climate_assessment']  # Generated analysis
+```
+
+## Geographic Resolution Backends
+
+The location-aware system supports multiple geographic data sources:
+
+### 🌐 **GeoPy/Nominatim (Recommended)**
+```bash
+pip install geopy
+```
+- **Pros**: Comprehensive global coverage, free, no API key required
+- **Cons**: Requires internet connection
+- **Data Source**: OpenStreetMap via Nominatim service
+- **Coverage**: Worldwide with detailed city/region boundaries
+
+### 🗺️ **GeoNames API**
+```bash
+pip install requests
+# Register for free username at geonames.org
+```
+- **Pros**: Very comprehensive, official geographic data
+- **Cons**: Requires API registration and internet
+- **Coverage**: Worldwide with administrative boundaries
+
+### 🏠 **Local Database (Fallback)**
+- **Pros**: Fast, offline, no dependencies
+- **Cons**: Limited coverage (major countries/regions only)
+- **Coverage**: ~50 major countries, states, and regions
+
+### Usage Examples
+
+```python
+from multimodal.location_aware_fusion import LocationAwareClimateAnalysis
+
+# Auto-select best available backend
+model = LocationAwareClimateAnalysis()
+
+# Force specific backend
+from multimodal.location_aware import GeographicResolver
+model.geographic_resolver = GeographicResolver(backend='geopy')
+
+# Test different queries
+queries = [
+    "Climate impact on Stockholm, Sweden",           # City-level precision
+    "Drought risk in Central Valley, California",    # Regional analysis
+    "What crops viable in 59.3°N, 18.1°E by 2050?", # Coordinate-based
+    "Arctic ice melting trends"                      # Large region
+]
+
+for query in queries:
+    result = model.analyze_location_query(climate_data, query)
+    print(f"Location: {result['location']}")
+    print(f"Risk: {result['climate_risk']} ({result['overall_confidence']:.1%})")
+```
+
+### Backend Comparison
+
+| Backend | Coverage | Precision | Requirements | Speed | Best For |
+|---------|----------|-----------|--------------|-------|----------|
+| **GeoPy** | Global | High | Internet | Medium | Production use |
+| **GeoNames** | Global | Very High | Internet + API Key | Medium | Research/Commercial |
+| **Local** | Limited | Medium | None | Fast | Development/Demo |
+
+### 4. Use the Extracted Encoder
 
 ```python
 from multimodal.encoder_extractor import PrithviWxC_Encoder
@@ -51,6 +181,7 @@ features = encoder(batch)  # [batch, n_tokens, local_seq, embed_dim]
 
 ## Architecture
 
+### Core Encoder Architecture
 The extracted encoder includes:
 
 - **Input Preprocessing**: Normalization and scaling of climate variables
@@ -60,16 +191,61 @@ The extracted encoder includes:
 - **Masking**: Configurable masking for self-supervised learning
 - **Transformer Encoder**: Multi-layer transformer with local-global attention
 
+### Location-Aware Architecture
+The location-aware system adds:
+
+- **Geographic Resolver**: Extracts location entities from natural language
+- **Spatial Cropper**: Creates attention masks for specific geographic regions
+- **Location-Aware Attention**: Modifies transformer attention with spatial focus
+- **Geographic Context Encoder**: Encodes location bounds as contextual features
+- **Multimodal Fusion**: Combines climate data, text, and geographic context
+
 ## Use Cases
 
-### 1. Feature Extraction
+### 1. Geographic Climate Questions
+Answer location-specific climate queries:
+```python
+model = LocationAwareClimateAnalysis()
+result = model.analyze_location_query(
+    climate_features,
+    "What crops will be viable in Sweden by 2050?"
+)
+```
+
+### 2. Regional Risk Assessment
+Assess climate risks for specific regions:
+```python
+queries = [
+    "Drought risk in California agriculture",
+    "Arctic ice melting patterns",
+    "Mediterranean climate resilience"
+]
+for query in queries:
+    assessment = model.analyze_location_query(climate_features, query)
+    print(f"{query}: {assessment['climate_risk']}")
+```
+
+### 3. Multi-scale Analysis
+Support analysis from coordinates to continents:
+```python
+# Coordinate-level analysis
+coordinate_query = "Climate at 40.7°N, 74.0°W"
+
+# Country-level analysis
+country_query = "Climate trends in Sweden"
+
+# Regional analysis
+regional_query = "Arctic climate changes"
+```
+
+### 4. Feature Extraction
 Use the encoder to extract meaningful representations from climate data:
 ```python
 climate_features = encoder(climate_batch)
 # Use features for downstream tasks
 ```
 
-### 2. Transfer Learning
+### 5. Transfer Learning
 Fine-tune the encoder for specific climate tasks:
 ```python
 encoder = load_pretrained_encoder()
@@ -78,7 +254,7 @@ classifier = nn.Linear(encoder.embed_dim, num_classes)
 # Fine-tune on your data
 ```
 
-### 3. Multimodal Fusion
+### 6. Multimodal Fusion
 Combine climate features with other modalities:
 ```python
 climate_features = climate_encoder(climate_data)
