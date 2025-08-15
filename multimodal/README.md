@@ -16,8 +16,7 @@ multimodal/
 │   └── location_aware/    # Location-specific examples
 ├── tests/                 # Comprehensive test suite
 ├── utils/                 # Utility modules
-│   ├── encoder_extractor.py    # Model component extraction
-│   └── corrected_encoder.py    # Enhanced encoder implementations
+│   └── encoder_extractor.py    # Model component extraction
 └── docs/                  # Documentation and success logs
 ```
 

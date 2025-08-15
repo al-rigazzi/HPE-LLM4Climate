@@ -4,8 +4,7 @@ This directory contains the comprehensive test suite for the multimodal climate 
 
 ## Test Files
 
-- `test_corrected_encoder*.py` - Tests for corrected encoder functionality
-- `test_encoder_extractor*.py` - Tests for encoder extraction utilities
+- `test_encoder_extractor.py` - Tests for encoder extraction utilities
 - `test_fusion.py` - Tests for multimodal fusion capabilities
 - `test_location_aware.py` - Tests for location-aware processing
 
@@ -17,6 +16,7 @@ All tests can be run using pytest or directly with Python:
 cd tests/
 python test_location_aware.py
 python test_fusion.py
+python test_encoder_extractor.py
 ```
 
 ## Test Status

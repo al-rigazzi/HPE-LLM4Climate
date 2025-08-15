@@ -34,6 +34,7 @@ def test_fixed_encoder():
     state_dict = encoder_data['model_state_dict']
 
     print(f"   ✅ Configuration loaded:")
+    # Check if model_type exists, otherwise skip it
     if 'model_type' in encoder_data['config']:
         print(f"      Model type: {encoder_data['config']['model_type']}")
     print(f"      Encoder blocks: {config['n_blocks_encoder']}")
@@ -112,13 +113,16 @@ def test_fixed_encoder():
     # Test feature extraction capability
     print("\n🚀 Testing feature extraction functionality...")
 
-    # Create sample input
+    # Create sample input - check actual expected static channels from weights
+    static_weight = state_dict['patch_embedding_static.proj.weight']
+    expected_static_channels = static_weight.shape[1]  # Get expected input channels
+
     batch_size = 1
     climate_data = torch.randn(batch_size, config['in_channels'], 2, 180, 288)
-    static_data = torch.randn(batch_size, config['in_channels_static'], 180, 288)
+    static_data = torch.randn(batch_size, expected_static_channels, 180, 288)
 
     print(f"   Sample climate data: {climate_data.shape}")
-    print(f"   Sample static data: {static_data.shape}")
+    print(f"   Sample static data: {static_data.shape} (expected {expected_static_channels} channels)")
 
     # Apply patch embedding
     with torch.no_grad():
@@ -136,17 +140,10 @@ def test_fixed_encoder():
         static_weight = state_dict['patch_embedding_static.proj.weight']
         static_bias = state_dict['patch_embedding_static.proj.bias']
 
-        # Check if static weight expects more channels
-        expected_static_channels = static_weight.shape[1]
-        if static_data.shape[1] != expected_static_channels:
-            print(f"   ⚠️  Static channel mismatch: data has {static_data.shape[1]}, weight expects {expected_static_channels}")
-            # Create compatible static data
-            static_data_padded = torch.randn(batch_size, expected_static_channels, 180, 288)
-            static_features = torch.conv2d(static_data_padded, static_weight, static_bias, stride=2)
-            print(f"   ✅ Static features extracted (with padding): {static_features.shape}")
-        else:
-            static_features = torch.conv2d(static_data, static_weight, static_bias, stride=2)
-            print(f"   ✅ Static features extracted: {static_features.shape}")        # Verify dimensions match
+        static_features = torch.conv2d(static_data, static_weight, static_bias, stride=2)
+        print(f"   ✅ Static features extracted: {static_features.shape}")
+
+        # Verify dimensions match
         if (climate_features.shape[1] == config['embed_dim'] and
             static_features.shape[1] == config['embed_dim']):
             print(f"   ✅ Feature dimensions match config")

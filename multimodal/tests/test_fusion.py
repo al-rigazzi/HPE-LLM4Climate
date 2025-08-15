@@ -26,14 +26,14 @@ def test_basic_imports():
         return False
 
     try:
-        from multimodal.encoder_extractor import PrithviWxC_Encoder
+        from multimodal.utils.encoder_extractor import PrithviWxC_Encoder
         print("✓ PrithviWxC_Encoder imported")
     except ImportError as e:
         print(f"✗ PrithviWxC_Encoder import failed: {e}")
         return False
 
     try:
-        from multimodal.climate_text_fusion import ClimateTextFusion
+        from multimodal.core.climate_text_fusion import ClimateTextFusion
         print("✓ ClimateTextFusion imported")
     except ImportError as e:
         print(f"✗ ClimateTextFusion import failed: {e}")
@@ -67,7 +67,7 @@ def test_encoder_loading():
     print("\nTesting encoder loading...")
 
     try:
-        from multimodal.encoder_extractor import PrithviWxC_Encoder
+        from multimodal.utils.encoder_extractor import PrithviWxC_Encoder
 
         # Load encoder config
         encoder_path = 'data/weights/prithvi_encoder.pt'
@@ -130,7 +130,7 @@ def test_fusion_components():
     print("\nTesting fusion components...")
 
     try:
-        from multimodal.climate_text_fusion import ClimateFeatureProjector, CrossModalAttention
+        from multimodal.core.climate_text_fusion import ClimateFeatureProjector, CrossModalAttention
 
         # Test feature projector
         climate_dim = 128
@@ -245,7 +245,7 @@ def show_usage_instructions():
 
 1. **Basic Setup:**
    ```python
-   from multimodal.climate_text_fusion import ClimateTextFusion
+   from multimodal.core.climate_text_fusion import ClimateTextFusion
 
    model = ClimateTextFusion(
        prithvi_encoder_path='data/weights/prithvi_encoder.pt',

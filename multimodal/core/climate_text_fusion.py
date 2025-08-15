@@ -48,7 +48,13 @@ except ImportError:
     warnings.warn("Transformers library not available. Install with: pip install transformers")
 
 # Import our custom encoder
-from multimodal.encoder_extractor import PrithviWxC_Encoder
+try:
+    from ..utils.encoder_extractor import PrithviWxC_Encoder
+except ImportError:
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from utils.encoder_extractor import PrithviWxC_Encoder
 
 
 class ClimateFeatureProjector(nn.Module):

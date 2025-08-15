@@ -15,13 +15,16 @@ import numpy as np
 from typing import Dict, List, Optional
 
 try:
-    from .location_aware import GeographicResolver, SpatialCropper, LocationAwareAttention
-    from .location_aware_fusion import LocationAwareClimateAnalysis, FusionMode
-    from .climate_text_fusion import ClimateTextFusion
+    from multimodal.core.location_aware import GeographicResolver, SpatialCropper, LocationAwareAttention
+    from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis, FusionMode
+    from multimodal.core.climate_text_fusion import ClimateTextFusion
 except ImportError:
-    from location_aware import GeographicResolver, SpatialCropper, LocationAwareAttention
-    from location_aware_fusion import LocationAwareClimateAnalysis, FusionMode
-    from climate_text_fusion import ClimateTextFusion
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from core.location_aware import GeographicResolver, SpatialCropper, LocationAwareAttention
+    from core.location_aware_fusion import LocationAwareClimateAnalysis, FusionMode
+    from core.climate_text_fusion import ClimateTextFusion
 
 class TestGeographicResolver(unittest.TestCase):
     """Test geographic entity resolution functionality."""
