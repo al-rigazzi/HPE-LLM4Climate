@@ -11,10 +11,14 @@ and text data (using Llama 3). It enables tasks like:
 Usage:
     from multimodal.climate_text_fusion import ClimateTextFusion
 
+    # Note: meta-llama/Meta-Llama-3-8B requires HuggingFace approval
     model = ClimateTextFusion(
         prithvi_encoder_path='data/weights/prithvi_encoder.pt',
-        llama_model_name='meta-llama/Meta-Llama-3-8B'
+        llama_model_name='meta-llama/Meta-Llama-3-8B'  # Requires HF approval
     )
+
+    # For testing without approval:
+    # llama_model_name='prajjwal1/bert-tiny'  # No approval needed
 
     # Process climate data and text together
     output = model(climate_data, text_input)
@@ -192,7 +196,7 @@ class ClimateTextFusion(nn.Module):
         """
         Args:
             prithvi_encoder_path: Path to the extracted PrithviWxC encoder weights
-            llama_model_name: Hugging Face model name for Llama 3
+            llama_model_name: Hugging Face model name (meta-llama/Meta-Llama-3-8B requires approval)
             fusion_mode: How to fuse modalities ('cross_attention', 'concatenate', 'add')
             max_climate_tokens: Maximum number of climate tokens to process
             max_text_length: Maximum text sequence length

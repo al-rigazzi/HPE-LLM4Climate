@@ -45,6 +45,9 @@ class LocationAwareClimateAnalysis(nn.Module):
     """
     Location-aware climate analysis system that combines climate data,
     text queries, and geographic context for regional climate assessment.
+
+    Note: Default model 'meta-llama/Meta-Llama-3-8B' requires HuggingFace approval.
+    For testing use: llama_model_name='prajjwal1/bert-tiny'
     """
 
     def __init__(

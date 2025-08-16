@@ -163,9 +163,9 @@ pip install -r requirements.txt
 The system supports a wide range of transformer models for climate-text fusion:
 
 #### 🦙 **Meta Llama Models (Recommended)**
-- `meta-llama/Meta-Llama-3-8B` - **Tested ✅** - Superior language understanding
-- `meta-llama/Llama-2-7b-hf` - Standard Llama 2 (requires HF access)
-- `meta-llama/Llama-2-7b-chat-hf` - Chat-optimized version
+- `meta-llama/Meta-Llama-3-8B` - **Tested ✅** - Superior language understanding (**HF approval required**)
+- `meta-llama/Llama-2-7b-hf` - Standard Llama 2 (**HF approval required**)
+- `meta-llama/Llama-2-7b-chat-hf` - Chat-optimized version (**HF approval required**)
 
 #### 🤖 **Alternative Models (No Access Required)**
 - `microsoft/DialoGPT-medium` - **Tested ✅** - Conversational AI
@@ -236,7 +236,7 @@ import torch
 # Initialize the fusion model
 fusion_model = ClimateTextFusion(
     prithvi_encoder_path='data/weights/prithvi_encoder.pt',
-    llama_model_name='meta-llama/Meta-Llama-3-8B',  # Updated: accessible model
+    llama_model_name='meta-llama/Meta-Llama-3-8B',  # Requires HF approval - use 'prajjwal1/bert-tiny' for testing
     fusion_mode='cross_attention',
     max_climate_tokens=1024,
     max_text_length=512

@@ -25,7 +25,8 @@ This PR introduces a comprehensive multimodal climate-text fusion system that co
 - **Mode Compatibility**: Automatic fusion component selection based on mode
 
 ### 🦙 **LLM Integration**
-- **Accessible Models**: Uses `meta-llama/Meta-Llama-3-8B` (no gating required)
+- **Primary Model**: `meta-llama/Meta-Llama-3-8B` (⚠️ **HuggingFace gating required** - users must request approval)
+- **Alternative Models**: `prajjwal1/bert-tiny`, `microsoft/DialoGPT-medium`, `roberta-base` for testing
 - **Dimension Matching**: Climate features (2560D) properly aligned with text features (4096D)
 - **Memory Optimization**: Smart loading with device management and memory-efficient processing
 - **Fallback Support**: Graceful degradation to smaller models for testing
@@ -176,10 +177,10 @@ print(f"Confidence: {result['overall_confidence']:.1%}")
 ## 🚀 Performance & Compatibility
 
 ### **Model Support**
-- ✅ **Meta-Llama-3-8B**: Primary production model (accessible, no gating)
-- ✅ **prajjwal1/bert-tiny**: Lightweight testing model
-- ✅ **microsoft/DialoGPT-medium**: Alternative conversational model
-- ✅ **roberta-base**: BERT-family model support
+- ⚠️ **Meta-Llama-3-8B**: Primary production model (**HuggingFace gating required** - users must request approval)
+- ✅ **prajjwal1/bert-tiny**: Lightweight testing model (no gating)
+- ✅ **microsoft/DialoGPT-medium**: Alternative conversational model (no gating)
+- ✅ **roberta-base**: BERT-family model support (no gating)
 
 ### **System Requirements**
 - **Memory**: ~8GB for Meta-Llama-3-8B, ~1GB for testing models
@@ -208,6 +209,8 @@ This PR delivers a fully functional, tested, and documented multimodal climate-t
 - **Perfect weight compatibility** (263/263 weights)
 - **Comprehensive test coverage** (16/16 tests passing)
 - **Production-ready performance** with real climate data
-- **Accessible model integration** (no gated models required)
+- **Flexible model integration** (primary model requires HF approval, alternatives available)
+
+⚠️ **Important**: For production use with Meta-Llama-3-8B, users must first request access approval on HuggingFace. Alternative models are available for immediate testing and development.
 
 The system is now ready for climate science applications, research, and deployment! 🌍

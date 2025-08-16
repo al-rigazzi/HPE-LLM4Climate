@@ -22,11 +22,12 @@ multimodal/
 
 ## Key Features
 
-✅ **Meta-Llama-3-8B Integration**: 7.5B parameter model with location-aware processing
+⚠️ **Meta-Llama-3-8B Integration**: 7.5B parameter model with location-aware processing (**HuggingFace approval required**)
 ✅ **Apple Silicon Support**: Native ARM64 with MPS acceleration and CPU fallback
 ✅ **Geographic Precision**: GeoPy/Nominatim integration for accurate location resolution
 ✅ **Comprehensive Testing**: 16/16 tests passing with 100% success rate
 ✅ **Multimodal Fusion**: Climate data and natural language processing
+✅ **Alternative Models**: Testing-ready models available without gating
 
 ## Quick Start
 
@@ -48,6 +49,26 @@ print(f"Analysis: {result['analysis']}")
 - PyTorch 2.8.0+ with MPS support
 - Apple Silicon (M1/M2/M3/M4) or CUDA-compatible GPU
 - 16GB+ RAM recommended for Meta-Llama-3-8B
+
+## 🚨 Model Access Requirements
+
+### Primary Model (Production)
+- **Meta-Llama-3-8B**: Requires HuggingFace approval
+  - Visit: https://huggingface.co/meta-llama/Meta-Llama-3-8B
+  - Request access from Meta AI
+  - Provide HF token for authentication
+
+### Alternative Models (Testing/Development)
+- **prajjwal1/bert-tiny**: No approval required
+- **microsoft/DialoGPT-medium**: No approval required
+- **roberta-base**: No approval required
+
+```python
+# For users without Llama access
+analyzer = LocationAwareClimateAnalysis(
+    llama_model_name='prajjwal1/bert-tiny'  # No approval needed
+)
+```
 
 ## Architecture
 

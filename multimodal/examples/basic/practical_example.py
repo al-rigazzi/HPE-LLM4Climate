@@ -189,7 +189,7 @@ from multimodal.climate_text_fusion import ClimateTextFusion
 # 2. Initialize with your preferred models
 fusion_model = ClimateTextFusion(
     prithvi_encoder_path='data/weights/prithvi_encoder.pt',
-    llama_model_name='meta-llama/Meta-Llama-3-8B',  # Updated: accessible model
+    llama_model_name='meta-llama/Meta-Llama-3-8B',  # Requires HF approval - use 'prajjwal1/bert-tiny' for testing
     fusion_mode='cross_attention',
     max_climate_tokens=1024,
     max_text_length=512,
