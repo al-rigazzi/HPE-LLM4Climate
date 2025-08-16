@@ -2,3 +2,6 @@
 *.cpython-*
 *.pt
 *.nc
+
+# PR description file (local only)
+pr_description.md
