@@ -236,7 +236,7 @@ import torch
 # Initialize the fusion model
 fusion_model = ClimateTextFusion(
     prithvi_encoder_path='data/weights/prithvi_encoder.pt',
-    llama_model_name='meta-llama/Llama-3.2-3B-Instruct',  # or smaller model
+    llama_model_name='meta-llama/Meta-Llama-3-8B',  # Updated: accessible model
     fusion_mode='cross_attention',
     max_climate_tokens=1024,
     max_text_length=512
@@ -433,7 +433,7 @@ fusion_model = ClimateTextFusion(fusion_mode='add')
 ```python
 # Large model (high quality, more memory)
 fusion_model = ClimateTextFusion(
-    llama_model_name='meta-llama/Llama-3.2-3B-Instruct'
+    llama_model_name='meta-llama/Meta-Llama-3-8B'
 )
 
 # Small model (fast inference, less memory)

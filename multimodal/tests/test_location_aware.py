@@ -397,14 +397,39 @@ class TestIntegration(unittest.TestCase):
 
     def test_end_to_end_analysis(self):
         """Test complete end-to-end analysis pipeline."""
-        # Create model (this will run in demo mode without proper encoders)
-        model = LocationAwareClimateAnalysis()
+        # Create model with real encoder path to avoid demo mode
+        import os
+        from pathlib import Path
+
+        # Get the encoder path relative to the project root
+        current_dir = Path(__file__).parent
+        project_root = current_dir.parent.parent
+        encoder_path = project_root / "data" / "weights" / "prithvi_encoder_fixed.pt"
+
+        if encoder_path.exists():
+            # Use real encoder if available
+            model = LocationAwareClimateAnalysis(
+                prithvi_encoder_path=str(encoder_path),
+                llama_model_name="prajjwal1/bert-tiny",  # Use small model for testing
+                fusion_mode="concatenate",
+                max_climate_tokens=64,
+                max_text_length=32
+            )
+        else:
+            # Fall back to demo mode if encoder not found
+            model = LocationAwareClimateAnalysis()
         model.eval()
 
         # Create realistic climate features
         batch_size = 1
         seq_len = 500  # Simulate patches from global grid
-        climate_dim = 768
+
+        # Use the correct climate dimension based on whether real encoder is loaded
+        if hasattr(model, 'climate_text_fusion') and model.climate_text_fusion is not None:
+            climate_dim = model.climate_text_fusion.climate_dim  # 2560 for real encoder
+        else:
+            climate_dim = 768  # Default for demo mode
+
         climate_features = torch.randn(batch_size, seq_len, climate_dim)
 
         # Test various types of queries

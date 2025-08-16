@@ -97,8 +97,36 @@ def main():
         from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis
         import torch
 
-        model = LocationAwareClimateAnalysis()
-        climate_data = torch.randn(1, 50, 768)
+        # Try different Prithvi encoder files
+        encoder_files = [
+            "data/weights/prithvi_encoder_fixed.pt",  # Try the one with 25 layers first
+            "data/weights/prithvi_encoder_corrected.pt",
+            "data/weights/prithvi_encoder.pt"
+        ]
+
+        model = None
+        for prithvi_path in encoder_files:
+            if os.path.exists(prithvi_path):
+                try:
+                    model = LocationAwareClimateAnalysis(prithvi_encoder_path=prithvi_path)
+                    print(f"  ✅ Successfully loaded Prithvi encoder: {prithvi_path}")
+                    break
+                except Exception as e:
+                    print(f"  ⚠️  Failed to load {prithvi_path}: {str(e)[:100]}...")
+                    continue
+
+        if model is None:
+            model = LocationAwareClimateAnalysis()
+            print(f"  ⚠️  All Prithvi encoders failed, using demo mode")
+
+        # Create properly sized climate data for the fusion model
+        if hasattr(model, 'climate_text_fusion') and model.climate_text_fusion:
+            # Use actual climate encoder dimensions (2560)
+            climate_dim = model.climate_text_fusion.climate_dim
+            climate_data = torch.randn(1, 50, climate_dim)
+        else:
+            # Demo mode with default dimensions
+            climate_data = torch.randn(1, 50, 768)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

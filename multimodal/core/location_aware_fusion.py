@@ -40,7 +40,7 @@ class LocationAwareClimateAnalysis(nn.Module):
         self,
         prithvi_encoder_path: str = None,
         prithvi_encoder: torch.nn.Module = None,
-        llama_model_name: str = "meta-llama/Llama-3.2-3B-Instruct",
+        llama_model_name: str = "meta-llama/Meta-Llama-3-8B",
         fusion_mode: str = "cross_attention",
         max_climate_tokens: int = 1024,
         max_text_length: int = 512,
@@ -275,14 +275,28 @@ class LocationAwareClimateAnalysis(nn.Module):
             # Since we have pre-extracted features, use the components directly
             text_features, text_attention_mask = self.climate_text_fusion.encode_text([text_query] * batch_size)
 
-            # Project climate features to text space
-            climate_projected = self.climate_text_fusion.climate_projector(climate_features)
+            # Handle different fusion modes
+            if hasattr(self.climate_text_fusion, 'climate_projector'):
+                # For cross_attention and add modes
+                climate_projected = self.climate_text_fusion.climate_projector(climate_features)
+            else:
+                # For concatenate mode, use features directly
+                climate_projected = climate_features
 
-            # Apply fusion (simplified for pre-extracted features)
+            # Apply fusion based on mode
             if hasattr(self.climate_text_fusion, 'fusion_layers') and len(self.climate_text_fusion.fusion_layers) > 0:
+                # Cross-attention fusion
                 fused_features = self.climate_text_fusion.fusion_layers[0](
                     text_features, climate_projected, climate_projected
                 )[0]  # Cross-attention output
+            elif hasattr(self.climate_text_fusion, 'fusion_projection'):
+                # Concatenation fusion
+                min_len = min(text_features.shape[1], climate_projected.shape[1])
+                concat_features = torch.cat([
+                    text_features[:, :min_len],
+                    climate_projected[:, :min_len]
+                ], dim=-1)
+                fused_features = self.climate_text_fusion.fusion_projection(concat_features)
             else:
                 # Simple additive fusion as fallback
                 min_len = min(text_features.shape[1], climate_projected.shape[1])

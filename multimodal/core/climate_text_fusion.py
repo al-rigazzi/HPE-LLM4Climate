@@ -13,7 +13,7 @@ Usage:
 
     model = ClimateTextFusion(
         prithvi_encoder_path='data/weights/prithvi_encoder.pt',
-        llama_model_name='meta-llama/Llama-3.2-3B-Instruct'
+        llama_model_name='meta-llama/Meta-Llama-3-8B'
     )
 
     # Process climate data and text together
@@ -177,7 +177,7 @@ class ClimateTextFusion(nn.Module):
         self,
         prithvi_encoder_path: str = None,
         prithvi_encoder: torch.nn.Module = None,
-        llama_model_name: str = "meta-llama/Llama-3.2-3B-Instruct",
+        llama_model_name: str = "meta-llama/Meta-Llama-3-8B",
         fusion_mode: str = "cross_attention",
         max_climate_tokens: int = 1024,
         max_text_length: int = 512,
@@ -234,26 +234,38 @@ class ClimateTextFusion(nn.Module):
             for param in self.climate_encoder.parameters():
                 param.requires_grad = False
 
-        # Load Llama 3 model and tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(llama_model_name)
-        self.text_model = AutoModel.from_pretrained(llama_model_name)
+        # Check if Llama loading should be skipped (for testing)
+        import os
+        skip_llama = os.environ.get('DISABLE_LLAMA_LOADING', '0') == '1'
 
-        # Set pad token if not exists
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
+        if skip_llama:
+            # Create dummy tokenizer and model for testing
+            print("  🔧 Skipping Llama loading for encoder-only testing")
+            self.tokenizer = None
+            self.text_model = None
+            self.text_dim = 4096  # Default Llama dimension
+        else:
+            # Load Llama 3 model and tokenizer
+            self.tokenizer = AutoTokenizer.from_pretrained(llama_model_name)
+            self.text_model = AutoModel.from_pretrained(llama_model_name)
 
-        if freeze_llama:
-            for param in self.text_model.parameters():
-                param.requires_grad = False
+            # Set pad token if not exists
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        # Get embedding dimensions
-        self.text_dim = self.text_model.config.hidden_size
+            if freeze_llama:
+                for param in self.text_model.parameters():
+                    param.requires_grad = False
 
-        # Initialize fusion components
+            # Get embedding dimensions
+            self.text_dim = self.text_model.config.hidden_size
+
+        # Initialize fusion components (always needed, even in test mode)
         self._init_fusion_components(num_fusion_layers, fusion_dropout)
 
         # Move to device
-        self.to(self.device)
+        if not skip_llama:
+            self.to(self.device)
 
     def _load_prithvi_encoder(self, encoder_path: str) -> PrithviWxC_Encoder:
         """Load the PrithviWxC encoder from saved weights with smart architecture detection."""
@@ -266,14 +278,6 @@ class ClimateTextFusion(nn.Module):
         # Detect actual dimensions from weight shapes
         actual_in_channels = state_dict['input_scalers_mu'].shape[2] if 'input_scalers_mu' in state_dict else 160
 
-        # Better static channels detection
-        if 'static_input_scalers_mu' in state_dict:
-            actual_static_channels = state_dict['static_input_scalers_mu'].shape[1]
-        elif 'patch_embedding_static.proj.weight' in state_dict:
-            actual_static_channels = state_dict['patch_embedding_static.proj.weight'].shape[1]
-        else:
-            actual_static_channels = 11  # Default for real Prithvi
-
         # Detect patch embedding input channels
         if 'patch_embedding.proj.weight' in state_dict:
             patch_embed_in_channels = state_dict['patch_embedding.proj.weight'].shape[1]
@@ -283,32 +287,50 @@ class ClimateTextFusion(nn.Module):
         if 'patch_embedding_static.proj.weight' in state_dict:
             static_embed_in_channels = state_dict['patch_embedding_static.proj.weight'].shape[1]
         else:
-            static_embed_in_channels = 168  # Default for real Prithvi        # Count actual transformer layers
-        actual_n_blocks = 0
+            static_embed_in_channels = 168  # Default for real Prithvi
+
+        # Determine actual static channels and residual mode
+        # If static_embed_in_channels > actual_in_channels, then residual="climate" mode
+        if static_embed_in_channels > actual_in_channels:
+            # residual="climate" mode: patch_embedding_static expects in_channels + in_channels_static
+            actual_static_channels = static_embed_in_channels - actual_in_channels
+            residual_mode = "climate"
+        else:
+            # residual!="climate" mode: patch_embedding_static expects only in_channels_static
+            actual_static_channels = static_embed_in_channels
+            residual_mode = "non-climate"
+
+        # Count actual transformer layers
+        actual_transformer_layers = 0
         for key in state_dict.keys():
-            if 'encoder.lgl_block.transformers.' in key and '.attention.0.weight' in key:
-                layer_num = int(key.split('.')[3])
-                actual_n_blocks = max(actual_n_blocks, layer_num + 1)
+            if 'transformers.' in key:
+                layer_parts = key.split('.')
+                for i, part in enumerate(layer_parts):
+                    if part == 'transformers' and i + 1 < len(layer_parts):
+                        try:
+                            layer_num = int(layer_parts[i + 1])
+                            actual_transformer_layers = max(actual_transformer_layers, layer_num + 1)
+                        except ValueError:
+                            pass
+
+        # Convert actual transformer count to n_blocks_encoder
+        # LocalGlobalLocalBlock creates 2*n_blocks+1 transformers
+        # So if we have N transformers: N = 2*n_blocks+1 => n_blocks = (N-1)/2
+        actual_n_blocks = (actual_transformer_layers - 1) // 2
 
         print(f"  📊 Detected architecture:")
         print(f"     Input channels: {actual_in_channels}")
         print(f"     Static channels: {actual_static_channels}")
-        print(f"     Transformer layers: {actual_n_blocks}")
+        print(f"     Transformer layers: {actual_transformer_layers}")
+        print(f"     N_blocks_encoder: {actual_n_blocks}")
         print(f"     Patch embed channels: {patch_embed_in_channels}")
         print(f"     Static embed channels: {static_embed_in_channels}")
-
-        # Use real Prithvi configuration based on detected architecture
-        # Calculate the expected in_channels_static based on patch embedding weights
-        expected_static_channels = static_embed_in_channels - actual_in_channels if static_embed_in_channels > actual_static_channels else actual_static_channels
-
-        print(f"  🔧 Architecture adjustments:")
-        print(f"     Expected static for patch embedding: {expected_static_channels}")
-        print(f"     Using {expected_static_channels} static channels to match weights")
+        print(f"     Residual mode: {residual_mode}")
 
         real_config = {
             'in_channels': actual_in_channels,
             'input_size_time': 2,
-            'in_channels_static': expected_static_channels,
+            'in_channels_static': actual_static_channels,
             'input_scalers_epsilon': 0.0,
             'static_input_scalers_epsilon': 0.0,
             'n_lats_px': 360,
@@ -331,19 +353,28 @@ class ClimateTextFusion(nn.Module):
             in_sig = torch.ones(actual_in_channels)
 
         if 'static_input_scalers_mu' in state_dict:
-            static_mu = state_dict['static_input_scalers_mu'].clone()
-            static_sig = state_dict['static_input_scalers_sigma'].clone()
-            # Use the actual dimensions from the weights
-            actual_static_scaler_channels = static_mu.shape[1]
+            static_mu_full = state_dict['static_input_scalers_mu'].clone()
+            static_sig_full = state_dict['static_input_scalers_sigma'].clone()
+
+            # If scalers have more channels than model needs, truncate them
+            if static_mu_full.shape[1] > actual_static_channels:
+                print(f"  🔧 Truncating static scalers from {static_mu_full.shape[1]} to {actual_static_channels} channels")
+                static_mu = static_mu_full[:, :actual_static_channels, :, :]
+                static_sig = static_sig_full[:, :actual_static_channels, :, :]
+            else:
+                static_mu = static_mu_full
+                static_sig = static_sig_full
+
+            actual_static_scaler_channels = actual_static_channels
         else:
-            static_mu = torch.zeros(expected_static_channels)
-            static_sig = torch.ones(expected_static_channels)
-            actual_static_scaler_channels = expected_static_channels
+            static_mu = torch.zeros(1, actual_static_channels, 1, 1)
+            static_sig = torch.ones(1, actual_static_channels, 1, 1)
+            actual_static_scaler_channels = actual_static_channels
 
         encoder = PrithviWxC_Encoder(
             in_channels=real_config['in_channels'],
             input_size_time=real_config['input_size_time'],
-            in_channels_static=actual_static_scaler_channels,
+            in_channels_static=actual_static_channels,
             input_scalers_mu=in_mu,
             input_scalers_sigma=in_sig,
             input_scalers_epsilon=real_config['input_scalers_epsilon'],
@@ -362,22 +393,44 @@ class ClimateTextFusion(nn.Module):
             dropout=0.0,
             drop_path=0.0,
             parameter_dropout=0.0,
-            residual=residual_mode,
+            residual="climate" if residual_mode == "climate" else None,
             masking_mode="global",
             positional_encoding="fourier",
             encoder_shifting=False,
             checkpoint_encoder=[],
         )
 
+        # Fix state dict to match the architecture we're creating
+        if 'static_input_scalers_mu' in state_dict:
+            # Truncate static scalers to match the architecture
+            original_static_shape = state_dict['static_input_scalers_mu'].shape
+            if original_static_shape[1] > actual_static_channels:
+                print(f"  🔧 Adjusting state dict static scalers from {original_static_shape[1]} to {actual_static_channels} channels")
+                state_dict['static_input_scalers_mu'] = state_dict['static_input_scalers_mu'][:, :actual_static_channels, :, :]
+                state_dict['static_input_scalers_sigma'] = state_dict['static_input_scalers_sigma'][:, :actual_static_channels, :, :]
+
         # Load state dict with smart handling of mismatches
         try:
-            missing_keys, unexpected_keys = encoder.load_state_dict(state_dict, strict=False)
-            if missing_keys:
-                print(f"  ⚠️  Missing keys (will be randomly initialized): {len(missing_keys)} keys")
-            if unexpected_keys:
-                print(f"  ⚠️  Unexpected keys (will be ignored): {len(unexpected_keys)} keys")
+            # Pre-filter state dict to only include keys that the encoder actually has
+            encoder_state_keys = set(encoder.state_dict().keys())
+            filtered_state_dict = {k: v for k, v in state_dict.items() if k in encoder_state_keys}
+
+            # Also ensure static scalers match exactly
+            if 'static_input_scalers_mu' in filtered_state_dict:
+                expected_shape = encoder.static_input_scalers_mu.shape
+                if filtered_state_dict['static_input_scalers_mu'].shape != expected_shape:
+                    print(f"  🔧 Truncating static scalers to match encoder expectation: {expected_shape}")
+                    filtered_state_dict['static_input_scalers_mu'] = filtered_state_dict['static_input_scalers_mu'][:, :expected_shape[1], :, :]
+                    filtered_state_dict['static_input_scalers_sigma'] = filtered_state_dict['static_input_scalers_sigma'][:, :expected_shape[1], :, :]
+
+            missing_keys, unexpected_keys = encoder.load_state_dict(filtered_state_dict, strict=True)
+
+            # With filtering and strict=True, we should have zero missing/unexpected keys
+            if missing_keys or unexpected_keys:
+                raise RuntimeError(f"Encoder loading failed - Missing: {len(missing_keys)}, Unexpected: {len(unexpected_keys)}")
+
             print(f"  ✅ Successfully loaded real Prithvi encoder with {actual_n_blocks} layers")
-            print(f"  🎯 Loaded {len(state_dict) - len(missing_keys) - len(unexpected_keys)}/{len(state_dict)} weights successfully")
+            print(f"  🎯 Loaded {len(filtered_state_dict)}/{len(state_dict)} compatible weights (100% of encoder weights)")
         except Exception as e:
             print(f"  ❌ Error during load: {str(e)[:100]}...")
             # Fallback: create a minimal working encoder
@@ -645,7 +698,7 @@ class ClimateTextGeneration(nn.Module):
     def __init__(
         self,
         prithvi_encoder_path: str,
-        llama_model_name: str = "meta-llama/Llama-3.2-3B-Instruct"
+        llama_model_name: str = "meta-llama/Meta-Llama-3-8B"
     ):
         super().__init__()
 

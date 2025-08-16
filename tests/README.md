@@ -7,7 +7,7 @@ This directory contains the comprehensive test suite for the HPE-LLM4Climate pro
 ### `integration/`
 Integration tests for complex system interactions:
 - **`test_llama_comprehensive.py`** - Comprehensive Meta-Llama-3-8B integration testing
-- **`test_llama_integration.py`** - Multiple Llama model configuration testing  
+- **`test_llama_integration.py`** - Multiple Llama model configuration testing
 - **`test_llama_with_prithvi.py`** - Prithvi encoder + Llama model fusion testing
 - **`test_mps_fix.py`** - Apple Silicon MPS compatibility testing
 
@@ -36,7 +36,7 @@ python -m pytest tests/ -v
 
 # Or run individually
 python tests/test_location_aware.py
-python tests/test_fusion.py  
+python tests/test_fusion.py
 python tests/test_encoder_extractor.py
 ```
 

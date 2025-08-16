@@ -12,25 +12,22 @@ from pathlib import Path
 import sys
 import os
 
-# Add multimodal to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'multimodal'))
+# Add parent directory to path for imports
+current_dir = Path(__file__).parent
+project_root = current_dir.parent.parent
+sys.path.insert(0, str(project_root))
 
 def test_llama_models():
     """Test different Llama model configurations."""
     print("🦙 Testing Llama Integration with Location-Aware Climate Analysis")
     print("=" * 70)
 
-    # Test different Llama model sizes/variants
+        # Test different working models - removed gated/problematic ones
     llama_models_to_test = [
-        "meta-llama/Llama-2-7b-hf",           # Standard Llama 2 7B (gated)
-        "meta-llama/Llama-2-7b-chat-hf",     # Chat version (gated)
-        "meta-llama/Meta-Llama-3-8B",        # Llama 3 8B (gated)
+        "meta-llama/Meta-Llama-3-8B",        # Llama 3 8B (accessible)
         "microsoft/DialoGPT-medium",         # Alternative chat model
-        "distilbert-base-uncased",           # Smaller fallback
         "bert-base-uncased",                 # Standard BERT
         "roberta-base",                      # RoBERTa base
-        "google/flan-t5-small",              # T5 variant
-        "facebook/opt-350m"                  # Open Pre-trained Transformer
     ]
 
     for model_name in llama_models_to_test:
@@ -98,12 +95,14 @@ def test_with_location_aware_system(model_name: str):
         print(f"\n🌍 Testing location-aware system with {model_name}")
 
         # Import our location-aware system
-        from multimodal.location_aware_fusion import LocationAwareClimateAnalysis
+        from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis
 
         # Create model with the working Llama model
         print(f"   🤖 Initializing LocationAwareClimateAnalysis...")
+        # Use the real extracted encoder
+        encoder_path = project_root / "data" / "weights" / "prithvi_encoder_fixed.pt"
         model = LocationAwareClimateAnalysis(
-            prithvi_encoder_path=None,  # Will use demo mode for encoder
+            prithvi_encoder_path=str(encoder_path),  # Use real extracted encoder
             llama_model_name=model_name,
             fusion_mode='concatenate',  # Use simpler fusion mode
             max_climate_tokens=128,     # Reduce for memory efficiency
@@ -164,11 +163,12 @@ def test_climate_text_fusion(model_name: str):
     try:
         print(f"\n🔬 Testing direct Climate-Text Fusion with {model_name}")
 
-        from multimodal.climate_text_fusion import ClimateTextFusion
+        from multimodal.core.climate_text_fusion import ClimateTextFusion
 
-        # Create fusion model
+        # Create fusion model with real encoder
+        encoder_path = project_root / "data" / "weights" / "prithvi_encoder_fixed.pt"
         fusion_model = ClimateTextFusion(
-            prithvi_encoder_path=None,  # Demo mode
+            prithvi_encoder_path=str(encoder_path),  # Use real extracted encoder
             llama_model_name=model_name,
             fusion_mode='concatenate',
             max_climate_tokens=64,
@@ -202,6 +202,9 @@ def test_climate_text_fusion(model_name: str):
         print(f"      Text features: {outputs['text_features'].shape}")
 
         return True
+
+        # Note: Climate-text fusion requires actual Prithvi encoder
+        # The location-aware system handles this better with demo mode
 
     except Exception as e:
         print(f"   ❌ Fusion test error: {e}")

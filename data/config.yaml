@@ -9,7 +9,7 @@ params:
   patch_size_px: [2, 2]
   mask_unit_size_px: [30, 32]
   embed_dim: 2560
-  n_blocks_encoder: 12
+  n_blocks_encoder: 25
   n_blocks_decoder: 2
   mlp_multiplier: 4
   n_heads: 16
@@ -18,4 +18,3 @@ params:
   parameter_dropout: 0.0
   checkpoint_encoder: []
   checkpoint_decoder: []
-  

@@ -9,7 +9,7 @@ This directory contains integration tests that verify the interaction between di
 - **`test_llama_integration.py`** - Tests multiple Llama model variants and configurations
 - **`test_llama_with_prithvi.py`** - Tests Meta-Llama-3-8B integration with real Prithvi encoder weights
 
-### Platform Compatibility  
+### Platform Compatibility
 - **`test_mps_fix.py`** - Apple Silicon MPS device compatibility testing and fixes
 
 ## 🚀 Running Integration Tests
@@ -18,7 +18,7 @@ This directory contains integration tests that verify the interaction between di
 # Run all integration tests
 cd tests/integration
 python test_llama_comprehensive.py
-python test_llama_integration.py  
+python test_llama_integration.py
 python test_llama_with_prithvi.py
 python test_mps_fix.py
 
@@ -62,7 +62,7 @@ huggingface-cli login
 
 These integration tests cover:
 - ✅ Multi-model language processing
-- ✅ Climate-text fusion workflows  
+- ✅ Climate-text fusion workflows
 - ✅ Cross-platform device management
 - ✅ Memory optimization strategies
 - ✅ Authentication and model loading
