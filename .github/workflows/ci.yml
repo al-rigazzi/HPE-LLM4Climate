@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, multimodal ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, multimodal ]
+    branches: [ main ]
   workflow_dispatch:  # Allow manual triggering
 
 env:
@@ -12,6 +12,11 @@ env:
   PYTHONPATH: ${{ github.workspace }}
   HF_HUB_DISABLE_SYMLINKS_WARNING: 1
   TOKENIZERS_PARALLELISM: false
+
+# Cancel previous runs when new push/PR is made
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
