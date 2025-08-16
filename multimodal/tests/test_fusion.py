@@ -5,14 +5,18 @@ This script tests the multimodal fusion using smaller models and reduced data si
 to ensure everything works correctly.
 """
 
-import sys
 import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import torch
-import numpy as np
 import warnings
+
+import numpy as np
+import torch
+
 warnings.filterwarnings("ignore")
+
 
 def test_basic_imports():
     """Test that all required modules can be imported."""
@@ -20,6 +24,7 @@ def test_basic_imports():
 
     try:
         import transformers
+
         print(f"✓ Transformers version: {transformers.__version__}")
     except ImportError:
         print("✗ Transformers not available")
@@ -27,6 +32,7 @@ def test_basic_imports():
 
     try:
         from multimodal.utils.encoder_extractor import PrithviWxC_Encoder
+
         print("✓ PrithviWxC_Encoder imported")
     except ImportError as e:
         print(f"✗ PrithviWxC_Encoder import failed: {e}")
@@ -34,6 +40,7 @@ def test_basic_imports():
 
     try:
         from multimodal.core.climate_text_fusion import ClimateTextFusion
+
         print("✓ ClimateTextFusion imported")
     except ImportError as e:
         print(f"✗ ClimateTextFusion import failed: {e}")
@@ -51,14 +58,14 @@ def create_minimal_climate_data():
     n_lons = 64  # Much smaller than full 1440
     n_times = 2
     n_channels = 8  # Much smaller than full 160
-    n_static = 2   # Much smaller than full 4
+    n_static = 2  # Much smaller than full 4
 
     return {
-        'x': torch.randn(batch_size, n_times, n_channels, n_lats, n_lons),
-        'static': torch.randn(batch_size, n_static, n_lats, n_lons),
-        'climate': torch.randn(batch_size, n_channels, n_lats, n_lons),
-        'input_time': torch.tensor([0.0]),
-        'lead_time': torch.tensor([18.0]),
+        "x": torch.randn(batch_size, n_times, n_channels, n_lats, n_lons),
+        "static": torch.randn(batch_size, n_static, n_lats, n_lons),
+        "climate": torch.randn(batch_size, n_channels, n_lats, n_lons),
+        "input_time": torch.tensor([0.0]),
+        "lead_time": torch.tensor([18.0]),
     }
 
 
@@ -70,13 +77,13 @@ def test_encoder_loading():
         from multimodal.utils.encoder_extractor import PrithviWxC_Encoder
 
         # Load encoder config
-        encoder_path = 'data/weights/prithvi_encoder.pt'
+        encoder_path = "data/weights/prithvi_encoder.pt"
         if not os.path.exists(encoder_path):
             print(f"✗ Encoder weights not found at {encoder_path}")
             return False
 
-        checkpoint = torch.load(encoder_path, map_location='cpu')
-        config = checkpoint['config']['params']
+        checkpoint = torch.load(encoder_path, map_location="cpu")
+        config = checkpoint["config"]["params"]
 
         print(f"✓ Encoder config loaded")
         print(f"  - Embedding dim: {config['embed_dim']}")
@@ -95,7 +102,7 @@ def test_text_model_loading():
     print("\nTesting text model loading...")
 
     try:
-        from transformers import AutoTokenizer, AutoModel
+        from transformers import AutoModel, AutoTokenizer
 
         # Use a very small model for testing
         model_name = "prajjwal1/bert-tiny"  # Only 4.4M parameters
@@ -110,7 +117,7 @@ def test_text_model_loading():
 
         # Test tokenization
         text = ["This is a test sentence about weather."]
-        tokens = tokenizer(text, return_tensors='pt', padding=True)
+        tokens = tokenizer(text, return_tensors="pt", padding=True)
 
         with torch.no_grad():
             outputs = model(**tokens)
@@ -130,7 +137,10 @@ def test_fusion_components():
     print("\nTesting fusion components...")
 
     try:
-        from multimodal.core.climate_text_fusion import ClimateFeatureProjector, CrossModalAttention
+        from multimodal.core.climate_text_fusion import (
+            ClimateFeatureProjector,
+            CrossModalAttention,
+        )
 
         # Test feature projector
         climate_dim = 128
@@ -240,7 +250,8 @@ def show_usage_instructions():
     print("📖 USAGE INSTRUCTIONS")
     print("=" * 60)
 
-    print("""
+    print(
+        """
 🚀 Quick Start Guide:
 
 1. **Basic Setup:**
@@ -287,7 +298,8 @@ def show_usage_instructions():
    • Emergency response planning
 
 For more examples, run: python multimodal/fusion_demo.py
-    """)
+    """
+    )
 
 
 def main():

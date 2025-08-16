@@ -7,6 +7,7 @@ climate data from PrithviWxC with text processing using Llama 3.
 
 import sys
 import os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
@@ -18,11 +19,13 @@ import warnings
 from multimodal.climate_text_fusion import (
     ClimateTextFusion,
     ClimateQuestionAnswering,
-    ClimateTextGeneration
+    ClimateTextGeneration,
 )
 
 
-def create_dummy_climate_batch(batch_size: int = 2, reduced_size: bool = True) -> Dict[str, torch.Tensor]:
+def create_dummy_climate_batch(
+    batch_size: int = 2, reduced_size: bool = True
+) -> Dict[str, torch.Tensor]:
     """
     Create dummy climate data for testing.
 
@@ -38,8 +41,8 @@ def create_dummy_climate_batch(batch_size: int = 2, reduced_size: bool = True) -
         n_times = 2
         n_channels = 69  # Match the corrected encoder configuration
         n_static_channels = 4
-        n_lats = 36      # Reduced from 720 for demo
-        n_lons = 58      # Reduced from 1440 for demo
+        n_lats = 36  # Reduced from 720 for demo
+        n_lons = 58  # Reduced from 1440 for demo
     else:
         # Original dimensions (might cause memory issues)
         n_times = 2
@@ -49,11 +52,11 @@ def create_dummy_climate_batch(batch_size: int = 2, reduced_size: bool = True) -
         n_lons = 1440
 
     return {
-        'x': torch.randn(batch_size, n_times, n_channels, n_lats, n_lons),
-        'static': torch.randn(batch_size, n_static_channels, n_lats, n_lons),
-        'climate': torch.randn(batch_size, n_channels, n_lats, n_lons),
-        'input_time': torch.tensor([0.0, 3.0])[:batch_size],
-        'lead_time': torch.tensor([18.0, 18.0])[:batch_size],
+        "x": torch.randn(batch_size, n_times, n_channels, n_lats, n_lons),
+        "static": torch.randn(batch_size, n_static_channels, n_lats, n_lons),
+        "climate": torch.randn(batch_size, n_channels, n_lats, n_lons),
+        "input_time": torch.tensor([0.0, 3.0])[:batch_size],
+        "lead_time": torch.tensor([18.0, 18.0])[:batch_size],
     }
 
 
@@ -71,13 +74,13 @@ def example_multimodal_fusion():
         # Try with corrected encoder first
         try:
             fusion_model = ClimateTextFusion(
-                prithvi_encoder_path='data/weights/prithvi_encoder_corrected.pt',
-                llama_model_name='distilbert-base-uncased',  # Using smaller model for testing
-                fusion_mode='cross_attention',
+                prithvi_encoder_path="data/weights/prithvi_encoder_corrected.pt",
+                llama_model_name="distilbert-base-uncased",  # Using smaller model for testing
+                fusion_mode="cross_attention",
                 max_climate_tokens=256,  # Reduce for memory efficiency
                 max_text_length=128,
                 freeze_prithvi=True,
-                freeze_llama=True
+                freeze_llama=True,
             )
             print("✓ Using corrected encoder successfully!")
 
@@ -93,7 +96,7 @@ def example_multimodal_fusion():
         climate_batch = create_dummy_climate_batch(batch_size=2, reduced_size=True)
         text_inputs = [
             "How will tornado frequency change by 2050?",
-            "What is the best crop to plant in Sweden considering climate projections for 2050?"
+            "What is the best crop to plant in Sweden considering climate projections for 2050?",
         ]
 
         print(f"Climate data shape: {climate_batch['x'].shape}")
@@ -102,7 +105,7 @@ def example_multimodal_fusion():
         # Perform multimodal fusion
         print("\nPerforming multimodal fusion...")
 
-        if 'fusion_model' in locals():
+        if "fusion_model" in locals():
             # Use real model
             with torch.no_grad():
                 outputs = fusion_model(climate_batch, text_inputs)
@@ -117,9 +120,9 @@ def example_multimodal_fusion():
             feature_dim = 512
 
             mock_outputs = {
-                'fused_features': torch.randn(batch_size, feature_dim),
-                'climate_features': torch.randn(batch_size, feature_dim // 2),
-                'text_features': torch.randn(batch_size, feature_dim // 2)
+                "fused_features": torch.randn(batch_size, feature_dim),
+                "climate_features": torch.randn(batch_size, feature_dim // 2),
+                "text_features": torch.randn(batch_size, feature_dim // 2),
             }
 
             print(f"✓ Fusion simulation completed!")
@@ -150,7 +153,7 @@ def example_climate_qa():
     sample_questions = [
         "How much more likely will tornadoes be in 2050 compared to now?",
         "What is the long-term climate trend for this region?",
-        "How sustainable will agriculture be in this area by 2100?"
+        "How sustainable will agriculture be in this area by 2100?",
     ]
 
     print(f"Sample questions: {sample_questions}")
@@ -171,7 +174,7 @@ def example_climate_text_generation():
     sample_outputs = [
         "Based on climate model projections and historical trends, tornado frequency is expected to increase by 15-25% by 2050...",
         "Long-term climate analysis indicates significant changes in agricultural viability for northern European regions...",
-        "Regional sustainability assessments show that southwestern US regions will face increasing challenges by 2100..."
+        "Regional sustainability assessments show that southwestern US regions will face increasing challenges by 2100...",
     ]
 
     print("Sample generated texts:")
@@ -186,9 +189,9 @@ def demonstrate_fusion_modes():
     print("\n=== Fusion Mode Comparison ===\n")
 
     fusion_modes = {
-        'cross_attention': "Uses attention mechanism to align climate and text features",
-        'concatenate': "Simply concatenates climate and text features",
-        'add': "Projects climate features to text space and adds them"
+        "cross_attention": "Uses attention mechanism to align climate and text features",
+        "concatenate": "Simply concatenates climate and text features",
+        "add": "Projects climate features to text space and adds them",
     }
 
     print("Available fusion modes:")
@@ -211,28 +214,28 @@ def show_practical_applications():
         "Climate Trend Analysis": [
             "Generate long-term climate trend reports",
             "Answer questions about future climate patterns",
-            "Explain climate projection uncertainties"
+            "Explain climate projection uncertainties",
         ],
         "Climate Research": [
             "Analyze climate pattern descriptions",
             "Generate research summaries",
-            "Compare model predictions with observations"
+            "Compare model predictions with observations",
         ],
         "Agriculture": [
             "Provide long-term crop viability assessments",
             "Generate climate-informed agricultural planning",
-            "Predict future growing season conditions"
+            "Predict future growing season conditions",
         ],
         "Regional Planning": [
             "Generate climate risk assessments",
             "Assess regional sustainability from climate data",
-            "Create long-term adaptation recommendations"
+            "Create long-term adaptation recommendations",
         ],
         "Education": [
             "Explain climate change phenomena in simple terms",
             "Generate educational climate content",
-            "Answer student questions about climate science"
-        ]
+            "Answer student questions about climate science",
+        ],
     }
 
     for application, use_cases in applications.items():
@@ -252,23 +255,23 @@ def performance_considerations():
         "Memory Requirements": [
             "PrithviWxC encoder: ~8GB GPU memory",
             "Llama 3 model: 6-12GB depending on size",
-            "Consider using smaller models for development"
+            "Consider using smaller models for development",
         ],
         "Computational Efficiency": [
             "Freeze pre-trained models during initial experiments",
             "Use gradient checkpointing for memory efficiency",
-            "Batch processing for multiple samples"
+            "Batch processing for multiple samples",
         ],
         "Model Selection": [
             "Start with smaller Llama models (1B-3B parameters)",
             "Use DistilBERT or similar for initial prototyping",
-            "Scale up once architecture is validated"
+            "Scale up once architecture is validated",
         ],
         "Data Preprocessing": [
             "Limit climate token count for memory efficiency",
             "Precompute climate features when possible",
-            "Cache tokenized text inputs"
-        ]
+            "Cache tokenized text inputs",
+        ],
     }
 
     for category, items in considerations.items():

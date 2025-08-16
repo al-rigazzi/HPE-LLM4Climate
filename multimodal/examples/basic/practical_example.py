@@ -7,6 +7,7 @@ with a lightweight text model for practical testing.
 
 import sys
 import os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
@@ -14,6 +15,7 @@ import torch.nn as nn
 import numpy as np
 from transformers import AutoTokenizer, AutoModel
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
@@ -27,12 +29,12 @@ class SimplifiedClimateTextFusion(nn.Module):
 
         # Load the actual PrithviWxC encoder
         print("Loading PrithviWxC encoder...")
-        checkpoint = torch.load(encoder_path, map_location='cpu')
-        config = checkpoint['config']['params']
+        checkpoint = torch.load(encoder_path, map_location="cpu")
+        config = checkpoint["config"]["params"]
 
         # We'll create a simplified encoder for demo purposes
         # In practice, you'd use the full PrithviWxC_Encoder
-        self.climate_embed_dim = config['embed_dim']  # 2560 for the real model
+        self.climate_embed_dim = config["embed_dim"]  # 2560 for the real model
 
         # For demo, we'll simulate climate encoding
         self.climate_feature_dim = 512  # Reduced for demonstration
@@ -44,11 +46,11 @@ class SimplifiedClimateTextFusion(nn.Module):
         self.text_embed_dim = self.text_model.config.hidden_size
 
         # Fusion layers
-        self.climate_projector = nn.Linear(self.climate_feature_dim, self.text_embed_dim)
+        self.climate_projector = nn.Linear(
+            self.climate_feature_dim, self.text_embed_dim
+        )
         self.fusion_layer = nn.MultiheadAttention(
-            embed_dim=self.text_embed_dim,
-            num_heads=4,
-            batch_first=True
+            embed_dim=self.text_embed_dim, num_heads=4, batch_first=True
         )
 
         # Output layer for downstream tasks
@@ -56,7 +58,9 @@ class SimplifiedClimateTextFusion(nn.Module):
             nn.Linear(self.text_embed_dim, self.text_embed_dim // 2),
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.Linear(self.text_embed_dim // 2, 3)  # 3 classes: high risk, moderate, low risk climate impact
+            nn.Linear(
+                self.text_embed_dim // 2, 3
+            ),  # 3 classes: high risk, moderate, low risk climate impact
         )
 
         print("✓ Simplified fusion model initialized")
@@ -67,7 +71,9 @@ class SimplifiedClimateTextFusion(nn.Module):
         In practice, this would use the real PrithviWxC encoder.
         """
         # Simulate encoded climate features
-        return torch.randn(batch_size, 64, self.climate_feature_dim)  # 64 climate tokens
+        return torch.randn(
+            batch_size, 64, self.climate_feature_dim
+        )  # 64 climate tokens
 
     def forward(self, text_inputs: list, batch_size: int = None):
         """
@@ -82,7 +88,7 @@ class SimplifiedClimateTextFusion(nn.Module):
             padding=True,
             truncation=True,
             max_length=128,
-            return_tensors='pt'
+            return_tensors="pt",
         )
 
         text_outputs = self.text_model(**encoded)
@@ -94,9 +100,7 @@ class SimplifiedClimateTextFusion(nn.Module):
 
         # Fusion via cross-attention
         fused_features, attention_weights = self.fusion_layer(
-            query=text_features,
-            key=climate_projected,
-            value=climate_projected
+            query=text_features, key=climate_projected, value=climate_projected
         )
 
         # Classification (example downstream task)
@@ -105,11 +109,11 @@ class SimplifiedClimateTextFusion(nn.Module):
         predictions = self.classifier(cls_features)
 
         return {
-            'predictions': predictions,
-            'fused_features': fused_features,
-            'attention_weights': attention_weights,
-            'text_features': text_features,
-            'climate_features': climate_projected
+            "predictions": predictions,
+            "fused_features": fused_features,
+            "attention_weights": attention_weights,
+            "text_features": text_features,
+            "climate_features": climate_projected,
         }
 
 
@@ -120,15 +124,13 @@ def demonstrate_practical_fusion():
     print("🌍 Practical Climate-Text Fusion Demo\n")
 
     # Initialize the simplified fusion model
-    model = SimplifiedClimateTextFusion(
-        encoder_path='data/weights/prithvi_encoder.pt'
-    )
+    model = SimplifiedClimateTextFusion(encoder_path="data/weights/prithvi_encoder.pt")
 
     # Example text inputs related to climate trends and projections
     text_inputs = [
         "What is the best crop to plant in Sweden considering climate projections for 2050?",
         "How sustainable will it be to live in Arizona by 2100 given climate change?",
-        "How much more likely will tornadoes be in 2050 compared to current trends?"
+        "How much more likely will tornadoes be in 2050 compared to current trends?",
     ]
 
     print("Sample text inputs:")
@@ -146,16 +148,22 @@ def demonstrate_practical_fusion():
     print("✓ Fusion completed successfully!\n")
 
     print("Results:")
-    predictions = outputs['predictions']
-    class_names = ['High Risk Climate Impact', 'Moderate Climate Impact', 'Low Risk Climate Impact']
+    predictions = outputs["predictions"]
+    class_names = [
+        "High Risk Climate Impact",
+        "Moderate Climate Impact",
+        "Low Risk Climate Impact",
+    ]
 
     for i, (text, pred) in enumerate(zip(text_inputs, predictions)):
         probs = torch.softmax(pred, dim=0)
         predicted_class = torch.argmax(pred).item()
         confidence = probs[predicted_class].item()
 
-        print(f"\nText {i+1}: \"{text[:50]}...\"")
-        print(f"  Predicted: {class_names[predicted_class]} (confidence: {confidence:.3f})")
+        print(f'\nText {i+1}: "{text[:50]}..."')
+        print(
+            f"  Predicted: {class_names[predicted_class]} (confidence: {confidence:.3f})"
+        )
         print(f"  Probabilities: {[f'{p:.3f}' for p in probs.tolist()]}")
 
     # Show feature shapes
@@ -172,7 +180,7 @@ def show_real_world_setup():
     """
     print(f"\n{'='*60}")
     print("🚀 REAL-WORLD SETUP GUIDE")
-    print("="*60)
+    print("=" * 60)
 
     setup_code = """
 # 1. Import the full multimodal fusion system
@@ -232,38 +240,34 @@ def show_applications():
     """
     print(f"\n{'='*60}")
     print("🎯 APPLICATION EXAMPLES")
-    print("="*60)
+    print("=" * 60)
 
     applications = {
         "Climate Trend Analysis Bot": {
             "description": "AI assistant that analyzes long-term climate patterns and projections",
             "input": "Climate data + 'How will tornado frequency change by 2050?'",
-            "output": "Climate trend analysis and projections"
+            "output": "Climate trend analysis and projections",
         },
-
         "Climate Impact Assessment": {
             "description": "Automatically assess climate change impacts from data",
             "input": "Climate data + Assessment template",
-            "output": "Professional climate impact reports"
+            "output": "Professional climate impact reports",
         },
-
         "Agricultural Climate Planning": {
             "description": "Provide long-term farming advice based on climate projections",
             "input": "Climate data + 'What crops will be viable in Sweden by 2050?'",
-            "output": "Long-term agricultural recommendations"
+            "output": "Long-term agricultural recommendations",
         },
-
         "Climate Risk Assessment": {
             "description": "Analyze future climate risks and sustainability",
             "input": "Climate data + Regional sustainability questions",
-            "output": "Regional climate risk assessments"
+            "output": "Regional climate risk assessments",
         },
-
         "Climate Education": {
             "description": "Explain climate trends and phenomena to students",
             "input": "Climate data + 'How will climate change affect ecosystems?'",
-            "output": "Educational climate science explanations"
-        }
+            "output": "Educational climate science explanations",
+        },
     }
 
     for app_name, details in applications.items():
@@ -283,7 +287,7 @@ def main():
 
     print(f"\n{'='*60}")
     print("✨ SUMMARY")
-    print("="*60)
+    print("=" * 60)
     print("You now have a working multimodal climate-text fusion system that:")
     print("  ✓ Combines PrithviWxC climate encoder with text models")
     print("  ✓ Supports multiple fusion strategies")

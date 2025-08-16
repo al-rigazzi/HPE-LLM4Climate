@@ -14,22 +14,29 @@ Usage:
 """
 
 import argparse
-import yaml
+import os
+import sys
 from pathlib import Path
 from typing import Optional
-import sys
-import os
+
+import yaml
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
+
+from PrithviWxC.dataloaders.merra2 import input_scalers, static_input_scalers
 
 # Import the necessary components from PrithviWxC
-from PrithviWxC.model import PrithviWxC, PrithviWxCEncoderDecoder, PatchEmbed, SWINShiftNoBuffer
-from PrithviWxC.dataloaders.merra2 import input_scalers, static_input_scalers
+from PrithviWxC.model import (
+    PatchEmbed,
+    PrithviWxC,
+    PrithviWxCEncoderDecoder,
+    SWINShiftNoBuffer,
+)
 
 
 class PrithviWxC_Encoder(nn.Module):
@@ -145,13 +152,22 @@ class PrithviWxC_Encoder(nn.Module):
 
         # Input scalers
         self.input_scalers_epsilon = input_scalers_epsilon
-        self.register_buffer('input_scalers_mu', input_scalers_mu.reshape(1, 1, -1, 1, 1))
-        self.register_buffer('input_scalers_sigma', input_scalers_sigma.reshape(1, 1, -1, 1, 1))
+        self.register_buffer(
+            "input_scalers_mu", input_scalers_mu.reshape(1, 1, -1, 1, 1)
+        )
+        self.register_buffer(
+            "input_scalers_sigma", input_scalers_sigma.reshape(1, 1, -1, 1, 1)
+        )
 
         # Static input scalers
         self.static_input_scalers_epsilon = static_input_scalers_epsilon
-        self.register_buffer('static_input_scalers_mu', static_input_scalers_mu.reshape(1, -1, 1, 1))
-        self.register_buffer('static_input_scalers_sigma', static_input_scalers_sigma.reshape(1, -1, 1, 1))
+        self.register_buffer(
+            "static_input_scalers_mu", static_input_scalers_mu.reshape(1, -1, 1, 1)
+        )
+        self.register_buffer(
+            "static_input_scalers_sigma",
+            static_input_scalers_sigma.reshape(1, -1, 1, 1),
+        )
 
         # Dropout
         self.parameter_dropout = nn.Dropout2d(p=parameter_dropout)
@@ -177,8 +193,8 @@ class PrithviWxC_Encoder(nn.Module):
             )
 
         # Time embedding
-        self.input_time_embedding = nn.Linear(1, embed_dim//4, bias=True)
-        self.lead_time_embedding = nn.Linear(1, embed_dim//4, bias=True)
+        self.input_time_embedding = nn.Linear(1, embed_dim // 4, bias=True)
+        self.lead_time_embedding = nn.Linear(1, embed_dim // 4, bias=True)
 
         # Mask token
         self.mask_token = nn.Parameter(torch.randn(1, 1, 1, self.embed_dim))
@@ -214,7 +230,9 @@ class PrithviWxC_Encoder(nn.Module):
         # Masking mode setup
         self.masking_mode = masking_mode.lower()
 
-    def _gen_mask_global(self, shape: tuple[int, int]) -> tuple[torch.Tensor, torch.Tensor]:
+    def _gen_mask_global(
+        self, shape: tuple[int, int]
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate global masking indices."""
         batch_size, seq_len = shape
 
@@ -230,12 +248,16 @@ class PrithviWxC_Encoder(nn.Module):
 
         return indices_masked, indices_unmasked
 
-    def _gen_mask_local(self, shape: tuple[int, int]) -> tuple[torch.Tensor, torch.Tensor]:
+    def _gen_mask_local(
+        self, shape: tuple[int, int]
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate local masking indices."""
         # Simplified local masking - for full implementation, refer to original model
         return self._gen_mask_global(shape)
 
-    def generate_mask(self, shape: tuple[int, int]) -> tuple[torch.Tensor, torch.Tensor]:
+    def generate_mask(
+        self, shape: tuple[int, int]
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Generate masking indices based on masking mode."""
         if self.masking_mode == "global":
             return self._gen_mask_global(shape)
@@ -251,9 +273,11 @@ class PrithviWxC_Encoder(nn.Module):
         """Convert to patch format."""
         n_batch = x.shape[0]
         s = x.shape
-        return x.view(n_batch, -1, s[2]*s[3], s[4]*s[5])
+        return x.view(n_batch, -1, s[2] * s[3], s[4] * s[5])
 
-    def time_encoding(self, input_time: torch.Tensor, lead_time: torch.Tensor) -> torch.Tensor:
+    def time_encoding(
+        self, input_time: torch.Tensor, lead_time: torch.Tensor
+    ) -> torch.Tensor:
         """Generate time encoding."""
         input_time_emb = self.input_time_embedding(input_time.view(-1, 1))
         lead_time_emb = self.lead_time_embedding(lead_time.view(-1, 1))
@@ -267,8 +291,14 @@ class PrithviWxC_Encoder(nn.Module):
         # Pad to full embed_dim if needed
         if time_emb.shape[-1] < self.embed_dim:
             pad_size = self.embed_dim - time_emb.shape[-1]
-            padding = torch.zeros(time_emb.shape[0], 1, 1, pad_size,
-                                device=time_emb.device, dtype=time_emb.dtype)
+            padding = torch.zeros(
+                time_emb.shape[0],
+                1,
+                1,
+                pad_size,
+                device=time_emb.device,
+                dtype=time_emb.dtype,
+            )
             time_emb = torch.cat([time_emb, padding], dim=-1)
 
         return time_emb
@@ -335,7 +365,7 @@ class PrithviWxC_Encoder(nn.Module):
         static_embedded = self.to_patching(static_embedded)
 
         # Time encoding
-        time_encoding = self.time_encoding(batch['input_time'], batch['lead_time'])
+        time_encoding = self.time_encoding(batch["input_time"], batch["lead_time"])
 
         # Combine embeddings
         tokens = x_embedded + static_embedded + time_encoding
@@ -364,7 +394,9 @@ class PrithviWxC_Encoder(nn.Module):
         return x_encoded
 
 
-def extract_encoder_weights(full_model: PrithviWxC, encoder_model: PrithviWxC_Encoder) -> None:
+def extract_encoder_weights(
+    full_model: PrithviWxC, encoder_model: PrithviWxC_Encoder
+) -> None:
     """
     Extract encoder weights from full model and load into encoder-only model.
 
@@ -389,39 +421,87 @@ def extract_encoder_weights(full_model: PrithviWxC, encoder_model: PrithviWxC_En
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extract encoder from PrithviWxC model")
-    parser.add_argument("--config_path", type=str, required=True,
-                       help="Path to model configuration YAML file")
-    parser.add_argument("--weights_path", type=str, required=True,
-                       help="Path to full model weights file")
-    parser.add_argument("--output_path", type=str, required=True,
-                       help="Path to save encoder weights")
-    parser.add_argument("--surf_scaler_path", type=str,
-                       help="Path to surface input scalers file")
-    parser.add_argument("--vert_scaler_path", type=str,
-                       help="Path to vertical input scalers file")
+    parser = argparse.ArgumentParser(
+        description="Extract encoder from PrithviWxC model"
+    )
+    parser.add_argument(
+        "--config_path",
+        type=str,
+        required=True,
+        help="Path to model configuration YAML file",
+    )
+    parser.add_argument(
+        "--weights_path",
+        type=str,
+        required=True,
+        help="Path to full model weights file",
+    )
+    parser.add_argument(
+        "--output_path", type=str, required=True, help="Path to save encoder weights"
+    )
+    parser.add_argument(
+        "--surf_scaler_path", type=str, help="Path to surface input scalers file"
+    )
+    parser.add_argument(
+        "--vert_scaler_path", type=str, help="Path to vertical input scalers file"
+    )
 
     args = parser.parse_args()
 
     # Load configuration
-    with open(args.config_path, 'r') as f:
+    with open(args.config_path, "r") as f:
         config = yaml.safe_load(f)
 
     # Define variables (these should match your dataset configuration)
     surface_vars = [
-        "EFLUX", "GWETROOT", "HFLUX", "LAI", "LWGAB", "LWGEM", "LWTUP", "PS",
-        "QV2M", "SLP", "SWGNT", "SWTNT", "T2M", "TQI", "TQL", "TQV", "TS",
-        "U10M", "V10M", "Z0M",
+        "EFLUX",
+        "GWETROOT",
+        "HFLUX",
+        "LAI",
+        "LWGAB",
+        "LWGEM",
+        "LWTUP",
+        "PS",
+        "QV2M",
+        "SLP",
+        "SWGNT",
+        "SWTNT",
+        "T2M",
+        "TQI",
+        "TQL",
+        "TQV",
+        "TS",
+        "U10M",
+        "V10M",
+        "Z0M",
     ]
     static_surface_vars = ["FRACI", "FRLAND", "FROCEAN", "PHIS"]
     vertical_vars = ["CLOUD", "H", "OMEGA", "PL", "QI", "QL", "QV", "T", "U", "V"]
-    levels = [34.0, 39.0, 41.0, 43.0, 44.0, 45.0, 48.0, 51.0, 53.0, 56.0, 63.0, 68.0, 71.0, 72.0]
+    levels = [
+        34.0,
+        39.0,
+        41.0,
+        43.0,
+        44.0,
+        45.0,
+        48.0,
+        51.0,
+        53.0,
+        56.0,
+        63.0,
+        68.0,
+        71.0,
+        72.0,
+    ]
 
     # Load scalers
     if args.surf_scaler_path and args.vert_scaler_path:
         in_mu, in_sig = input_scalers(
-            surface_vars, vertical_vars, levels,
-            Path(args.surf_scaler_path), Path(args.vert_scaler_path)
+            surface_vars,
+            vertical_vars,
+            levels,
+            Path(args.surf_scaler_path),
+            Path(args.vert_scaler_path),
         )
         static_mu, static_sig = static_input_scalers(
             Path(args.surf_scaler_path), static_surface_vars
@@ -434,7 +514,9 @@ def main():
         in_sig = torch.ones(in_channels)
         static_mu = torch.zeros(in_channels_static)
         static_sig = torch.ones(in_channels_static)
-        print("Warning: Using dummy scalers. Provide scaler paths for proper functionality.")
+        print(
+            "Warning: Using dummy scalers. Provide scaler paths for proper functionality."
+        )
 
     # Create encoder model
     encoder_model = PrithviWxC_Encoder(
@@ -468,7 +550,7 @@ def main():
 
     # Load full model weights
     print("Loading full model weights...")
-    state_dict = torch.load(args.weights_path, map_location='cpu', weights_only=False)
+    state_dict = torch.load(args.weights_path, map_location="cpu", weights_only=False)
     if "model_state" in state_dict:
         state_dict = state_dict["model_state"]
 
@@ -492,7 +574,9 @@ def main():
         static_input_scalers_mu=static_mu,
         static_input_scalers_sigma=static_sig,
         static_input_scalers_epsilon=config["params"]["static_input_scalers_epsilon"],
-        output_scalers=torch.ones(config["params"]["in_channels"]),  # Dummy output scalers
+        output_scalers=torch.ones(
+            config["params"]["in_channels"]
+        ),  # Dummy output scalers
         n_lats_px=config["params"]["n_lats_px"],
         n_lons_px=config["params"]["n_lons_px"],
         patch_size_px=config["params"]["patch_size_px"],
@@ -516,25 +600,33 @@ def main():
         checkpoint_decoder=[],
     )
 
-
-    full_model.load_state_dict(filtered_state_dict, strict=False)    # Extract encoder weights
+    full_model.load_state_dict(
+        filtered_state_dict, strict=False
+    )  # Extract encoder weights
     print("Extracting encoder weights...")
     extract_encoder_weights(full_model, encoder_model)
 
     # Save encoder model
     print(f"Saving encoder model to {args.output_path}")
-    torch.save({
-        'model_state_dict': encoder_model.state_dict(),
-        'config': config,
-        'model_type': 'PrithviWxC_Encoder'
-    }, args.output_path)
+    torch.save(
+        {
+            "model_state_dict": encoder_model.state_dict(),
+            "config": config,
+            "model_type": "PrithviWxC_Encoder",
+        },
+        args.output_path,
+    )
 
     print("Encoder extraction completed successfully!")
 
     # Print model summary
     total_params = sum(p.numel() for p in encoder_model.parameters())
-    trainable_params = sum(p.numel() for p in encoder_model.parameters() if p.requires_grad)
-    print(f"Encoder model parameters: {total_params:,} total, {trainable_params:,} trainable")
+    trainable_params = sum(
+        p.numel() for p in encoder_model.parameters() if p.requires_grad
+    )
+    print(
+        f"Encoder model parameters: {total_params:,} total, {trainable_params:,} trainable"
+    )
 
 
 if __name__ == "__main__":

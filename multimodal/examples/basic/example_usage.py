@@ -7,6 +7,7 @@ for feature extraction from climate data.
 
 import sys
 import os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
@@ -17,7 +18,7 @@ import yaml
 from multimodal.encoder_extractor import PrithviWxC_Encoder
 
 
-def load_encoder(encoder_weights_path: str, device: str = 'cpu'):
+def load_encoder(encoder_weights_path: str, device: str = "cpu"):
     """
     Load the extracted encoder model.
 
@@ -30,37 +31,37 @@ def load_encoder(encoder_weights_path: str, device: str = 'cpu'):
     """
     # Load the saved encoder
     checkpoint = torch.load(encoder_weights_path, map_location=device)
-    config = checkpoint['config']
+    config = checkpoint["config"]
 
     # Extract model parameters from config
-    params = config['params']
+    params = config["params"]
 
     # Create dummy scalers (in practice, load from saved scalers)
-    in_mu = torch.zeros(params['in_channels'])
-    in_sig = torch.ones(params['in_channels'])
-    static_mu = torch.zeros(params['in_channels_static'])
-    static_sig = torch.ones(params['in_channels_static'])
+    in_mu = torch.zeros(params["in_channels"])
+    in_sig = torch.ones(params["in_channels"])
+    static_mu = torch.zeros(params["in_channels_static"])
+    static_sig = torch.ones(params["in_channels_static"])
 
     # Create encoder model
     encoder = PrithviWxC_Encoder(
-        in_channels=params['in_channels'],
-        input_size_time=params['input_size_time'],
-        in_channels_static=params['in_channels_static'],
+        in_channels=params["in_channels"],
+        input_size_time=params["input_size_time"],
+        in_channels_static=params["in_channels_static"],
         input_scalers_mu=in_mu,
         input_scalers_sigma=in_sig,
-        input_scalers_epsilon=params['input_scalers_epsilon'],
+        input_scalers_epsilon=params["input_scalers_epsilon"],
         static_input_scalers_mu=static_mu,
         static_input_scalers_sigma=static_sig,
-        static_input_scalers_epsilon=params['static_input_scalers_epsilon'],
-        n_lats_px=params['n_lats_px'],
-        n_lons_px=params['n_lons_px'],
-        patch_size_px=params['patch_size_px'],
-        mask_unit_size_px=params['mask_unit_size_px'],
+        static_input_scalers_epsilon=params["static_input_scalers_epsilon"],
+        n_lats_px=params["n_lats_px"],
+        n_lons_px=params["n_lons_px"],
+        patch_size_px=params["patch_size_px"],
+        mask_unit_size_px=params["mask_unit_size_px"],
         mask_ratio_inputs=0.0,  # No masking for inference
-        embed_dim=params['embed_dim'],
-        n_blocks_encoder=params['n_blocks_encoder'],
-        mlp_multiplier=params['mlp_multiplier'],
-        n_heads=params['n_heads'],
+        embed_dim=params["embed_dim"],
+        n_blocks_encoder=params["n_blocks_encoder"],
+        mlp_multiplier=params["mlp_multiplier"],
+        n_heads=params["n_heads"],
         dropout=0.0,  # No dropout for inference
         drop_path=0.0,  # No drop path for inference
         parameter_dropout=0.0,  # No parameter dropout for inference
@@ -72,7 +73,7 @@ def load_encoder(encoder_weights_path: str, device: str = 'cpu'):
     )
 
     # Load the weights
-    encoder.load_state_dict(checkpoint['model_state_dict'])
+    encoder.load_state_dict(checkpoint["model_state_dict"])
     encoder.to(device)
     encoder.eval()
 
@@ -95,11 +96,11 @@ def extract_features(encoder, climate_data, static_data, input_time, lead_time):
     """
     # Prepare batch
     batch = {
-        'x': climate_data,
-        'static': static_data,
-        'climate': climate_data[:, -1],  # Use last time step as climate
-        'input_time': input_time,
-        'lead_time': lead_time,
+        "x": climate_data,
+        "static": static_data,
+        "climate": climate_data[:, -1],  # Use last time step as climate
+        "input_time": input_time,
+        "lead_time": lead_time,
     }
 
     # Extract features
@@ -159,7 +160,8 @@ def multimodal_fusion_example():
     print("\nMultimodal Fusion Example")
     print("=" * 30)
 
-    print("""
+    print(
+        """
     The extracted encoder can be combined with other modalities:
 
     1. Climate + Satellite Imagery:
@@ -176,7 +178,8 @@ def multimodal_fusion_example():
        climate_features = prithvi_encoder(climate_data)
        topo_features = topo_encoder(elevation_data)
        prediction = downstream_model([climate_features, topo_features])
-    """)
+    """
+    )
 
 
 if __name__ == "__main__":

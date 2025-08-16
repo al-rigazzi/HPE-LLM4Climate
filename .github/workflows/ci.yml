@@ -220,7 +220,7 @@ jobs:
         # Test basic functionality
         resolver = GeographicResolver()
         result = resolver.resolve_location('Stockholm, Sweden')
-        print(f'✅ Geographic resolution working: {result.location if result else "No result"}')
+        print(f'✅ Geographic resolution working: {result.name if result else "No result"}')
 
         # Test encoder creation (without loading heavy weights)
         print('✅ Core system components verified')
@@ -324,7 +324,7 @@ jobs:
         # Test geographic resolution
         resolver = GeographicResolver()
         result = resolver.resolve_location('Paris, France')
-        print(f'✅ Geographic resolution: {result.location if result else "Failed"}')
+        print(f'✅ Geographic resolution: {result.name if result else "Failed"}')
 
         # Test encoder loading
         try:

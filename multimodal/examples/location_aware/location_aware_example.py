@@ -21,16 +21,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import Dict, List, Optional
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 
 try:
-    from .location_aware import GeographicResolver, SpatialCropper, demo_location_resolution, demo_spatial_masking
+    from .location_aware import (
+        GeographicResolver,
+        SpatialCropper,
+        demo_location_resolution,
+        demo_spatial_masking,
+    )
     from .location_aware_fusion import LocationAwareClimateAnalysis, FusionMode
     from .climate_text_fusion import ClimateTextFusion
 except ImportError:
-    from location_aware import GeographicResolver, SpatialCropper, demo_location_resolution, demo_spatial_masking
+    from location_aware import (
+        GeographicResolver,
+        SpatialCropper,
+        demo_location_resolution,
+        demo_spatial_masking,
+    )
     from location_aware_fusion import LocationAwareClimateAnalysis, FusionMode
     from climate_text_fusion import ClimateTextFusion
+
 
 def create_mock_climate_data(grid_shape: tuple = (36, 58)) -> torch.Tensor:
     """
@@ -53,11 +65,12 @@ def create_mock_climate_data(grid_shape: tuple = (36, 58)) -> torch.Tensor:
 
     # Temperature: warmer at equator, colder at poles
     lat_indices = torch.arange(n_lats // 2).float()
-    lat_temp_pattern = torch.cos((lat_indices - n_lats//4) * np.pi / (n_lats//2))
+    lat_temp_pattern = torch.cos((lat_indices - n_lats // 4) * np.pi / (n_lats // 2))
 
     # Precipitation: higher in tropics and mid-latitudes
-    lat_precip_pattern = torch.exp(-((lat_indices - n_lats//4) / (n_lats//8))**2) + \
-                        0.5 * torch.exp(-((lat_indices - n_lats//6) / (n_lats//12))**2)
+    lat_precip_pattern = torch.exp(
+        -(((lat_indices - n_lats // 4) / (n_lats // 8)) ** 2)
+    ) + 0.5 * torch.exp(-(((lat_indices - n_lats // 6) / (n_lats // 12)) ** 2))
 
     # Create features for each patch
     features = []
@@ -73,11 +86,13 @@ def create_mock_climate_data(grid_shape: tuple = (36, 58)) -> torch.Tensor:
             lon_factor = torch.sin(torch.tensor(2 * np.pi * j / (n_lons // 2)))
 
             # Create feature vector (reduced size for demo)
-            patch_features = torch.cat([
-                torch.full((32,), temp_base.item()),      # Temperature features
-                torch.full((32,), precip_base.item()),    # Precipitation features
-                torch.full((64,), lon_factor.item()),     # Geographic features
-            ])
+            patch_features = torch.cat(
+                [
+                    torch.full((32,), temp_base.item()),  # Temperature features
+                    torch.full((32,), precip_base.item()),  # Precipitation features
+                    torch.full((64,), lon_factor.item()),  # Geographic features
+                ]
+            )
 
             features.append(patch_features)
             patch_idx += 1
@@ -87,10 +102,11 @@ def create_mock_climate_data(grid_shape: tuple = (36, 58)) -> torch.Tensor:
 
     return climate_tensor
 
+
 def visualize_attention_pattern(
     spatial_mask: torch.Tensor,
     location_info: Optional[Dict],
-    title: str = "Spatial Attention Pattern"
+    title: str = "Spatial Attention Pattern",
 ):
     """
     Visualize spatial attention mask on world map.
@@ -114,48 +130,58 @@ def visualize_attention_pattern(
         im = ax.imshow(
             spatial_mask.numpy(),
             extent=[-180, 180, -90, 90],
-            origin='lower',
-            cmap='hot',
-            alpha=0.7
+            origin="lower",
+            cmap="hot",
+            alpha=0.7,
         )
 
         # Add geographic context
         if location_info:
-            bounds = location_info['bounds']
+            bounds = location_info["bounds"]
             rect = plt.Rectangle(
-                (bounds['lon_min'], bounds['lat_min']),
-                bounds['lon_max'] - bounds['lon_min'],
-                bounds['lat_max'] - bounds['lat_min'],
-                linewidth=2, edgecolor='cyan', facecolor='none'
+                (bounds["lon_min"], bounds["lat_min"]),
+                bounds["lon_max"] - bounds["lon_min"],
+                bounds["lat_max"] - bounds["lat_min"],
+                linewidth=2,
+                edgecolor="cyan",
+                facecolor="none",
             )
             ax.add_patch(rect)
 
             # Add location label
-            center_lat = (bounds['lat_min'] + bounds['lat_max']) / 2
-            center_lon = (bounds['lon_min'] + bounds['lon_max']) / 2
-            ax.plot(center_lon, center_lat, 'c*', markersize=15)
-            ax.text(center_lon, center_lat + 5, location_info['name'],
-                   ha='center', va='bottom', color='cyan', fontweight='bold')
+            center_lat = (bounds["lat_min"] + bounds["lat_max"]) / 2
+            center_lon = (bounds["lon_min"] + bounds["lon_max"]) / 2
+            ax.plot(center_lon, center_lat, "c*", markersize=15)
+            ax.text(
+                center_lon,
+                center_lat + 5,
+                location_info["name"],
+                ha="center",
+                va="bottom",
+                color="cyan",
+                fontweight="bold",
+            )
 
         # Formatting
-        ax.set_xlabel('Longitude')
-        ax.set_ylabel('Latitude')
+        ax.set_xlabel("Longitude")
+        ax.set_ylabel("Latitude")
         ax.set_title(title)
         ax.grid(True, alpha=0.3)
 
         # Add colorbar
-        plt.colorbar(im, ax=ax, label='Attention Weight')
+        plt.colorbar(im, ax=ax, label="Attention Weight")
         plt.tight_layout()
         plt.show()
 
     except ImportError:
         print("Matplotlib not available for visualization")
 
+
 def analyze_climate_question(
     model: LocationAwareClimateAnalysis,
     climate_data: torch.Tensor,
     question: str,
-    verbose: bool = True
+    verbose: bool = True,
 ) -> Dict:
     """
     Analyze a climate question with location awareness.
@@ -186,19 +212,22 @@ def analyze_climate_question(
         print(f"📈 Trend Magnitude: {result['trend_magnitude']:.2f}")
         print(f"🎯 Overall Confidence: {result['overall_confidence']:.1%}")
         print(f"\n💭 Interpretation:")
-        print(result['interpretation'])
+        print(result["interpretation"])
 
         # Show attention statistics
-        if result.get('attention_weights') is not None:
-            attention = result['attention_weights']
+        if result.get("attention_weights") is not None:
+            attention = result["attention_weights"]
             print(f"\n🔍 Attention Analysis:")
             print(f"   Max attention: {attention.max():.3f}")
             print(f"   Mean attention: {attention.mean():.3f}")
-            print(f"   Focused pixels: {(attention > attention.mean() + attention.std()).sum()}")
+            print(
+                f"   Focused pixels: {(attention > attention.mean() + attention.std()).sum()}"
+            )
 
-        print("\n" + "="*70 + "\n")
+        print("\n" + "=" * 70 + "\n")
 
     return result
+
 
 def compare_fusion_modes():
     """Compare different fusion modes for location-aware analysis."""
@@ -213,7 +242,7 @@ def compare_fusion_modes():
     fusion_modes = [
         FusionMode.CONCATENATION,
         FusionMode.CROSS_ATTENTION,
-        FusionMode.ADDITIVE
+        FusionMode.ADDITIVE,
     ]
 
     results = {}
@@ -226,26 +255,29 @@ def compare_fusion_modes():
             result = model.forward(climate_data, question, fusion_mode=mode)
 
             # Extract key metrics
-            risk_probs = F.softmax(result['climate_risk'], dim=-1)
-            risk_categories = ['Low Risk', 'Moderate Risk', 'High Risk']
+            risk_probs = F.softmax(result["climate_risk"], dim=-1)
+            risk_categories = ["Low Risk", "Moderate Risk", "High Risk"]
             predicted_risk = risk_categories[risk_probs.argmax(dim=-1).item()]
-            confidence = result['confidence'].item()
+            confidence = result["confidence"].item()
 
             results[mode] = {
-                'risk': predicted_risk,
-                'confidence': confidence,
-                'risk_probs': risk_probs.squeeze().tolist()
+                "risk": predicted_risk,
+                "confidence": confidence,
+                "risk_probs": risk_probs.squeeze().tolist(),
             }
 
             print(f"  Risk: {predicted_risk}")
             print(f"  Confidence: {confidence:.3f}")
-            print(f"  Risk Distribution: {[f'{p:.3f}' for p in risk_probs.squeeze().tolist()]}")
+            print(
+                f"  Risk Distribution: {[f'{p:.3f}' for p in risk_probs.squeeze().tolist()]}"
+            )
             print()
 
     # Compare results
     print("📊 Fusion Mode Comparison Summary:")
     for mode, result in results.items():
         print(f"  {mode}: {result['risk']} (conf: {result['confidence']:.3f})")
+
 
 def demonstrate_geographic_coverage():
     """Demonstrate analysis across different geographic regions."""
@@ -261,7 +293,7 @@ def demonstrate_geographic_coverage():
         ("City/Country", "How will drought affect agriculture in Sweden?"),
         ("State/Province", "Wildfire risk changes in California by 2060?"),
         ("Large Region", "Arctic ice melting acceleration patterns?"),
-        ("Global Context", "Ocean temperature rise trends worldwide?")
+        ("Global Context", "Ocean temperature rise trends worldwide?"),
     ]
 
     coverage_results = []
@@ -270,31 +302,36 @@ def demonstrate_geographic_coverage():
         print(f"🌍 {category}")
         result = analyze_climate_question(model, climate_data, question, verbose=False)
 
-        coverage_results.append({
-            'category': category,
-            'question': question,
-            'location': result['location'],
-            'location_type': result['location_type'],
-            'risk': result['climate_risk'],
-            'confidence': result['overall_confidence']
-        })
+        coverage_results.append(
+            {
+                "category": category,
+                "question": question,
+                "location": result["location"],
+                "location_type": result["location_type"],
+                "risk": result["climate_risk"],
+                "confidence": result["overall_confidence"],
+            }
+        )
 
         print(f"   Question: {question}")
         print(f"   Location: {result['location']} ({result['location_type']})")
-        print(f"   Assessment: {result['climate_risk']} (confidence: {result['overall_confidence']:.1%})")
+        print(
+            f"   Assessment: {result['climate_risk']} (confidence: {result['overall_confidence']:.1%})"
+        )
         print()
 
     # Summary
     print("📋 Coverage Summary:")
     location_types = {}
     for result in coverage_results:
-        loc_type = result['location_type']
+        loc_type = result["location_type"]
         if loc_type not in location_types:
             location_types[loc_type] = 0
         location_types[loc_type] += 1
 
     for loc_type, count in location_types.items():
         print(f"   {loc_type.title()}: {count} questions")
+
 
 def main():
     """Main demonstration of location-aware climate analysis."""
@@ -326,20 +363,20 @@ def main():
             "What crops will be viable in Sweden by 2050?",
             "How will tornado frequency change in Texas?",
             "Climate resilience planning for Mediterranean agriculture",
-            "Arctic permafrost melting acceleration"
+            "Arctic permafrost melting acceleration",
         ]
 
         for question in example_questions:
             result = analyze_climate_question(model, climate_data, question)
 
             # Visualize attention pattern for interesting cases
-            if result.get('spatial_mask') is not None and result.get('location_info'):
+            if result.get("spatial_mask") is not None and result.get("location_info"):
                 print(f"🎨 Visualizing attention pattern for: {result['location']}")
                 try:
                     visualize_attention_pattern(
-                        result['spatial_mask'].squeeze(0),
-                        result['location_info'],
-                        f"Spatial Attention: {result['location']}"
+                        result["spatial_mask"].squeeze(0),
+                        result["location_info"],
+                        f"Spatial Attention: {result['location']}",
                     )
                 except Exception as e:
                     print(f"Visualization skipped: {e}")
@@ -352,7 +389,9 @@ def main():
         print("   - Sufficient RAM (8GB+ recommended)")
         print("   - Access to Hugging Face models (authentication may be required)")
         print("   - Or provide pre-trained model weights")
-        print("\n✅ Steps 1 & 2 (Geographic Resolution & Spatial Masking) completed successfully!")
+        print(
+            "\n✅ Steps 1 & 2 (Geographic Resolution & Spatial Masking) completed successfully!"
+        )
         print("   These demonstrate the core location-aware capabilities.")
 
         # Demonstrate just the location processing without heavy models
@@ -360,14 +399,19 @@ def main():
         resolver = GeographicResolver()
         cropper = SpatialCropper()
 
-        for question in ["What crops will be viable in Sweden by 2050?", "Arctic ice melting patterns"]:
+        for question in [
+            "What crops will be viable in Sweden by 2050?",
+            "Arctic ice melting patterns",
+        ]:
             print(f"\n📝 Processing: {question}")
             locations = resolver.extract_locations(question)
             if locations:
                 location = resolver.resolve_location(locations[0])
                 if location:
                     mask = cropper.create_location_mask(location, "gaussian")
-                    print(f"   ✓ Location found: {location.name} ({location.location_type})")
+                    print(
+                        f"   ✓ Location found: {location.name} ({location.location_type})"
+                    )
                     print(f"   ✓ Spatial mask created: {mask.sum():.0f} focused pixels")
                 else:
                     print(f"   ✗ Could not resolve location: {locations[0]}")
@@ -376,8 +420,12 @@ def main():
     except Exception as e:
         print(f"⚠️  Full model demonstration skipped due to unexpected error:")
         print(f"   {type(e).__name__}: {str(e)}")
-        print("\n✅ Steps 1 & 2 (Geographic Resolution & Spatial Masking) completed successfully!")
-        print("   These demonstrate the core location-aware capabilities.")    # 5. Compare fusion modes
+        print(
+            "\n✅ Steps 1 & 2 (Geographic Resolution & Spatial Masking) completed successfully!"
+        )
+        print(
+            "   These demonstrate the core location-aware capabilities."
+        )  # 5. Compare fusion modes
     compare_fusion_modes()
 
     # 6. Demonstrate geographic coverage
@@ -391,6 +439,7 @@ def main():
     print("- Climate risk assessment with geographic context")
     print("- Multiple fusion strategies")
     print("- Global to local scale analysis")
+
 
 if __name__ == "__main__":
     main()

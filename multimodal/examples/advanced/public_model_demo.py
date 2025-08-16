@@ -9,6 +9,7 @@ import torch
 import numpy as np
 from pathlib import Path
 
+
 def run_with_public_models():
     """Run location-aware analysis with corrected Prithvi weights and simple analysis."""
     print("🌍 Demo: Corrected Prithvi Weights + Simple Location Analysis")
@@ -31,27 +32,31 @@ def run_with_public_models():
     try:
         # Load the properly extracted encoder
         print(f"\n📁 Loading fixed encoder weights...")
-        encoder_data = torch.load(encoder_path, map_location='cpu')
-        config = encoder_data['config']['params']
-        state_dict = encoder_data['model_state_dict']
+        encoder_data = torch.load(encoder_path, map_location="cpu")
+        config = encoder_data["config"]["params"]
+        state_dict = encoder_data["model_state_dict"]
 
-        print(f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim")
-        print(f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static")
+        print(
+            f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim"
+        )
+        print(
+            f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static"
+        )
         print(f"   ✅ Loaded {len(state_dict)} weight tensors")
 
         # Create sample climate data
         print(f"\n📊 Creating sample climate data...")
         batch_size = 1
-        climate_data = torch.randn(batch_size, config['in_channels'], 2, 180, 288)
-        static_data = torch.randn(batch_size, config['in_channels_static'], 180, 288)
+        climate_data = torch.randn(batch_size, config["in_channels"], 2, 180, 288)
+        static_data = torch.randn(batch_size, config["in_channels_static"], 180, 288)
 
         print(f"   Climate data: {climate_data.shape}")
         print(f"   Static data: {static_data.shape}")
 
         # Extract features using patch embedding
         print(f"\n🔄 Extracting features with real Prithvi encoder...")
-        patch_weight = state_dict['patch_embedding.proj.weight']
-        patch_bias = state_dict['patch_embedding.proj.bias']
+        patch_weight = state_dict["patch_embedding.proj.weight"]
+        patch_bias = state_dict["patch_embedding.proj.bias"]
 
         with torch.no_grad():
             # Reshape for patch embedding
@@ -59,7 +64,9 @@ def run_with_public_models():
             climate_reshaped = climate_data.view(B, C * T, H, W)
 
             # Apply patch embedding
-            features = torch.conv2d(climate_reshaped, patch_weight, patch_bias, stride=2)
+            features = torch.conv2d(
+                climate_reshaped, patch_weight, patch_bias, stride=2
+            )
             print(f"   ✅ Patch embedding applied: {features.shape}")
 
             # Convert to sequence format
@@ -73,7 +80,7 @@ def run_with_public_models():
             {"query": "Mediterranean drought patterns", "lat": 40.0, "lon": 20.0},
             {"query": "Arctic ice stability assessment", "lat": 75.0, "lon": 0.0},
             {"query": "California wildfire climate risk", "lat": 36.7, "lon": -119.4},
-            {"query": "European heat wave trends", "lat": 50.0, "lon": 10.0}
+            {"query": "European heat wave trends", "lat": 50.0, "lon": 10.0},
         ]
 
         print(f"\n🧪 Testing location-aware climate analysis:")
@@ -85,7 +92,7 @@ def run_with_public_models():
             print(f"   Location: {test['lat']:.1f}°N, {test['lon']:.1f}°E")
 
             # Convert to patch grid coordinates
-            lat, lon = test['lat'], test['lon']
+            lat, lon = test["lat"], test["lon"]
             patch_lat = int((90 - lat) * H_patch / 180)
             patch_lon = int((lon + 180) * W_patch / 360)
 
@@ -98,7 +105,9 @@ def run_with_public_models():
             patch_y = patch_indices // W_patch
             patch_x = patch_indices % W_patch
 
-            distances = torch.sqrt((patch_y - patch_lat).float()**2 + (patch_x - patch_lon).float()**2)
+            distances = torch.sqrt(
+                (patch_y - patch_lat).float() ** 2 + (patch_x - patch_lon).float() ** 2
+            )
             attention = torch.exp(-distances / 12)  # Gaussian attention
             attention = attention / attention.sum()
 
@@ -110,7 +119,9 @@ def run_with_public_models():
             feature_magnitude = attended_features.norm().item()
             feature_diversity = attended_features.std().item()
             spatial_focus = attention.max().item()
-            focused_patches = (attention > attention.mean() + attention.std()).sum().item()
+            focused_patches = (
+                (attention > attention.mean() + attention.std()).sum().item()
+            )
 
             # Simple risk assessment
             risk_score = feature_magnitude * feature_diversity
@@ -128,16 +139,16 @@ def run_with_public_models():
             trend_strength = torch.std(attended_features[:100]).item()
 
             result = {
-                'query': test['query'],
-                'location': f"{lat:.1f}°N, {lon:.1f}°E",
-                'risk_level': risk_level,
-                'confidence': confidence,
-                'feature_magnitude': feature_magnitude,
-                'feature_diversity': feature_diversity,
-                'spatial_focus': spatial_focus,
-                'focused_patches': focused_patches,
-                'trend_strength': trend_strength,
-                'risk_score': risk_score
+                "query": test["query"],
+                "location": f"{lat:.1f}°N, {lon:.1f}°E",
+                "risk_level": risk_level,
+                "confidence": confidence,
+                "feature_magnitude": feature_magnitude,
+                "feature_diversity": feature_diversity,
+                "spatial_focus": spatial_focus,
+                "focused_patches": focused_patches,
+                "trend_strength": trend_strength,
+                "risk_score": risk_score,
             }
 
             analysis_results.append(result)
@@ -155,21 +166,27 @@ def run_with_public_models():
 
         risk_counts = {}
         for result in analysis_results:
-            risk = result['risk_level']
+            risk = result["risk_level"]
             risk_counts[risk] = risk_counts.get(risk, 0) + 1
 
         print(f"   Risk Distribution:")
         for risk, count in risk_counts.items():
             print(f"     {risk}: {count}/{len(analysis_results)} regions")
 
-        avg_confidence = sum(r['confidence'] for r in analysis_results) / len(analysis_results)
-        highest_risk = max(analysis_results, key=lambda x: x['risk_score'])
-        lowest_risk = min(analysis_results, key=lambda x: x['risk_score'])
+        avg_confidence = sum(r["confidence"] for r in analysis_results) / len(
+            analysis_results
+        )
+        highest_risk = max(analysis_results, key=lambda x: x["risk_score"])
+        lowest_risk = min(analysis_results, key=lambda x: x["risk_score"])
 
         print(f"\n   📊 Overall Analysis:")
         print(f"     Average confidence: {avg_confidence:.1%}")
-        print(f"     Highest risk: {highest_risk['query']} (score: {highest_risk['risk_score']:.1f})")
-        print(f"     Lowest risk: {lowest_risk['query']} (score: {lowest_risk['risk_score']:.1f})")
+        print(
+            f"     Highest risk: {highest_risk['query']} (score: {highest_risk['risk_score']:.1f})"
+        )
+        print(
+            f"     Lowest risk: {lowest_risk['query']} (score: {lowest_risk['risk_score']:.1f})"
+        )
 
         print(f"\n🎉 SUCCESS: Public model demo completed!")
         print(f"   ✅ Used corrected 25-block encoder weights")
@@ -183,6 +200,7 @@ def run_with_public_models():
     except Exception as e:
         print(f"❌ Error during initialization: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

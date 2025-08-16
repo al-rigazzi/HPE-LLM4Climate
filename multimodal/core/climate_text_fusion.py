@@ -20,39 +20,45 @@ Usage:
     output = model(climate_data, text_input)
 """
 
-import sys
 import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import warnings
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Dict, List, Optional, Tuple, Union
 import yaml
-from pathlib import Path
-import warnings
 
 # Import transformers for Llama 3
 try:
     from transformers import (
-        AutoTokenizer,
         AutoModel,
         AutoModelForCausalLM,
-        LlamaTokenizer,
+        AutoTokenizer,
+        LlamaForCausalLM,
         LlamaModel,
-        LlamaForCausalLM
+        LlamaTokenizer,
     )
+
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
-    warnings.warn("Transformers library not available. Install with: pip install transformers")
+    warnings.warn(
+        "Transformers library not available. Install with: pip install transformers"
+    )
 
 # Import our custom encoder
 try:
     from ..utils.encoder_extractor import PrithviWxC_Encoder
 except ImportError:
-    import sys
     import os
+    import sys
+
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from utils.encoder_extractor import PrithviWxC_Encoder
 
@@ -68,7 +74,7 @@ class ClimateFeatureProjector(nn.Module):
         text_dim: int,
         hidden_dim: Optional[int] = None,
         num_layers: int = 2,
-        dropout: float = 0.1
+        dropout: float = 0.1,
     ):
         """
         Args:
@@ -88,12 +94,14 @@ class ClimateFeatureProjector(nn.Module):
 
         for i in range(num_layers):
             output_dim = text_dim if i == num_layers - 1 else hidden_dim
-            layers.extend([
-                nn.Linear(input_dim, output_dim),
-                nn.LayerNorm(output_dim),
-                nn.GELU(),
-                nn.Dropout(dropout)
-            ])
+            layers.extend(
+                [
+                    nn.Linear(input_dim, output_dim),
+                    nn.LayerNorm(output_dim),
+                    nn.GELU(),
+                    nn.Dropout(dropout),
+                ]
+            )
             input_dim = output_dim
 
         # Remove last activation and dropout
@@ -121,10 +129,7 @@ class CrossModalAttention(nn.Module):
     def __init__(self, embed_dim: int, num_heads: int = 8, dropout: float = 0.1):
         super().__init__()
         self.multihead_attn = nn.MultiheadAttention(
-            embed_dim=embed_dim,
-            num_heads=num_heads,
-            dropout=dropout,
-            batch_first=True
+            embed_dim=embed_dim, num_heads=num_heads, dropout=dropout, batch_first=True
         )
         self.norm1 = nn.LayerNorm(embed_dim)
         self.norm2 = nn.LayerNorm(embed_dim)
@@ -133,7 +138,7 @@ class CrossModalAttention(nn.Module):
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(embed_dim * 4, embed_dim),
-            nn.Dropout(dropout)
+            nn.Dropout(dropout),
         )
 
     def forward(
@@ -141,7 +146,7 @@ class CrossModalAttention(nn.Module):
         query: torch.Tensor,
         key: torch.Tensor,
         value: torch.Tensor,
-        key_padding_mask: Optional[torch.Tensor] = None
+        key_padding_mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
         Args:
@@ -152,10 +157,7 @@ class CrossModalAttention(nn.Module):
         """
         # Cross attention
         attn_output, _ = self.multihead_attn(
-            query=query,
-            key=key,
-            value=value,
-            key_padding_mask=key_padding_mask
+            query=query, key=key, value=value, key_padding_mask=key_padding_mask
         )
 
         # Residual connection and normalization
@@ -185,7 +187,7 @@ class ClimateTextFusion(nn.Module):
         fusion_dropout: float = 0.1,
         freeze_prithvi: bool = True,
         freeze_llama: bool = True,
-        device: str = "auto"
+        device: str = "auto",
     ):
         """
         Args:
@@ -203,7 +205,9 @@ class ClimateTextFusion(nn.Module):
         super().__init__()
 
         if not TRANSFORMERS_AVAILABLE:
-            raise ImportError("Transformers library required. Install with: pip install transformers")
+            raise ImportError(
+                "Transformers library required. Install with: pip install transformers"
+            )
 
         # Set device
         if device == "auto":
@@ -219,7 +223,7 @@ class ClimateTextFusion(nn.Module):
         if prithvi_encoder is not None:
             self.climate_encoder = prithvi_encoder
             # Assume pre-loaded encoder has embed_dim attribute
-            if hasattr(prithvi_encoder, 'embed_dim'):
+            if hasattr(prithvi_encoder, "embed_dim"):
                 self.climate_dim = prithvi_encoder.embed_dim
             else:
                 # Try to infer from encoder structure
@@ -228,7 +232,9 @@ class ClimateTextFusion(nn.Module):
             self.climate_encoder = self._load_prithvi_encoder(prithvi_encoder_path)
             self.climate_dim = self.climate_encoder.embed_dim
         else:
-            raise ValueError("Either prithvi_encoder_path or prithvi_encoder must be provided")
+            raise ValueError(
+                "Either prithvi_encoder_path or prithvi_encoder must be provided"
+            )
 
         if freeze_prithvi:
             for param in self.climate_encoder.parameters():
@@ -236,7 +242,8 @@ class ClimateTextFusion(nn.Module):
 
         # Check if Llama loading should be skipped (for testing)
         import os
-        skip_llama = os.environ.get('DISABLE_LLAMA_LOADING', '0') == '1'
+
+        skip_llama = os.environ.get("DISABLE_LLAMA_LOADING", "0") == "1"
 
         if skip_llama:
             # Create dummy tokenizer and model for testing
@@ -269,23 +276,29 @@ class ClimateTextFusion(nn.Module):
 
     def _load_prithvi_encoder(self, encoder_path: str) -> PrithviWxC_Encoder:
         """Load the PrithviWxC encoder from saved weights with smart architecture detection."""
-        checkpoint = torch.load(encoder_path, map_location='cpu')
-        state_dict = checkpoint['model_state_dict']
+        checkpoint = torch.load(encoder_path, map_location="cpu")
+        state_dict = checkpoint["model_state_dict"]
 
         # Smart architecture detection from actual weights
         print(f"🔍 Detecting real Prithvi architecture from weights...")
 
         # Detect actual dimensions from weight shapes
-        actual_in_channels = state_dict['input_scalers_mu'].shape[2] if 'input_scalers_mu' in state_dict else 160
+        actual_in_channels = (
+            state_dict["input_scalers_mu"].shape[2]
+            if "input_scalers_mu" in state_dict
+            else 160
+        )
 
         # Detect patch embedding input channels
-        if 'patch_embedding.proj.weight' in state_dict:
-            patch_embed_in_channels = state_dict['patch_embedding.proj.weight'].shape[1]
+        if "patch_embedding.proj.weight" in state_dict:
+            patch_embed_in_channels = state_dict["patch_embedding.proj.weight"].shape[1]
         else:
             patch_embed_in_channels = 320  # Default for real Prithvi
 
-        if 'patch_embedding_static.proj.weight' in state_dict:
-            static_embed_in_channels = state_dict['patch_embedding_static.proj.weight'].shape[1]
+        if "patch_embedding_static.proj.weight" in state_dict:
+            static_embed_in_channels = state_dict[
+                "patch_embedding_static.proj.weight"
+            ].shape[1]
         else:
             static_embed_in_channels = 168  # Default for real Prithvi
 
@@ -303,13 +316,15 @@ class ClimateTextFusion(nn.Module):
         # Count actual transformer layers
         actual_transformer_layers = 0
         for key in state_dict.keys():
-            if 'transformers.' in key:
-                layer_parts = key.split('.')
+            if "transformers." in key:
+                layer_parts = key.split(".")
                 for i, part in enumerate(layer_parts):
-                    if part == 'transformers' and i + 1 < len(layer_parts):
+                    if part == "transformers" and i + 1 < len(layer_parts):
                         try:
                             layer_num = int(layer_parts[i + 1])
-                            actual_transformer_layers = max(actual_transformer_layers, layer_num + 1)
+                            actual_transformer_layers = max(
+                                actual_transformer_layers, layer_num + 1
+                            )
                         except ValueError:
                             pass
 
@@ -328,37 +343,43 @@ class ClimateTextFusion(nn.Module):
         print(f"     Residual mode: {residual_mode}")
 
         real_config = {
-            'in_channels': actual_in_channels,
-            'input_size_time': 2,
-            'in_channels_static': actual_static_channels,
-            'input_scalers_epsilon': 0.0,
-            'static_input_scalers_epsilon': 0.0,
-            'n_lats_px': 360,
-            'n_lons_px': 576,
-            'patch_size_px': [2, 2],
-            'mask_unit_size_px': [30, 32],
-            'embed_dim': 2560,
-            'n_blocks_encoder': actual_n_blocks,
-            'mlp_multiplier': 4,
-            'n_heads': 16,
+            "in_channels": actual_in_channels,
+            "input_size_time": 2,
+            "in_channels_static": actual_static_channels,
+            "input_scalers_epsilon": 0.0,
+            "static_input_scalers_epsilon": 0.0,
+            "n_lats_px": 360,
+            "n_lons_px": 576,
+            "patch_size_px": [2, 2],
+            "mask_unit_size_px": [30, 32],
+            "embed_dim": 2560,
+            "n_blocks_encoder": actual_n_blocks,
+            "mlp_multiplier": 4,
+            "n_heads": 16,
         }
 
         # Always use climate mode if static_embed_in_channels > actual_static_channels
-        residual_mode = "climate" if static_embed_in_channels > actual_static_channels else "channel"        # Create scalers with exact dimensions from weights to avoid size mismatches
-        if 'input_scalers_mu' in state_dict:
-            in_mu = state_dict['input_scalers_mu'].clone()
-            in_sig = state_dict['input_scalers_sigma'].clone()
+        residual_mode = (
+            "climate"
+            if static_embed_in_channels > actual_static_channels
+            else "channel"
+        )  # Create scalers with exact dimensions from weights to avoid size mismatches
+        if "input_scalers_mu" in state_dict:
+            in_mu = state_dict["input_scalers_mu"].clone()
+            in_sig = state_dict["input_scalers_sigma"].clone()
         else:
             in_mu = torch.zeros(actual_in_channels)
             in_sig = torch.ones(actual_in_channels)
 
-        if 'static_input_scalers_mu' in state_dict:
-            static_mu_full = state_dict['static_input_scalers_mu'].clone()
-            static_sig_full = state_dict['static_input_scalers_sigma'].clone()
+        if "static_input_scalers_mu" in state_dict:
+            static_mu_full = state_dict["static_input_scalers_mu"].clone()
+            static_sig_full = state_dict["static_input_scalers_sigma"].clone()
 
             # If scalers have more channels than model needs, truncate them
             if static_mu_full.shape[1] > actual_static_channels:
-                print(f"  🔧 Truncating static scalers from {static_mu_full.shape[1]} to {actual_static_channels} channels")
+                print(
+                    f"  🔧 Truncating static scalers from {static_mu_full.shape[1]} to {actual_static_channels} channels"
+                )
                 static_mu = static_mu_full[:, :actual_static_channels, :, :]
                 static_sig = static_sig_full[:, :actual_static_channels, :, :]
             else:
@@ -372,24 +393,24 @@ class ClimateTextFusion(nn.Module):
             actual_static_scaler_channels = actual_static_channels
 
         encoder = PrithviWxC_Encoder(
-            in_channels=real_config['in_channels'],
-            input_size_time=real_config['input_size_time'],
+            in_channels=real_config["in_channels"],
+            input_size_time=real_config["input_size_time"],
             in_channels_static=actual_static_channels,
             input_scalers_mu=in_mu,
             input_scalers_sigma=in_sig,
-            input_scalers_epsilon=real_config['input_scalers_epsilon'],
+            input_scalers_epsilon=real_config["input_scalers_epsilon"],
             static_input_scalers_mu=static_mu,
             static_input_scalers_sigma=static_sig,
-            static_input_scalers_epsilon=real_config['static_input_scalers_epsilon'],
-            n_lats_px=real_config['n_lats_px'],
-            n_lons_px=real_config['n_lons_px'],
-            patch_size_px=real_config['patch_size_px'],
-            mask_unit_size_px=real_config['mask_unit_size_px'],
+            static_input_scalers_epsilon=real_config["static_input_scalers_epsilon"],
+            n_lats_px=real_config["n_lats_px"],
+            n_lons_px=real_config["n_lons_px"],
+            patch_size_px=real_config["patch_size_px"],
+            mask_unit_size_px=real_config["mask_unit_size_px"],
             mask_ratio_inputs=0.0,  # No masking for inference
-            embed_dim=real_config['embed_dim'],
-            n_blocks_encoder=real_config['n_blocks_encoder'],
-            mlp_multiplier=real_config['mlp_multiplier'],
-            n_heads=real_config['n_heads'],
+            embed_dim=real_config["embed_dim"],
+            n_blocks_encoder=real_config["n_blocks_encoder"],
+            mlp_multiplier=real_config["mlp_multiplier"],
+            n_heads=real_config["n_heads"],
             dropout=0.0,
             drop_path=0.0,
             parameter_dropout=0.0,
@@ -401,36 +422,65 @@ class ClimateTextFusion(nn.Module):
         )
 
         # Fix state dict to match the architecture we're creating
-        if 'static_input_scalers_mu' in state_dict:
+        if "static_input_scalers_mu" in state_dict:
             # Truncate static scalers to match the architecture
-            original_static_shape = state_dict['static_input_scalers_mu'].shape
+            original_static_shape = state_dict["static_input_scalers_mu"].shape
             if original_static_shape[1] > actual_static_channels:
-                print(f"  🔧 Adjusting state dict static scalers from {original_static_shape[1]} to {actual_static_channels} channels")
-                state_dict['static_input_scalers_mu'] = state_dict['static_input_scalers_mu'][:, :actual_static_channels, :, :]
-                state_dict['static_input_scalers_sigma'] = state_dict['static_input_scalers_sigma'][:, :actual_static_channels, :, :]
+                print(
+                    f"  🔧 Adjusting state dict static scalers from {original_static_shape[1]} to {actual_static_channels} channels"
+                )
+                state_dict["static_input_scalers_mu"] = state_dict[
+                    "static_input_scalers_mu"
+                ][:, :actual_static_channels, :, :]
+                state_dict["static_input_scalers_sigma"] = state_dict[
+                    "static_input_scalers_sigma"
+                ][:, :actual_static_channels, :, :]
 
         # Load state dict with smart handling of mismatches
         try:
             # Pre-filter state dict to only include keys that the encoder actually has
             encoder_state_keys = set(encoder.state_dict().keys())
-            filtered_state_dict = {k: v for k, v in state_dict.items() if k in encoder_state_keys}
+            filtered_state_dict = {
+                k: v for k, v in state_dict.items() if k in encoder_state_keys
+            }
 
             # Also ensure static scalers match exactly
-            if 'static_input_scalers_mu' in filtered_state_dict:
+            if "static_input_scalers_mu" in filtered_state_dict:
                 expected_shape = encoder.static_input_scalers_mu.shape
-                if filtered_state_dict['static_input_scalers_mu'].shape != expected_shape:
-                    print(f"  🔧 Truncating static scalers to match encoder expectation: {expected_shape}")
-                    filtered_state_dict['static_input_scalers_mu'] = filtered_state_dict['static_input_scalers_mu'][:, :expected_shape[1], :, :]
-                    filtered_state_dict['static_input_scalers_sigma'] = filtered_state_dict['static_input_scalers_sigma'][:, :expected_shape[1], :, :]
+                if (
+                    filtered_state_dict["static_input_scalers_mu"].shape
+                    != expected_shape
+                ):
+                    print(
+                        f"  🔧 Truncating static scalers to match encoder expectation: {expected_shape}"
+                    )
+                    filtered_state_dict["static_input_scalers_mu"] = (
+                        filtered_state_dict["static_input_scalers_mu"][
+                            :, : expected_shape[1], :, :
+                        ]
+                    )
+                    filtered_state_dict["static_input_scalers_sigma"] = (
+                        filtered_state_dict["static_input_scalers_sigma"][
+                            :, : expected_shape[1], :, :
+                        ]
+                    )
 
-            missing_keys, unexpected_keys = encoder.load_state_dict(filtered_state_dict, strict=True)
+            missing_keys, unexpected_keys = encoder.load_state_dict(
+                filtered_state_dict, strict=True
+            )
 
             # With filtering and strict=True, we should have zero missing/unexpected keys
             if missing_keys or unexpected_keys:
-                raise RuntimeError(f"Encoder loading failed - Missing: {len(missing_keys)}, Unexpected: {len(unexpected_keys)}")
+                raise RuntimeError(
+                    f"Encoder loading failed - Missing: {len(missing_keys)}, Unexpected: {len(unexpected_keys)}"
+                )
 
-            print(f"  ✅ Successfully loaded real Prithvi encoder with {actual_n_blocks} layers")
-            print(f"  🎯 Loaded {len(filtered_state_dict)}/{len(state_dict)} compatible weights (100% of encoder weights)")
+            print(
+                f"  ✅ Successfully loaded real Prithvi encoder with {actual_n_blocks} layers"
+            )
+            print(
+                f"  🎯 Loaded {len(filtered_state_dict)}/{len(state_dict)} compatible weights (100% of encoder weights)"
+            )
         except Exception as e:
             print(f"  ❌ Error during load: {str(e)[:100]}...")
             # Fallback: create a minimal working encoder
@@ -444,19 +494,18 @@ class ClimateTextFusion(nn.Module):
         if self.fusion_mode == "cross_attention":
             # Project climate features to text embedding space
             self.climate_projector = ClimateFeatureProjector(
-                climate_dim=self.climate_dim,
-                text_dim=self.text_dim,
-                dropout=dropout
+                climate_dim=self.climate_dim, text_dim=self.text_dim, dropout=dropout
             )
 
             # Cross-modal attention layers
-            self.fusion_layers = nn.ModuleList([
-                CrossModalAttention(
-                    embed_dim=self.text_dim,
-                    num_heads=8,
-                    dropout=dropout
-                ) for _ in range(num_layers)
-            ])
+            self.fusion_layers = nn.ModuleList(
+                [
+                    CrossModalAttention(
+                        embed_dim=self.text_dim, num_heads=8, dropout=dropout
+                    )
+                    for _ in range(num_layers)
+                ]
+            )
 
         elif self.fusion_mode == "concatenate":
             # Simple concatenation with projection
@@ -464,15 +513,13 @@ class ClimateTextFusion(nn.Module):
                 nn.Linear(self.climate_dim + self.text_dim, self.text_dim),
                 nn.LayerNorm(self.text_dim),
                 nn.GELU(),
-                nn.Dropout(dropout)
+                nn.Dropout(dropout),
             )
 
         elif self.fusion_mode == "add":
             # Additive fusion with projection
             self.climate_projector = ClimateFeatureProjector(
-                climate_dim=self.climate_dim,
-                text_dim=self.text_dim,
-                dropout=dropout
+                climate_dim=self.climate_dim, text_dim=self.text_dim, dropout=dropout
             )
 
         else:
@@ -484,7 +531,7 @@ class ClimateTextFusion(nn.Module):
             nn.LayerNorm(self.text_dim),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(self.text_dim, self.text_dim)
+            nn.Linear(self.text_dim, self.text_dim),
         )
 
     def encode_climate(self, climate_batch: Dict[str, torch.Tensor]) -> torch.Tensor:
@@ -497,17 +544,26 @@ class ClimateTextFusion(nn.Module):
         Returns:
             climate_features: [batch, n_tokens, embed_dim]
         """
-        with torch.no_grad() if hasattr(self, '_freeze_prithvi') else torch.enable_grad():
+        with (
+            torch.no_grad() if hasattr(self, "_freeze_prithvi") else torch.enable_grad()
+        ):
             climate_features = self.climate_encoder(climate_batch)
 
         # Flatten spatial dimensions if needed
-        if climate_features.dim() == 4:  # [batch, n_global_tokens, n_local_tokens, embed_dim]
+        if (
+            climate_features.dim() == 4
+        ):  # [batch, n_global_tokens, n_local_tokens, embed_dim]
             batch_size, n_global, n_local, embed_dim = climate_features.shape
-            climate_features = climate_features.view(batch_size, n_global * n_local, embed_dim)
+            climate_features = climate_features.view(
+                batch_size, n_global * n_local, embed_dim
+            )
 
         # Limit number of tokens if specified
-        if self.max_climate_tokens and climate_features.size(1) > self.max_climate_tokens:
-            climate_features = climate_features[:, :self.max_climate_tokens]
+        if (
+            self.max_climate_tokens
+            and climate_features.size(1) > self.max_climate_tokens
+        ):
+            climate_features = climate_features[:, : self.max_climate_tokens]
 
         return climate_features
 
@@ -528,15 +584,17 @@ class ClimateTextFusion(nn.Module):
             padding=True,
             truncation=True,
             max_length=self.max_text_length,
-            return_tensors='pt'
+            return_tensors="pt",
         )
 
-        input_ids = encoded['input_ids'].to(self.device)
-        attention_mask = encoded['attention_mask'].to(self.device)
+        input_ids = encoded["input_ids"].to(self.device)
+        attention_mask = encoded["attention_mask"].to(self.device)
 
         # Get text embeddings
-        with torch.no_grad() if hasattr(self, '_freeze_llama') else torch.enable_grad():
-            outputs = self.text_model(input_ids=input_ids, attention_mask=attention_mask)
+        with torch.no_grad() if hasattr(self, "_freeze_llama") else torch.enable_grad():
+            outputs = self.text_model(
+                input_ids=input_ids, attention_mask=attention_mask
+            )
             text_features = outputs.last_hidden_state
 
         return text_features, attention_mask
@@ -545,7 +603,7 @@ class ClimateTextFusion(nn.Module):
         self,
         climate_features: torch.Tensor,
         text_features: torch.Tensor,
-        text_attention_mask: torch.Tensor
+        text_attention_mask: torch.Tensor,
     ) -> torch.Tensor:
         """
         Fuse climate and text features.
@@ -567,9 +625,7 @@ class ClimateTextFusion(nn.Module):
             fused = text_features
             for layer in self.fusion_layers:
                 fused = layer(
-                    query=fused,
-                    key=climate_projected,
-                    value=climate_projected
+                    query=fused, key=climate_projected, value=climate_projected
                 )
 
         elif self.fusion_mode == "concatenate":
@@ -582,7 +638,9 @@ class ClimateTextFusion(nn.Module):
                 if climate_len < text_len:
                     # Repeat climate features
                     repeat_factor = text_len // climate_len + 1
-                    climate_repeated = climate_features.repeat(1, repeat_factor, 1)[:, :text_len]
+                    climate_repeated = climate_features.repeat(1, repeat_factor, 1)[
+                        :, :text_len
+                    ]
                 else:
                     # Truncate climate features
                     climate_repeated = climate_features[:, :text_len]
@@ -604,8 +662,12 @@ class ClimateTextFusion(nn.Module):
             if climate_len != text_len:
                 if climate_len < text_len:
                     # Pad climate features
-                    padding = torch.zeros(batch_size, text_len - climate_len, text_dim,
-                                        device=climate_projected.device)
+                    padding = torch.zeros(
+                        batch_size,
+                        text_len - climate_len,
+                        text_dim,
+                        device=climate_projected.device,
+                    )
                     climate_projected = torch.cat([climate_projected, padding], dim=1)
                 else:
                     # Truncate climate features
@@ -619,7 +681,7 @@ class ClimateTextFusion(nn.Module):
         self,
         climate_batch: Dict[str, torch.Tensor],
         text_inputs: List[str],
-        return_attention_weights: bool = False
+        return_attention_weights: bool = False,
     ) -> Dict[str, torch.Tensor]:
         """
         Forward pass through the multimodal fusion model.
@@ -641,16 +703,18 @@ class ClimateTextFusion(nn.Module):
         text_features, text_attention_mask = self.encode_text(text_inputs)
 
         # Fuse modalities
-        fused_features = self.fuse_modalities(climate_features, text_features, text_attention_mask)
+        fused_features = self.fuse_modalities(
+            climate_features, text_features, text_attention_mask
+        )
 
         # Apply output projection
         output_features = self.output_projection(fused_features)
 
         result = {
-            'fused_features': output_features,
-            'climate_features': climate_features,
-            'text_features': text_features,
-            'attention_mask': text_attention_mask
+            "fused_features": output_features,
+            "climate_features": climate_features,
+            "text_features": text_features,
+            "attention_mask": text_attention_mask,
         }
 
         return result
@@ -669,13 +733,11 @@ class ClimateQuestionAnswering(nn.Module):
             nn.LayerNorm(fusion_model.text_dim // 2),
             nn.GELU(),
             nn.Dropout(0.1),
-            nn.Linear(fusion_model.text_dim // 2, num_classes)
+            nn.Linear(fusion_model.text_dim // 2, num_classes),
         )
 
     def forward(
-        self,
-        climate_batch: Dict[str, torch.Tensor],
-        questions: List[str]
+        self, climate_batch: Dict[str, torch.Tensor], questions: List[str]
     ) -> torch.Tensor:
         """
         Args:
@@ -686,7 +748,7 @@ class ClimateQuestionAnswering(nn.Module):
             logits: [batch, seq_len, num_classes]
         """
         fusion_output = self.fusion_model(climate_batch, questions)
-        fused_features = fusion_output['fused_features']
+        fused_features = fusion_output["fused_features"]
         return self.qa_head(fused_features)
 
 
@@ -698,7 +760,7 @@ class ClimateTextGeneration(nn.Module):
     def __init__(
         self,
         prithvi_encoder_path: str,
-        llama_model_name: str = "meta-llama/Meta-Llama-3-8B"
+        llama_model_name: str = "meta-llama/Meta-Llama-3-8B",
     ):
         super().__init__()
 
@@ -712,38 +774,51 @@ class ClimateTextGeneration(nn.Module):
 
         # Climate conditioning layer
         self.climate_adapter = nn.Sequential(
-            nn.Linear(self.climate_encoder.embed_dim, self.text_generator.config.hidden_size),
+            nn.Linear(
+                self.climate_encoder.embed_dim, self.text_generator.config.hidden_size
+            ),
             nn.LayerNorm(self.text_generator.config.hidden_size),
             nn.GELU(),
-            nn.Dropout(0.1)
+            nn.Dropout(0.1),
         )
 
     def _load_prithvi_encoder(self, encoder_path: str) -> PrithviWxC_Encoder:
         """Load PrithviWxC encoder with smart architecture detection (same as in ClimateTextFusion)."""
-        checkpoint = torch.load(encoder_path, map_location='cpu')
-        state_dict = checkpoint['model_state_dict']
+        checkpoint = torch.load(encoder_path, map_location="cpu")
+        state_dict = checkpoint["model_state_dict"]
 
         # Smart architecture detection from actual weights
-        actual_in_channels = state_dict['input_scalers_mu'].shape[2] if 'input_scalers_mu' in state_dict else 160
+        actual_in_channels = (
+            state_dict["input_scalers_mu"].shape[2]
+            if "input_scalers_mu" in state_dict
+            else 160
+        )
 
         # Better static channels detection
-        if 'static_input_scalers_mu' in state_dict:
-            actual_static_channels = state_dict['static_input_scalers_mu'].shape[1]
-        elif 'patch_embedding_static.proj.weight' in state_dict:
-            actual_static_channels = state_dict['patch_embedding_static.proj.weight'].shape[1]
+        if "static_input_scalers_mu" in state_dict:
+            actual_static_channels = state_dict["static_input_scalers_mu"].shape[1]
+        elif "patch_embedding_static.proj.weight" in state_dict:
+            actual_static_channels = state_dict[
+                "patch_embedding_static.proj.weight"
+            ].shape[1]
         else:
             actual_static_channels = 11  # Default for real Prithvi
 
         # Count actual transformer layers
         actual_n_blocks = 0
         for key in state_dict.keys():
-            if 'encoder.lgl_block.transformers.' in key and '.attention.0.weight' in key:
-                layer_num = int(key.split('.')[3])
+            if (
+                "encoder.lgl_block.transformers." in key
+                and ".attention.0.weight" in key
+            ):
+                layer_num = int(key.split(".")[3])
                 actual_n_blocks = max(actual_n_blocks, layer_num + 1)
 
         # Detect static embedding input channels to determine residual mode
-        if 'patch_embedding_static.proj.weight' in state_dict:
-            static_embed_in_channels = state_dict['patch_embedding_static.proj.weight'].shape[1]
+        if "patch_embedding_static.proj.weight" in state_dict:
+            static_embed_in_channels = state_dict[
+                "patch_embedding_static.proj.weight"
+            ].shape[1]
         else:
             static_embed_in_channels = 168
 
@@ -756,16 +831,16 @@ class ClimateTextGeneration(nn.Module):
             expected_static_channels = static_embed_in_channels - actual_in_channels
 
         # Use real Prithvi configuration with actual weight dimensions
-        if 'input_scalers_mu' in state_dict:
-            in_mu = state_dict['input_scalers_mu'].clone()
-            in_sig = state_dict['input_scalers_sigma'].clone()
+        if "input_scalers_mu" in state_dict:
+            in_mu = state_dict["input_scalers_mu"].clone()
+            in_sig = state_dict["input_scalers_sigma"].clone()
         else:
             in_mu = torch.zeros(actual_in_channels)
             in_sig = torch.ones(actual_in_channels)
 
-        if 'static_input_scalers_mu' in state_dict:
-            static_mu = state_dict['static_input_scalers_mu'].clone()
-            static_sig = state_dict['static_input_scalers_sigma'].clone()
+        if "static_input_scalers_mu" in state_dict:
+            static_mu = state_dict["static_input_scalers_mu"].clone()
+            static_sig = state_dict["static_input_scalers_sigma"].clone()
             actual_static_scaler_channels = static_mu.shape[1]
         else:
             static_mu = torch.zeros(expected_static_channels)
@@ -801,7 +876,9 @@ class ClimateTextGeneration(nn.Module):
             checkpoint_encoder=[],
         )
 
-        missing_keys, unexpected_keys = encoder.load_state_dict(state_dict, strict=False)
+        missing_keys, unexpected_keys = encoder.load_state_dict(
+            state_dict, strict=False
+        )
         return encoder
 
     def generate_climate_report(
@@ -809,7 +886,7 @@ class ClimateTextGeneration(nn.Module):
         climate_batch: Dict[str, torch.Tensor],
         prompt: str = "Based on the climate data, generate a climate assessment:",
         max_length: int = 200,
-        temperature: float = 0.7
+        temperature: float = 0.7,
     ) -> List[str]:
         """
         Generate climate assessment text conditioned on climate data.
@@ -828,24 +905,24 @@ class ClimateTextGeneration(nn.Module):
             climate_features = self.climate_encoder(climate_batch)
 
         # Adapt climate features for text generation
-        climate_adapted = self.climate_adapter(climate_features.mean(dim=1))  # [batch, hidden_size]
+        climate_adapted = self.climate_adapter(
+            climate_features.mean(dim=1)
+        )  # [batch, hidden_size]
 
         # Tokenize prompt
         inputs = self.tokenizer(
-            [prompt] * climate_adapted.size(0),
-            return_tensors='pt',
-            padding=True
+            [prompt] * climate_adapted.size(0), return_tensors="pt", padding=True
         )
 
         # Generate text conditioned on climate
         with torch.no_grad():
             outputs = self.text_generator.generate(
-                inputs['input_ids'],
-                attention_mask=inputs['attention_mask'],
+                inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
                 max_length=max_length,
                 temperature=temperature,
                 do_sample=True,
-                pad_token_id=self.tokenizer.pad_token_id
+                pad_token_id=self.tokenizer.pad_token_id,
             )
 
         # Decode generated text

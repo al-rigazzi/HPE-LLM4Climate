@@ -19,22 +19,22 @@ def test_encoder_loading_only():
     """Test that the extracted encoder loads perfectly without missing keys."""
     print("🔧 Testing Extracted PrithviWxC Encoder Loading (No Missing Keys)")
     print("=" * 65)
-    
+
     try:
         from multimodal.core.climate_text_fusion import ClimateTextFusion
-        
+
         print("📁 Target: data/weights/prithvi_encoder_fixed.pt")
         encoder_path = project_root / "data" / "weights" / "prithvi_encoder_fixed.pt"
-        
+
         print("🔍 Starting smart loading process...")
         print("   This should detect architecture and load ALL weights successfully")
         print("   NO missing keys warnings should appear!")
         print()
-        
+
         # Temporarily disable Llama loading to focus on encoder
         import os
         os.environ['DISABLE_LLAMA_LOADING'] = '1'
-        
+
         # Create fusion model - this will trigger encoder loading
         fusion_model = ClimateTextFusion(
             prithvi_encoder_path=str(encoder_path),
@@ -45,9 +45,9 @@ def test_encoder_loading_only():
             freeze_prithvi=True,
             freeze_llama=True
         )
-        
+
         encoder = fusion_model.climate_encoder
-        
+
         print("🎯 ENCODER LOADING VERIFICATION:")
         print("=" * 40)
         print(f"✅ Encoder successfully created")
@@ -56,15 +56,15 @@ def test_encoder_loading_only():
         print(f"✅ Expected formula: 2*{encoder.encoder.n_blocks}+1 = {2*encoder.encoder.n_blocks+1}")
         print(f"✅ Actual transformers: {len(encoder.encoder.lgl_block.transformers)}")
         print(f"✅ Formula check: {2*encoder.encoder.n_blocks+1 == len(encoder.encoder.lgl_block.transformers)}")
-        
+
         print("\n📊 KEY VERIFICATION:")
         print("=" * 25)
         print(f"✅ If you see '🎯 Loaded 263/263 compatible weights (100% of encoder weights)' above")
         print(f"✅ And NO missing keys warnings, then the encoder extraction is PERFECT!")
         print(f"✅ The encoder is ready for use in multimodal fusion systems")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"\n❌ ENCODER LOADING FAILED!")
         print(f"  Error: {e}")
@@ -76,14 +76,14 @@ def main():
     """Main test function."""
     print("🚀 ENCODER LOADING VERIFICATION TEST")
     print("This test verifies ZERO missing keys in encoder loading\n")
-    
+
     success = test_encoder_loading_only()
-    
+
     print("\n" + "="*60)
     if success:
         print("🎉 PERFECT! ENCODER LOADING TEST PASSED!")
         print("✅ The extracted encoder loads without ANY missing keys")
-        print("✅ All 263 weights load successfully") 
+        print("✅ All 263 weights load successfully")
         print("✅ Architecture detection works correctly")
         print("✅ Ready for production multimodal fusion!")
     else:

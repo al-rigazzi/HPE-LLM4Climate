@@ -13,6 +13,7 @@ import os
 # Add parent directory for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
 def working_demo():
     """Create a working demo that demonstrates all key achievements."""
 
@@ -23,13 +24,17 @@ def working_demo():
     encoder_path = "data/weights/prithvi_encoder_fixed.pt"
     print(f"📁 Loading encoder: {encoder_path}")
 
-    encoder_data = torch.load(encoder_path, map_location='cpu')
-    config = encoder_data['config']['params']
-    state_dict = encoder_data['model_state_dict']
+    encoder_data = torch.load(encoder_path, map_location="cpu")
+    config = encoder_data["config"]["params"]
+    state_dict = encoder_data["model_state_dict"]
 
     print(f"   ✅ Real Prithvi weights loaded")
-    print(f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim")
-    print(f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static")
+    print(
+        f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim"
+    )
+    print(
+        f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static"
+    )
 
     # Sample locations for analysis
     locations = [
@@ -47,18 +52,18 @@ def working_demo():
     batch_size = len(locations)
 
     # Climate variables: [B, 160, 2, 180, 288]
-    climate_data = torch.randn(batch_size, config['in_channels'], 2, 180, 288)
+    climate_data = torch.randn(batch_size, config["in_channels"], 2, 180, 288)
 
     # Static variables: [B, 11, 180, 288]
-    static_data = torch.randn(batch_size, config['in_channels_static'], 180, 288)
+    static_data = torch.randn(batch_size, config["in_channels_static"], 180, 288)
 
     print(f"\\n📊 Data shapes:")
     print(f"   Climate: {climate_data.shape}")
     print(f"   Static: {static_data.shape}")
 
     # Extract patch embedding weights
-    patch_weight = state_dict['patch_embedding.proj.weight']
-    patch_bias = state_dict['patch_embedding.proj.bias']
+    patch_weight = state_dict["patch_embedding.proj.weight"]
+    patch_bias = state_dict["patch_embedding.proj.bias"]
 
     print(f"   Patch embedding: {patch_weight.shape}")
 
@@ -92,7 +97,7 @@ def working_demo():
         location_features = feature_sequence[i]  # [N_patches, embed_dim]
 
         # Create spatial attention based on location
-        lat, lon = location['lat'], location['lon']
+        lat, lon = location["lat"], location["lon"]
 
         # Convert lat/lon to patch grid coordinates
         patch_lat = int((90 - lat) * H_patch / 180)
@@ -107,12 +112,16 @@ def working_demo():
         patch_y = patch_indices // W_patch
         patch_x = patch_indices % W_patch
 
-        distances = torch.sqrt((patch_y - patch_lat).float()**2 + (patch_x - patch_lon).float()**2)
+        distances = torch.sqrt(
+            (patch_y - patch_lat).float() ** 2 + (patch_x - patch_lon).float() ** 2
+        )
         attention = torch.exp(-distances / 10)  # Gaussian attention
         attention = attention / attention.sum()  # Normalize
 
         # Apply spatial attention to get location-focused features
-        attended_features = (location_features * attention.unsqueeze(-1)).sum(dim=0)  # [embed_dim]
+        attended_features = (location_features * attention.unsqueeze(-1)).sum(
+            dim=0
+        )  # [embed_dim]
 
         # Compute analysis metrics
         feature_magnitude = attended_features.norm().item()
@@ -120,11 +129,11 @@ def working_demo():
         spatial_focus = attention.max().item()
 
         result = {
-            'location': location,
-            'feature_magnitude': feature_magnitude,
-            'feature_diversity': feature_diversity,
-            'spatial_focus': spatial_focus,
-            'center_patch': (patch_lat, patch_lon)
+            "location": location,
+            "feature_magnitude": feature_magnitude,
+            "feature_diversity": feature_diversity,
+            "spatial_focus": spatial_focus,
+            "center_patch": (patch_lat, patch_lon),
         }
 
         analysis_results.append(result)
@@ -138,18 +147,26 @@ def working_demo():
     # Cross-location analysis
     print(f"\\n📈 Cross-location analysis:")
 
-    magnitudes = [r['feature_magnitude'] for r in analysis_results]
-    diversities = [r['feature_diversity'] for r in analysis_results]
+    magnitudes = [r["feature_magnitude"] for r in analysis_results]
+    diversities = [r["feature_diversity"] for r in analysis_results]
 
-    print(f"   📊 Feature magnitude range: {min(magnitudes):.3f} - {max(magnitudes):.3f}")
-    print(f"   📊 Feature diversity range: {min(diversities):.3f} - {max(diversities):.3f}")
+    print(
+        f"   📊 Feature magnitude range: {min(magnitudes):.3f} - {max(magnitudes):.3f}"
+    )
+    print(
+        f"   📊 Feature diversity range: {min(diversities):.3f} - {max(diversities):.3f}"
+    )
 
     # Find most/least distinctive locations
-    most_distinct = max(analysis_results, key=lambda x: x['feature_diversity'])
-    least_distinct = min(analysis_results, key=lambda x: x['feature_diversity'])
+    most_distinct = max(analysis_results, key=lambda x: x["feature_diversity"])
+    least_distinct = min(analysis_results, key=lambda x: x["feature_diversity"])
 
-    print(f"   🌟 Most distinctive: {most_distinct['location']['name']} (diversity: {most_distinct['feature_diversity']:.3f})")
-    print(f"   🌊 Most uniform: {least_distinct['location']['name']} (diversity: {least_distinct['feature_diversity']:.3f})")
+    print(
+        f"   🌟 Most distinctive: {most_distinct['location']['name']} (diversity: {most_distinct['feature_diversity']:.3f})"
+    )
+    print(
+        f"   🌊 Most uniform: {least_distinct['location']['name']} (diversity: {least_distinct['feature_diversity']:.3f})"
+    )
 
     # Text integration example
     print(f"\\n💬 Text-climate integration example:")
@@ -159,13 +176,17 @@ def working_demo():
         "Temperate oceanic climate with frequent rainfall and mild temperatures",
         "Humid subtropical climate with hot summers and monsoon rains",
         "Tropical highland climate with distinct wet and dry seasons",
-        "Mediterranean climate with warm dry summers and mild winters"
+        "Mediterranean climate with warm dry summers and mild winters",
     ]
 
     # Simple text-feature correlation (simulated)
-    for i, (result, description) in enumerate(zip(analysis_results, climate_descriptions)):
+    for i, (result, description) in enumerate(
+        zip(analysis_results, climate_descriptions)
+    ):
         # Simulate text-climate correlation based on feature characteristics
-        correlation_strength = result['feature_diversity'] * 0.8 + result['spatial_focus'] * 0.2
+        correlation_strength = (
+            result["feature_diversity"] * 0.8 + result["spatial_focus"] * 0.2
+        )
 
         print(f"   📍 {result['location']['name']}:")
         print(f"      Text: '{description[:50]}...'")
@@ -175,7 +196,9 @@ def working_demo():
     print(f"\\n🎉 DEMO COMPLETE - All Objectives Achieved!")
     print(f"   ✅ Real Prithvi weights: Used {encoder_path}")
     print(f"   ✅ No demo mode warnings: Eliminated completely")
-    print(f"   ✅ Correct configuration: {config['n_blocks_encoder']} blocks, {config['in_channels']}/{config['in_channels_static']} channels")
+    print(
+        f"   ✅ Correct configuration: {config['n_blocks_encoder']} blocks, {config['in_channels']}/{config['in_channels_static']} channels"
+    )
     print(f"   ✅ No size mismatches: All tensors aligned properly")
     print(f"   ✅ Location-aware analysis: {len(locations)} global locations analyzed")
     print(f"   ✅ Spatial attention: Distance-based weighting implemented")
@@ -183,6 +206,7 @@ def working_demo():
     print(f"   ✅ Multi-modal ready: Text-climate integration framework")
 
     return analysis_results
+
 
 if __name__ == "__main__":
     try:
@@ -198,4 +222,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
+
         traceback.print_exc()

@@ -9,6 +9,7 @@ import torch
 import warnings
 from pathlib import Path
 
+
 def run_with_real_weights():
     """Run location-aware analysis with actual Prithvi weights."""
     print("🌍 Simple Prithvi Demo - Real Weights + Location Analysis")
@@ -28,12 +29,16 @@ def run_with_real_weights():
 
     # Load the properly extracted encoder
     print(f"\n📁 Loading fixed encoder weights...")
-    encoder_data = torch.load(encoder_path, map_location='cpu')
-    config = encoder_data['config']['params']
-    state_dict = encoder_data['model_state_dict']
+    encoder_data = torch.load(encoder_path, map_location="cpu")
+    config = encoder_data["config"]["params"]
+    state_dict = encoder_data["model_state_dict"]
 
-    print(f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim")
-    print(f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static")
+    print(
+        f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim"
+    )
+    print(
+        f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static"
+    )
     print(f"   ✅ Loaded {len(state_dict)} weight tensors")
 
     # Simple but effective feature extraction using patch embedding
@@ -52,16 +57,16 @@ def run_with_real_weights():
 
     # Create sample climate data with CORRECT dimensions
     batch_size = len(locations)
-    climate_data = torch.randn(batch_size, config['in_channels'], 2, 180, 288)
-    static_data = torch.randn(batch_size, config['in_channels_static'], 180, 288)
+    climate_data = torch.randn(batch_size, config["in_channels"], 2, 180, 288)
+    static_data = torch.randn(batch_size, config["in_channels_static"], 180, 288)
 
     print(f"\n📊 Data shapes:")
     print(f"   Climate: {climate_data.shape}")
     print(f"   Static: {static_data.shape}")
 
     # Extract patch embedding weights and apply them
-    patch_weight = state_dict['patch_embedding.proj.weight']
-    patch_bias = state_dict['patch_embedding.proj.bias']
+    patch_weight = state_dict["patch_embedding.proj.weight"]
+    patch_bias = state_dict["patch_embedding.proj.bias"]
 
     with torch.no_grad():
         # Reshape for patch embedding
@@ -86,7 +91,7 @@ def run_with_real_weights():
         location_features = feature_sequence[i]  # [N_patches, embed_dim]
 
         # Create spatial attention based on geographic coordinates
-        lat, lon = location['lat'], location['lon']
+        lat, lon = location["lat"], location["lon"]
 
         # Convert to patch grid coordinates
         patch_lat = int((90 - lat) * H_patch / 180)
@@ -101,7 +106,9 @@ def run_with_real_weights():
         patch_y = patch_indices // W_patch
         patch_x = patch_indices % W_patch
 
-        distances = torch.sqrt((patch_y - patch_lat).float()**2 + (patch_x - patch_lon).float()**2)
+        distances = torch.sqrt(
+            (patch_y - patch_lat).float() ** 2 + (patch_x - patch_lon).float() ** 2
+        )
         attention = torch.exp(-distances / 15)  # Gaussian attention
         attention = attention / attention.sum()
 
@@ -113,13 +120,15 @@ def run_with_real_weights():
         feature_diversity = attended_features.std().item()
         spatial_focus = attention.max().item()
 
-        analysis_results.append({
-            'location': location,
-            'feature_magnitude': feature_magnitude,
-            'feature_diversity': feature_diversity,
-            'spatial_focus': spatial_focus,
-            'grid_center': (patch_lat, patch_lon)
-        })
+        analysis_results.append(
+            {
+                "location": location,
+                "feature_magnitude": feature_magnitude,
+                "feature_diversity": feature_diversity,
+                "spatial_focus": spatial_focus,
+                "grid_center": (patch_lat, patch_lon),
+            }
+        )
 
         print(f"   🌍 {location['name']}:")
         print(f"      Feature magnitude: {feature_magnitude:.3f}")
@@ -129,17 +138,25 @@ def run_with_real_weights():
 
     # Climate insights
     print(f"\n📈 Climate insights:")
-    magnitudes = [r['feature_magnitude'] for r in analysis_results]
-    diversities = [r['feature_diversity'] for r in analysis_results]
+    magnitudes = [r["feature_magnitude"] for r in analysis_results]
+    diversities = [r["feature_diversity"] for r in analysis_results]
 
-    print(f"   📊 Feature magnitude range: {min(magnitudes):.3f} - {max(magnitudes):.3f}")
-    print(f"   📊 Feature diversity range: {min(diversities):.3f} - {max(diversities):.3f}")
+    print(
+        f"   📊 Feature magnitude range: {min(magnitudes):.3f} - {max(magnitudes):.3f}"
+    )
+    print(
+        f"   📊 Feature diversity range: {min(diversities):.3f} - {max(diversities):.3f}"
+    )
 
-    most_distinct = max(analysis_results, key=lambda x: x['feature_diversity'])
-    least_distinct = min(analysis_results, key=lambda x: x['feature_diversity'])
+    most_distinct = max(analysis_results, key=lambda x: x["feature_diversity"])
+    least_distinct = min(analysis_results, key=lambda x: x["feature_diversity"])
 
-    print(f"   🌟 Most distinctive: {most_distinct['location']['name']} (diversity: {most_distinct['feature_diversity']:.3f})")
-    print(f"   🌊 Most uniform: {least_distinct['location']['name']} (diversity: {least_distinct['feature_diversity']:.3f})")
+    print(
+        f"   🌟 Most distinctive: {most_distinct['location']['name']} (diversity: {most_distinct['feature_diversity']:.3f})"
+    )
+    print(
+        f"   🌊 Most uniform: {least_distinct['location']['name']} (diversity: {least_distinct['feature_diversity']:.3f})"
+    )
 
     print(f"\n🎉 SUCCESS: Simple demo completed with real Prithvi weights!")
     print(f"   ✅ No demo mode warnings")
