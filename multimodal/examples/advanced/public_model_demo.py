@@ -5,9 +5,10 @@ This demo uses the corrected extracted Prithvi encoder weights with a simple
 location-aware analysis approach, avoiding complex model dependencies.
 """
 
-import torch
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import torch
 
 
 def run_with_public_models():
@@ -64,9 +65,7 @@ def run_with_public_models():
             climate_reshaped = climate_data.view(B, C * T, H, W)
 
             # Apply patch embedding
-            features = torch.conv2d(
-                climate_reshaped, patch_weight, patch_bias, stride=2
-            )
+            features = torch.conv2d(climate_reshaped, patch_weight, patch_bias, stride=2)
             print(f"   ✅ Patch embedding applied: {features.shape}")
 
             # Convert to sequence format
@@ -119,9 +118,7 @@ def run_with_public_models():
             feature_magnitude = attended_features.norm().item()
             feature_diversity = attended_features.std().item()
             spatial_focus = attention.max().item()
-            focused_patches = (
-                (attention > attention.mean() + attention.std()).sum().item()
-            )
+            focused_patches = (attention > attention.mean() + attention.std()).sum().item()
 
             # Simple risk assessment
             risk_score = feature_magnitude * feature_diversity
@@ -173,9 +170,7 @@ def run_with_public_models():
         for risk, count in risk_counts.items():
             print(f"     {risk}: {count}/{len(analysis_results)} regions")
 
-        avg_confidence = sum(r["confidence"] for r in analysis_results) / len(
-            analysis_results
-        )
+        avg_confidence = sum(r["confidence"] for r in analysis_results) / len(analysis_results)
         highest_risk = max(analysis_results, key=lambda x: x["risk_score"])
         lowest_risk = min(analysis_results, key=lambda x: x["risk_score"])
 
@@ -184,9 +179,7 @@ def run_with_public_models():
         print(
             f"     Highest risk: {highest_risk['query']} (score: {highest_risk['risk_score']:.1f})"
         )
-        print(
-            f"     Lowest risk: {lowest_risk['query']} (score: {lowest_risk['risk_score']:.1f})"
-        )
+        print(f"     Lowest risk: {lowest_risk['query']} (score: {lowest_risk['risk_score']:.1f})")
 
         print(f"\n🎉 SUCCESS: Public model demo completed!")
         print(f"   ✅ Used corrected 25-block encoder weights")

@@ -8,11 +8,12 @@ This is the corrected version that:
 4. Simple but effective location-aware climate analysis
 """
 
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-from typing import Dict, List, Optional, Tuple
-from pathlib import Path
 
 
 class FinalLocationAwareFusion(nn.Module):
@@ -62,9 +63,7 @@ class FinalLocationAwareFusion(nn.Module):
 
         # Apply patch embedding
         with torch.no_grad():
-            features = torch.conv2d(
-                climate_reshaped, self.patch_weight, self.patch_bias, stride=2
-            )
+            features = torch.conv2d(climate_reshaped, self.patch_weight, self.patch_bias, stride=2)
 
         # Convert to sequence format
         B, embed_dim, H_patch, W_patch = features.shape
@@ -118,9 +117,7 @@ class FinalLocationAwareFusion(nn.Module):
         text_features = self.text_encoder(text_embeddings)
 
         # Create location-aware attention
-        attention_weights = self.create_location_attention(
-            climate_features, locations, patch_shape
-        )
+        attention_weights = self.create_location_attention(climate_features, locations, patch_shape)
 
         # Apply attention to climate features
         attended_features = []
@@ -130,9 +127,7 @@ class FinalLocationAwareFusion(nn.Module):
             attention = attention_weights[i]  # [N_patches]
 
             # Weight features by attention
-            attended = (location_features * attention.unsqueeze(-1)).sum(
-                dim=0
-            )  # [embed_dim]
+            attended = (location_features * attention.unsqueeze(-1)).sum(dim=0)  # [embed_dim]
             attended_features.append(attended)
 
         attended_climate = torch.stack(attended_features)  # [B, embed_dim]
@@ -213,9 +208,7 @@ def run_complete_demo():
 
     try:
         # Create and run the demo
-        system, results = FinalLocationAwareFusion.create_demo(
-            locations, text_descriptions
-        )
+        system, results = FinalLocationAwareFusion.create_demo(locations, text_descriptions)
 
         # Display results
         print(f"\n📊 Demo Results:")
@@ -233,9 +226,7 @@ def run_complete_demo():
 
             # Attention statistics
             max_attention = attention.max().item()
-            focused_patches = (
-                (attention > attention.mean() + attention.std()).sum().item()
-            )
+            focused_patches = (attention > attention.mean() + attention.std()).sum().item()
 
             # Feature statistics
             feature_magnitude = fused.norm().item()

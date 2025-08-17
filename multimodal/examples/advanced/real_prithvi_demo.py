@@ -5,9 +5,10 @@ This demo uses the corrected extracted Prithvi encoder weights to demonstrate
 location-aware climate analysis with real climate model features.
 """
 
-import torch
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import torch
 
 
 def run_real_prithvi_demo():
@@ -33,12 +34,8 @@ def run_real_prithvi_demo():
     config = encoder_data["config"]["params"]
     state_dict = encoder_data["model_state_dict"]
 
-    print(
-        f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim"
-    )
-    print(
-        f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static"
-    )
+    print(f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim")
+    print(f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static")
     print(f"   ✅ Loaded {len(state_dict)} weight tensors")
 
     # Create realistic climate data with CORRECT dimensions
@@ -52,8 +49,7 @@ def run_real_prithvi_demo():
         lat = -90 + (i * 180 / 180)  # Convert to actual latitude
         # Temperature decreases with latitude
         climate_data[:, 0, :, i, :] = (
-            20 * torch.cos(torch.tensor(lat * np.pi / 180))
-            + torch.randn(batch_size, 2, 288) * 5
+            20 * torch.cos(torch.tensor(lat * np.pi / 180)) + torch.randn(batch_size, 2, 288) * 5
         )
         # Precipitation patterns
         climate_data[:, 1, :, i, :] = (
@@ -124,9 +120,7 @@ def run_real_prithvi_demo():
 
     analysis_results = []
     for location in test_locations:
-        print(
-            f"\n📍 {location['name']} ({location['lat']:.1f}°, {location['lon']:.1f}°)"
-        )
+        print(f"\n📍 {location['name']} ({location['lat']:.1f}°, {location['lon']:.1f}°)")
         print(f"   Query: {location['query']}")
 
         # Convert to patch grid coordinates
@@ -169,9 +163,7 @@ def run_real_prithvi_demo():
             risk_level = "High Risk"
 
         # Climate trend analysis
-        trend_magnitude = torch.std(
-            attended_features[:100]
-        ).item()  # First 100 features for trend
+        trend_magnitude = torch.std(attended_features[:100]).item()  # First 100 features for trend
 
         analysis_results.append(
             {

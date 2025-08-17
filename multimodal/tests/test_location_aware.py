@@ -95,9 +95,7 @@ class TestGeographicResolver(unittest.TestCase):
                     any(exp.lower() in ext.lower() for ext in extracted)
                     for exp in expected_locations
                 )
-                self.assertTrue(
-                    found_any, f"No expected locations found in: {extracted}"
-                )
+                self.assertTrue(found_any, f"No expected locations found in: {extracted}")
 
     def test_unknown_location_handling(self):
         """Test handling of unknown or invalid locations."""
@@ -141,9 +139,7 @@ class TestSpatialCropper(unittest.TestCase):
         binary_mask = self.cropper.create_location_mask(sweden, "binary")
         self.assertEqual(binary_mask.shape, (360, 576))
         self.assertGreater(binary_mask.sum(), 0)  # Should have some positive values
-        self.assertTrue(
-            torch.all((binary_mask == 0) | (binary_mask == 1))
-        )  # Binary values
+        self.assertTrue(torch.all((binary_mask == 0) | (binary_mask == 1)))  # Binary values
 
         # Test Gaussian mask
         gaussian_mask = self.cropper.create_location_mask(sweden, "gaussian")
@@ -265,9 +261,7 @@ class TestLocationAwareClimateAnalysis(unittest.TestCase):
                     )
                     return (None, spatial_mask)
                 else:
-                    spatial_mask = self.spatial_cropper.create_location_mask(
-                        location, "gaussian"
-                    )
+                    spatial_mask = self.spatial_cropper.create_location_mask(location, "gaussian")
                     location_info = {
                         "name": location.name,
                         "location_type": location.location_type,
@@ -281,9 +275,7 @@ class TestLocationAwareClimateAnalysis(unittest.TestCase):
                 """Mock forward pass."""
                 location_info, spatial_mask = self.process_geographic_query(text_query)
                 return {
-                    "fused_features": torch.randn(
-                        climate_data.shape[0], self.fusion_dim
-                    ),
+                    "fused_features": torch.randn(climate_data.shape[0], self.fusion_dim),
                     "climate_risk": torch.randn(climate_data.shape[0], 3),
                     "trend_magnitude": torch.randn(climate_data.shape[0], 1),
                     "confidence": torch.sigmoid(
@@ -292,9 +284,7 @@ class TestLocationAwareClimateAnalysis(unittest.TestCase):
                     "location_info": location_info,
                     "spatial_mask": spatial_mask,
                     "location": location_info["name"] if location_info else None,
-                    "location_type": (
-                        location_info["location_type"] if location_info else None
-                    ),
+                    "location_type": (location_info["location_type"] if location_info else None),
                     "query": text_query,
                     "risk_confidence": torch.sigmoid(
                         torch.randn(1)
@@ -469,10 +459,7 @@ class TestIntegration(unittest.TestCase):
         seq_len = 500  # Simulate patches from global grid
 
         # Use the correct climate dimension based on whether real encoder is loaded
-        if (
-            hasattr(model, "climate_text_fusion")
-            and model.climate_text_fusion is not None
-        ):
+        if hasattr(model, "climate_text_fusion") and model.climate_text_fusion is not None:
             climate_dim = model.climate_text_fusion.climate_dim  # 2560 for real encoder
         else:
             climate_dim = 768  # Default for demo mode

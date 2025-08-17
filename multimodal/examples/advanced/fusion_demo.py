@@ -5,20 +5,21 @@ This script demonstrates how to use the ClimateTextFusion model to combine
 climate data from PrithviWxC with text processing using Llama 3.
 """
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import torch
-import numpy as np
-from typing import Dict, List
 import warnings
+from typing import Dict, List
+
+import numpy as np
+import torch
 
 # Import our multimodal fusion classes
 from multimodal.climate_text_fusion import (
-    ClimateTextFusion,
     ClimateQuestionAnswering,
+    ClimateTextFusion,
     ClimateTextGeneration,
 )
 

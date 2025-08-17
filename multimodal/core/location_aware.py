@@ -15,12 +15,10 @@ Key Features:
 import re
 import warnings
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from torch import nn
 
 # Optional geographic database packages
 try:
@@ -277,7 +275,7 @@ class GeographicResolver:
 
             # Initialize Nominatim geocoder
             self.geocoder = Nominatim(user_agent="prithvi-climate-analysis", timeout=10)
-            print(f"🌍 Using GeoPy/Nominatim geocoder for geographic resolution")
+            print("🌍 Using GeoPy/Nominatim geocoder for geographic resolution")
 
         elif self.backend == "geonames":
             if not REQUESTS_AVAILABLE or not self.geonames_username:
@@ -288,10 +286,10 @@ class GeographicResolver:
                 return
 
             self.geonames_base_url = "http://api.geonames.org"
-            print(f"🌍 Using GeoNames API for geographic resolution")
+            print("🌍 Using GeoNames API for geographic resolution")
 
         else:  # local
-            print(f"🌍 Using local geographic database")
+            print("🌍 Using local geographic database")
 
     def resolve_location(self, location_text: str) -> Optional[GeographicLocation]:
         """
@@ -306,8 +304,6 @@ class GeographicResolver:
         # Check cache first
         if location_text in self._cache:
             return self._cache[location_text]
-
-        location_lower = location_text.lower().strip()
 
         # Try coordinate parsing first (works for all backends)
         coord_result = self._parse_coordinates(location_text)
@@ -385,9 +381,7 @@ class GeographicResolver:
             warnings.warn(f"Unexpected error in geocoding '{location_text}': {e}")
             return None
 
-    def _resolve_with_geonames(
-        self, location_text: str
-    ) -> Optional[GeographicLocation]:
+    def _resolve_with_geonames(self, location_text: str) -> Optional[GeographicLocation]:
         """Resolve location using GeoNames API."""
         try:
             # Search for places
@@ -443,9 +437,7 @@ class GeographicResolver:
             warnings.warn(f"Unexpected error in GeoNames lookup '{location_text}': {e}")
             return None
 
-    def _resolve_with_local_db(
-        self, location_text: str
-    ) -> Optional[GeographicLocation]:
+    def _resolve_with_local_db(self, location_text: str) -> Optional[GeographicLocation]:
         """Resolve location using local database (original implementation)."""
         location_lower = location_text.lower().strip()
 
@@ -476,7 +468,6 @@ class GeographicResolver:
     def _determine_type_from_geopy(self, raw_data: dict) -> str:
         """Determine location type from GeoPy raw data."""
         address = raw_data.get("address", {})
-        osm_type = raw_data.get("osm_type", "")
         place_type = raw_data.get("type", "")
 
         # Check for country
@@ -486,9 +477,7 @@ class GeographicResolver:
             return "country"
 
         # Check for state/province
-        if address.get("state") and not any(
-            k in address for k in ["city", "town", "village"]
-        ):
+        if address.get("state") and not any(k in address for k in ["city", "town", "village"]):
             return "state"
 
         # Check for city/town
@@ -507,17 +496,16 @@ class GeographicResolver:
 
         if "country" in fcl_lower:
             return "country"
-        elif any(word in fcl_lower for word in ["state", "province", "region"]):
+        if any(word in fcl_lower for word in ["state", "province", "region"]):
             return "state"
-        elif any(word in fcl_lower for word in ["city", "town", "village"]):
+        if any(word in fcl_lower for word in ["city", "town", "village"]):
             return "city"
-        elif any(
-            word in fcl_lower
-            for word in ["mountain", "hill", "forest", "desert", "sea", "ocean"]
+        if any(
+            word in fcl_lower for word in ["mountain", "hill", "forest", "desert", "sea", "ocean"]
         ):
             return "region"
-        else:
-            return "place"
+
+        return "place"
 
     def _get_margin_for_type(self, location_type: str) -> float:
         """Get appropriate margin based on location type."""
@@ -537,12 +525,11 @@ class GeographicResolver:
 
         if "country" in feature_lower:
             return 5.0
-        elif any(word in feature_lower for word in ["state", "province"]):
+        if any(word in feature_lower for word in ["state", "province"]):
             return 2.0
-        elif any(word in feature_lower for word in ["city", "town"]):
+        if any(word in feature_lower for word in ["city", "town"]):
             return 0.5
-        else:
-            return 1.0
+        return 1.0
 
     def _parse_coordinates(self, coord_text: str) -> Optional[GeographicLocation]:
         """Parse coordinate strings into geographic locations."""
@@ -604,7 +591,7 @@ class GeographicResolver:
 
         # Check for known geographic entities
         text_lower = text.lower()
-        for location in self.database.keys():
+        for location in self.database:
             if location in text_lower:
                 locations.append(location)
 
@@ -702,15 +689,14 @@ class SpatialCropper:
                 lat_min_idx, lat_max_idx, 0, lon_max_idx, mask_type, focus_strength
             )
             return torch.maximum(mask1, mask2)
-        else:
-            return self._create_mask_region(
-                lat_min_idx,
-                lat_max_idx,
-                lon_min_idx,
-                lon_max_idx,
-                mask_type,
-                focus_strength,
-            )
+        return self._create_mask_region(
+            lat_min_idx,
+            lat_max_idx,
+            lon_min_idx,
+            lon_max_idx,
+            mask_type,
+            focus_strength,
+        )
 
     def _create_mask_region(
         self,
@@ -731,12 +717,8 @@ class SpatialCropper:
             # Create Gaussian mask centered on region
             lat_center = (lat_min_idx + lat_max_idx) / 2
             lon_center = (lon_min_idx + lon_max_idx) / 2
-            lat_std = max(
-                1.0, (lat_max_idx - lat_min_idx) / focus_strength
-            )  # Ensure minimum std
-            lon_std = max(
-                1.0, (lon_max_idx - lon_min_idx) / focus_strength
-            )  # Ensure minimum std
+            lat_std = max(1.0, (lat_max_idx - lat_min_idx) / focus_strength)  # Ensure minimum std
+            lon_std = max(1.0, (lon_max_idx - lon_min_idx) / focus_strength)  # Ensure minimum std
 
             lat_indices = torch.arange(self.n_lats).float()
             lon_indices = torch.arange(self.n_lons).float()
@@ -763,12 +745,8 @@ class SpatialCropper:
                     lon_dist = abs(j - lon_center) / lon_radius
 
                     if lat_dist <= 1.0 and lon_dist <= 1.0:
-                        lat_weight = (
-                            1 + torch.cos(torch.pi * torch.tensor(lat_dist))
-                        ) / 2
-                        lon_weight = (
-                            1 + torch.cos(torch.pi * torch.tensor(lon_dist))
-                        ) / 2
+                        lat_weight = (1 + torch.cos(torch.pi * torch.tensor(lat_dist))) / 2
+                        lon_weight = (1 + torch.cos(torch.pi * torch.tensor(lon_dist))) / 2
                         mask[i, j] = lat_weight * lon_weight
 
         return mask
@@ -797,9 +775,7 @@ class LocationAwareAttention(nn.Module):
             nn.Sigmoid(),
         )
 
-    def forward(
-        self, x: torch.Tensor, spatial_mask: Optional[torch.Tensor] = None
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, spatial_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Forward pass with optional spatial masking.
 
@@ -810,12 +786,12 @@ class LocationAwareAttention(nn.Module):
         Returns:
             Output tensor [batch, seq_len, embed_dim]
         """
-        B, N, C = x.shape
+        batch_size, seq_len, embed_dim = x.shape
 
         # Standard multi-head attention
         qkv = (
             self.qkv(x)
-            .reshape(B, N, 3, self.num_heads, self.head_dim)
+            .reshape(batch_size, seq_len, 3, self.num_heads, self.head_dim)
             .permute(2, 0, 3, 1, 4)
         )
         q, k, v = qkv[0], qkv[1], qkv[2]
@@ -828,9 +804,7 @@ class LocationAwareAttention(nn.Module):
             if spatial_mask.dim() == 1:
                 spatial_mask = spatial_mask.unsqueeze(0)  # Add batch dimension
             if spatial_mask.dim() == 2:
-                spatial_mask = spatial_mask.unsqueeze(1).unsqueeze(
-                    1
-                )  # Add head and key dimensions
+                spatial_mask = spatial_mask.unsqueeze(1).unsqueeze(1)  # Add head and key dimensions
 
             # Apply mask to attention scores
             spatial_weights = self.spatial_gate(spatial_mask.unsqueeze(-1)).squeeze(-1)
@@ -839,7 +813,7 @@ class LocationAwareAttention(nn.Module):
         attn = attn.softmax(dim=-1)
 
         # Apply attention to values
-        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        x = (attn @ v).transpose(1, 2).reshape(batch_size, seq_len, embed_dim)
         x = self.proj(x)
 
         return x
@@ -914,7 +888,7 @@ def demo_geographic_backends():
         print(f"   ✓ Resolved: {result.name} ({result.location_type})")
         print(f"   📍 Center: {result.center['lat']:.2f}°, {result.center['lon']:.2f}°")
     else:
-        print(f"   ✗ Not found in local database")
+        print("   ✗ Not found in local database")
     print()
 
     # Test GeoPy backend
@@ -925,16 +899,14 @@ def demo_geographic_backends():
             result = geopy_resolver.resolve_location(test_location)
             if result:
                 print(f"   ✓ Resolved: {result.name}")
-                print(
-                    f"   📍 Center: {result.center['lat']:.2f}°, {result.center['lon']:.2f}°"
-                )
+                print(f"   📍 Center: {result.center['lat']:.2f}°, {result.center['lon']:.2f}°")
                 print(f"   📦 Bounding box: {result.bounds}")
                 print(f"   🎯 Type: {result.location_type}")
                 print(f"   🔍 Confidence: {result.confidence}")
             else:
-                print(f"   ✗ Not found via GeoPy")
+                print("   ✗ Not found via GeoPy")
         except Exception as e:
-            print(f"   ⚠️  GeoPy error: {e}")
+            print("   ⚠️  GeoPy error:", str(e))
     else:
         print("2. GEOPY Backend: Not available (install with: pip install geopy)")
     print()

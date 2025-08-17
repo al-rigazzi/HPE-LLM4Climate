@@ -5,9 +5,10 @@ This demo loads the actual Prithvi encoder weights and runs a location-aware
 climate analysis without triggering demo mode warnings.
 """
 
-import torch
 import warnings
 from pathlib import Path
+
+import torch
 
 
 def run_with_real_weights():
@@ -33,12 +34,8 @@ def run_with_real_weights():
     config = encoder_data["config"]["params"]
     state_dict = encoder_data["model_state_dict"]
 
-    print(
-        f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim"
-    )
-    print(
-        f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static"
-    )
+    print(f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim")
+    print(f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static")
     print(f"   ✅ Loaded {len(state_dict)} weight tensors")
 
     # Simple but effective feature extraction using patch embedding
@@ -141,12 +138,8 @@ def run_with_real_weights():
     magnitudes = [r["feature_magnitude"] for r in analysis_results]
     diversities = [r["feature_diversity"] for r in analysis_results]
 
-    print(
-        f"   📊 Feature magnitude range: {min(magnitudes):.3f} - {max(magnitudes):.3f}"
-    )
-    print(
-        f"   📊 Feature diversity range: {min(diversities):.3f} - {max(diversities):.3f}"
-    )
+    print(f"   📊 Feature magnitude range: {min(magnitudes):.3f} - {max(magnitudes):.3f}")
+    print(f"   📊 Feature diversity range: {min(diversities):.3f} - {max(diversities):.3f}")
 
     most_distinct = max(analysis_results, key=lambda x: x["feature_diversity"])
     least_distinct = min(analysis_results, key=lambda x: x["feature_diversity"])

@@ -15,33 +15,34 @@ Features Demonstrated:
 - Visualization of attention patterns
 """
 
+import warnings
+from typing import Dict, List, Optional
+
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn.functional as F
-import numpy as np
-import matplotlib.pyplot as plt
-from typing import Dict, List, Optional
-import warnings
 
 warnings.filterwarnings("ignore")
 
 try:
+    from .climate_text_fusion import ClimateTextFusion
     from .location_aware import (
         GeographicResolver,
         SpatialCropper,
         demo_location_resolution,
         demo_spatial_masking,
     )
-    from .location_aware_fusion import LocationAwareClimateAnalysis, FusionMode
-    from .climate_text_fusion import ClimateTextFusion
+    from .location_aware_fusion import FusionMode, LocationAwareClimateAnalysis
 except ImportError:
+    from climate_text_fusion import ClimateTextFusion
     from location_aware import (
         GeographicResolver,
         SpatialCropper,
         demo_location_resolution,
         demo_spatial_masking,
     )
-    from location_aware_fusion import LocationAwareClimateAnalysis, FusionMode
-    from climate_text_fusion import ClimateTextFusion
+    from location_aware_fusion import FusionMode, LocationAwareClimateAnalysis
 
 
 def create_mock_climate_data(grid_shape: tuple = (36, 58)) -> torch.Tensor:
@@ -201,9 +202,7 @@ def analyze_climate_question(
 
     # Analyze the question
     with torch.no_grad():
-        result = model.analyze_location_query(
-            climate_data, question, return_visualization=True
-        )
+        result = model.analyze_location_query(climate_data, question, return_visualization=True)
 
     if verbose:
         print(f"📍 Location: {result['location']} ({result['location_type']})")
@@ -220,9 +219,7 @@ def analyze_climate_question(
             print(f"\n🔍 Attention Analysis:")
             print(f"   Max attention: {attention.max():.3f}")
             print(f"   Mean attention: {attention.mean():.3f}")
-            print(
-                f"   Focused pixels: {(attention > attention.mean() + attention.std()).sum()}"
-            )
+            print(f"   Focused pixels: {(attention > attention.mean() + attention.std()).sum()}")
 
         print("\n" + "=" * 70 + "\n")
 
@@ -268,9 +265,7 @@ def compare_fusion_modes():
 
             print(f"  Risk: {predicted_risk}")
             print(f"  Confidence: {confidence:.3f}")
-            print(
-                f"  Risk Distribution: {[f'{p:.3f}' for p in risk_probs.squeeze().tolist()]}"
-            )
+            print(f"  Risk Distribution: {[f'{p:.3f}' for p in risk_probs.squeeze().tolist()]}")
             print()
 
     # Compare results
@@ -389,9 +384,7 @@ def main():
         print("   - Sufficient RAM (8GB+ recommended)")
         print("   - Access to Hugging Face models (authentication may be required)")
         print("   - Or provide pre-trained model weights")
-        print(
-            "\n✅ Steps 1 & 2 (Geographic Resolution & Spatial Masking) completed successfully!"
-        )
+        print("\n✅ Steps 1 & 2 (Geographic Resolution & Spatial Masking) completed successfully!")
         print("   These demonstrate the core location-aware capabilities.")
 
         # Demonstrate just the location processing without heavy models
@@ -409,9 +402,7 @@ def main():
                 location = resolver.resolve_location(locations[0])
                 if location:
                     mask = cropper.create_location_mask(location, "gaussian")
-                    print(
-                        f"   ✓ Location found: {location.name} ({location.location_type})"
-                    )
+                    print(f"   ✓ Location found: {location.name} ({location.location_type})")
                     print(f"   ✓ Spatial mask created: {mask.sum():.0f} focused pixels")
                 else:
                     print(f"   ✗ Could not resolve location: {locations[0]}")
@@ -420,9 +411,7 @@ def main():
     except Exception as e:
         print(f"⚠️  Full model demonstration skipped due to unexpected error:")
         print(f"   {type(e).__name__}: {str(e)}")
-        print(
-            "\n✅ Steps 1 & 2 (Geographic Resolution & Spatial Masking) completed successfully!"
-        )
+        print("\n✅ Steps 1 & 2 (Geographic Resolution & Spatial Masking) completed successfully!")
         print(
             "   These demonstrate the core location-aware capabilities."
         )  # 5. Compare fusion modes

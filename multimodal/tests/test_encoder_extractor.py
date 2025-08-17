@@ -78,10 +78,7 @@ def test_fixed_encoder():
     expected_out_dim = config["embed_dim"]
     expected_in_dim = config["in_channels"] * 2  # Time steps
 
-    if (
-        patch_weight.shape[0] == expected_out_dim
-        and patch_weight.shape[1] == expected_in_dim
-    ):
+    if patch_weight.shape[0] == expected_out_dim and patch_weight.shape[1] == expected_in_dim:
         print(f"   ✅ Patch embedding dimensions correct: {patch_weight.shape}")
     else:
         print(f"   ❌ Patch embedding dimensions wrong: {patch_weight.shape}")
@@ -91,9 +88,7 @@ def test_fixed_encoder():
     # Test transformer blocks
     print("\n🤖 Testing transformer block extraction...")
 
-    transformer_keys = [
-        k for k in state_dict.keys() if "encoder.lgl_block.transformers." in k
-    ]
+    transformer_keys = [k for k in state_dict.keys() if "encoder.lgl_block.transformers." in k]
 
     if transformer_keys:
         print(f"   ✅ Found {len(transformer_keys)} transformer layer weights")
@@ -141,18 +136,14 @@ def test_fixed_encoder():
         patch_weight = state_dict["patch_embedding.proj.weight"]
         patch_bias = state_dict["patch_embedding.proj.bias"]
 
-        climate_features = torch.conv2d(
-            climate_reshaped, patch_weight, patch_bias, stride=2
-        )
+        climate_features = torch.conv2d(climate_reshaped, patch_weight, patch_bias, stride=2)
         print(f"   ✅ Climate features extracted: {climate_features.shape}")
 
         # Static patch embedding
         static_weight = state_dict["patch_embedding_static.proj.weight"]
         static_bias = state_dict["patch_embedding_static.proj.bias"]
 
-        static_features = torch.conv2d(
-            static_data, static_weight, static_bias, stride=2
-        )
+        static_features = torch.conv2d(static_data, static_weight, static_bias, stride=2)
         print(f"   ✅ Static features extracted: {static_features.shape}")
 
         # Verify dimensions match

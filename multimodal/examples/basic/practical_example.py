@@ -5,16 +5,17 @@ This script demonstrates a working implementation using the actual extracted enc
 with a lightweight text model for practical testing.
 """
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import warnings
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-from transformers import AutoTokenizer, AutoModel
-import warnings
+from transformers import AutoModel, AutoTokenizer
 
 warnings.filterwarnings("ignore")
 
@@ -46,9 +47,7 @@ class SimplifiedClimateTextFusion(nn.Module):
         self.text_embed_dim = self.text_model.config.hidden_size
 
         # Fusion layers
-        self.climate_projector = nn.Linear(
-            self.climate_feature_dim, self.text_embed_dim
-        )
+        self.climate_projector = nn.Linear(self.climate_feature_dim, self.text_embed_dim)
         self.fusion_layer = nn.MultiheadAttention(
             embed_dim=self.text_embed_dim, num_heads=4, batch_first=True
         )
@@ -71,9 +70,7 @@ class SimplifiedClimateTextFusion(nn.Module):
         In practice, this would use the real PrithviWxC encoder.
         """
         # Simulate encoded climate features
-        return torch.randn(
-            batch_size, 64, self.climate_feature_dim
-        )  # 64 climate tokens
+        return torch.randn(batch_size, 64, self.climate_feature_dim)  # 64 climate tokens
 
     def forward(self, text_inputs: list, batch_size: int = None):
         """
@@ -161,9 +158,7 @@ def demonstrate_practical_fusion():
         confidence = probs[predicted_class].item()
 
         print(f'\nText {i+1}: "{text[:50]}..."')
-        print(
-            f"  Predicted: {class_names[predicted_class]} (confidence: {confidence:.3f})"
-        )
+        print(f"  Predicted: {class_names[predicted_class]} (confidence: {confidence:.3f})")
         print(f"  Probabilities: {[f'{p:.3f}' for p in probs.tolist()]}")
 
     # Show feature shapes

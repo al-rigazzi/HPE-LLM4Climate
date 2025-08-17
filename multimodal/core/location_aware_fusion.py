@@ -12,11 +12,12 @@ Key Features:
 """
 
 import warnings
-from typing import Dict, List, Optional, Tuple, Union
+from enum import Enum
+from typing import Dict, Optional, Tuple, Union
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 try:
     from .climate_text_fusion import ClimateTextFusion
@@ -35,7 +36,9 @@ except ImportError:
 
 
 # Define fusion modes for location-aware analysis
-class FusionMode:
+class FusionMode(Enum):
+    """Enumeration of fusion modes for location-aware analysis."""
+
     CROSS_ATTENTION = "cross_attention"
     CONCATENATION = "concatenate"
     ADDITIVE = "add"
@@ -96,9 +99,7 @@ class LocationAwareClimateAnalysis(nn.Module):
         except Exception as e:
             # For testing/demo without real models or on error
             self.climate_text_fusion = None
-            warnings.warn(
-                f"Climate-text fusion initialization failed: {e}. Running in demo mode."
-            )
+            warnings.warn(f"Climate-text fusion initialization failed: {e}. Running in demo mode.")
             # Keep default fusion_dim
 
         # Location-aware attention
@@ -145,9 +146,7 @@ class LocationAwareClimateAnalysis(nn.Module):
         # Cache for resolved locations
         self._location_cache = {}
 
-    def process_geographic_query(
-        self, query: str
-    ) -> Tuple[Optional[Dict], torch.Tensor]:
+    def process_geographic_query(self, query: str) -> Tuple[Optional[Dict], torch.Tensor]:
         """
         Process a geographic query to extract location and create spatial mask.
 
@@ -166,9 +165,7 @@ class LocationAwareClimateAnalysis(nn.Module):
 
         if not locations:
             # No geographic information found
-            spatial_mask = torch.ones(
-                self.spatial_cropper.n_lats, self.spatial_cropper.n_lons
-            )
+            spatial_mask = torch.ones(self.spatial_cropper.n_lats, self.spatial_cropper.n_lons)
             result = (None, spatial_mask)
             self._location_cache[query] = result
             return result
@@ -178,9 +175,7 @@ class LocationAwareClimateAnalysis(nn.Module):
         location = self.geographic_resolver.resolve_location(location_text)
 
         if location is None:
-            spatial_mask = torch.ones(
-                self.spatial_cropper.n_lats, self.spatial_cropper.n_lons
-            )
+            spatial_mask = torch.ones(self.spatial_cropper.n_lats, self.spatial_cropper.n_lons)
             result = (None, spatial_mask)
         else:
             # Create spatial mask based on query characteristics
@@ -211,16 +206,11 @@ class LocationAwareClimateAnalysis(nn.Module):
         query_lower = query.lower()
 
         # Precise analysis needs focused masks
-        if any(
-            word in query_lower
-            for word in ["specific", "precise", "exact", "particular"]
-        ):
+        if any(word in query_lower for word in ["specific", "precise", "exact", "particular"]):
             return "gaussian"
 
         # Regional analysis can use softer masks
-        if any(
-            word in query_lower for word in ["region", "area", "surrounding", "nearby"]
-        ):
+        if any(word in query_lower for word in ["region", "area", "surrounding", "nearby"]):
             return "cosine"
 
         # Default to gaussian for most climate queries
@@ -235,9 +225,7 @@ class LocationAwareClimateAnalysis(nn.Module):
             return 4.0
 
         # Strong focus for specific questions
-        if any(
-            word in query_lower for word in ["will", "specific", "precise", "exactly"]
-        ):
+        if any(word in query_lower for word in ["will", "specific", "precise", "exactly"]):
             return 3.5
 
         # Medium focus for countries/states
@@ -300,9 +288,7 @@ class LocationAwareClimateAnalysis(nn.Module):
             # Handle different fusion modes
             if hasattr(self.climate_text_fusion, "climate_projector"):
                 # For cross_attention and add modes
-                climate_projected = self.climate_text_fusion.climate_projector(
-                    climate_features
-                )
+                climate_projected = self.climate_text_fusion.climate_projector(climate_features)
             else:
                 # For concatenate mode, use features directly
                 climate_projected = climate_features
@@ -324,50 +310,35 @@ class LocationAwareClimateAnalysis(nn.Module):
                 concat_features = torch.cat(
                     [text_features[:, :min_len], climate_projected[:, :min_len]], dim=-1
                 )
-                fused_features = self.climate_text_fusion.fusion_projection(
-                    concat_features
-                )
+                fused_features = self.climate_text_fusion.fusion_projection(concat_features)
             else:
                 # Simple additive fusion as fallback
                 min_len = min(text_features.shape[1], climate_projected.shape[1])
-                fused_features = (
-                    text_features[:, :min_len] + climate_projected[:, :min_len]
-                )
+                fused_features = text_features[:, :min_len] + climate_projected[:, :min_len]
 
             # Apply output projection if available
             if hasattr(self.climate_text_fusion, "output_projection"):
-                fused_features = self.climate_text_fusion.output_projection(
-                    fused_features
-                )
+                fused_features = self.climate_text_fusion.output_projection(fused_features)
         else:
             # Demo mode - create mock fusion features
             text_attention_mask = None
             # Project climate features to fusion dimension
             if not hasattr(self, "demo_projector"):
-                self.demo_projector = nn.Linear(
-                    climate_features.shape[-1], self.fusion_dim
-                )
-            fused_features = self.demo_projector(
-                climate_features
-            )  # Apply location-aware attention
+                self.demo_projector = nn.Linear(climate_features.shape[-1], self.fusion_dim)
+            fused_features = self.demo_projector(climate_features)  # Apply location-aware attention
         # Apply location-aware attention
         # Ensure fused_features has the right shape for attention [B, N, C]
         if len(fused_features.shape) == 2:
             fused_features = fused_features.unsqueeze(0)  # Add batch dimension
 
         # Handle spatial mask mismatch for text-based features
-        if (
-            spatial_mask_flat is not None
-            and fused_features.shape[1] != spatial_mask_flat.shape[-1]
-        ):
+        if spatial_mask_flat is not None and fused_features.shape[1] != spatial_mask_flat.shape[-1]:
             # For text-based features, create a simple uniform mask
             spatial_mask_flat = torch.ones(
                 batch_size, 1, 1, fused_features.shape[1], device=fused_features.device
             )
 
-        location_attended = self.location_attention(
-            fused_features, spatial_mask=spatial_mask_flat
-        )
+        location_attended = self.location_attention(fused_features, spatial_mask=spatial_mask_flat)
 
         # Create geographic context encoding if location found
         if location_info is not None:
@@ -494,9 +465,7 @@ class LocationAwareClimateAnalysis(nn.Module):
                 {
                     "attention_weights": result["attention_weights"],
                     "spatial_mask": result["spatial_mask"],
-                    "location_bounds": (
-                        location_info["bounds"] if location_info else None
-                    ),
+                    "location_bounds": (location_info["bounds"] if location_info else None),
                 }
             )
 
@@ -600,18 +569,14 @@ def demo_location_aware_analysis():
             print(f"Risk Confidence: {result['risk_confidence']:.1%}")
             print(f"Trend Magnitude: {result['trend_magnitude']:.2f}")
             print(f"Overall Confidence: {result['overall_confidence']:.1%}")
-            print(f"\nInterpretation:")
+            print("\nInterpretation:")
             print(result["interpretation"])
 
             if result.get("location_bounds"):
                 bounds = result["location_bounds"]
-                print(f"\nGeographic Bounds:")
-                print(
-                    f"  Latitude: {bounds['lat_min']:.1f}° to {bounds['lat_max']:.1f}°"
-                )
-                print(
-                    f"  Longitude: {bounds['lon_min']:.1f}° to {bounds['lon_max']:.1f}°"
-                )
+                print("\nGeographic Bounds:")
+                print(f"  Latitude: {bounds['lat_min']:.1f}° to {bounds['lat_max']:.1f}°")
+                print(f"  Longitude: {bounds['lon_min']:.1f}° to {bounds['lon_max']:.1f}°")
 
             print("\n" + "=" * 70 + "\n")
 

@@ -4,11 +4,12 @@ Working Demo - Real Prithvi Weights with Location Analysis
 Simple but complete demo that actually works!
 """
 
+import os
+import sys
+from typing import Dict, List
+
 import torch
 import torch.nn as nn
-from typing import Dict, List
-import sys
-import os
 
 # Add parent directory for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,12 +30,8 @@ def working_demo():
     state_dict = encoder_data["model_state_dict"]
 
     print(f"   ✅ Real Prithvi weights loaded")
-    print(
-        f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim"
-    )
-    print(
-        f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static"
-    )
+    print(f"   ✅ Configuration: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim")
+    print(f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static")
 
     # Sample locations for analysis
     locations = [
@@ -119,9 +116,7 @@ def working_demo():
         attention = attention / attention.sum()  # Normalize
 
         # Apply spatial attention to get location-focused features
-        attended_features = (location_features * attention.unsqueeze(-1)).sum(
-            dim=0
-        )  # [embed_dim]
+        attended_features = (location_features * attention.unsqueeze(-1)).sum(dim=0)  # [embed_dim]
 
         # Compute analysis metrics
         feature_magnitude = attended_features.norm().item()
@@ -150,12 +145,8 @@ def working_demo():
     magnitudes = [r["feature_magnitude"] for r in analysis_results]
     diversities = [r["feature_diversity"] for r in analysis_results]
 
-    print(
-        f"   📊 Feature magnitude range: {min(magnitudes):.3f} - {max(magnitudes):.3f}"
-    )
-    print(
-        f"   📊 Feature diversity range: {min(diversities):.3f} - {max(diversities):.3f}"
-    )
+    print(f"   📊 Feature magnitude range: {min(magnitudes):.3f} - {max(magnitudes):.3f}")
+    print(f"   📊 Feature diversity range: {min(diversities):.3f} - {max(diversities):.3f}")
 
     # Find most/least distinctive locations
     most_distinct = max(analysis_results, key=lambda x: x["feature_diversity"])
@@ -180,13 +171,9 @@ def working_demo():
     ]
 
     # Simple text-feature correlation (simulated)
-    for i, (result, description) in enumerate(
-        zip(analysis_results, climate_descriptions)
-    ):
+    for i, (result, description) in enumerate(zip(analysis_results, climate_descriptions)):
         # Simulate text-climate correlation based on feature characteristics
-        correlation_strength = (
-            result["feature_diversity"] * 0.8 + result["spatial_focus"] * 0.2
-        )
+        correlation_strength = result["feature_diversity"] * 0.8 + result["spatial_focus"] * 0.2
 
         print(f"   📍 {result['location']['name']}:")
         print(f"      Text: '{description[:50]}...'")

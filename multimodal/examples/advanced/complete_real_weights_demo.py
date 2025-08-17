@@ -5,11 +5,12 @@ This demo uses the properly extracted encoder weights and handles all the config
 correctly. No more demo mode warnings or size mismatches!
 """
 
+import os
+import sys
+from pathlib import Path
+
 import torch
 import torch.nn as nn
-import sys
-import os
-from pathlib import Path
 
 # Add parent directory for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,12 +34,8 @@ def create_functional_demo():
     encoder_data = torch.load(encoder_path, map_location="cpu")
     config = encoder_data["config"]["params"]
 
-    print(
-        f"   ✅ Config: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim"
-    )
-    print(
-        f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static"
-    )
+    print(f"   ✅ Config: {config['n_blocks_encoder']} blocks, {config['embed_dim']} dim")
+    print(f"   ✅ Channels: {config['in_channels']} input, {config['in_channels_static']} static")
 
     # Create a minimal encoder class that works with the extracted weights
     class MinimalEncoder(nn.Module):
@@ -70,16 +67,12 @@ def create_functional_demo():
 
                 # Flatten and return
                 B, C_out, H_out, W_out = features.shape
-                features = features.flatten(2).transpose(
-                    1, 2
-                )  # [B, N_patches, embed_dim]
+                features = features.flatten(2).transpose(1, 2)  # [B, N_patches, embed_dim]
 
                 return features
             else:
                 # Fallback: simple pooling
-                x_pooled = torch.nn.functional.adaptive_avg_pool3d(
-                    x, (T, H // 4, W // 4)
-                )
+                x_pooled = torch.nn.functional.adaptive_avg_pool3d(x, (T, H // 4, W // 4))
                 return x_pooled.flatten(2).transpose(1, 2)
 
     # Create and load the encoder
@@ -162,9 +155,7 @@ def create_functional_demo():
             }
         )
 
-        print(
-            f"   🌍 {location['name']} ({location['lat']:.1f}°, {location['lon']:.1f}°):"
-        )
+        print(f"   🌍 {location['name']} ({location['lat']:.1f}°, {location['lon']:.1f}°):")
         print(f"      Mean feature: {feature_stats['mean']:.3f}")
         print(f"      Feature std: {feature_stats['std']:.3f}")
         print(f"      Spatial coverage: {results[-1]['mask_coverage']:.1%}")
