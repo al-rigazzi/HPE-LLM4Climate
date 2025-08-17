@@ -270,38 +270,52 @@ class PrithviWxC_Encoder(nn.Module):
             raise ValueError(f"Unknown masking mode: {self.masking_mode}")
 
     def to_patching(self, x: torch.Tensor) -> torch.Tensor:
-        """Convert to patch format."""
+        """Transform data from lat/lon space to two axis patching
+
+        Args:
+            x: Tensor in lat/lon space (N, C, Nlat//P_0, Nlon//P_1)
+
+        Returns:
+            Tensor in patch space (N, G, L, C)
+        """
         n_batch = x.shape[0]
+
+        x = x.view(
+            n_batch,
+            self.embed_dim,
+            self.global_shape_mu[0],
+            self.local_shape_mu[0],
+            self.global_shape_mu[1],
+            self.local_shape_mu[1],
+        )
+        x = x.permute(0, 2, 4, 3, 5, 1).contiguous()
+
         s = x.shape
-        return x.view(n_batch, -1, s[2] * s[3], s[4] * s[5])
+        return x.view(n_batch, s[1] * s[2], s[3] * s[4], -1)
 
     def time_encoding(
         self, input_time: torch.Tensor, lead_time: torch.Tensor
     ) -> torch.Tensor:
-        """Generate time encoding."""
-        input_time_emb = self.input_time_embedding(input_time.view(-1, 1))
-        lead_time_emb = self.lead_time_embedding(lead_time.view(-1, 1))
+        """
+        Args:
+            input_time: Tensor of shape [batch].
+            lead_time: Tensor of shape [batch].
+        Returns:
+            Tensor of shape [batch, embed_dim, 1, 1]
+        """
+        input_time = self.input_time_embedding(input_time.view(-1, 1, 1, 1))
+        lead_time = self.lead_time_embedding(lead_time.view(-1, 1, 1, 1))
 
-        # Combine and reshape to match token dimensions
-        time_emb = torch.cat([input_time_emb, lead_time_emb], dim=-1)
-
-        # Reshape to broadcast with tokens: [batch, 1, 1, embed_dim//2]
-        time_emb = time_emb.view(time_emb.shape[0], 1, 1, -1)
-
-        # Pad to full embed_dim if needed
-        if time_emb.shape[-1] < self.embed_dim:
-            pad_size = self.embed_dim - time_emb.shape[-1]
-            padding = torch.zeros(
-                time_emb.shape[0],
-                1,
-                1,
-                pad_size,
-                device=time_emb.device,
-                dtype=time_emb.dtype,
-            )
-            time_emb = torch.cat([time_emb, padding], dim=-1)
-
-        return time_emb
+        time_encoding = torch.cat(
+            (
+                torch.cos(input_time),
+                torch.cos(lead_time),
+                torch.sin(input_time),
+                torch.sin(lead_time),
+            ),
+            axis=3
+        )
+        return time_encoding
 
     def forward(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """
