@@ -6,10 +6,15 @@ This directory contains the comprehensive test suite for the HPE-LLM4Climate pro
 
 ### `integration/`
 Integration tests for complex system interactions:
+- **`test_simple_encoder_extraction.py`** - Basic encoder extraction and validation
+- **`test_encoder_loading_verification.py`** - Complete encoder loading verification
+- **`test_encoder_only.py`** - Standalone encoder functionality tests
+- **`test_full_encoder_pipeline.py`** - End-to-end encoder pipeline testing
 - **`test_llama_comprehensive.py`** - Comprehensive Meta-Llama-3-8B integration testing
 - **`test_llama_integration.py`** - Multiple Llama model configuration testing
 - **`test_llama_with_prithvi.py`** - Prithvi encoder + Llama model fusion testing
-- **`test_mps_fix.py`** - Apple Silicon MPS compatibility testing
+- **`debug_weight_loading.py`** - Weight loading diagnostics and debugging
+- **`debug_forward_pass.py`** - Forward pass analysis and debugging
 
 ### `system/`
 System-level validation and setup tests:
@@ -22,15 +27,15 @@ Demonstration scripts and examples:
 ## 🧪 Core Unit Tests
 
 The core unit tests are located in `multimodal/tests/`:
-- **`test_location_aware.py`** - Geographic processing and location-aware functionality (16 tests)
-- **`test_fusion.py`** - Multimodal climate-text fusion (5 tests)
+- **`test_location_aware.py`** - Geographic processing and location-aware functionality
+- **`test_fusion.py`** - Multimodal climate-text fusion testing
 - **`test_encoder_extractor.py`** - Encoder extraction and validation
 
 ## 🚀 Running Tests
 
-### Unit Tests (CI/CD Pipeline)
+### Unit Tests (Multimodal Components)
 ```bash
-# Core functionality tests (run by CI/CD)
+# Core functionality tests
 cd multimodal
 python -m pytest tests/ -v
 
@@ -40,14 +45,19 @@ python tests/test_fusion.py
 python tests/test_encoder_extractor.py
 ```
 
-### Integration Tests
+### Integration Tests (Encoder Pipeline)
 ```bash
-# Llama model integration
+# Encoder validation and extraction
+python tests/integration/test_simple_encoder_extraction.py
+python tests/integration/test_encoder_loading_verification.py
+python tests/integration/test_encoder_only.py
+python tests/integration/test_full_encoder_pipeline.py
+
+# LLM integration
 python tests/integration/test_llama_comprehensive.py
 python tests/integration/test_llama_integration.py
 python tests/integration/test_llama_with_prithvi.py
-
-# Platform compatibility
+```
 python tests/integration/test_mps_fix.py
 ```
 

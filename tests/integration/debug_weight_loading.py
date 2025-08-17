@@ -37,23 +37,23 @@ def debug_weight_loading():
     # Load checkpoint
     checkpoint_path = project_root / "data" / "weights" / "prithvi.wxc.2300m.v1.pt"
     print(f"\n📁 Loading checkpoint: {checkpoint_path}")
-    
+
     state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     if "model_state" in state_dict:
         state_dict = state_dict["model_state"]
 
     print(f"\n🔍 CHECKPOINT ANALYSIS:")
     print(f"   Total keys in checkpoint: {len(state_dict.keys())}")
-    
+
     # Analyze key patterns
     encoder_keys = [k for k in state_dict.keys() if not k.startswith("decoder")]
     decoder_keys = [k for k in state_dict.keys() if k.startswith("decoder")]
     other_keys = [k for k in state_dict.keys() if not k.startswith("encoder") and not k.startswith("decoder")]
-    
+
     print(f"   Keys starting with 'encoder': {len([k for k in state_dict.keys() if k.startswith('encoder')])}")
     print(f"   Keys starting with 'decoder': {len(decoder_keys)}")
     print(f"   Other keys: {len(other_keys)}")
-    
+
     print(f"\n📊 OTHER KEYS (non-encoder/decoder):")
     for key in sorted(other_keys)[:20]:  # Show first 20
         print(f"     {key}: {state_dict[key].shape if torch.is_tensor(state_dict[key]) else type(state_dict[key])}")
@@ -79,7 +79,7 @@ def debug_weight_loading():
         print(f"\n📊 STATIC SCALERS:")
         print(f"   Scaler channels: {scaler_static_channels}")
         print(f"   Target channels: {actual_static_channels}")
-        
+
         if scaler_static_channels != actual_static_channels:
             print(f"   ⚠️  Mismatch detected - need adjustment")
 
@@ -135,28 +135,28 @@ def debug_weight_loading():
     )
 
     print(f"   ✅ Full model created")
-    
+
     # Get the full model's expected keys
     full_model_keys = set(full_model.state_dict().keys())
     checkpoint_keys = set(state_dict.keys())
-    
+
     print(f"\n📊 KEY ANALYSIS:")
     print(f"   Full model expects: {len(full_model_keys)} keys")
     print(f"   Checkpoint provides: {len(checkpoint_keys)} keys")
-    
+
     missing_in_checkpoint = full_model_keys - checkpoint_keys
     unexpected_in_checkpoint = checkpoint_keys - full_model_keys
-    
+
     print(f"   Missing from checkpoint: {len(missing_in_checkpoint)}")
     print(f"   Unexpected in checkpoint: {len(unexpected_in_checkpoint)}")
-    
+
     if missing_in_checkpoint:
         print(f"\n❌ MISSING KEYS (first 20):")
         for key in sorted(list(missing_in_checkpoint))[:20]:
             print(f"     {key}")
         if len(missing_in_checkpoint) > 20:
             print(f"     ... and {len(missing_in_checkpoint) - 20} more")
-    
+
     if unexpected_in_checkpoint:
         print(f"\n⚠️  UNEXPECTED KEYS (first 20):")
         for key in sorted(list(unexpected_in_checkpoint))[:20]:
@@ -170,21 +170,21 @@ def debug_weight_loading():
         missing_keys, unexpected_keys = full_model.load_state_dict(state_dict, strict=False)
         print(f"   Missing keys: {len(missing_keys)}")
         print(f"   Unexpected keys: {len(unexpected_keys)}")
-        
+
         if len(missing_keys) > 0:
             print(f"\n❌ MISSING KEYS DURING LOADING (first 20):")
             for key in missing_keys[:20]:
                 print(f"     {key}")
             if len(missing_keys) > 20:
                 print(f"     ... and {len(missing_keys) - 20} more")
-                
+
         if len(unexpected_keys) > 0:
             print(f"\n⚠️  UNEXPECTED KEYS DURING LOADING (first 20):")
             for key in unexpected_keys[:20]:
                 print(f"     {key}")
             if len(unexpected_keys) > 20:
                 print(f"     ... and {len(unexpected_keys) - 20} more")
-                
+
     except Exception as e:
         print(f"   ❌ Loading failed: {e}")
         return False
@@ -219,19 +219,19 @@ def debug_weight_loading():
         encoder_shifting=False,
         checkpoint_encoder=[],
     )
-    
+
     print(f"   ✅ Encoder created")
-    
+
     encoder_keys = set(encoder_model.state_dict().keys())
     print(f"   Encoder expects: {len(encoder_keys)} keys")
-    
+
     # Compare encoder keys with full model keys
     encoder_in_full = encoder_keys.intersection(full_model_keys)
     encoder_not_in_full = encoder_keys - full_model_keys
-    
+
     print(f"   Encoder keys also in full model: {len(encoder_in_full)}")
     print(f"   Encoder keys NOT in full model: {len(encoder_not_in_full)}")
-    
+
     if encoder_not_in_full:
         print(f"\n⚠️  ENCODER KEYS NOT IN FULL MODEL:")
         for key in sorted(encoder_not_in_full):
@@ -243,7 +243,7 @@ def debug_weight_loading():
         print(f"   🔍 Check if full model configuration matches checkpoint")
     else:
         print(f"   ✅ Missing keys count acceptable ({len(missing_keys)}) - likely just decoder keys")
-    
+
     return True
 
 

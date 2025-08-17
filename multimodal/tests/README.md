@@ -1,30 +1,38 @@
-# Test Suite
+# Multimodal Test Suite
 
-This directory contains the comprehensive test suite for the multimodal climate analysis system.
+This directory contains the test suite for the multimodal climate analysis system components.
 
 ## Test Files
 
-- `test_encoder_extractor.py` - Tests for encoder extraction utilities
-- `test_fusion.py` - Tests for multimodal fusion capabilities
-- `test_location_aware.py` - Tests for location-aware processing
+- **`test_encoder_extractor.py`** - Tests for PrithviWxC encoder extraction and validation
+- **`test_fusion.py`** - Tests for multimodal climate-text fusion capabilities
+- **`test_location_aware.py`** - Tests for location-aware processing and geographic functionality
 
 ## Running Tests
 
 All tests can be run using pytest or directly with Python:
 
 ```bash
-cd tests/
+cd multimodal/tests/
 python test_location_aware.py
 python test_fusion.py
 python test_encoder_extractor.py
+
+# Or using pytest
+python -m pytest . -v
 ```
 
-## Test Status
+## Test Coverage
 
-All tests are currently passing with 100% success rate, validating:
-- Location-aware processing
-- Multimodal fusion
-- Encoder extraction
-- Geographic resolution
+The test suite validates:
+- **Encoder Extraction**: PrithviWxC encoder extraction and weight validation
+- **Multimodal Fusion**: Climate-text fusion across different strategies
+- **Location-Aware Processing**: Geographic resolution and spatial attention
+- **Cross-Platform Compatibility**: Apple Silicon MPS and CUDA device support
 
-The test suite ensures reliability across different Apple Silicon configurations and MPS device compatibility.
+## System Requirements
+
+- Python 3.8+
+- PyTorch with MPS support (Apple Silicon) or CUDA (NVIDIA)
+- All dependencies from `requirements.txt`
+- Optional: HuggingFace authentication for gated models

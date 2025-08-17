@@ -20,17 +20,17 @@ This project implements a state-of-the-art multimodal fusion system that bridges
 ## ✨ Key Features
 
 ### 🏗️ Core Components
-- **PrithviWxC Encoder Extraction**: Standalone climate feature encoder (1.97B parameters)
+- **PrithviWxC Encoder Extraction**: Standalone climate feature encoder with full model compatibility
 - **Multimodal Fusion Framework**: Combines climate and text data using multiple fusion strategies
 - **Location-Aware Climate Analysis**: Geographic-specific analysis with spatial attention masking
 - **Transformer Integration**: Support for Llama 3, BERT, and other HuggingFace models
-- **Memory Efficient**: 72% reduction in model size for inference applications
+- **Production-Ready Architecture**: Comprehensive testing and validation infrastructure
 
 ### 🌍 Geographic Intelligence
-- **Multi-Backend Resolution**: GeoPy/Nominatim, GeoNames API, and local database support
-- **Spatial Attention Masking**: Focus analysis on specific geographic regions
+- **Multi-Backend Resolution**: GeoPy/Nominatim geographic coordinate resolution
+- **Spatial Context Integration**: Location-aware processing and analysis
 - **Multi-Scale Analysis**: From coordinate-level to global climate assessment
-- **Real-World Data**: Integration with OpenStreetMap and official geographic databases
+- **Real-World Integration**: OpenStreetMap and geographic database support
 
 ### 🔧 Fusion Strategies
 - **Cross-Attention Fusion**: Deep interaction between climate and text features
@@ -39,9 +39,9 @@ This project implements a state-of-the-art multimodal fusion system that bridges
 - **Location-Aware Fusion**: Geographic context integration with climate data
 
 ### 🧪 Production Ready
-- Comprehensive test suite (5/5 tests passing)
-- Multiple usage examples and demos
-- Complete documentation
+- Comprehensive test suite with encoder validation
+- Multiple usage examples and demonstrations
+- Complete documentation and API reference
 - Real-world application templates
 
 ## 📋 Prerequisites
@@ -280,21 +280,53 @@ This demonstrates:
 
 ```
 HPE-LLM4Climate/
-├── README.md                    # This file
+├── README.md                    # Main project documentation
 ├── requirements.txt             # Python dependencies
+├── pr_description.md           # Pull request documentation
 ├── data/                        # Model weights and configuration
 │   ├── config.yaml             # PrithviWxC configuration
+│   ├── climatology/            # Climate normalization data
 │   └── weights/                # Model weight files
-├── multimodal/                  # Multimodal fusion components
-│   ├── README.md               # Detailed multimodal documentation
-│   ├── encoder_extractor.py    # Extract PrithviWxC encoder
-│   ├── climate_text_fusion.py  # Main fusion framework
-│   ├── practical_example.py    # Working demonstration
-│   ├── fusion_demo.py          # Comprehensive demo
-│   ├── test_fusion.py          # Test suite
-│   └── example_usage.py        # Basic usage examples
+├── multimodal/                  # Multimodal fusion system
+│   ├── README.md               # Multimodal documentation
+│   ├── core/                   # Core fusion modules
+│   │   ├── climate_text_fusion.py      # Main fusion framework
+│   │   ├── location_aware.py           # Geographic processing
+│   │   └── location_aware_fusion.py    # Complete analysis system
+│   ├── utils/                  # Utility modules
+│   │   ├── encoder_extractor.py        # PrithviWxC encoder extraction
+│   │   └── requirements-geo.txt        # Geographic dependencies
+│   ├── examples/               # Usage examples and demos
+│   │   ├── basic/              # Simple examples
+│   │   ├── advanced/           # Complex demonstrations
+│   │   └── location_aware/     # Location-specific examples
+│   ├── tests/                  # Multimodal test suite
+│   │   ├── test_encoder_extractor.py   # Encoder tests
+│   │   ├── test_fusion.py              # Fusion tests
+│   │   └── test_location_aware.py      # Geographic tests
+│   └── docs/                   # Documentation and guides
+├── tests/                       # Comprehensive testing framework
+│   ├── integration/            # Integration tests
+│   │   ├── test_encoder_loading_verification.py  # Encoder validation
+│   │   ├── test_encoder_only.py                  # Encoder functionality
+│   │   ├── test_simple_encoder_extraction.py     # Basic extraction
+│   │   ├── test_full_encoder_pipeline.py         # Complete pipeline
+│   │   ├── test_llama_integration.py             # LLM integration
+│   │   ├── test_llama_comprehensive.py           # Advanced testing
+│   │   ├── debug_weight_loading.py               # Debug utilities
+│   │   └── debug_forward_pass.py                 # Forward pass debug
+│   ├── system/                 # System verification
+│   │   └── verify_setup.py     # Complete setup validation
+│   └── demos/                  # Working demonstrations
+│       └── working_location_demo.py  # Location-aware demo
 ├── PrithviWxC/                  # Original climate model
-└── validation/                  # Model validation tools
+│   ├── model.py                # Core model implementation
+│   ├── rollout.py              # Inference utilities
+│   └── dataloaders/            # Data loading components
+└── validation/                  # Model validation and testing
+    ├── config.yaml             # Validation configuration
+    ├── validate_prithvi_wxc.py # Model validation
+    └── reproducibility.py      # Reproducibility testing
 ```
 
 ## 🧪 Testing & Validation
@@ -304,19 +336,26 @@ HPE-LLM4Climate/
 The system includes extensive testing across multiple components:
 
 ```bash
-# Core functionality tests
-python multimodal/test_fusion.py                    # Multimodal fusion
-python multimodal/test_encoder_extractor.py         # Encoder extraction
-python multimodal/test_location_aware.py           # Geographic processing
+# Multimodal system tests
+python multimodal/tests/test_fusion.py                    # Fusion framework tests
+python multimodal/tests/test_encoder_extractor.py         # Encoder extraction tests
+python multimodal/tests/test_location_aware.py           # Geographic processing tests
 
 # Integration tests
-python tests/integration/test_llama_integration.py                   # Language model integration
-python tests/integration/test_llama_comprehensive.py                 # Advanced system tests
-python tests/integration/test_mps_fix.py                             # Apple Silicon compatibility
+python tests/integration/test_simple_encoder_extraction.py     # Basic encoder validation
+python tests/integration/test_encoder_loading_verification.py  # Complete loading validation
+python tests/integration/test_encoder_only.py                  # Standalone encoder tests
+python tests/integration/test_full_encoder_pipeline.py         # End-to-end pipeline
+python tests/integration/test_llama_integration.py             # LLM integration
+python tests/integration/test_llama_comprehensive.py           # Advanced system tests
 
 # System verification and demos
 python tests/system/verify_setup.py                # Complete system setup verification
-python tests/demos/working_location_demo.py        # Location-aware demo
+python tests/demos/working_location_demo.py        # Location-aware demonstration
+
+# Debug utilities (for development)
+python tests/integration/debug_weight_loading.py   # Weight loading diagnostics
+python tests/integration/debug_forward_pass.py     # Forward pass analysis
 ```
 
 ### ✅ **Validation Results**

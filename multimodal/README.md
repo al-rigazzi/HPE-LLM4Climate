@@ -10,22 +10,26 @@ multimodal/
 │   ├── climate_text_fusion.py   # Primary multimodal fusion
 │   ├── location_aware.py        # Geographic processing
 │   └── location_aware_fusion.py # Complete analysis system
+├── utils/                   # Utility modules
+│   ├── encoder_extractor.py     # PrithviWxC encoder extraction
+│   └── requirements-geo.txt     # Geographic dependencies
 ├── examples/               # Example demonstrations
 │   ├── basic/             # Simple examples
 │   ├── advanced/          # Complex demonstrations
 │   └── location_aware/    # Location-specific examples
-├── tests/                 # Comprehensive test suite
-├── utils/                 # Utility modules
-│   └── encoder_extractor.py    # Model component extraction
+├── tests/                 # Multimodal test suite
+│   ├── test_encoder_extractor.py # Encoder extraction tests
+│   ├── test_fusion.py           # Fusion framework tests
+│   └── test_location_aware.py   # Geographic processing tests
 └── docs/                  # Documentation and success logs
 ```
 
 ## Key Features
 
-⚠️ **Meta-Llama-3-8B Integration**: 7.5B parameter model with location-aware processing (**HuggingFace approval required**)
+⚠️ **Meta-Llama-3-8B Integration**: Advanced language model with location-aware processing (**HuggingFace approval required**)
 ✅ **Apple Silicon Support**: Native ARM64 with MPS acceleration and CPU fallback
 ✅ **Geographic Precision**: GeoPy/Nominatim integration for accurate location resolution
-✅ **Comprehensive Testing**: 16/16 tests passing with 100% success rate
+✅ **Comprehensive Testing**: Full encoder pipeline validation with zero missing keys
 ✅ **Multimodal Fusion**: Climate data and natural language processing
 ✅ **Alternative Models**: Testing-ready models available without gating
 
