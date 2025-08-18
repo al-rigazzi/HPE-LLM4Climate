@@ -16,11 +16,14 @@ The training pipeline supports:
 ### 1. Install Dependencies
 
 ```bash
-# Install training requirements
-pip install -r requirements-training.txt
+# Install minimal requirements
+pip install -r requirements.txt
 
-# For CUDA support (if not already installed)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+# Or use the automated setup script
+./setup_env.sh
+
+# For specific CUDA version
+./setup_env.sh --cuda cu118
 ```
 
 ### 2. Prepare Data
@@ -70,7 +73,7 @@ deepspeed --num_gpus=8 --num_nodes=2 train_multimodal.py --config config.yaml
 ### Cross-Attention Fusion
 The model uses cross-attention mechanisms to fuse climate data features with text embeddings:
 - Climate encoder extracts spatial-temporal features from weather data
-- Text encoder processes natural language queries/descriptions  
+- Text encoder processes natural language queries/descriptions
 - Cross-attention layers enable bidirectional information flow
 - Final fusion creates joint representations for downstream tasks
 
@@ -215,7 +218,7 @@ If enabled, view training metrics at: https://wandb.ai/your-username/climate-tex
 ### Checkpoints
 Saved in `checkpoints/multimodal/checkpoint_epoch_N/`:
 - `mp_rank_00_model_states.pt`: Model weights
-- `zero_pp_rank_0_mp_rank_00_optim_states.pt`: Optimizer states  
+- `zero_pp_rank_0_mp_rank_00_optim_states.pt`: Optimizer states
 - `tokenizer/`: Saved tokenizer
 - `config.yaml`: Training configuration
 
