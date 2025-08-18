@@ -1,11 +1,23 @@
 name: CI/CD Pipeline
 
+# WORKFLOWS DISABLED
+# To re-enable: uncomment the 'on:' section below
+
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+#   workflow_dispatch:  # Allow manual triggering
+
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:  # Allow manual triggering
+  # Disable all triggers - workflows will not run
+  workflow_dispatch:  # Keep manual trigger only (optional)
+    inputs:
+      force_run:
+        description: 'Force run despite being disabled'
+        required: false
+        default: 'false'
 
 env:
   # Environment variables for testing
