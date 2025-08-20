@@ -96,7 +96,7 @@ class AIFSGeographicResolver(nn.Module):
         # Apply embedding network
         embedded = self.coordinate_embedding(encoding.unsqueeze(0))
 
-        return embedded.squeeze(0)
+        return torch.as_tensor(embedded.squeeze(0))
 
     def encode_location_batch(self, coordinates: List[Tuple[float, float]]) -> torch.Tensor:
         """
@@ -171,7 +171,7 @@ class AIFSGeographicResolver(nn.Module):
         # Blend center and context
         final_context = (1 - context_weight) * center_encoding + context_weight * weighted_context
 
-        return final_context
+        return torch.as_tensor(final_context)
 
     def resolve_text_location(self, text: str) -> Optional[Tuple[float, float]]:
         """
@@ -284,7 +284,7 @@ class AIFSSpatialCropper(nn.Module):
         else:
             features = self.climate_projection(flattened.sum(dim=2, keepdim=True))
 
-        return features
+        return torch.as_tensor(features)
 
     def crop_region(
         self, climate_data: torch.Tensor, center_lat: float, center_lon: float
@@ -305,11 +305,11 @@ class AIFSSpatialCropper(nn.Module):
             climate_data, center_lat, center_lon, self.crop_size_km
         )
 
-        return cropped
+        return torch.as_tensor(cropped)
 
     def attention_crop(
         self, climate_data: torch.Tensor, query_location: torch.Tensor
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Crop region using attention mechanism.
 
@@ -322,7 +322,9 @@ class AIFSSpatialCropper(nn.Module):
         """
         # Create spatial features
         coordinates = climate_data.shape[-2:]  # (lat, lon)
-        spatial_features = self.create_spatial_features(climate_data, coordinates)
+        spatial_features = self.create_spatial_features(
+            climate_data, (int(coordinates[0]), int(coordinates[1]))
+        )
 
         # Project location query
         query = self.location_query(query_location.unsqueeze(0))  # (1, feature_dim)

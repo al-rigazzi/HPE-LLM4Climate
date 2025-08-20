@@ -89,7 +89,8 @@ class GeographicResolver:
             Dictionary with lat, lon, name, and bounds
         """
         if location_text in self.location_cache:
-            return self.location_cache[location_text]
+            cached_result = self.location_cache[location_text]
+            return cached_result if cached_result is not None else None
 
         # Normalize text
         normalized = location_text.lower().strip()
@@ -99,13 +100,17 @@ class GeographicResolver:
             location_info = self.known_locations[normalized].copy()
 
             # Add bounding box (roughly 1 degree around center)
+            lat_raw = location_info.get("lat", 0)
+            lon_raw = location_info.get("lon", 0)
+            lat_val = float(lat_raw) if isinstance(lat_raw, (int, float, str)) else 0.0
+            lon_val = float(lon_raw) if isinstance(lon_raw, (int, float, str)) else 0.0
             location_info.update(
                 {
                     "bounds": {
-                        "north": location_info["lat"] + 0.5,
-                        "south": location_info["lat"] - 0.5,
-                        "east": location_info["lon"] + 0.5,
-                        "west": location_info["lon"] - 0.5,
+                        "north": lat_val + 0.5,
+                        "south": lat_val - 0.5,
+                        "east": lon_val + 0.5,
+                        "west": lon_val - 0.5,
                     }
                 }
             )
@@ -117,13 +122,17 @@ class GeographicResolver:
         for known_loc, info in self.known_locations.items():
             if known_loc in normalized or normalized in known_loc:
                 location_info = info.copy()
+                lat_raw = info.get("lat", 0)
+                lon_raw = info.get("lon", 0)
+                lat_val = float(lat_raw) if isinstance(lat_raw, (int, float, str)) else 0.0
+                lon_val = float(lon_raw) if isinstance(lon_raw, (int, float, str)) else 0.0
                 location_info.update(
                     {
                         "bounds": {
-                            "north": info["lat"] + 0.5,
-                            "south": info["lat"] - 0.5,
-                            "east": info["lon"] + 0.5,
-                            "west": info["lon"] - 0.5,
+                            "north": lat_val + 0.5,
+                            "south": lat_val - 0.5,
+                            "east": lon_val + 0.5,
+                            "west": lon_val - 0.5,
                         }
                     }
                 )
@@ -258,6 +267,9 @@ class AIFSLocationAwareFusion(nn.Module):
             temporal_modeling="transformer", hidden_dim=time_series_dim, device=device
         )
 
+        # Initialize LLaMA model - can be either real model or mock
+        self.llama_model: Union[Any, "MockLlamaModel"]
+
         # Initialize LLaMA model - try real LLaMA first, fallback to mock
         if LLAMA_AVAILABLE and not use_mock_llama:
             self._initialize_real_llama(llama_model_name, use_quantization)
@@ -287,8 +299,9 @@ class AIFSLocationAwareFusion(nn.Module):
                 model_name, trust_remote_code=True, padding_side="left"
             )
 
-            if self.llama_tokenizer.pad_token is None:
-                self.llama_tokenizer.pad_token = self.llama_tokenizer.eos_token
+            if self.llama_tokenizer is not None and self.llama_tokenizer.pad_token is None:  # type: ignore[unreachable]
+                if self.llama_tokenizer.eos_token is not None:  # type: ignore[unreachable]
+                    self.llama_tokenizer.pad_token = self.llama_tokenizer.eos_token
 
             # Configure quantization if requested and available
             if use_quantization and QUANTIZATION_AVAILABLE:
@@ -384,7 +397,7 @@ class AIFSLocationAwareFusion(nn.Module):
 
     def tokenize_climate_data(self, climate_data: torch.Tensor) -> torch.Tensor:
         """Tokenize climate data using AIFS encoder."""
-        return self.time_series_tokenizer(climate_data)
+        return torch.as_tensor(self.time_series_tokenizer(climate_data))
 
     def tokenize_text(self, text_inputs: List[str]) -> Dict[str, torch.Tensor]:
         """Tokenize text inputs."""
@@ -399,7 +412,7 @@ class AIFSLocationAwareFusion(nn.Module):
                 "attention_mask": torch.ones(batch_size, seq_len),
             }
 
-        return self.llama_tokenizer(
+        return self.llama_tokenizer(  # type: ignore[unreachable]
             text_inputs,
             return_tensors="pt",
             padding=True,
@@ -409,7 +422,7 @@ class AIFSLocationAwareFusion(nn.Module):
 
     def forward(
         self, climate_data: torch.Tensor, text_inputs: List[str], task: str = "embedding", **kwargs
-    ) -> Dict[str, torch.Tensor]:
+    ) -> Dict[str, Any]:
         """
         Forward pass with location-aware processing.
 
@@ -493,9 +506,13 @@ class AIFSLocationAwareFusion(nn.Module):
 
         # Task-specific processing
         if task == "generation":
-            return self._generate_text(fused_embeddings, text_input_ids)
+            result = self._generate_text(fused_embeddings, text_input_ids)
+            result["location_info"] = location_infos
+            return result
         elif task == "classification":
-            return self._classify(fused_embeddings)
+            result = self._classify(fused_embeddings)
+            result["location_info"] = location_infos
+            return result
         elif task == "embedding":
             return {"embeddings": fused_embeddings, "location_info": location_infos}
         else:
@@ -551,11 +568,11 @@ class AIFSLocationAwareFusion(nn.Module):
             )
             final_fused = self.location_norm(fused + text_embeddings)
 
-        return final_fused
+        return torch.as_tensor(final_fused)
 
     def _generate_text(
         self, fused_embeddings: torch.Tensor, input_ids: torch.Tensor
-    ) -> Dict[str, torch.Tensor]:
+    ) -> Dict[str, Any]:
         """Generate text using fused embeddings."""
         # Simple mock generation
         batch_size, seq_len = input_ids.shape
@@ -564,7 +581,7 @@ class AIFSLocationAwareFusion(nn.Module):
         logits = torch.randn(batch_size, seq_len, vocab_size, device=self.device)
         return {"logits": logits}
 
-    def _classify(self, fused_embeddings: torch.Tensor) -> Dict[str, torch.Tensor]:
+    def _classify(self, fused_embeddings: torch.Tensor) -> Dict[str, Any]:
         """Classify using fused embeddings."""
         # Pool sequence dimension and classify
         pooled = fused_embeddings.mean(dim=1)  # [batch, hidden]

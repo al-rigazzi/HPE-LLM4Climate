@@ -45,7 +45,9 @@ class LocationUtils:
         return radians * 180.0 / math.pi
 
     @staticmethod
-    def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    def haversine_distance(
+        lat1: float, lon1: float, lat2: float, lon2: float
+    ) -> Union[float, torch.Tensor]:
         """
         Calculate the great circle distance between two points on Earth.
 
@@ -75,7 +77,7 @@ class LocationUtils:
         return EARTH_RADIUS_KM * c
 
     @staticmethod
-    def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> Union[float, torch.Tensor]:
         """
         Calculate the initial bearing from point 1 to point 2.
 
@@ -103,7 +105,7 @@ class LocationUtils:
     @staticmethod
     def destination_point(
         lat: float, lon: float, bearing: float, distance_km: float
-    ) -> Tuple[float, float]:
+    ) -> Tuple[Union[float, torch.Tensor], Union[float, torch.Tensor]]:
         """
         Calculate destination point given start point, bearing, and distance.
 
@@ -420,8 +422,15 @@ class SpatialEncoder:
         bearing = LocationUtils.bearing(lat1, lon1, lat2, lon2)
 
         # Normalize
-        distance_norm = min(distance / self.max_distance_km, 1.0)
-        bearing_norm = bearing / 360.0
+        if isinstance(distance, torch.Tensor):
+            distance_norm = torch.clamp(distance / self.max_distance_km, 0.0, 1.0)
+        else:
+            distance_norm = torch.tensor(min(distance / self.max_distance_km, 1.0))
+
+        if isinstance(bearing, torch.Tensor):
+            bearing_norm = bearing / 360.0
+        else:
+            bearing_norm = torch.tensor(bearing / 360.0)
 
         # Create encoding
         encoding = torch.zeros(self.encoding_dim)

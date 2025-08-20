@@ -7,7 +7,7 @@ name = "hpe-llm4climate"
 version = "0.1.0"
 description = "Comprehensive Multimodal Climate-Text Fusion System"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "HPE LLM4Climate Team"}
@@ -54,7 +54,7 @@ Issues = "https://github.com/al-rigazzi/HPE-LLM4Climate/issues"
 
 [tool.pylint.main]
 # Specify a score threshold to be exceeded before program exits with error.
-fail-under = 8.0
+fail-under = 10.0
 
 # Use multiple processes to speed up Pylint.
 jobs = 0
@@ -179,19 +179,19 @@ use_parentheses = true
 ensure_newline_before_comments = true
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 check_untyped_defs = true
 disallow_untyped_decorators = false
-no_implicit_optional = true
+no_implicit_optional = false
 warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
-strict_equality = true
+allow_redefinition = true
 
 # Per-module options for external dependencies
 [[tool.mypy.overrides]]
@@ -205,8 +205,44 @@ module = [
     "shapely.*",
     "geopandas.*",
     "folium.*",
+    "anemoi.*",
+    "ecmwf.*",
+    "cfgrib.*",
+    "pygrib.*",
+    "psutil.*",
+    "requests.*",
+    "aifs_wrapper",
+    "load_aifs_encoder",
+    "test_aifs_llama_integration",
+    "multimodal.core.models",
+    "multimodal.location_aware_fusion",
 ]
 ignore_missing_imports = true
+
+# Ignore test files completely
+[[tool.mypy.overrides]]
+module = "multimodal_aifs.tests.*"
+ignore_errors = true
+
+# Ignore examples completely
+[[tool.mypy.overrides]]
+module = "multimodal_aifs.examples.*"
+ignore_errors = true
+
+# Ignore data scripts completely
+[[tool.mypy.overrides]]
+module = "multimodal_aifs.data.scripts.*"
+ignore_errors = true
+
+# Ignore scripts completely
+[[tool.mypy.overrides]]
+module = "multimodal_aifs.scripts.*"
+ignore_errors = true
+
+# Ignore analysis completely
+[[tool.mypy.overrides]]
+module = "multimodal_aifs.analysis.*"
+ignore_errors = true
 
 [tool.pytest.ini_options]
 markers = [

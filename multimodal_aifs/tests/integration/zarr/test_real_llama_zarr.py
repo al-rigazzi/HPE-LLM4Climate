@@ -42,20 +42,23 @@ except ImportError as e:
     sys.exit(1)
 
 
-import pytest
 import os
+
+import pytest
 
 
 @pytest.fixture
 def zarr_path():
     """Provide a default zarr path for testing."""
-    return "/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate/test_climate.zarr"
+    return (
+        "/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate/test_climate.zarr"
+    )
 
 
 @pytest.mark.integration
 @pytest.mark.skipif(
     not os.environ.get("RUN_REAL_LLAMA_TESTS", False),
-    reason="Real Llama tests are resource-intensive and require RUN_REAL_LLAMA_TESTS=1"
+    reason="Real Llama tests are resource-intensive and require RUN_REAL_LLAMA_TESTS=1",
 )
 def test_real_llama_with_zarr(
     zarr_path: str,

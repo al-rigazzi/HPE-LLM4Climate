@@ -7,18 +7,18 @@ including climate-specific text preprocessing, tokenization, and embedding prepa
 """
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
-import torch
 import pytest
+import torch
 
 from multimodal_aifs.utils.text_utils import (
-    extract_location_keywords,
-    parse_climate_query,
+    CLIMATE_KEYWORDS,
     ClimateTextProcessor,
     TextEmbeddingUtils,
-    CLIMATE_KEYWORDS,
+    extract_location_keywords,
+    parse_climate_query,
 )
 
 
@@ -114,9 +114,7 @@ class TestClimateTextProcessor(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures before each test method."""
         self.processor = ClimateTextProcessor(
-            lowercase=True,
-            remove_punctuation=True,
-            max_length=512
+            lowercase=True, remove_punctuation=True, max_length=512
         )
 
     def test_initialization_default(self):
@@ -131,10 +129,7 @@ class TestClimateTextProcessor(unittest.TestCase):
     def test_initialization_custom(self):
         """Test ClimateTextProcessor initialization with custom parameters."""
         processor = ClimateTextProcessor(
-            lowercase=False,
-            remove_punctuation=False,
-            max_length=256,
-            expand_contractions=False
+            lowercase=False, remove_punctuation=False, max_length=256, expand_contractions=False
         )
 
         self.assertFalse(processor.lowercase)
@@ -262,7 +257,7 @@ class TestTextEmbeddingUtils(unittest.TestCase):
         texts = [
             "The weather is sunny today",
             "Rain is expected tomorrow",
-            "Hurricane watch issued for coast"
+            "Hurricane watch issued for coast",
         ]
 
         self.embedding_utils.build_vocabulary(texts)
@@ -388,7 +383,7 @@ class TestTextUtilsIntegration(unittest.TestCase):
             "Hurricane warning issued for Miami area with winds up to 120 mph",
             "Temperature forecast shows 85°F in Los Angeles tomorrow",
             "Heavy rainfall expected in Seattle with 2 inches predicted",
-            "Drought conditions continue in Phoenix with no rain for 45 days"
+            "Drought conditions continue in Phoenix with no rain for 45 days",
         ]
 
         # Build vocabulary

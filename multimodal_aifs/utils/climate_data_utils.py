@@ -65,7 +65,7 @@ class ClimateDataProcessor:
         """
         self.normalization_method = normalization_method
         self.target_features = target_features
-        self.variable_stats = {}
+        self.variable_stats: Dict[str, Dict[str, float]] = {}
         self.is_fitted = False
 
     def fit(

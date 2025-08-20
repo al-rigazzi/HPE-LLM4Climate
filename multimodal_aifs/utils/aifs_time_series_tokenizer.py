@@ -16,7 +16,7 @@ Date: August 20, 2025
 
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import torch
 from torch import nn
@@ -66,7 +66,9 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         # Get AIFS output dimension
         self.spatial_dim = self.aifs_encoder.output_dim  # 1024
 
-        # Initialize temporal modeling component
+        # Initialize temporal modeling component - can be LSTM, TransformerEncoder, or None
+        self.temporal_model: Optional[Union[nn.LSTM, nn.TransformerEncoder]] = None
+
         if temporal_modeling == "lstm":
             self.temporal_model = nn.LSTM(
                 input_size=self.spatial_dim,
@@ -90,6 +92,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
             raise ValueError(f"Unsupported temporal modeling: {temporal_modeling}")
 
         # Output projection if using temporal modeling
+        self.output_projection: Union[nn.Linear, nn.Identity]
         if self.temporal_model is not None:
             output_dim = hidden_dim if temporal_modeling == "lstm" else self.spatial_dim
             self.output_projection = nn.Linear(output_dim, hidden_dim)
@@ -153,7 +156,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         else:
             final_output = sequence_encodings
 
-        return final_output
+        return torch.as_tensor(final_output)
 
     def tokenize_batch_parallel(self, tensor_5d: torch.Tensor) -> torch.Tensor:
         """
@@ -192,7 +195,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         else:
             final_output = sequence_encodings
 
-        return final_output
+        return torch.as_tensor(final_output)
 
     def extract_spatial_tokens(self, tensor_5d: torch.Tensor) -> torch.Tensor:
         """

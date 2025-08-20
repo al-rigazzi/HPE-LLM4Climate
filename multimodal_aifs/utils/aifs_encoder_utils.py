@@ -8,7 +8,7 @@ including wrapper classes and helper functions for climate data processing.
 import sys
 import warnings
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 import torch
@@ -55,8 +55,8 @@ class AIFSEncoderWrapper(nn.Module):
 
         self.device = device
         self.use_extracted = use_extracted
-        self.encoder = None
-        self.encoder_info = None
+        self.encoder: Optional[nn.Module] = None
+        self.encoder_info: Optional[Dict[str, Any]] = None
 
         # Input/output dimensions based on AIFS architecture
         self.input_dim = 218  # AIFS expected input features
@@ -69,6 +69,7 @@ class AIFSEncoderWrapper(nn.Module):
         if not AIFS_AVAILABLE:
             # Create a dummy encoder for testing
             self.encoder = nn.Linear(self.input_dim, self.output_dim)
+            assert self.encoder is not None  # Help mypy understand encoder is not None
             self.encoder_info = {
                 "type": "dummy",
                 "total_parameters": sum(p.numel() for p in self.encoder.parameters()),
@@ -81,8 +82,9 @@ class AIFSEncoderWrapper(nn.Module):
             if self.use_extracted:
                 # Use pre-extracted encoder
                 self.encoder, self.encoder_info = load_aifs_encoder()
-                param_count = self.encoder_info["total_parameters"]
-                print(f"✅ Loaded extracted AIFS encoder: {param_count:,} parameters")
+                if self.encoder_info is not None:
+                    param_count = self.encoder_info["total_parameters"]
+                    print(f"✅ Loaded extracted AIFS encoder: {param_count:,} parameters")
             else:
                 # Use full AIFS wrapper
                 aifs_wrapper = AIFSWrapper(encoder_path)
@@ -91,17 +93,19 @@ class AIFSEncoderWrapper(nn.Module):
                     # Extract encoder from full model
                     full_model = model_info["pytorch_model"]
                     self.encoder = full_model.model.encoder
-                    self.encoder_info = {
-                        "type": "full_model_encoder",
-                        "total_parameters": sum(p.numel() for p in self.encoder.parameters()),
-                        "source": "AIFS full model",
-                    }
+                    if self.encoder is not None:
+                        self.encoder_info = {
+                            "type": "full_model_encoder",
+                            "total_parameters": sum(p.numel() for p in self.encoder.parameters()),
+                            "source": "AIFS full model",
+                        }
                 else:
                     raise RuntimeError("Could not access PyTorch model from AIFS wrapper")
 
             # Move to specified device
-            self.encoder = self.encoder.to(self.device)
-            self.encoder.eval()
+            if self.encoder is not None:
+                self.encoder = self.encoder.to(self.device)
+                self.encoder.eval()
 
         except Exception as e:
             warnings.warn(f"Failed to load AIFS encoder: {e}")
@@ -143,12 +147,18 @@ class AIFSEncoderWrapper(nn.Module):
 
         # Apply encoder
         with torch.no_grad():
-            if hasattr(self.encoder, "emb_nodes_src") and AIFS_AVAILABLE:
+            if (
+                self.encoder is not None
+                and hasattr(self.encoder, "emb_nodes_src")
+                and AIFS_AVAILABLE
+            ):
                 # Use AIFS source embedding layer (known to work)
-                encoded = self.encoder.emb_nodes_src(x)
-            else:
+                encoded = torch.as_tensor(self.encoder.emb_nodes_src(x))
+            elif self.encoder is not None:
                 # Use direct forward (for dummy or simple encoders)
-                encoded = self.encoder(x)
+                encoded = torch.as_tensor(self.encoder(x))
+            else:
+                raise RuntimeError("Encoder is None")
 
         return encoded
 
@@ -227,15 +237,20 @@ class AIFSEncoderWrapper(nn.Module):
 
     def get_encoder_info(self) -> Dict:
         """Get information about the loaded encoder."""
+        encoder_params = (
+            sum(p.numel() for p in self.encoder.parameters()) if self.encoder is not None else 0
+        )
+        encoder_info_dict = self.encoder_info if self.encoder_info is not None else {}
+
         return {
-            "encoder_type": type(self.encoder).__name__,
+            "encoder_type": type(self.encoder).__name__ if self.encoder is not None else "None",
             "input_dim": self.input_dim,
             "output_dim": self.output_dim,
             "device": str(self.device),
-            "parameters": sum(p.numel() for p in self.encoder.parameters()),
+            "parameters": encoder_params,
             "aifs_available": AIFS_AVAILABLE,
             "use_extracted": self.use_extracted,
-            **self.encoder_info,
+            **encoder_info_dict,
         }
 
     def encode_batch(self, batch_data: torch.Tensor, batch_size: int = 32) -> torch.Tensor:

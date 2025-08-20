@@ -4,13 +4,14 @@ Simple working tests for climate data utilities.
 """
 
 import unittest
+
 import numpy as np
 import torch
 
 from multimodal_aifs.utils.climate_data_utils import (
+    CLIMATE_VARIABLES,
     ClimateDataProcessor,
     create_synthetic_climate_data,
-    CLIMATE_VARIABLES,
 )
 
 

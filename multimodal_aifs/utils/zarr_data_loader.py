@@ -41,7 +41,7 @@ try:
 except ImportError as e:
     ZARR_AVAILABLE = False
     warnings.warn(f"Zarr/Xarray not available: {e}. Install with: pip install zarr xarray")
-    xr = None
+    xr = None  # type: ignore
 
 # Import climate data utilities
 try:

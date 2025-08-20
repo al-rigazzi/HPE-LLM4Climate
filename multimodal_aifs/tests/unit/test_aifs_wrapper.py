@@ -6,15 +6,15 @@ This module tests the AIFSWrapper class and related functions for integrating
 ECMWF AIFS as a climate AI backend.
 """
 
-import unittest
-from unittest.mock import patch, MagicMock, Mock
 import os
 import sys
+import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
-import torch
 import pytest
+import torch
 
 from multimodal_aifs.aifs_wrapper import (
     AIFSWrapper,
@@ -34,8 +34,10 @@ class TestFlashAttnMock(unittest.TestCase):
         if "flash_attn.flash_attn_interface" in sys.modules:
             del sys.modules["flash_attn.flash_attn_interface"]
 
-        with patch("platform.system", return_value="Darwin"), \
-             patch("platform.machine", return_value="arm64"):
+        with (
+            patch("platform.system", return_value="Darwin"),
+            patch("platform.machine", return_value="arm64"),
+        ):
 
             _setup_flash_attn_mock()
 
@@ -81,10 +83,7 @@ class TestAIFSWrapper(unittest.TestCase):
 
     def test_initialization_custom_paths(self):
         """Test AIFSWrapper initialization with custom paths."""
-        wrapper = AIFSWrapper(
-            model_path=self.mock_model_path,
-            config_path=self.mock_config_path
-        )
+        wrapper = AIFSWrapper(model_path=self.mock_model_path, config_path=self.mock_config_path)
 
         self.assertEqual(wrapper.model_path, self.mock_model_path)
         self.assertEqual(wrapper.config_path, self.mock_config_path)
@@ -99,10 +98,7 @@ class TestAIFSWrapper(unittest.TestCase):
     @patch("os.path.exists")
     def test_check_availability_with_paths(self, mock_exists):
         """Test _check_availability with valid paths."""
-        wrapper = AIFSWrapper(
-            model_path=self.mock_model_path,
-            config_path=self.mock_config_path
-        )
+        wrapper = AIFSWrapper(model_path=self.mock_model_path, config_path=self.mock_config_path)
 
         # Test when both files exist
         mock_exists.return_value = True
@@ -348,8 +344,10 @@ class TestAIFSWrapperErrorHandling(unittest.TestCase):
 
     def test_model_loading_error(self):
         """Test handling of model loading errors."""
-        with patch("os.path.exists", return_value=True), \
-             patch("torch.load", side_effect=Exception("Corrupted model file")):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("torch.load", side_effect=Exception("Corrupted model file")),
+        ):
 
             wrapper = AIFSWrapper(model_path="/fake/path/model.ckpt")
 

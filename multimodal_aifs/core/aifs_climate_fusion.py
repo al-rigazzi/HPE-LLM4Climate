@@ -119,7 +119,7 @@ class AIFSClimateTextFusion(nn.Module):
 
         # Project to fusion dimension
         projected = self.climate_projection(encoded)
-        return projected
+        return torch.as_tensor(projected)
 
     def encode_text(
         self, texts: List[str], text_embeddings: Optional[torch.Tensor] = None
@@ -141,7 +141,7 @@ class AIFSClimateTextFusion(nn.Module):
 
         # Project to fusion dimension
         projected = self.text_projection(text_embeddings)
-        return projected
+        return torch.as_tensor(projected)
 
     def apply_cross_attention(
         self, climate_features: torch.Tensor, text_features: torch.Tensor
@@ -212,7 +212,7 @@ class AIFSClimateTextFusion(nn.Module):
         # Final projection
         output = self.output_projection(pooled_features)
 
-        return output
+        return torch.as_tensor(output)
 
     def forward(
         self,
@@ -244,7 +244,7 @@ class AIFSClimateTextFusion(nn.Module):
             "climate_features": climate_features,
             "text_features": text_features,
             "fused_features": fused_features,
-            "fusion_dim": self.fusion_dim,
+            "fusion_dim": torch.tensor(self.fusion_dim, dtype=torch.long),
         }
 
     def get_climate_similarity(
@@ -368,7 +368,7 @@ class AIFSClimateEmbedding(nn.Module):
         # Project to embedding space
         embeddings = self.projection(aifs_features)
 
-        return embeddings
+        return torch.as_tensor(embeddings)
 
 
 def test_aifs_climate_fusion():

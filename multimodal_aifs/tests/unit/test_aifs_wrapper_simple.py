@@ -3,11 +3,12 @@
 Comprehensive tests for AIFS wrapper to achieve 80% coverage.
 """
 
-import unittest
-from unittest.mock import patch, MagicMock, PropertyMock
-import torch
 import os
+import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, PropertyMock, patch
+
+import torch
 
 from multimodal_aifs.aifs_wrapper import AIFSWrapper, create_aifs_backend, demo_aifs_usage
 
@@ -20,7 +21,7 @@ class TestAIFSWrapper(unittest.TestCase):
         wrapper = AIFSWrapper()
         self.assertIsInstance(wrapper, AIFSWrapper)
 
-    @patch('multimodal_aifs.aifs_wrapper.Path.exists')
+    @patch("multimodal_aifs.aifs_wrapper.Path.exists")
     def test_init_with_mocked_paths(self, mock_exists):
         """Test AIFSWrapper initialization with mocked paths."""
         mock_exists.return_value = True
@@ -28,7 +29,7 @@ class TestAIFSWrapper(unittest.TestCase):
         wrapper = AIFSWrapper(config_path=config_path)
         self.assertIsInstance(wrapper, AIFSWrapper)
 
-    @patch('multimodal_aifs.aifs_wrapper.Path.exists')
+    @patch("multimodal_aifs.aifs_wrapper.Path.exists")
     def test_init_with_custom_paths(self, mock_exists):
         """Test AIFSWrapper initialization with custom model and config paths."""
         mock_exists.return_value = True
@@ -51,17 +52,17 @@ class TestAIFSWrapper(unittest.TestCase):
             # If it fails due to model loading, that's expected in tests
             pass
 
-    @patch('multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model')
+    @patch("multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model")
     def test_predict_with_mocked_model(self, mock_load_model):
         """Test prediction with mocked model."""
         # Mock the model loading to return a proper structure
         mock_runner = MagicMock()
-        mock_runner.predict.return_value = {'forecast': 'mocked_data', 'variables': ['temperature']}
+        mock_runner.predict.return_value = {"forecast": "mocked_data", "variables": ["temperature"]}
 
         mock_load_model.return_value = {
-            'pytorch_model': MagicMock(),
-            'runner': mock_runner,
-            'type': 'aifs_full'
+            "pytorch_model": MagicMock(),
+            "runner": mock_runner,
+            "type": "aifs_full",
         }
 
         wrapper = AIFSWrapper()
@@ -71,36 +72,36 @@ class TestAIFSWrapper(unittest.TestCase):
         result = wrapper.predict(location, days=1)
         self.assertIsInstance(result, dict)
         # Check for actual output structure
-        self.assertIn('location', result)
-        self.assertIn('predictions', result)
-        self.assertIn('status', result)
-        self.assertEqual(result['status'], 'success')
+        self.assertIn("location", result)
+        self.assertIn("predictions", result)
+        self.assertIn("status", result)
+        self.assertEqual(result["status"], "success")
 
-    @patch('multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model')
+    @patch("multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model")
     def test_predict_with_custom_variables(self, mock_load_model):
         """Test prediction with custom variables."""
         mock_load_model.return_value = {
-            'pytorch_model': MagicMock(),
-            'runner': MagicMock(),
-            'type': 'aifs_full'
+            "pytorch_model": MagicMock(),
+            "runner": MagicMock(),
+            "type": "aifs_full",
         }
 
         wrapper = AIFSWrapper()
         location = (50.0, 10.0)
-        custom_variables = ['temperature_2m', 'precipitation']
+        custom_variables = ["temperature_2m", "precipitation"]
 
         result = wrapper.predict(location, days=3, variables=custom_variables)
         self.assertIsInstance(result, dict)
-        self.assertEqual(result['variables'], custom_variables)
-        self.assertEqual(result['forecast_days'], 3)
+        self.assertEqual(result["variables"], custom_variables)
+        self.assertEqual(result["forecast_days"], 3)
 
-    @patch('multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model')
+    @patch("multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model")
     def test_predict_runner_only_mode(self, mock_load_model):
         """Test prediction with runner-only mode."""
         mock_load_model.return_value = {
-            'pytorch_model': None,
-            'runner': MagicMock(),
-            'type': 'aifs_runner_only'
+            "pytorch_model": None,
+            "runner": MagicMock(),
+            "type": "aifs_runner_only",
         }
 
         wrapper = AIFSWrapper()
@@ -108,7 +109,7 @@ class TestAIFSWrapper(unittest.TestCase):
 
         result = wrapper.predict(location, days=2)
         self.assertIsInstance(result, dict)
-        self.assertEqual(result['forecast_days'], 2)
+        self.assertEqual(result["forecast_days"], 2)
 
     def test_predict_global(self):
         """Test global prediction."""
@@ -117,28 +118,28 @@ class TestAIFSWrapper(unittest.TestCase):
         try:
             result = wrapper.predict_global(days=5, resolution="0.5deg")
             self.assertIsInstance(result, dict)
-            self.assertEqual(result['forecast_days'], 5)
-            self.assertEqual(result['resolution'], "0.5deg")
-            self.assertEqual(result['status'], 'global_forecast_placeholder')
+            self.assertEqual(result["forecast_days"], 5)
+            self.assertEqual(result["resolution"], "0.5deg")
+            self.assertEqual(result["status"], "global_forecast_placeholder")
         except Exception:
             # If it fails due to model loading, that's expected in tests
             pass
 
-    @patch('multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model')
+    @patch("multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model")
     def test_predict_global_with_variables(self, mock_load_model):
         """Test global prediction with custom variables."""
         mock_load_model.return_value = {
-            'pytorch_model': MagicMock(),
-            'runner': MagicMock(),
-            'type': 'aifs_full'
+            "pytorch_model": MagicMock(),
+            "runner": MagicMock(),
+            "type": "aifs_full",
         }
 
         wrapper = AIFSWrapper()
-        custom_vars = ['temperature_2m', 'wind_speed_10m']
+        custom_vars = ["temperature_2m", "wind_speed_10m"]
 
         result = wrapper.predict_global(days=3, variables=custom_vars)
         self.assertIsInstance(result, dict)
-        self.assertEqual(result['variables'], custom_vars)
+        self.assertEqual(result["variables"], custom_vars)
 
     def test_get_available_variables(self):
         """Test getting available variables."""
@@ -147,18 +148,20 @@ class TestAIFSWrapper(unittest.TestCase):
 
         self.assertIsInstance(variables, list)
         self.assertGreater(len(variables), 0)
-        self.assertIn('temperature_2m', variables)
-        self.assertIn('total_precipitation', variables)  # Actual variable name    def test_get_model_info(self):
+        self.assertIn("temperature_2m", variables)
+        self.assertIn(
+            "total_precipitation", variables
+        )  # Actual variable name    def test_get_model_info(self):
         """Test getting model information."""
         wrapper = AIFSWrapper()
         info = wrapper.get_model_info()
 
         self.assertIsInstance(info, dict)
-        self.assertIn('model_name', info)
-        self.assertIn('provider', info)
-        self.assertIn('available_variables', info)
-        self.assertEqual(info['model_name'], 'AIFS Single v1.0')
-        self.assertEqual(info['provider'], 'ECMWF')
+        self.assertIn("model_name", info)
+        self.assertIn("provider", info)
+        self.assertIn("available_variables", info)
+        self.assertEqual(info["model_name"], "AIFS Single v1.0")
+        self.assertEqual(info["provider"], "ECMWF")
 
     def test_str_representation(self):
         """Test string representation."""
@@ -185,13 +188,13 @@ class TestAIFSWrapper(unittest.TestCase):
         # This test checks error handling for missing paths
         # Skip if files exist or create a temporary test
         try:
-            AIFSWrapper(model_path='/nonexistent/path/model.ckpt')
+            AIFSWrapper(model_path="/nonexistent/path/model.ckpt")
             self.fail("Expected FileNotFoundError")
         except FileNotFoundError:
             pass  # Expected    def test_check_availability_missing_model(self):
         """Test availability check when model file is missing."""
         try:
-            AIFSWrapper(model_path='/nonexistent/path/model.ckpt')
+            AIFSWrapper(model_path="/nonexistent/path/model.ckpt")
             self.fail("Expected FileNotFoundError")
         except FileNotFoundError:
             pass  # Expected
@@ -199,7 +202,7 @@ class TestAIFSWrapper(unittest.TestCase):
     def test_check_availability_missing_config(self):
         """Test availability check when config file is missing."""
         try:
-            AIFSWrapper(config_path='/nonexistent/path/config.yaml')
+            AIFSWrapper(config_path="/nonexistent/path/config.yaml")
             self.fail("Expected FileNotFoundError")
         except FileNotFoundError:
             pass  # Expected
@@ -210,20 +213,16 @@ class TestAIFSWrapper(unittest.TestCase):
         info = wrapper.get_model_info()
 
         self.assertIsInstance(info, dict)
-        self.assertIn('model_name', info)
-        self.assertIn('provider', info)
-        self.assertIn('available_variables', info)
-        self.assertEqual(info['model_name'], 'AIFS Single v1.0')
-        self.assertEqual(info['provider'], 'ECMWF')
+        self.assertIn("model_name", info)
+        self.assertIn("provider", info)
+        self.assertIn("available_variables", info)
+        self.assertEqual(info["model_name"], "AIFS Single v1.0")
+        self.assertEqual(info["provider"], "ECMWF")
 
-    @patch('multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model')
+    @patch("multimodal_aifs.aifs_wrapper.AIFSWrapper._load_model")
     def test_load_model_public_method(self, mock_load_model):
         """Test public load_model method."""
-        mock_model_info = {
-            'pytorch_model': MagicMock(),
-            'runner': MagicMock(),
-            'type': 'aifs_full'
-        }
+        mock_model_info = {"pytorch_model": MagicMock(), "runner": MagicMock(), "type": "aifs_full"}
         mock_load_model.return_value = mock_model_info
 
         wrapper = AIFSWrapper()
@@ -238,14 +237,14 @@ class TestAIFSWrapper(unittest.TestCase):
         info = wrapper.get_model_info()
 
         self.assertIsInstance(info, dict)
-        self.assertIn('model_name', info)
-        self.assertIn('provider', info)
-        self.assertIn('available_variables', info)
-        self.assertEqual(info['model_name'], 'AIFS Single v1.0')
-        self.assertEqual(info['provider'], 'ECMWF')
+        self.assertIn("model_name", info)
+        self.assertIn("provider", info)
+        self.assertIn("available_variables", info)
+        self.assertEqual(info["model_name"], "AIFS Single v1.0")
+        self.assertEqual(info["provider"], "ECMWF")
 
     @patch.dict(os.environ, {}, clear=True)
-    @patch('anemoi.inference.runners.simple.SimpleRunner')  # Patch the actual import path
+    @patch("anemoi.inference.runners.simple.SimpleRunner")  # Patch the actual import path
     def test_load_model_general_error(self, mock_simple_runner):
         """Test _load_model when general error occurs."""
         mock_simple_runner.side_effect = RuntimeError("Model loading failed")
@@ -256,7 +255,7 @@ class TestAIFSWrapper(unittest.TestCase):
             wrapper._load_model()
 
     @patch.dict(os.environ, {}, clear=True)
-    @patch('anemoi.inference.runners.simple.SimpleRunner')  # Patch the actual import path
+    @patch("anemoi.inference.runners.simple.SimpleRunner")  # Patch the actual import path
     def test_load_model_pytorch_access_error(self, mock_simple_runner):
         """Test _load_model when PyTorch model access fails."""
         mock_runner = MagicMock()
@@ -267,8 +266,8 @@ class TestAIFSWrapper(unittest.TestCase):
         wrapper = AIFSWrapper()
         result = wrapper._load_model()
 
-        self.assertEqual(result['type'], 'aifs_runner_only')
-        self.assertIsNone(result['pytorch_model'])
+        self.assertEqual(result["type"], "aifs_runner_only")
+        self.assertIsNone(result["pytorch_model"])
 
     def test_validate_location(self):
         """Test location validation."""
@@ -305,21 +304,21 @@ class TestAIFSFactoryFunctions(unittest.TestCase):
             # Expected if AIFS files are not available
             pass
 
-    @patch('multimodal_aifs.aifs_wrapper.create_aifs_backend')
-    @patch('builtins.print')
+    @patch("multimodal_aifs.aifs_wrapper.create_aifs_backend")
+    @patch("builtins.print")
     def test_demo_aifs_usage_success(self, mock_print, mock_create_backend):
         """Test demo function success path."""
         mock_wrapper = MagicMock()
         mock_wrapper.get_model_info.return_value = {
-            'model_name': 'AIFS Single v1.0',
-            'provider': 'ECMWF',
-            'available_variables': 25,
-            'max_forecast_days': 10
+            "model_name": "AIFS Single v1.0",
+            "provider": "ECMWF",
+            "available_variables": 25,
+            "max_forecast_days": 10,
         }
         mock_wrapper.predict.return_value = {
-            'location': {'latitude': 40.7128, 'longitude': -74.0060},
-            'variables': ['temperature_2m', 'precipitation'],
-            'timestamps': ['2024-01-01T00:00:00Z']
+            "location": {"latitude": 40.7128, "longitude": -74.0060},
+            "variables": ["temperature_2m", "precipitation"],
+            "timestamps": ["2024-01-01T00:00:00Z"],
         }
         mock_create_backend.return_value = mock_wrapper
 
@@ -329,8 +328,8 @@ class TestAIFSFactoryFunctions(unittest.TestCase):
         # Verify that print was called (demo ran)
         self.assertTrue(mock_print.called)
 
-    @patch('multimodal_aifs.aifs_wrapper.create_aifs_backend')
-    @patch('builtins.print')
+    @patch("multimodal_aifs.aifs_wrapper.create_aifs_backend")
+    @patch("builtins.print")
     def test_demo_aifs_usage_failure(self, mock_print, mock_create_backend):
         """Test demo function failure path."""
         mock_create_backend.side_effect = Exception("Demo error")
@@ -353,8 +352,9 @@ class TestAIFSUtilityFunctions(unittest.TestCase):
         _setup_flash_attn_mock()
 
         # Check if flash_attn is in sys.modules (it should be if we're on Darwin ARM)
-        import sys
         import platform
+        import sys
+
         if platform.system() == "Darwin" and platform.machine() == "arm64":
             self.assertIn("flash_attn", sys.modules)
 
@@ -362,7 +362,7 @@ class TestAIFSUtilityFunctions(unittest.TestCase):
 class TestAIFSMainExecution(unittest.TestCase):
     """Test the main execution path."""
 
-    @patch('multimodal_aifs.aifs_wrapper.demo_aifs_usage')
+    @patch("multimodal_aifs.aifs_wrapper.demo_aifs_usage")
     def test_main_execution(self, mock_demo):
         """Test the if __name__ == '__main__' execution."""
         # Since we can't easily test the actual __main__ execution,
@@ -372,5 +372,7 @@ class TestAIFSMainExecution(unittest.TestCase):
         # Call the mocked demo function
         mock_demo()
         mock_demo.assert_called_once()
+
+
 if __name__ == "__main__":
     unittest.main()

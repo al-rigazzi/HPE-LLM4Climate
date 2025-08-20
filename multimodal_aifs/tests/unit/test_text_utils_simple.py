@@ -4,6 +4,7 @@ Simple working tests for text utilities.
 """
 
 import unittest
+
 from multimodal_aifs.utils.text_utils import ClimateTextProcessor
 
 
@@ -55,7 +56,15 @@ class TestTextUtils(unittest.TestCase):
         result = processor.categorize_text(query)
         self.assertIsInstance(result, dict)
         # Check that it returns expected categories
-        expected_keys = ['weather', 'variables', 'locations', 'temporal', 'units', 'trends', 'impacts']
+        expected_keys = [
+            "weather",
+            "variables",
+            "locations",
+            "temporal",
+            "units",
+            "trends",
+            "impacts",
+        ]
         for key in expected_keys:
             self.assertIn(key, result)
             self.assertIsInstance(result[key], (int, float))
@@ -81,7 +90,7 @@ class TestTextUtils(unittest.TestCase):
         self.assertIsInstance(vocab, set)
         self.assertGreater(len(vocab), 0)
         # Check that some expected climate terms are in vocab
-        expected_terms = ['temperature', 'precipitation', 'humidity', 'wind']
+        expected_terms = ["temperature", "precipitation", "humidity", "wind"]
         for term in expected_terms:
             self.assertIn(term, vocab)
 

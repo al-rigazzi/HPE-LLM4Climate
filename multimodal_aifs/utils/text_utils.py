@@ -6,7 +6,7 @@ including climate-specific text preprocessing, tokenization, and embedding prepa
 """
 
 import re
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -35,6 +35,18 @@ CLIMATE_KEYWORDS = {
         "cloud",
         "sunshine",
         "wind",
+        "winds",
+        "storms",
+        "hurricanes",
+        "rains",
+        "floods",
+        "droughts",
+        "clouds",
+        "temperature",
+        "hot",
+        "cold",
+        "warm",
+        "cool",
     ],
     # Climate variables
     "variables": [
@@ -230,7 +242,13 @@ def parse_climate_query(text: str) -> Dict[str, List[str]]:
     """
     text_lower = text.lower()
 
-    result = {"variables": [], "locations": [], "temporal": [], "phenomena": [], "trends": []}
+    result: Dict[str, List[str]] = {
+        "variables": [],
+        "locations": [],
+        "temporal": [],
+        "phenomena": [],
+        "trends": [],
+    }
 
     # Extract climate variables
     for var in CLIMATE_KEYWORDS["variables"]:
@@ -258,33 +276,8 @@ def parse_climate_query(text: str) -> Dict[str, List[str]]:
     return result
 
 
-CLIMATE_PHRASES = [
-    "climate change",
-    "global warming",
-    "greenhouse effect",
-    "carbon footprint",
-    "renewable energy",
-    "fossil fuels",
-    "sea level rise",
-    "ice cap melting",
-    "ozone depletion",
-    "air quality",
-    "weather pattern",
-    "seasonal variation",
-    "temperature anomaly",
-    "precipitation pattern",
-    "wind pattern",
-    "atmospheric pressure",
-    "relative humidity",
-    "heat island effect",
-    "el nino",
-    "la nina",
-    "arctic oscillation",
-    "monsoon season",
-]
-
-# Location patterns
-LOCATION_PATTERNS = {
+# Location patterns for structured parsing
+LOCATION_PARSE_PATTERNS = {
     "coordinates": r"(-?\d+\.?\d*)\s*[°,]\s*(-?\d+\.?\d*)",
     "city_country": r"([A-Za-z\s]+),\s*([A-Za-z\s]+)",
     "region": r"(north|south|east|west|central|upper|lower)\s+([A-Za-z\s]+)",
@@ -301,7 +294,11 @@ class ClimateTextProcessor:
     """
 
     def __init__(
-        self, max_length: int = 512, lowercase: bool = True, remove_punctuation: bool = False
+        self,
+        max_length: int = 512,
+        lowercase: bool = True,
+        remove_punctuation: bool = True,
+        expand_contractions: bool = True,
     ):
         """
         Initialize climate text processor.
@@ -310,10 +307,12 @@ class ClimateTextProcessor:
             max_length: Maximum text length
             lowercase: Whether to convert to lowercase
             remove_punctuation: Whether to remove punctuation
+            expand_contractions: Whether to expand contractions
         """
         self.max_length = max_length
         self.lowercase = lowercase
         self.remove_punctuation = remove_punctuation
+        self.expand_contractions = expand_contractions
 
         # Build comprehensive vocabulary
         self.climate_vocab = set()
@@ -324,7 +323,7 @@ class ClimateTextProcessor:
         for phrase in CLIMATE_PHRASES:
             self.climate_vocab.update(phrase.split())
 
-    def preprocess_text(self, text: str) -> str:
+    def preprocess_text(self, text: Optional[str]) -> str:
         """
         Preprocess text for climate analysis.
 
@@ -334,8 +333,10 @@ class ClimateTextProcessor:
         Returns:
             Preprocessed text
         """
-        if not isinstance(text, str):
-            text = str(text)
+
+        # Handle None input
+        if text is None:
+            return ""
 
         # Basic cleaning
         text = text.strip()
@@ -343,6 +344,10 @@ class ClimateTextProcessor:
         # Convert to lowercase if requested
         if self.lowercase:
             text = text.lower()
+
+        # Expand contractions if requested
+        if self.expand_contractions:
+            text = self._expand_contractions(text)
 
         # Remove extra whitespace
         text = re.sub(r"\s+", " ", text)
@@ -358,6 +363,40 @@ class ClimateTextProcessor:
         # Truncate if too long
         if len(text) > self.max_length:
             text = text[: self.max_length]
+
+        return text
+
+    def _expand_contractions(self, text: str) -> str:
+        """Expand common English contractions."""
+        contractions = {
+            "it's": "it is",
+            "isn't": "is not",
+            "can't": "cannot",
+            "won't": "will not",
+            "don't": "do not",
+            "doesn't": "does not",
+            "didn't": "did not",
+            "haven't": "have not",
+            "hasn't": "has not",
+            "hadn't": "had not",
+            "wouldn't": "would not",
+            "shouldn't": "should not",
+            "couldn't": "could not",
+            "mustn't": "must not",
+            "aren't": "are not",
+            "weren't": "were not",
+            "there's": "there is",
+            "here's": "here is",
+            "what's": "what is",
+            "where's": "where is",
+            "how's": "how is",
+            "that's": "that is",
+        }
+
+        for contraction, expansion in contractions.items():
+            text = re.sub(
+                r"\b" + re.escape(contraction) + r"\b", expansion, text, flags=re.IGNORECASE
+            )
 
         return text
 
@@ -386,7 +425,7 @@ class ClimateTextProcessor:
 
         return list(set(found_keywords))  # Remove duplicates
 
-    def extract_locations(self, text: str) -> List[Dict[str, str]]:
+    def extract_locations(self, text: str) -> List[Dict[str, Any]]:
         """
         Extract location references from text.
 
@@ -399,7 +438,7 @@ class ClimateTextProcessor:
         locations = []
 
         # Extract coordinates
-        coord_matches = re.finditer(LOCATION_PATTERNS["coordinates"], text)
+        coord_matches = re.finditer(LOCATION_PARSE_PATTERNS["coordinates"], text)
         for match in coord_matches:
             lat, lon = match.groups()
             locations.append(
@@ -412,7 +451,7 @@ class ClimateTextProcessor:
             )
 
         # Extract city, country patterns
-        city_matches = re.finditer(LOCATION_PATTERNS["city_country"], text)
+        city_matches = re.finditer(LOCATION_PARSE_PATTERNS["city_country"], text)
         for match in city_matches:
             city, country = match.groups()
             locations.append(
@@ -425,7 +464,7 @@ class ClimateTextProcessor:
             )
 
         # Extract regional descriptions
-        region_matches = re.finditer(LOCATION_PATTERNS["region"], text, re.IGNORECASE)
+        region_matches = re.finditer(LOCATION_PARSE_PATTERNS["region"], text, re.IGNORECASE)
         for match in region_matches:
             direction, region = match.groups()
             locations.append(
@@ -498,7 +537,9 @@ class ClimateTextProcessor:
 
         return category_scores
 
-    def create_text_features(self, text: str) -> Dict[str, Union[int, float, List]]:
+    def create_text_features(
+        self, text: str
+    ) -> Dict[str, Union[int, float, List[Any], Dict[str, float]]]:
         """
         Create comprehensive features from text.
 
@@ -512,30 +553,35 @@ class ClimateTextProcessor:
         processed_text = self.preprocess_text(text)
 
         # Basic features
-        features = {
+        features: Dict[str, Union[int, float, List[Any], Dict[str, float]]] = {
             "original_length": len(original_text),
             "processed_length": len(processed_text),
+            "length": len(original_text),  # Alias for compatibility
             "word_count": len(processed_text.split()),
             "character_count": len(processed_text),
         }
 
         # Climate-specific features
-        features["climate_keywords"] = self.extract_climate_keywords(text)
-        features["climate_keyword_count"] = len(features["climate_keywords"])
+        climate_keywords = self.extract_climate_keywords(text)
+        features["climate_keywords"] = climate_keywords
+        features["climate_keyword_count"] = len(climate_keywords)
 
         # Location features
-        features["locations"] = self.extract_locations(text)
-        features["location_count"] = len(features["locations"])
+        locations = self.extract_locations(text)
+        features["locations"] = locations
+        features["location_count"] = len(locations)
 
         # Numerical features
-        features["numerical_values"] = self.extract_numerical_values(text)
-        features["numerical_count"] = len(features["numerical_values"])
+        numerical_values = self.extract_numerical_values(text)
+        features["numerical_values"] = numerical_values
+        features["numerical_count"] = len(numerical_values)
 
         # Category scores
-        features["category_scores"] = self.categorize_text(text)
+        category_scores = self.categorize_text(text)
+        features["category_scores"] = category_scores
 
         # Overall climate relevance score
-        total_climate_score = sum(features["category_scores"].values())
+        total_climate_score = sum(category_scores.values())
         features["climate_relevance"] = min(total_climate_score, 1.0)
 
         return features
@@ -556,9 +602,9 @@ class TextEmbeddingUtils:
         """
         self.embedding_dim = embedding_dim
         self.vocab_size = vocab_size
-        self.word_to_idx = {}
-        self.idx_to_word = {}
-        self.embeddings = None
+        self.word_to_idx: Dict[str, int] = {}
+        self.idx_to_word: Dict[int, str] = {}
+        self.embeddings: Optional[torch.Tensor] = None
         self.is_fitted = False
 
     def build_vocabulary(self, texts: List[str]) -> None:
@@ -568,7 +614,7 @@ class TextEmbeddingUtils:
         Args:
             texts: List of texts to build vocabulary from
         """
-        word_counts = {}
+        word_counts: Dict[str, int] = {}
 
         # Count words
         for text in texts:
@@ -640,7 +686,11 @@ class TextEmbeddingUtils:
         return pos_encoding
 
     def embed_text(
-        self, text: str, max_length: int = 128, include_positional: bool = True
+        self,
+        text: str,
+        max_length: int = 128,
+        include_positional: bool = True,
+        use_positional: Optional[bool] = None,
     ) -> torch.Tensor:
         """
         Create embeddings for text.
@@ -649,12 +699,20 @@ class TextEmbeddingUtils:
             text: Input text
             max_length: Maximum sequence length
             include_positional: Whether to add positional encoding
+            use_positional: Alternative name for include_positional (for compatibility)
 
         Returns:
             Text embeddings tensor
         """
         if not self.is_fitted:
             raise RuntimeError("Vocabulary not built. Call build_vocabulary first.")
+
+        if self.embeddings is None:
+            raise RuntimeError("Embeddings not initialized")
+
+        # Handle both parameter names for compatibility
+        if use_positional is not None:
+            include_positional = use_positional
 
         indices = self.text_to_indices(text, max_length)
         embeddings = self.embeddings[indices]
