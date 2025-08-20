@@ -1,0 +1,44 @@
+# Core scientific computing and data manipulation
+numpy
+pandas
+xarray
+
+# Deep learning framework
+torch
+torchvision
+
+# Natural Language Processing and Transformers
+transformers>=4.21.0
+
+# Data visualization
+matplotlib
+
+# Progress bars
+tqdm
+
+# YAML configuration parsing
+PyYAML
+
+# HuggingFace Hub for model downloads
+huggingface_hub
+
+# HDF5 file handling for MERRA-2 data
+h5py
+
+# Package version parsing
+packaging
+
+# Additional dependencies for multimodal fusion
+accelerate
+tokenizers
+safetensors
+
+# Geographic data and location-aware analysis
+geopy>=2.3.0
+requests>=2.31.0
+
+# Optional: Enhanced geographic capabilities (see multimodal/requirements-geo.txt)
+# shapely>=1.8.0
+# geopandas>=0.13.0
+# folium>=0.14.0
+# pycountry>=22.3.0

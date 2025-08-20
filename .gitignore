@@ -1,0 +1,8 @@
+.mypy_cache
+*.cpython-*
+*.pt
+*.nc
+**/dataset/example_*
+
+# PR description file (local only)
+pr_description.md

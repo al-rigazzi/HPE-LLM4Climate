@@ -1,0 +1,209 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hpe-llm4climate"
+version = "0.1.0"
+description = "Comprehensive Multimodal Climate-Text Fusion System"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "HPE LLM4Climate Team"}
+]
+keywords = ["climate", "machine learning", "multimodal", "fusion", "weather"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+]
+
+dependencies = [
+    "torch>=1.10.0",
+    "numpy>=1.20.0",
+    "xarray>=0.20.0",
+    "transformers>=4.20.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+geo = [
+    "geopy>=2.3.0",
+    "requests>=2.28.0",
+    "shapely>=1.8.0",
+    "geopandas>=0.12.0",
+    "folium>=0.14.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pylint>=2.15.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "mypy>=0.991",
+]
+
+[project.urls]
+Homepage = "https://github.com/al-rigazzi/HPE-LLM4Climate"
+Repository = "https://github.com/al-rigazzi/HPE-LLM4Climate"
+Issues = "https://github.com/al-rigazzi/HPE-LLM4Climate/issues"
+
+[tool.pylint.main]
+# Specify a score threshold to be exceeded before program exits with error.
+fail-under = 8.0
+
+# Use multiple processes to speed up Pylint.
+jobs = 0
+
+# Pickle collected data for later comparisons.
+persistent = true
+
+# Minimum Python version to use for version dependent checks.
+py-version = "3.12"
+
+[tool.pylint.messages_control]
+# Disable specific pylint checks that are often problematic in scientific/ML code
+disable = [
+    "too-many-arguments",        # R0913 - Common in ML/scientific code with many parameters
+    "too-many-locals",           # R0914 - Common in data processing functions
+    "too-many-instance-attributes",  # R0902 - Common in complex ML models
+    "too-many-positional-arguments",  # R0917 - Related to too-many-arguments
+    "too-many-branches",         # R0912 - Sometimes necessary for complex logic
+    "too-many-statements",       # R0915 - Sometimes necessary for initialization
+    "missing-module-docstring",  # C0114 - We have docstrings where needed
+    "wrong-import-position",     # C0413 - Sometimes needed for path manipulation
+    "import-outside-toplevel",   # C0415 - Sometimes needed for conditional imports
+    "broad-exception-caught",    # W0718 - Sometimes appropriate for robustness
+    "unused-argument",           # W0613 - Common in interface implementations
+    "attribute-defined-outside-init",  # W0201 - Sometimes needed for dynamic attributes
+    "duplicate-code",            # R0801 - Common in __init__.py files and similar patterns
+]
+
+[tool.pylint.format]
+# Maximum number of characters on a single line.
+max-line-length = 100
+
+# Allow the body of an if to be on the same line as the test if there is no else.
+single-line-if-stmt = false
+
+[tool.pylint.design]
+# Maximum number of arguments for function / method.
+max-args = 10
+
+# Maximum number of attributes for a class.
+max-attributes = 15
+
+# Maximum number of boolean expressions in an if statement.
+max-bool-expr = 5
+
+# Maximum number of branch for function / method body.
+max-branches = 15
+
+# Maximum number of locals for function / method body.
+max-locals = 20
+
+# Maximum number of parents for a class.
+max-parents = 7
+
+# Maximum number of public methods for a class.
+max-public-methods = 20
+
+# Maximum number of return / yield for function / method body.
+max-returns = 6
+
+# Maximum number of statements in function / method body.
+max-statements = 60
+
+# Minimum number of public methods for a class.
+min-public-methods = 1
+
+[tool.pylint.similarities]
+# Comments are removed from the similarity computation
+ignore-comments = true
+
+# Docstrings are removed from the similarity computation
+ignore-docstrings = true
+
+# Imports are removed from the similarity computation
+ignore-imports = true
+
+# Signatures are removed from the similarity computation
+ignore-signatures = true
+
+# Minimum lines number of a similarity.
+min-similarity-lines = 4
+
+[tool.pylint.typecheck]
+# List of decorators that produce context managers.
+contextmanager-decorators = ["contextlib.contextmanager"]
+
+# List of members which are set dynamically and missed by pylint inference
+# system, and so shouldn't trigger E1101 when accessed.
+generated-members = [
+    "torch.*",
+    "numpy.*",
+    "cv2.*",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py312','py313']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+# Per-module options for external dependencies
+[[tool.mypy.overrides]]
+module = [
+    "torch.*",
+    "numpy.*",
+    "xarray.*",
+    "transformers.*",
+    "yaml.*",
+    "geopy.*",
+    "shapely.*",
+    "geopandas.*",
+    "folium.*",
+]
+ignore_missing_imports = true
