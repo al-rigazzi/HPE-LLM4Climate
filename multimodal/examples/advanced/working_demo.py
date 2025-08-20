@@ -22,7 +22,7 @@ def working_demo():
     print("=" * 60)
 
     # Load the properly extracted encoder
-    encoder_path = "data/weights/prithvi_encoder_fixed.pt"
+    encoder_path = "multimodal/data/weights/prithvi_encoder_fixed.pt"
     print(f"📁 Loading encoder: {encoder_path}")
 
     encoder_data = torch.load(encoder_path, map_location="cpu")

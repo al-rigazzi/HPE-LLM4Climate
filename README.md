@@ -1,15 +1,38 @@
 # 🌍 HPE-LLM4Climate: Multimodal Climate AI System
 
-A comprehensive multimodal AI system that combines PrithviWxC climate data processing with natural language understanding capabilities using transformer models like Llama 3.
+## ⚠️ **EXPERIMENTAL REPOSITORY** ⚠️
+
+This is an **experimental research repository** containing **two different implementations** of multimodal climate/weather LLMs:
+
+1. **PrithviWxC-based Implementation** (`/multimodal/`, `/PrithviWxC/`) - Original climate foundation model approach
+2. **AIFS-based Implementation** (`/multimodal_aifs/`) - ECMWF AI Forecasting System integration ✅ **Currently Working**
+
+> **Status**: The AIFS multimodal implementation is currently operational and tested. The PrithviWxC implementation is in development. This repository serves as a research testbed for exploring different approaches to multimodal climate AI.
+
+A comprehensive multimodal AI system that combines climate data processing with natural language understanding capabilities using transformer models like Llama 3.
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-orange.svg)](https://pytorch.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-orange.svg)](https://pytorch.org/)
 [![Transformers](https://img.shields.io/badge/🤗-Transformers-yellow.svg)](https://huggingface.co/transformers/)
+[![Experimental](https://img.shields.io/badge/Status-Experimental-red.svg)](#)
 
 ## 🚀 Overview
 
-This project implements a state-of-the-art multimodal fusion system that bridges climate science and natural language processing. It enables AI applications that can understand both numerical climate data and human language, opening up new possibilities for:
+This **experimental project** implements multimodal fusion systems that bridge climate science and natural language processing. It explores **two different architectural approaches**:
 
+### 🌪️ **AIFS Multimodal Implementation** (`/multimodal_aifs/`) ✅ **Working**
+- **ECMWF AI Forecasting System** integration with 19M parameter encoder
+- **Zarr format support** for cloud-optimized climate data
+- **Meta-Llama-3-8B integration** with multimodal fusion
+- **Spatial region loading** with coordinate wrapping
+- **Real-time testing** on CPU/GPU with comprehensive test suite
+
+### 🌍 **PrithviWxC Implementation** (`/multimodal/`, `/PrithviWxC/`) 🚧 **In Development**
+- **IBM PrithviWxC** foundation model approach
+- **Traditional climate data processing** pipeline
+- **Research exploration** of alternative architectures
+
+### 🎯 **Applications Enabled**
 - **Climate Trend Analysis**: AI assistants that explain long-term climate patterns and projections
 - **Location-Aware Climate Analysis**: Geographic-specific climate assessments for regions, countries, or coordinates
 - **Climate Impact Assessment**: Automated analysis of climate change effects on various sectors
@@ -44,6 +67,15 @@ This project implements a state-of-the-art multimodal fusion system that bridges
 - Complete documentation and API reference
 - Real-world application templates
 
+### 🌪️ ECMWF AIFS Integration
+- **Alternative Climate Backend**: Use AIFS instead of PrithviWxC for global forecasting
+- **AIFS Single v1.0**: Operational AI forecasting system from ECMWF
+- **Global Weather Forecasting**: 10+ day forecasts with high accuracy
+- **Extended Variables**: Upper-air, precipitation, radiation, and land variables
+- **Flexible Architecture**: Switch between AIFS and PrithviWxC based on use case
+
+> **New**: ECMWF's Artificial Intelligence Forecasting System (AIFS) has been integrated as an alternative climate AI backend, providing operational weather forecasting capabilities alongside the existing PrithviWxC system. See [`docs/aifs_integration.md`](docs/aifs_integration.md) for details.
+
 ## 📋 Prerequisites
 
 - **Python**: 3.8 or higher (3.10+ recommended)
@@ -69,8 +101,12 @@ This project has **full native support** for Apple Silicon Macs (M1/M2/M3):
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/al-rigazzi/HPE-LLM4Climate.git
+# Clone with submodules (includes ECMWF AIFS)
+git clone --recurse-submodules https://github.com/al-rigazzi/HPE-LLM4Climate.git
 cd HPE-LLM4Climate
+
+# Or if already cloned, initialize submodules
+git submodule update --init --recursive
 ```
 
 ### 2. Set Up Python Environment
@@ -91,9 +127,57 @@ conda activate llm4climate
 pip install -r requirements.txt
 ```
 
-**Core Dependencies:**
-- `torch>=2.0` - Deep learning framework with MPS support for Apple Silicon
-- `transformers>=4.21.0` - HuggingFace transformers for LLMs (Llama 3, BERT, etc.)
+### 🏆 **Working AIFS Multimodal Configuration**
+
+The following configuration is **tested and operational** for the AIFS multimodal implementation:
+
+**Core Dependencies (Verified Working):**
+```bash
+# Core ML Framework
+torch==2.4.0                  # PyTorch with MPS support
+torch-geometric==2.4.0        # Graph neural networks
+transformers==4.55.2          # HuggingFace transformers
+accelerate==1.10.0            # Model acceleration
+bitsandbytes==0.42.0          # Quantization support
+
+# Climate Data Processing
+zarr==3.1.1                   # Cloud-optimized arrays
+xarray==2025.8.0             # N-dimensional labeled arrays
+cfgrib==0.9.15.0             # GRIB file support
+ecmwf-opendata==0.3.22       # ECMWF data access
+
+# Scientific Computing
+numpy==2.3.2                  # Numerical computing
+matplotlib==3.10.5           # Plotting and visualization
+
+# Testing and Development
+pytest==8.4.1                # Testing framework
+psutil==7.0.0                 # System monitoring
+```
+
+**Installation for AIFS Multimodal:**
+```bash
+# Create environment (Python 3.12+ recommended)
+python -m venv llm4climate-aifs
+source llm4climate-aifs/bin/activate
+
+# Install exact working versions
+pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0
+pip install transformers==4.55.2 accelerate==1.10.0 bitsandbytes==0.42.0
+pip install zarr==3.1.1 xarray==2025.8.0 numpy==2.3.2
+pip install pytest==8.4.1 matplotlib==3.10.5 psutil==7.0.0
+pip install cfgrib==0.9.15.0 ecmwf-opendata==0.3.22
+
+# Install remaining requirements
+pip install -r requirements.txt
+```
+
+> **✅ Tested**: This exact configuration successfully runs the complete zarr → AIFS → Meta-Llama-3-8B pipeline on Apple Silicon (M-series) and Intel/AMD CPUs.
+
+**Alternative Dependencies:**
+**Alternative Dependencies:**
+- `torch>=2.4.0` - Deep learning framework with MPS support for Apple Silicon
+- `transformers>=4.55.0` - HuggingFace transformers for LLMs (Llama 3, BERT, etc.)
 - `numpy`, `pandas`, `xarray` - Scientific computing and data manipulation
 - `matplotlib` - Data visualization and plotting
 - `huggingface_hub` - Model downloads and HuggingFace integration
@@ -227,7 +311,33 @@ This creates a standalone encoder (7.3GB) from the full model (26GB).
 
 ## 🚀 Quick Start
 
-### Basic Multimodal Fusion
+### ⚠️ **Choose Your Implementation**
+
+This repository contains **two different multimodal implementations**:
+
+#### 🟢 **AIFS Multimodal** (Recommended - Working)
+```bash
+# Navigate to AIFS implementation
+cd multimodal_aifs/
+
+# Run basic test to verify installation
+python tests/integration/test_aifs_llama_integration.py
+
+# Try zarr integration example
+python examples/zarr_aifs_multimodal_example.py
+```
+
+#### 🟡 **PrithviWxC Multimodal** (Experimental - In Development)
+```bash
+# Navigate to PrithviWxC implementation
+cd multimodal/
+
+# This implementation is under development
+```
+
+> **Recommendation**: Use the **AIFS multimodal implementation** (`/multimodal_aifs/`) for current work. See detailed documentation in [`multimodal_aifs/README.md`](multimodal_aifs/README.md).
+
+### Basic Multimodal Fusion (PrithviWxC - Legacy)
 
 ```python
 from multimodal.climate_text_fusion import ClimateTextFusion
@@ -276,38 +386,78 @@ This demonstrates:
 - Climate impact assessment classification
 - Feature visualization
 
-## 📁 Project Structure
+## 📁 **Experimental Repository Structure**
+
+This repository contains **two different multimodal implementations** for research and experimentation:
 
 ```
-HPE-LLM4Climate/
+HPE-LLM4Climate/                 # 🧪 EXPERIMENTAL REPOSITORY
 ├── README.md                    # Main project documentation
 ├── requirements.txt             # Python dependencies
-├── pr_description.md           # Pull request documentation
-├── data/                        # Model weights and configuration
-│   ├── config.yaml             # PrithviWxC configuration
+├── data/                        # Shared model weights and configuration
+│   ├── config.yaml             # Configuration files
 │   ├── climatology/            # Climate normalization data
 │   └── weights/                # Model weight files
-├── multimodal/                  # Multimodal fusion system
-│   ├── README.md               # Multimodal documentation
-│   ├── core/                   # Core fusion modules
-│   │   ├── climate_text_fusion.py      # Main fusion framework
+│
+├── 🟢 multimodal_aifs/         # ✅ WORKING IMPLEMENTATION
+│   ├── README.md               # AIFS multimodal documentation
+│   ├── core/                   # AIFS fusion modules
+│   │   ├── aifs_climate_fusion.py      # AIFS-Llama fusion
+│   │   ├── aifs_location_aware.py      # AIFS geographic processing
+│   │   └── aifs_location_aware_fusion.py # Complete AIFS system
+│   ├── utils/                  # AIFS utility modules
+│   │   ├── zarr_data_loader.py          # Zarr climate data loader ✅
+│   │   ├── aifs_encoder_utils.py        # AIFS encoder utilities ✅
+│   │   └── aifs_time_series_tokenizer.py # Time series tokenization ✅
+│   ├── examples/               # Working AIFS examples
+│   │   ├── zarr_aifs_multimodal_example.py # Zarr→AIFS→Llama pipeline ✅
+│   │   └── basic/              # Basic AIFS examples
+│   ├── tests/                  # Comprehensive test suite ✅
+│   │   ├── integration/zarr/   # Zarr integration tests ✅
+│   │   ├── unit/               # Unit tests ✅
+│   │   └── benchmarks/         # Performance tests ✅
+│   └── docs/                   # AIFS documentation
+│
+├── 🟡 multimodal/              # 🚧 IN DEVELOPMENT
+│   ├── README.md               # PrithviWxC documentation
+│   ├── core/                   # PrithviWxC fusion modules
+│   │   ├── climate_text_fusion.py      # PrithviWxC fusion framework
 │   │   ├── location_aware.py           # Geographic processing
 │   │   └── location_aware_fusion.py    # Complete analysis system
-│   ├── utils/                  # Utility modules
-│   │   ├── encoder_extractor.py        # PrithviWxC encoder extraction
-│   │   └── requirements-geo.txt        # Geographic dependencies
-│   ├── examples/               # Usage examples and demos
-│   │   ├── basic/              # Simple examples
-│   │   ├── advanced/           # Complex demonstrations
-│   │   └── location_aware/     # Location-specific examples
-│   ├── tests/                  # Multimodal test suite
-│   │   ├── test_encoder_extractor.py   # Encoder tests
-│   │   ├── test_fusion.py              # Fusion tests
-│   │   └── test_location_aware.py      # Geographic tests
-│   └── docs/                   # Documentation and guides
-├── tests/                       # Comprehensive testing framework
-│   ├── integration/            # Integration tests
-│   │   ├── test_encoder_loading_verification.py  # Encoder validation
+│   ├── utils/                  # PrithviWxC utilities
+│   │   └── encoder_extractor.py        # PrithviWxC encoder extraction
+│   ├── examples/               # PrithviWxC examples (development)
+│   ├── tests/                  # PrithviWxC test suite (comprehensive) ✅
+│   ├── validation/             # PrithviWxC validation and testing ✅
+│   └── docs/                   # PrithviWxC documentation
+│
+├── 🌍 PrithviWxC/              # IBM PrithviWxC model integration
+│   ├── model.py                # PrithviWxC model implementation
+│   └── rollout.py              # PrithviWxC inference utilities
+│
+├── 🌪️ aifs-single-1.0/         # ECMWF AIFS model
+│   ├── aifs-single-mse-1.0.ckpt        # AIFS checkpoint ✅
+│   ├── config_pretraining.yaml         # AIFS configuration ✅
+│   └── run_AIFS_v1.ipynb               # AIFS example notebook ✅
+│
+├── PrithviWxC/                  # Original climate model
+│   ├── model.py                # Core model implementation
+│   ├── rollout.py              # Inference utilities
+│   └── dataloaders/            # Data loading components
+```
+
+### 🎯 **Choose Your Path**
+
+- **🟢 Use AIFS Implementation** (`/multimodal_aifs/`) for:
+  - ✅ Working zarr data integration
+  - ✅ Real Meta-Llama-3-8B support
+  - ✅ Comprehensive test suite
+  - ✅ Production-ready examples
+
+- **🟡 Explore PrithviWxC** (`/multimodal/`) for:
+  - 🚧 Research and development
+  - 🚧 Alternative architecture exploration
+  - 🚧 IBM foundation model approach
 │   │   ├── test_encoder_only.py                  # Encoder functionality
 │   │   ├── test_simple_encoder_extraction.py     # Basic extraction
 │   │   ├── test_full_encoder_pipeline.py         # Complete pipeline
@@ -323,10 +473,6 @@ HPE-LLM4Climate/
 │   ├── model.py                # Core model implementation
 │   ├── rollout.py              # Inference utilities
 │   └── dataloaders/            # Data loading components
-└── validation/                  # Model validation and testing
-    ├── config.yaml             # Validation configuration
-    ├── validate_prithvi_wxc.py # Model validation
-    └── reproducibility.py      # Reproducibility testing
 ```
 
 ## 🧪 Testing & Validation
@@ -342,20 +488,20 @@ python multimodal/tests/test_encoder_extractor.py         # Encoder extraction t
 python multimodal/tests/test_location_aware.py           # Geographic processing tests
 
 # Integration tests
-python tests/integration/test_simple_encoder_extraction.py     # Basic encoder validation
-python tests/integration/test_encoder_loading_verification.py  # Complete loading validation
-python tests/integration/test_encoder_only.py                  # Standalone encoder tests
-python tests/integration/test_full_encoder_pipeline.py         # End-to-end pipeline
-python tests/integration/test_llama_integration.py             # LLM integration
-python tests/integration/test_llama_comprehensive.py           # Advanced system tests
+python multimodal/tests/integration/test_simple_encoder_extraction.py     # Basic encoder validation
+python multimodal/tests/integration/test_encoder_loading_verification.py  # Complete loading validation
+python multimodal/tests/integration/test_encoder_only.py                  # Standalone encoder tests
+python multimodal/tests/integration/test_full_encoder_pipeline.py         # End-to-end pipeline
+python multimodal/tests/integration/test_llama_integration.py             # LLM integration
+python multimodal/tests/integration/test_llama_comprehensive.py           # Advanced system tests
 
 # System verification and demos
-python tests/system/verify_setup.py                # Complete system setup verification
-python tests/demos/working_location_demo.py        # Location-aware demonstration
+python multimodal/tests/system/verify_setup.py                # Complete system setup verification
+python multimodal/tests/demos/working_location_demo.py        # Location-aware demonstration
 
 # Debug utilities (for development)
-python tests/integration/debug_weight_loading.py   # Weight loading diagnostics
-python tests/integration/debug_forward_pass.py     # Forward pass analysis
+python multimodal/tests/integration/debug_weight_loading.py   # Weight loading diagnostics
+python multimodal/tests/integration/debug_forward_pass.py     # Forward pass analysis
 ```
 
 ### ✅ **Validation Results**

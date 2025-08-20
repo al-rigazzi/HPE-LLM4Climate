@@ -238,10 +238,10 @@ python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}')"
 ### **Phase 2: Data Preparation**
 ```bash
 # Download MERRA-2 data
-python prepare_data.py --download --output_dir data/merra2/
+python prepare_data.py --download --output_dir multimodal/data/merra2/
 
 # Create training datasets
-python prepare_data.py --preprocess --output_dir data/training/
+python prepare_data.py --preprocess --output_dir multimodal/data/training/
 ```
 
 ### **Phase 3: Model Training**

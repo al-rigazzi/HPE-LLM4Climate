@@ -24,7 +24,7 @@ def create_functional_demo():
     print("=" * 70)
 
     # Load the fixed encoder that we created
-    encoder_path = "data/weights/prithvi_encoder_fixed.pt"
+    encoder_path = "multimodal/data/weights/prithvi_encoder_fixed.pt"
     if not os.path.exists(encoder_path):
         print(f"❌ Fixed encoder not found at {encoder_path}")
         print("   Run the create_fixed_encoder.py script first")

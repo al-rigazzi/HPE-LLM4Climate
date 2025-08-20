@@ -2,7 +2,7 @@
 # Copy this file and modify the paths and parameters for your specific setup
 
 model:
-  prithvi_encoder_path: "data/weights/prithvi.wxc.2300m.v1.pt"
+  prithvi_encoder_path: "multimodal/data/weights/prithvi.wxc.2300m.v1.pt"
   llama_model_name: "meta-llama/Meta-Llama-3-8B"  # or "meta-llama/Meta-Llama-3-8B-Instruct"
   freeze_prithvi: true  # Set to false for fine-tuning Prithvi encoder
   fusion_mode: "cross_attention"  # Options: "cross_attention", "concatenate", "add"
@@ -10,8 +10,8 @@ model:
   dropout: 0.1
 
 data:
-  train_path: "data/training/train"  # Directory containing training data
-  val_path: "data/training/val"      # Directory containing validation data
+  train_path: "multimodal/data/training/train"  # Directory containing training data
+  val_path: "multimodal/data/training/val"      # Directory containing validation data
   max_length: 512                    # Maximum sequence length for text
   climate_data_shape: [2, 160, 64, 64]  # [time, channels, height, width]
 

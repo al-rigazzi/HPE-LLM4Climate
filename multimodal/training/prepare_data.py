@@ -165,7 +165,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Prepare training data")
-    parser.add_argument("--output_dir", type=str, default="data/training",
+    parser.add_argument("--output_dir", type=str, default="multimodal/data/training",
                        help="Output directory for training data")
     parser.add_argument("--num_samples", type=int, default=1000,
                        help="Number of dummy samples to create")

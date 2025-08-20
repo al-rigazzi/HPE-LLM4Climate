@@ -1,0 +1,30 @@
+{
+  "encoder_type": "GraphTransformerForwardMapper",
+  "total_parameters": 19884832,
+  "trainable_parameters": 19884832,
+  "non_trainable_parameters": 0,
+  "memory_mb": 75.8546142578125,
+  "structure": {
+    "trainable": {
+      "type": "TrainableTensor",
+      "parameters": 5987104
+    },
+    "proc": {
+      "type": "GraphTransformerMapperBlock",
+      "parameters": 13660160
+    },
+    "emb_nodes_dst": {
+      "type": "Linear",
+      "parameters": 13312
+    },
+    "emb_nodes_src": {
+      "type": "Linear",
+      "parameters": 224256
+    }
+  },
+  "input_features": 218,
+  "output_features": 1024,
+  "device": "cpu",
+  "dtype": "torch.float32",
+  "extraction_timestamp": "2025-08-19T15:51:34.060044"
+}

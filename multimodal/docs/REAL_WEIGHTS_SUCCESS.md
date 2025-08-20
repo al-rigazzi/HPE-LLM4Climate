@@ -57,7 +57,7 @@ if fused_features.shape[1] != spatial_mask_flat.shape[-1]:
 ```python
 # Enhanced constructor to accept both paths and pre-loaded encoders
 LocationAwareClimateAnalysis(
-    prithvi_encoder_path="data/weights/prithvi_encoder.pt",  # File path
+    prithvi_encoder_path="multimodal/data/weights/prithvi_encoder.pt",  # File path
     # OR
     prithvi_encoder=loaded_encoder,                         # Pre-loaded
     llama_model_name="distilbert-base-uncased"              # Public model

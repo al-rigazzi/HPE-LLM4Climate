@@ -121,7 +121,7 @@ def demonstrate_practical_fusion():
     print("🌍 Practical Climate-Text Fusion Demo\n")
 
     # Initialize the simplified fusion model
-    model = SimplifiedClimateTextFusion(encoder_path="data/weights/prithvi_encoder.pt")
+    model = SimplifiedClimateTextFusion(encoder_path="multimodal/data/weights/prithvi_encoder.pt")
 
     # Example text inputs related to climate trends and projections
     text_inputs = [
@@ -183,7 +183,7 @@ from multimodal.climate_text_fusion import ClimateTextFusion
 
 # 2. Initialize with your preferred models
 fusion_model = ClimateTextFusion(
-    prithvi_encoder_path='data/weights/prithvi_encoder.pt',
+    prithvi_encoder_path='multimodal/data/weights/prithvi_encoder.pt',
     llama_model_name='meta-llama/Meta-Llama-3-8B',  # Requires HF approval - use 'prajjwal1/bert-tiny' for testing
     fusion_mode='cross_attention',
     max_climate_tokens=1024,

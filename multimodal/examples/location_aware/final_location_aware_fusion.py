@@ -22,7 +22,7 @@ class FinalLocationAwareFusion(nn.Module):
     Uses properly extracted real Prithvi weights with fixed dimensions.
     """
 
-    def __init__(self, encoder_path: str = "data/weights/prithvi_encoder_fixed.pt"):
+    def __init__(self, encoder_path: str = "multimodal/data/weights/prithvi_encoder_fixed.pt"):
         super().__init__()
 
         print("🌍 Initializing Final Location-Aware Fusion System")

@@ -1,0 +1,760 @@
+{
+  "batch_size": [
+    {
+      "test_name": "batch_1",
+      "input_shape": [
+        1,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        1,
+        8,
+        512
+      ],
+      "avg_time": 0.005212166695855558,
+      "std_time": 0.0022184268790632652,
+      "min_time": 0.004142208956182003,
+      "max_time": 0.011481458088383079,
+      "throughput": 191.85879085470302,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.15625,
+      "output_size_mb": 0.015625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "batch_2",
+      "input_shape": [
+        2,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.004238458524923772,
+      "std_time": 0.00025086001781880464,
+      "min_time": 0.004062416963279247,
+      "max_time": 0.004937040968798101,
+      "throughput": 471.8696639920453,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.3125,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "batch_4",
+      "input_shape": [
+        4,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        4,
+        8,
+        512
+      ],
+      "avg_time": 0.003706404205877334,
+      "std_time": 0.00016374673208823502,
+      "min_time": 0.0033903749426826835,
+      "max_time": 0.0038909579161554575,
+      "throughput": 1079.2131073176272,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.625,
+      "output_size_mb": 0.0625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "batch_8",
+      "input_shape": [
+        8,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        8,
+        8,
+        512
+      ],
+      "avg_time": 0.005358399893157184,
+      "std_time": 0.0002507360312830378,
+      "min_time": 0.005037249997258186,
+      "max_time": 0.005692583974450827,
+      "throughput": 1492.9830097630838,
+      "compression_ratio": 10.0,
+      "input_size_mb": 1.25,
+      "output_size_mb": 0.125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "batch_16",
+      "input_shape": [
+        16,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        16,
+        8,
+        512
+      ],
+      "avg_time": 0.00841745421057567,
+      "std_time": 0.0002148216904318179,
+      "min_time": 0.008179749944247305,
+      "max_time": 0.0089112080167979,
+      "throughput": 1900.812240819515,
+      "compression_ratio": 10.0,
+      "input_size_mb": 2.5,
+      "output_size_mb": 0.25,
+      "avg_memory_mb": 0
+    }
+  ],
+  "hidden_dimension": [
+    {
+      "test_name": "hidden_128",
+      "input_shape": [
+        2,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        8,
+        128
+      ],
+      "avg_time": 0.003814808395691216,
+      "std_time": 0.00034302380480172935,
+      "min_time": 0.003457500017248094,
+      "max_time": 0.00448512495495379,
+      "throughput": 524.2727268449388,
+      "compression_ratio": 40.0,
+      "input_size_mb": 0.3125,
+      "output_size_mb": 0.0078125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "hidden_256",
+      "input_shape": [
+        2,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        8,
+        256
+      ],
+      "avg_time": 0.003502466401550919,
+      "std_time": 0.00016390373813521126,
+      "min_time": 0.0033224159851670265,
+      "max_time": 0.0038803330389782786,
+      "throughput": 571.0261771859923,
+      "compression_ratio": 20.0,
+      "input_size_mb": 0.3125,
+      "output_size_mb": 0.015625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "hidden_512",
+      "input_shape": [
+        2,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.003977970825508237,
+      "std_time": 0.0004914391372033286,
+      "min_time": 0.0034414579859003425,
+      "max_time": 0.004679500008933246,
+      "throughput": 502.7688959343924,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.3125,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "hidden_1024",
+      "input_shape": [
+        2,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        8,
+        1024
+      ],
+      "avg_time": 0.004767279198858887,
+      "std_time": 0.00016451740194627188,
+      "min_time": 0.004588499898090959,
+      "max_time": 0.00505412498023361,
+      "throughput": 419.52650905756207,
+      "compression_ratio": 5.0,
+      "input_size_mb": 0.3125,
+      "output_size_mb": 0.0625,
+      "avg_memory_mb": 0
+    }
+  ],
+  "memory_efficiency": [
+    {
+      "test_name": "memory_small_batch_long",
+      "input_shape": [
+        1,
+        32,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        1,
+        32,
+        512
+      ],
+      "avg_time": 0.004797462513670326,
+      "std_time": 0.00021903933402852896,
+      "min_time": 0.00445804197806865,
+      "max_time": 0.005085207987576723,
+      "throughput": 208.44352554095192,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.625,
+      "output_size_mb": 0.0625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "memory_large_batch_short",
+      "input_shape": [
+        16,
+        4,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        16,
+        4,
+        512
+      ],
+      "avg_time": 0.006141475087497383,
+      "std_time": 0.00046781885253103,
+      "min_time": 0.005175374913960695,
+      "max_time": 0.006857417058199644,
+      "throughput": 2605.2373040757398,
+      "compression_ratio": 10.0,
+      "input_size_mb": 1.25,
+      "output_size_mb": 0.125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "memory_high_res",
+      "input_shape": [
+        2,
+        8,
+        5,
+        128,
+        128
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.0057859247899614275,
+      "std_time": 0.0003141302486558069,
+      "min_time": 0.005133708007633686,
+      "max_time": 0.006096540950238705,
+      "throughput": 345.6664358081525,
+      "compression_ratio": 160.0,
+      "input_size_mb": 5.0,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "memory_many_vars",
+      "input_shape": [
+        2,
+        8,
+        20,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.0067244250094518065,
+      "std_time": 0.0011621983583553904,
+      "min_time": 0.005374833941459656,
+      "max_time": 0.00816820899490267,
+      "throughput": 297.4231993350827,
+      "compression_ratio": 40.0,
+      "input_size_mb": 1.25,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    }
+  ],
+  "scalability": [
+    {
+      "test_name": "scale_tiny",
+      "input_shape": [
+        1,
+        4,
+        3,
+        8,
+        8
+      ],
+      "output_shape": [
+        1,
+        4,
+        512
+      ],
+      "avg_time": 0.005587075010407716,
+      "std_time": 0.0005217971285425649,
+      "min_time": 0.0050236249808222055,
+      "max_time": 0.006618708022870123,
+      "throughput": 178.9845309284697,
+      "compression_ratio": 0.375,
+      "input_size_mb": 0.0029296875,
+      "output_size_mb": 0.0078125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "scale_small",
+      "input_shape": [
+        2,
+        4,
+        3,
+        16,
+        16
+      ],
+      "output_shape": [
+        2,
+        4,
+        512
+      ],
+      "avg_time": 0.005856599984690547,
+      "std_time": 0.0006568327153566161,
+      "min_time": 0.0050862920470535755,
+      "max_time": 0.006892666919156909,
+      "throughput": 341.4950662889907,
+      "compression_ratio": 1.5,
+      "input_size_mb": 0.0234375,
+      "output_size_mb": 0.015625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "scale_medium",
+      "input_shape": [
+        4,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        4,
+        8,
+        512
+      ],
+      "avg_time": 0.004359296022448689,
+      "std_time": 0.0005259667275323419,
+      "min_time": 0.003537749988026917,
+      "max_time": 0.004935042001307011,
+      "throughput": 917.5793475372047,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.625,
+      "output_size_mb": 0.0625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "scale_large",
+      "input_shape": [
+        2,
+        16,
+        7,
+        64,
+        64
+      ],
+      "output_shape": [
+        2,
+        16,
+        512
+      ],
+      "avg_time": 0.00486263349885121,
+      "std_time": 0.0005881371375467438,
+      "min_time": 0.0040632919408380985,
+      "max_time": 0.005741833942010999,
+      "throughput": 411.29976184149945,
+      "compression_ratio": 56.0,
+      "input_size_mb": 3.5,
+      "output_size_mb": 0.0625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "scale_xlarge",
+      "input_shape": [
+        1,
+        24,
+        7,
+        128,
+        128
+      ],
+      "output_shape": [
+        1,
+        24,
+        512
+      ],
+      "avg_time": 0.00584112930810079,
+      "std_time": 0.00033155910559282587,
+      "min_time": 0.005468958988785744,
+      "max_time": 0.006368250004015863,
+      "throughput": 171.19977101228466,
+      "compression_ratio": 224.0,
+      "input_size_mb": 10.5,
+      "output_size_mb": 0.046875,
+      "avg_memory_mb": 0
+    }
+  ],
+  "spatial_resolution": [
+    {
+      "test_name": "spatial_8x8",
+      "input_shape": [
+        2,
+        8,
+        5,
+        8,
+        8
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.004505708406213671,
+      "std_time": 0.0005498518949103103,
+      "min_time": 0.003937416011467576,
+      "max_time": 0.005731584038585424,
+      "throughput": 443.88136552331423,
+      "compression_ratio": 0.625,
+      "input_size_mb": 0.01953125,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "spatial_16x16",
+      "input_shape": [
+        2,
+        8,
+        5,
+        16,
+        16
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.005448020703624934,
+      "std_time": 0.0005072124282229587,
+      "min_time": 0.0047221670392900705,
+      "max_time": 0.0063432499300688505,
+      "throughput": 367.10580021644665,
+      "compression_ratio": 2.5,
+      "input_size_mb": 0.078125,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "spatial_32x32",
+      "input_shape": [
+        2,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.004903912683948875,
+      "std_time": 0.0009127308191088476,
+      "min_time": 0.0040658339858055115,
+      "max_time": 0.006864374969154596,
+      "throughput": 407.8376041535675,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.3125,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "spatial_64x64",
+      "input_shape": [
+        2,
+        8,
+        5,
+        64,
+        64
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.005587479297537357,
+      "std_time": 0.0005070909269350255,
+      "min_time": 0.00512179103679955,
+      "max_time": 0.006626500049605966,
+      "throughput": 357.9431606809687,
+      "compression_ratio": 40.0,
+      "input_size_mb": 1.25,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "spatial_128x128",
+      "input_shape": [
+        2,
+        8,
+        5,
+        128,
+        128
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.005035562498960644,
+      "std_time": 0.00045454079342731335,
+      "min_time": 0.004232165985740721,
+      "max_time": 0.005684333038516343,
+      "throughput": 397.1750922390113,
+      "compression_ratio": 160.0,
+      "input_size_mb": 5.0,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    }
+  ],
+  "temporal_length": [
+    {
+      "test_name": "time_4",
+      "input_shape": [
+        2,
+        4,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        4,
+        512
+      ],
+      "avg_time": 0.005432454007677734,
+      "std_time": 0.0006156351886921473,
+      "min_time": 0.004811041057109833,
+      "max_time": 0.006482083932496607,
+      "throughput": 368.15774181859297,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.15625,
+      "output_size_mb": 0.015625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "time_8",
+      "input_shape": [
+        2,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        8,
+        512
+      ],
+      "avg_time": 0.005706937599461526,
+      "std_time": 0.00036051873659334046,
+      "min_time": 0.005103333969600499,
+      "max_time": 0.006236957968212664,
+      "throughput": 350.4506515348457,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.3125,
+      "output_size_mb": 0.03125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "time_16",
+      "input_shape": [
+        2,
+        16,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        16,
+        512
+      ],
+      "avg_time": 0.004489995900075883,
+      "std_time": 0.0003141772512597623,
+      "min_time": 0.0038322079926729202,
+      "max_time": 0.004937708959914744,
+      "throughput": 445.4347051778375,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.625,
+      "output_size_mb": 0.0625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "time_32",
+      "input_shape": [
+        2,
+        32,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        32,
+        512
+      ],
+      "avg_time": 0.007055645785294473,
+      "std_time": 0.0006230240471519346,
+      "min_time": 0.006077874917536974,
+      "max_time": 0.007863542065024376,
+      "throughput": 283.4609418982516,
+      "compression_ratio": 10.0,
+      "input_size_mb": 1.25,
+      "output_size_mb": 0.125,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "time_64",
+      "input_shape": [
+        2,
+        64,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        2,
+        64,
+        512
+      ],
+      "avg_time": 0.010932162380777299,
+      "std_time": 0.000629215279662111,
+      "min_time": 0.010213957983069122,
+      "max_time": 0.01201629196293652,
+      "throughput": 182.94642270560527,
+      "compression_ratio": 10.0,
+      "input_size_mb": 2.5,
+      "output_size_mb": 0.25,
+      "avg_memory_mb": 0
+    }
+  ],
+  "temporal_modeling": [
+    {
+      "test_name": "transformer_temporal",
+      "input_shape": [
+        4,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        4,
+        8,
+        512
+      ],
+      "avg_time": 0.00421043747337535,
+      "std_time": 0.0007580489948382643,
+      "min_time": 0.0035623329458758235,
+      "max_time": 0.005714458995498717,
+      "throughput": 950.020045492648,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.625,
+      "output_size_mb": 0.0625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "lstm_temporal",
+      "input_shape": [
+        4,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        4,
+        8,
+        512
+      ],
+      "avg_time": 0.005572570813819766,
+      "std_time": 0.00045826536765272556,
+      "min_time": 0.00526516605168581,
+      "max_time": 0.006831457954831421,
+      "throughput": 717.801555806191,
+      "compression_ratio": 10.0,
+      "input_size_mb": 0.625,
+      "output_size_mb": 0.0625,
+      "avg_memory_mb": 0
+    },
+    {
+      "test_name": "none_temporal",
+      "input_shape": [
+        4,
+        8,
+        5,
+        32,
+        32
+      ],
+      "output_shape": [
+        4,
+        8,
+        1024
+      ],
+      "avg_time": 0.0004158457973971963,
+      "std_time": 8.51472861563201e-05,
+      "min_time": 0.0003577080788090825,
+      "max_time": 0.0005562920123338699,
+      "throughput": 9618.950161420986,
+      "compression_ratio": 5.0,
+      "input_size_mb": 0.625,
+      "output_size_mb": 0.125,
+      "avg_memory_mb": 0
+    }
+  ]
+}

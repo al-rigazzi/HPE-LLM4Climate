@@ -75,7 +75,7 @@ def example_multimodal_fusion():
         # Try with corrected encoder first
         try:
             fusion_model = ClimateTextFusion(
-                prithvi_encoder_path="data/weights/prithvi_encoder_corrected.pt",
+                prithvi_encoder_path="multimodal/data/weights/prithvi_encoder_corrected.pt",
                 llama_model_name="distilbert-base-uncased",  # Using smaller model for testing
                 fusion_mode="cross_attention",
                 max_climate_tokens=256,  # Reduce for memory efficiency

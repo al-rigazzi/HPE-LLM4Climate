@@ -49,7 +49,7 @@ pip install -r requirements.txt
 ./setup_env.sh
 
 # Prepare your data
-python prepare_data.py --output_dir data/training --num_samples 1000
+python prepare_data.py --output_dir multimodal/data/training --num_samples 1000
 
 # Configure training (edit config.yaml)
 # Then launch training
@@ -126,7 +126,7 @@ The model uses cross-attention mechanisms to fuse climate data features with tex
 
 ### Directory Structure
 ```
-data/training/
+multimodal/data/training/
 ├── train/
 │   ├── index.json
 │   ├── climate_00001.pt

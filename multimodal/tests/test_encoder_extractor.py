@@ -15,7 +15,7 @@ def test_fixed_encoder():
     print("=" * 50)
 
     # Test the fixed encoder file
-    fixed_encoder_path = "data/weights/prithvi_encoder_fixed.pt"
+    fixed_encoder_path = "multimodal/data/weights/prithvi_encoder_fixed.pt"
 
     if not Path(fixed_encoder_path).exists():
         print(f"❌ Fixed encoder not found: {fixed_encoder_path}")

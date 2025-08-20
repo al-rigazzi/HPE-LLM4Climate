@@ -22,7 +22,29 @@ multimodal/
 │   ├── test_fusion.py           # Fusion framework tests
 │   └── test_location_aware.py   # Geographic processing tests
 └── docs/                  # Documentation and success logs
+    └── architecture/      # Architecture diagrams and tools
+        ├── create_architecture_diagram.py
+        ├── create_attention_detail.py
+        └── README.md
 ```
+
+## Architecture Diagrams
+
+Generate professional architecture diagrams for presentations and technical reviews:
+
+```bash
+# From project root (convenience script)
+python generate_architecture_diagrams.py
+
+# Or directly from architecture directory
+cd multimodal/docs/architecture
+python create_architecture_diagram.py    # Main system architecture
+python create_attention_detail.py        # Cross-attention mechanism detail
+```
+
+Output files:
+- `multimodal_architecture_diagram.{png,pdf}` - Complete system overview
+- `cross_attention_detail.{png,pdf}` - Detailed attention mechanism
 
 ## Key Features
 

@@ -17,7 +17,7 @@ def run_real_prithvi_demo():
     print("=" * 60)
 
     # Path to the FIXED Prithvi encoder
-    encoder_path = "data/weights/prithvi_encoder_fixed.pt"
+    encoder_path = "multimodal/data/weights/prithvi_encoder_fixed.pt"
 
     # Check if weights exist
     if not Path(encoder_path).exists():

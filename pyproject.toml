@@ -207,3 +207,10 @@ module = [
     "folium.*",
 ]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (may be resource-intensive)",
+    "benchmark: marks tests as benchmark tests",
+    "slow: marks tests as slow running",
+]

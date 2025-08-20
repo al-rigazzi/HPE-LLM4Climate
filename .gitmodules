@@ -1,0 +1,3 @@
+[submodule "aifs-single-1.0"]
+	path = aifs-single-1.0
+	url = https://huggingface.co/ecmwf/aifs-single-1.0

@@ -1,0 +1,20 @@
+AIFS Encoder Extraction
+=====================
+
+Extraction Date: 2025-08-19 15:51:34.060362
+Source Model: AIFS Single v1.0
+Encoder Type: GraphTransformerForwardMapper
+Parameters: 19,884,832
+Device: cpu
+Data Type: torch.float32
+
+Encoder Structure:
+  trainable: TrainableTensor (5,987,104 params)
+  proc: GraphTransformerMapperBlock (13,660,160 params)
+  emb_nodes_dst: Linear (13,312 params)
+  emb_nodes_src: Linear (224,256 params)
+
+Saved Files:
+  state_dict: extracted_models/aifs_encoder_state_dict.pth
+  full_model: extracted_models/aifs_encoder_full.pth
+  analysis: extracted_models/aifs_encoder_analysis.json

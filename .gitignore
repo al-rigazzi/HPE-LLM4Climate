@@ -1,8 +1,16 @@
 .mypy_cache
+.pytest_cache
+*.zarr
 *.cpython-*
 *.pt
 *.nc
 **/dataset/example_*
+*grib
+**/.python-version
+.coverage*
+coverage*
+**/.cache
+*.pyc
 
 # PR description file (local only)
 pr_description.md
