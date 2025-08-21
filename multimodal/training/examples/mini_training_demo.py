@@ -6,13 +6,14 @@ This script demonstrates a complete training loop with mock data,
 including validation, checkpointing, and metrics tracking.
 """
 
+import json
 import os
 import sys
-import torch
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import torch
 from tqdm import tqdm
-import json
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -23,8 +24,10 @@ print("🚀 Starting mini training demonstration...")
 # Use the mock model from the previous test
 from test_mock_training import MockClimateTextFusion
 
+
 class MockDataset:
     """Mock dataset for demonstration"""
+
     def __init__(self, num_samples=20, seq_length=32):
         self.num_samples = num_samples
         self.seq_length = seq_length
@@ -43,28 +46,28 @@ class MockDataset:
 
     def __getitem__(self, idx):
         return {
-            'climate_data': self.climate_data[idx],
-            'input_ids': self.input_ids[idx],
-            'attention_mask': self.attention_mask[idx],
-            'labels': self.labels[idx]
+            "climate_data": self.climate_data[idx],
+            "input_ids": self.input_ids[idx],
+            "attention_mask": self.attention_mask[idx],
+            "labels": self.labels[idx],
         }
+
 
 def create_dataloader(dataset, batch_size=2, shuffle=True):
     """Create dataloader with collate function"""
+
     def collate_fn(batch):
         return {
-            'climate_data': torch.stack([item['climate_data'] for item in batch]),
-            'input_ids': torch.stack([item['input_ids'] for item in batch]),
-            'attention_mask': torch.stack([item['attention_mask'] for item in batch]),
-            'labels': torch.stack([item['labels'] for item in batch])
+            "climate_data": torch.stack([item["climate_data"] for item in batch]),
+            "input_ids": torch.stack([item["input_ids"] for item in batch]),
+            "attention_mask": torch.stack([item["attention_mask"] for item in batch]),
+            "labels": torch.stack([item["labels"] for item in batch]),
         }
 
     return torch.utils.data.DataLoader(
-        dataset,
-        batch_size=batch_size,
-        shuffle=shuffle,
-        collate_fn=collate_fn
+        dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn
     )
+
 
 def train_epoch(model, dataloader, optimizer, device, epoch):
     """Train for one epoch"""
@@ -76,18 +79,17 @@ def train_epoch(model, dataloader, optimizer, device, epoch):
 
     for batch in progress_bar:
         # Move data to device
-        climate_data = batch['climate_data'].to(device)
-        input_ids = batch['input_ids'].to(device)
-        attention_mask = batch['attention_mask'].to(device)
-        labels = batch['labels'].to(device)
+        climate_data = batch["climate_data"].to(device)
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        labels = batch["labels"].to(device)
 
         # Forward pass
         outputs = model(climate_data, input_ids, attention_mask)
 
         # Compute loss
         loss = torch.nn.functional.cross_entropy(
-            outputs.logits.view(-1, outputs.logits.size(-1)),
-            labels.view(-1)
+            outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
         )
 
         # Backward pass
@@ -105,13 +107,16 @@ def train_epoch(model, dataloader, optimizer, device, epoch):
         num_batches += 1
 
         # Update progress bar
-        progress_bar.set_postfix({
-            'loss': f'{loss.item():.4f}',
-            'avg_loss': f'{total_loss/num_batches:.4f}',
-            'grad_norm': f'{grad_norm:.3f}'
-        })
+        progress_bar.set_postfix(
+            {
+                "loss": f"{loss.item():.4f}",
+                "avg_loss": f"{total_loss/num_batches:.4f}",
+                "grad_norm": f"{grad_norm:.3f}",
+            }
+        )
 
     return total_loss / num_batches
+
 
 def validate(model, dataloader, device):
     """Validate the model"""
@@ -122,18 +127,17 @@ def validate(model, dataloader, device):
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Validation"):
             # Move data to device
-            climate_data = batch['climate_data'].to(device)
-            input_ids = batch['input_ids'].to(device)
-            attention_mask = batch['attention_mask'].to(device)
-            labels = batch['labels'].to(device)
+            climate_data = batch["climate_data"].to(device)
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            labels = batch["labels"].to(device)
 
             # Forward pass
             outputs = model(climate_data, input_ids, attention_mask)
 
             # Compute loss
             loss = torch.nn.functional.cross_entropy(
-                outputs.logits.view(-1, outputs.logits.size(-1)),
-                labels.view(-1)
+                outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
             )
 
             total_loss += loss.item()
@@ -141,15 +145,16 @@ def validate(model, dataloader, device):
 
     return total_loss / num_batches
 
+
 def main():
     # Training configuration
     config = {
-        'epochs': 3,
-        'batch_size': 2,
-        'learning_rate': 1e-4,
-        'train_samples': 20,
-        'val_samples': 8,
-        'save_dir': 'mock_checkpoints'
+        "epochs": 3,
+        "batch_size": 2,
+        "learning_rate": 1e-4,
+        "train_samples": 20,
+        "val_samples": 8,
+        "save_dir": "mock_checkpoints",
     }
 
     print(f"📋 Training Configuration:")
@@ -162,12 +167,12 @@ def main():
 
     # Create datasets
     print("\n📊 Creating datasets...")
-    train_dataset = MockDataset(num_samples=config['train_samples'])
-    val_dataset = MockDataset(num_samples=config['val_samples'])
+    train_dataset = MockDataset(num_samples=config["train_samples"])
+    val_dataset = MockDataset(num_samples=config["val_samples"])
 
     # Create dataloaders
-    train_loader = create_dataloader(train_dataset, batch_size=config['batch_size'])
-    val_loader = create_dataloader(val_dataset, batch_size=config['batch_size'], shuffle=False)
+    train_loader = create_dataloader(train_dataset, batch_size=config["batch_size"])
+    val_loader = create_dataloader(val_dataset, batch_size=config["batch_size"], shuffle=False)
 
     print(f"✅ Training batches: {len(train_loader)}")
     print(f"✅ Validation batches: {len(val_loader)}")
@@ -184,7 +189,7 @@ def main():
     print(f"📊 Trainable parameters: {trainable_params:,}")
 
     # Create optimizer
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'])
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config["learning_rate"])
 
     # Training loop
     print(f"\n🚀 Starting training for {config['epochs']} epochs...")
@@ -192,7 +197,7 @@ def main():
     train_losses = []
     val_losses = []
 
-    for epoch in range(1, config['epochs'] + 1):
+    for epoch in range(1, config["epochs"] + 1):
         print(f"\n📈 Epoch {epoch}/{config['epochs']}")
 
         # Train
@@ -214,13 +219,13 @@ def main():
             print(f"   GPU Memory: {memory_used:.2f} GB")
 
         # Save checkpoint
-        os.makedirs(config['save_dir'], exist_ok=True)
+        os.makedirs(config["save_dir"], exist_ok=True)
         checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'train_loss': train_loss,
-            'val_loss': val_loss,
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "train_loss": train_loss,
+            "val_loss": val_loss,
         }
         torch.save(checkpoint, f"{config['save_dir']}/checkpoint_epoch_{epoch}.pt")
 
@@ -230,13 +235,9 @@ def main():
     print(f"📉 Final val loss: {val_losses[-1]:.4f}")
 
     # Save training history
-    history = {
-        'config': config,
-        'train_losses': train_losses,
-        'val_losses': val_losses
-    }
+    history = {"config": config, "train_losses": train_losses, "val_losses": val_losses}
 
-    with open(f"{config['save_dir']}/training_history.json", 'w') as f:
+    with open(f"{config['save_dir']}/training_history.json", "w") as f:
         json.dump(history, f, indent=2)
 
     print(f"💾 Results saved to {config['save_dir']}/")
@@ -248,9 +249,9 @@ def main():
     with torch.no_grad():
         # Get a sample batch
         sample_batch = next(iter(val_loader))
-        climate_data = sample_batch['climate_data'].to(device)
-        input_ids = sample_batch['input_ids'].to(device)
-        attention_mask = sample_batch['attention_mask'].to(device)
+        climate_data = sample_batch["climate_data"].to(device)
+        input_ids = sample_batch["input_ids"].to(device)
+        attention_mask = sample_batch["attention_mask"].to(device)
 
         # Run inference
         start_time = torch.cuda.Event(enable_timing=True) if torch.cuda.is_available() else None
@@ -268,6 +269,7 @@ def main():
             print(f"⚡ Inference time: {inference_time:.2f} ms")
 
         print(f"✅ Inference successful! Output shape: {outputs.logits.shape}")
+
 
 if __name__ == "__main__":
     main()

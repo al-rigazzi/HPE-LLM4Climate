@@ -18,12 +18,13 @@ Example questions it can handle:
 
 import os
 import sys
-import torch
-import numpy as np
-from pathlib import Path
-import matplotlib.pyplot as plt
-import warnings
 import time
+import warnings
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
 import yaml
 
 # Add parent directories to path
@@ -34,6 +35,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 try:
     from multimodal_aifs.aifs_wrapper import AIFSWrapper
     from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
+
     AIFS_AVAILABLE = True
 except ImportError:
     AIFS_AVAILABLE = False
@@ -41,16 +43,20 @@ except ImportError:
 
 # Memory optimization
 torch.set_num_threads(1)
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+warnings.filterwarnings("ignore")
+
 
 def check_memory_usage():
     import psutil
+
     process = psutil.Process(os.getpid())
     return process.memory_info().rss / 1024**3
 
+
 print("🌍 Multi-Year Climate Trend Analysis Demo using AIFS")
 print("📊 Demonstrating AIFS temporal climate-text fusion")
+
 
 def load_aifs_encoder():
     """
@@ -60,16 +66,16 @@ def load_aifs_encoder():
         return None
 
     # Check for AIFS weights
-    aifs_weights_path = Path(__file__).parent.parent.parent.parent / "aifs-single-1.0" / "aifs-single-mse-1.0.ckpt"
+    aifs_weights_path = (
+        Path(__file__).parent.parent.parent.parent / "aifs-single-1.0" / "aifs-single-mse-1.0.ckpt"
+    )
 
     if aifs_weights_path.exists():
         try:
             print("🔧 Loading AIFS encoder...")
 
             # Initialize AIFS wrapper
-            aifs_wrapper = AIFSWrapper(
-                model_path=str(aifs_weights_path)
-            )
+            aifs_wrapper = AIFSWrapper(model_path=str(aifs_weights_path))
 
             print(f"  ✅ AIFS encoder loaded!")
             print(f"  📊 Ready for climate data processing")
@@ -83,6 +89,7 @@ def load_aifs_encoder():
     else:
         print(f"⚠️  AIFS model not found at {aifs_weights_path}")
         return None
+
 
 def create_mock_climate_encoder(climate_dim=512):
     """
@@ -98,8 +105,9 @@ def create_mock_climate_encoder(climate_dim=512):
         torch.nn.Flatten(),
         torch.nn.Linear(256 * 8 * 8, climate_dim),
         torch.nn.ReLU(),
-        torch.nn.Linear(climate_dim, climate_dim)
+        torch.nn.Linear(climate_dim, climate_dim),
     )
+
 
 class MultiYearClimateProcessor(torch.nn.Module):
     """
@@ -133,15 +141,15 @@ class MultiYearClimateProcessor(torch.nn.Module):
                 torch.nn.Linear(256 * 8 * 8, climate_dim),
                 torch.nn.ReLU(),
                 # Output to match our target dimension
-                torch.nn.Linear(climate_dim, climate_dim)
+                torch.nn.Linear(climate_dim, climate_dim),
             )
 
-            self.encoder_type = 'aifs_inspired'
+            self.encoder_type = "aifs_inspired"
             print(f"  💡 Note: Using AIFS-inspired architecture for demo compatibility")
         else:
             print("⚠️  Falling back to mock climate encoder")
             self.climate_encoder = create_mock_climate_encoder(climate_dim)
-            self.encoder_type = 'mock'
+            self.encoder_type = "mock"
 
         # Text encoder (simplified)
         self.text_encoder = torch.nn.Embedding(1000, text_dim)  # Simple vocab
@@ -152,14 +160,12 @@ class MultiYearClimateProcessor(torch.nn.Module):
             torch.nn.LayerNorm(text_dim),
             torch.nn.GELU(),
             torch.nn.Linear(text_dim, text_dim),
-            torch.nn.LayerNorm(text_dim)
+            torch.nn.LayerNorm(text_dim),
         )
 
         # Temporal cross-attention (key component!)
         self.temporal_attention = torch.nn.MultiheadAttention(
-            embed_dim=text_dim,
-            num_heads=8,
-            batch_first=True
+            embed_dim=text_dim, num_heads=8, batch_first=True
         )
 
         # Layer normalization
@@ -169,7 +175,9 @@ class MultiYearClimateProcessor(torch.nn.Module):
         self.trend_analyzer = torch.nn.Sequential(
             torch.nn.Linear(text_dim, text_dim // 2),
             torch.nn.ReLU(),
-            torch.nn.Linear(text_dim // 2, 4)  # 4 trend types: increasing, decreasing, stable, cyclical
+            torch.nn.Linear(
+                text_dim // 2, 4
+            ),  # 4 trend types: increasing, decreasing, stable, cyclical
         )
 
         print(f"✅ Multi-year climate processor created!")
@@ -218,9 +226,9 @@ class MultiYearClimateProcessor(torch.nn.Module):
         # CROSS-ATTENTION: Text query attends to multi-year climate
         # This is where the magic happens - text can examine any/all years!
         attended_features, attention_weights = self.temporal_attention(
-            query=text_embeddings,        # [batch, seq_len, text_dim] - "What are trends?"
-            key=climate_projected,        # [batch, years, text_dim] - Each year as a key
-            value=climate_projected       # [batch, years, text_dim] - Each year's data
+            query=text_embeddings,  # [batch, seq_len, text_dim] - "What are trends?"
+            key=climate_projected,  # [batch, years, text_dim] - Each year as a key
+            value=climate_projected,  # [batch, years, text_dim] - Each year's data
         )
 
         print(f"  🧠 Attention weights shape: {attention_weights.shape}")
@@ -234,11 +242,12 @@ class MultiYearClimateProcessor(torch.nn.Module):
         trend_logits = self.trend_analyzer(trend_features)  # [batch, 4]
 
         return {
-            'trend_logits': trend_logits,
-            'attention_weights': attention_weights,
-            'yearly_features': temporal_climate,
-            'fused_features': fused_features
+            "trend_logits": trend_logits,
+            "attention_weights": attention_weights,
+            "yearly_features": temporal_climate,
+            "fused_features": fused_features,
         }
+
 
 def create_multi_year_dummy_data(batch_size=1, num_years=10, add_trends=True):
     """
@@ -273,6 +282,7 @@ def create_multi_year_dummy_data(batch_size=1, num_years=10, add_trends=True):
 
     return climate_data
 
+
 def create_text_queries():
     """
     Create various trend analysis text queries
@@ -282,19 +292,41 @@ def create_text_queries():
         "How has precipitation changed over the years?",
         "Are we seeing cyclical weather patterns?",
         "Is there evidence of climate change in this data?",
-        "What long-term trends do you observe?"
+        "What long-term trends do you observe?",
     ]
 
     # Simple tokenization (just map words to integers)
-    vocab = {'what': 10, 'are': 11, 'the': 12, 'temperature': 13, 'trends': 14,
-             'over': 15, 'time': 16, 'period': 17, 'how': 18, 'has': 19,
-             'precipitation': 20, 'changed': 21, 'years': 22, 'seeing': 23,
-             'cyclical': 24, 'weather': 25, 'patterns': 26, 'evidence': 27,
-             'climate': 28, 'change': 29, 'data': 30, 'long': 31, 'term': 32,
-             'observe': 33, '<unk>': 0, '<pad>': 1}
+    vocab = {
+        "what": 10,
+        "are": 11,
+        "the": 12,
+        "temperature": 13,
+        "trends": 14,
+        "over": 15,
+        "time": 16,
+        "period": 17,
+        "how": 18,
+        "has": 19,
+        "precipitation": 20,
+        "changed": 21,
+        "years": 22,
+        "seeing": 23,
+        "cyclical": 24,
+        "weather": 25,
+        "patterns": 26,
+        "evidence": 27,
+        "climate": 28,
+        "change": 29,
+        "data": 30,
+        "long": 31,
+        "term": 32,
+        "observe": 33,
+        "<unk>": 0,
+        "<pad>": 1,
+    }
 
     def tokenize(text):
-        words = text.lower().replace('?', '').replace('.', '').split()
+        words = text.lower().replace("?", "").replace(".", "").split()
         tokens = [vocab.get(word, 0) for word in words]  # 0 for unknown
         # Pad to length 10
         tokens = tokens[:10] + [1] * max(0, 10 - len(tokens))
@@ -303,6 +335,7 @@ def create_text_queries():
     tokenized_queries = [tokenize(q) for q in queries]
 
     return queries, torch.tensor(tokenized_queries)
+
 
 def analyze_attention_patterns(attention_weights, num_years):
     """
@@ -327,6 +360,7 @@ def analyze_attention_patterns(attention_weights, num_years):
 
     return avg_attention
 
+
 def visualize_trends(yearly_features, num_years):
     """
     Visualize the climate trends in the data
@@ -343,9 +377,15 @@ def visualize_trends(yearly_features, num_years):
 
     years = list(range(1, num_years + 1))
 
-    print(f"   Temperature trend: {temp_trend[0]:.2f} → {temp_trend[-1]:.2f} (Δ{temp_trend[-1]-temp_trend[0]:+.2f})")
-    print(f"   Precipitation trend: {precip_trend[0]:.2f} → {precip_trend[-1]:.2f} (Δ{precip_trend[-1]-precip_trend[0]:+.2f})")
-    print(f"   Wind pattern trend: {wind_trend[0]:.2f} → {wind_trend[-1]:.2f} (Δ{wind_trend[-1]-wind_trend[0]:+.2f})")
+    print(
+        f"   Temperature trend: {temp_trend[0]:.2f} → {temp_trend[-1]:.2f} (Δ{temp_trend[-1]-temp_trend[0]:+.2f})"
+    )
+    print(
+        f"   Precipitation trend: {precip_trend[0]:.2f} → {precip_trend[-1]:.2f} (Δ{precip_trend[-1]-precip_trend[0]:+.2f})"
+    )
+    print(
+        f"   Wind pattern trend: {wind_trend[0]:.2f} → {wind_trend[-1]:.2f} (Δ{wind_trend[-1]-wind_trend[0]:+.2f})"
+    )
 
     # Simple trend detection
     temp_slope = np.polyfit(years, temp_trend, 1)[0]
@@ -365,11 +405,12 @@ def visualize_trends(yearly_features, num_years):
     print(f"     Temperature: {temp_direction} (slope: {temp_slope:+.3f})")
     print(f"     Precipitation: {precip_direction} (slope: {precip_slope:+.3f})")
 
+
 def interpret_trend_predictions(trend_logits):
     """
     Interpret the model's trend predictions
     """
-    trend_types = ['Increasing', 'Decreasing', 'Stable', 'Cyclical']
+    trend_types = ["Increasing", "Decreasing", "Stable", "Cyclical"]
 
     # Apply softmax to get probabilities
     probs = torch.softmax(trend_logits, dim=-1)
@@ -386,6 +427,7 @@ def interpret_trend_predictions(trend_logits):
 
     print(f"   🏆 Top prediction: {trend_types[top_prediction]} (confidence: {confidence:.3f})")
 
+
 def main():
     print(f"\n🚀 Starting Multi-Year Climate Analysis Demo...")
 
@@ -401,11 +443,7 @@ def main():
     # Create multi-year climate data
     print(f"\n📊 Creating Multi-Year Climate Dataset...")
     num_years = 10
-    climate_data = create_multi_year_dummy_data(
-        batch_size=1,
-        num_years=num_years,
-        add_trends=True
-    )
+    climate_data = create_multi_year_dummy_data(batch_size=1, num_years=num_years, add_trends=True)
 
     # Create text queries about trends
     text_queries, query_tokens = create_text_queries()
@@ -422,8 +460,7 @@ def main():
         start_time = time.time()
 
         outputs = model(
-            multi_year_climate=climate_data,
-            text_query_tokens=query_tokens[0:1]  # First query only
+            multi_year_climate=climate_data, text_query_tokens=query_tokens[0:1]  # First query only
         )
 
         forward_time = time.time() - start_time
@@ -431,9 +468,9 @@ def main():
     print(f"✅ Forward pass completed in {forward_time:.2f} seconds")
 
     # Analyze results
-    attention_weights = outputs['attention_weights']
-    trend_logits = outputs['trend_logits']
-    yearly_features = outputs['yearly_features']
+    attention_weights = outputs["attention_weights"]
+    trend_logits = outputs["trend_logits"]
+    yearly_features = outputs["yearly_features"]
 
     # Attention analysis
     analyze_attention_patterns(attention_weights, num_years)
@@ -451,15 +488,17 @@ def main():
         print(f"\n   Query {i+1}: '{query}'")
 
         with torch.no_grad():
-            outputs = model(climate_data, query_tokens[i:i+1])
-            trend_logits = outputs['trend_logits']
+            outputs = model(climate_data, query_tokens[i : i + 1])
+            trend_logits = outputs["trend_logits"]
             probs = torch.softmax(trend_logits, dim=-1)
 
             top_prediction = torch.argmax(probs[0]).item()
             confidence = probs[0, top_prediction].item()
-            trend_types = ['Increasing', 'Decreasing', 'Stable', 'Cyclical']
+            trend_types = ["Increasing", "Decreasing", "Stable", "Cyclical"]
 
-            print(f"     🎯 Prediction: {trend_types[top_prediction]} (confidence: {confidence:.3f})")
+            print(
+                f"     🎯 Prediction: {trend_types[top_prediction]} (confidence: {confidence:.3f})"
+            )
 
     final_memory = check_memory_usage()
     print(f"\n💾 Final memory usage: {final_memory:.1f}GB")
@@ -479,6 +518,7 @@ def main():
     print(f"   • Long-term temperature change assessment")
     print(f"   • Seasonal vs. long-term trend separation")
     print(f"   • Climate model validation against observations")
+
 
 if __name__ == "__main__":
     main()

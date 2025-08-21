@@ -6,14 +6,16 @@ This script specifically tests that the extracted PrithviWxC encoder loads
 without any missing keys warnings, confirming the extraction is working correctly.
 """
 
-import torch
 import sys
 from pathlib import Path
+
+import torch
 
 # Add parent directory to path for imports
 current_dir = Path(__file__).parent
 project_root = current_dir.parent.parent
 sys.path.insert(0, str(project_root))
+
 
 def test_encoder_loading():
     """Test that the extracted encoder loads perfectly without missing keys."""
@@ -31,11 +33,11 @@ def test_encoder_loading():
         fusion_model = ClimateTextFusion(
             prithvi_encoder_path=str(encoder_path),
             llama_model_name="meta-llama/Meta-Llama-3-8B",  # This will be initialized but not loaded
-            fusion_mode='concatenate',
+            fusion_mode="concatenate",
             max_climate_tokens=32,
             max_text_length=16,
             freeze_prithvi=True,
-            freeze_llama=True
+            freeze_llama=True,
         )
 
         print("\n🎯 Encoder Loading Results:")
@@ -57,11 +59,13 @@ def test_encoder_loading():
 
         # Use correct dimensions for the encoder (360x576 for global data)
         dummy_batch = {
-            'x': torch.randn(batch_size, 2, 160, 360, 576),  # [batch, time, channels, lat, lon]
-            'static': torch.randn(batch_size, 8, 360, 576),   # [batch, static_channels, lat, lon]
-            'climate': torch.randn(batch_size, 160, 360, 576), # [batch, channels, lat, lon] for residual
-            'input_time': torch.tensor([0.5]),
-            'lead_time': torch.tensor([1.0])
+            "x": torch.randn(batch_size, 2, 160, 360, 576),  # [batch, time, channels, lat, lon]
+            "static": torch.randn(batch_size, 8, 360, 576),  # [batch, static_channels, lat, lon]
+            "climate": torch.randn(
+                batch_size, 160, 360, 576
+            ),  # [batch, channels, lat, lon] for residual
+            "input_time": torch.tensor([0.5]),
+            "lead_time": torch.tensor([1.0]),
         }
 
         with torch.no_grad():
@@ -81,8 +85,10 @@ def test_encoder_loading():
         print(f"\n❌ ENCODER TEST FAILED!")
         print(f"  Error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """Main test function."""
@@ -97,6 +103,7 @@ def main():
     else:
         print(f"\n❌ ENCODER TESTS FAILED!")
         print(f"  Check the error messages above for debugging")
+
 
 if __name__ == "__main__":
     main()

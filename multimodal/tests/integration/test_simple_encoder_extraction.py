@@ -11,9 +11,10 @@ Usage:
 
 import os
 import sys
+from pathlib import Path
+
 import torch
 import yaml
-from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -73,7 +74,7 @@ def test_simple_encoder_extraction():
 
             # For climate mode: static_embed_channels = in_channels + in_channels_static
             static_embed_channels = static_embed_shape[1]  # Input channels to this layer
-            in_channels = config['params']['in_channels']
+            in_channels = config["params"]["in_channels"]
             derived_static_channels = static_embed_channels - in_channels
 
             print(f"\\n📊 CLIMATE MODE ANALYSIS:")
@@ -81,10 +82,12 @@ def test_simple_encoder_extraction():
             print(f"   Base in_channels: {in_channels}")
             print(f"   Derived in_channels_static: {derived_static_channels}")
 
-            if derived_static_channels == config['params']['in_channels_static']:
+            if derived_static_channels == config["params"]["in_channels_static"]:
                 print(f"   ✅ Config matches checkpoint: {derived_static_channels} static channels")
             else:
-                print(f"   ⚠️  Config mismatch: config={config['params']['in_channels_static']}, derived={derived_static_channels}")
+                print(
+                    f"   ⚠️  Config mismatch: config={config['params']['in_channels_static']}, derived={derived_static_channels}"
+                )
 
         # Now try to create encoder with the config values
         print(f"\\n🏗️  CREATING ENCODER WITH CONFIG VALUES:")
@@ -141,7 +144,7 @@ def test_simple_encoder_extraction():
         print(f"     n_blocks_encoder: {encoder.n_blocks_encoder}")
 
         # Check if patch_embedding_static expects the right input
-        if hasattr(encoder, 'patch_embedding_static'):
+        if hasattr(encoder, "patch_embedding_static"):
             expected_static_input = encoder.patch_embedding_static.proj.in_channels
             calculated_input = encoder.in_channels + encoder.in_channels_static
             print(f"     patch_embedding_static expects: {expected_static_input} channels")
@@ -162,24 +165,38 @@ def test_simple_encoder_extraction():
             expected_static_shape = (1, in_channels_static, 1, 1)
 
             if original_static_shape != expected_static_shape:
-                print(f"   📝 Adjusting static scalers: {original_static_shape} -> {expected_static_shape}")
+                print(
+                    f"   📝 Adjusting static scalers: {original_static_shape} -> {expected_static_shape}"
+                )
 
                 # Create adjusted state dict
                 adjusted_state_dict = state_dict.copy()
 
                 if original_static_shape[1] > in_channels_static:
                     # Truncate
-                    adjusted_state_dict["static_input_scalers_mu"] = state_dict["static_input_scalers_mu"][:, :in_channels_static, :, :].clone()
-                    adjusted_state_dict["static_input_scalers_sigma"] = state_dict["static_input_scalers_sigma"][:, :in_channels_static, :, :].clone()
-                    print(f"     Truncated from {original_static_shape[1]} to {in_channels_static} channels")
+                    adjusted_state_dict["static_input_scalers_mu"] = state_dict[
+                        "static_input_scalers_mu"
+                    ][:, :in_channels_static, :, :].clone()
+                    adjusted_state_dict["static_input_scalers_sigma"] = state_dict[
+                        "static_input_scalers_sigma"
+                    ][:, :in_channels_static, :, :].clone()
+                    print(
+                        f"     Truncated from {original_static_shape[1]} to {in_channels_static} channels"
+                    )
                 else:
                     # Pad
                     pad_size = in_channels_static - original_static_shape[1]
                     mu_pad = torch.zeros(1, pad_size, 1, 1)
                     sig_pad = torch.ones(1, pad_size, 1, 1)
-                    adjusted_state_dict["static_input_scalers_mu"] = torch.cat([state_dict["static_input_scalers_mu"], mu_pad], dim=1)
-                    adjusted_state_dict["static_input_scalers_sigma"] = torch.cat([state_dict["static_input_scalers_sigma"], sig_pad], dim=1)
-                    print(f"     Padded from {original_static_shape[1]} to {in_channels_static} channels")
+                    adjusted_state_dict["static_input_scalers_mu"] = torch.cat(
+                        [state_dict["static_input_scalers_mu"], mu_pad], dim=1
+                    )
+                    adjusted_state_dict["static_input_scalers_sigma"] = torch.cat(
+                        [state_dict["static_input_scalers_sigma"], sig_pad], dim=1
+                    )
+                    print(
+                        f"     Padded from {original_static_shape[1]} to {in_channels_static} channels"
+                    )
 
                 state_dict = adjusted_state_dict
 
@@ -241,11 +258,11 @@ def test_simple_encoder_extraction():
 
         batch_size = 1
         dummy_data = {
-            'x': torch.randn(batch_size, 2, in_channels, 360, 576),
-            'static': torch.randn(batch_size, in_channels_static, 360, 576),
-            'climate': torch.randn(batch_size, in_channels, 360, 576),
-            'input_time': torch.tensor([0.5], dtype=torch.float32),
-            'lead_time': torch.tensor([1.0], dtype=torch.float32)
+            "x": torch.randn(batch_size, 2, in_channels, 360, 576),
+            "static": torch.randn(batch_size, in_channels_static, 360, 576),
+            "climate": torch.randn(batch_size, in_channels, 360, 576),
+            "input_time": torch.tensor([0.5], dtype=torch.float32),
+            "lead_time": torch.tensor([1.0], dtype=torch.float32),
         }
 
         print(f"   Input shapes:")
@@ -283,6 +300,7 @@ def test_simple_encoder_extraction():
         print(f"Error: {e}")
         print(f"Error type: {type(e).__name__}")
         import traceback
+
         traceback.print_exc()
         return False
 

@@ -6,30 +6,36 @@ Using our PROVEN approach from test_large_simple.py but with Llama-3-8B
 This WILL work - we know the pattern!
 """
 
+import gc
 import os
 import sys
-import torch
-import numpy as np
-from pathlib import Path
-import warnings
 import time
-import gc
+import warnings
+from pathlib import Path
+
+import numpy as np
+import torch
 
 # Memory optimization
 torch.set_num_threads(1)
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+warnings.filterwarnings("ignore")
+
 
 def check_memory_usage():
     import psutil
+
     process = psutil.Process(os.getpid())
     return process.memory_info().rss / 1024**3
+
 
 def clear_memory():
     gc.collect()
 
+
 print("🦙 FINAL LLAMA-3-8B CLIMATE FUSION - SUCCESS VERSION")
 print("🎯 Using proven architecture from our successful large model tests")
+
 
 class FinalLlama3Fusion(torch.nn.Module):
     def __init__(self, climate_dim=768):
@@ -37,7 +43,7 @@ class FinalLlama3Fusion(torch.nn.Module):
 
         print("📥 Loading Llama-3-8B...")
 
-        from transformers import AutoTokenizer, AutoModelForCausalLM
+        from transformers import AutoModelForCausalLM, AutoTokenizer
 
         # Load model
         model_name = "meta-llama/Meta-Llama-3-8B"
@@ -67,7 +73,7 @@ class FinalLlama3Fusion(torch.nn.Module):
             torch.nn.Flatten(),
             torch.nn.Linear(256 * 8 * 8, climate_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(climate_dim, climate_dim)
+            torch.nn.Linear(climate_dim, climate_dim),
         )
 
         # Get text model config
@@ -108,7 +114,9 @@ class FinalLlama3Fusion(torch.nn.Module):
 
         # Get text embeddings (FROZEN)
         with torch.no_grad():
-            text_embeddings = self.text_model.get_input_embeddings()(input_ids)  # [batch, seq, hidden]
+            text_embeddings = self.text_model.get_input_embeddings()(
+                input_ids
+            )  # [batch, seq, hidden]
 
         # Fusion: broadcast climate to sequence length and add
         climate_broadcast = climate_projected.unsqueeze(1).expand(-1, seq_len, -1)
@@ -117,7 +125,8 @@ class FinalLlama3Fusion(torch.nn.Module):
         # Simple output projection (don't use complex transformer layers)
         logits = self.output_head(fused_embeddings)
 
-        return type('ModelOutput', (), {'logits': logits})()
+        return type("ModelOutput", (), {"logits": logits})()
+
 
 def main():
     print(f"\n🚀 Starting FINAL Llama-3-8B training...")
@@ -139,13 +148,9 @@ def main():
 
     # Tokenize
     encoding = model.tokenizer(
-        text,
-        max_length=32,
-        padding='max_length',
-        truncation=True,
-        return_tensors='pt'
+        text, max_length=32, padding="max_length", truncation=True, return_tensors="pt"
     )
-    input_ids = encoding['input_ids']
+    input_ids = encoding["input_ids"]
     labels = input_ids.clone()
 
     print(f"📊 Data shapes:")
@@ -176,8 +181,7 @@ def main():
     outputs = model(climate_data, input_ids)
 
     loss = torch.nn.functional.cross_entropy(
-        outputs.logits.view(-1, outputs.logits.size(-1)),
-        labels.view(-1)
+        outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
     )
 
     print(f"📊 Loss: {loss.item():.4f}")
@@ -201,8 +205,7 @@ def main():
 
         outputs = model(climate_data, input_ids)
         loss = torch.nn.functional.cross_entropy(
-            outputs.logits.view(-1, outputs.logits.size(-1)),
-            labels.view(-1)
+            outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
         )
 
         optimizer.zero_grad()
@@ -213,10 +216,12 @@ def main():
         step_time = time.time() - step_start
         current_memory = check_memory_usage()
 
-        print(f"Step {step+1}: Loss={loss.item():.4f}, "
-              f"GradNorm={grad_norm:.4f}, "
-              f"Time={step_time:.2f}s, "
-              f"Memory={current_memory:.1f}GB")
+        print(
+            f"Step {step+1}: Loss={loss.item():.4f}, "
+            f"GradNorm={grad_norm:.4f}, "
+            f"Time={step_time:.2f}s, "
+            f"Memory={current_memory:.1f}GB"
+        )
 
         clear_memory()
 
@@ -236,21 +241,27 @@ def main():
 
     # Save the model
     save_path = "LLAMA3_8B_CLIMATE_FUSION_SUCCESS.pt"
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'tokenizer': model.tokenizer,
-        'config': {
-            'model_name': 'Llama-3-8B-Climate-Fusion',
-            'total_parameters': sum(p.numel() for p in model.parameters()),
-            'trainable_parameters': sum(p.numel() for p in model.parameters() if p.requires_grad),
-            'memory_usage_gb': final_memory,
-            'success': True
-        }
-    }, save_path)
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "tokenizer": model.tokenizer,
+            "config": {
+                "model_name": "Llama-3-8B-Climate-Fusion",
+                "total_parameters": sum(p.numel() for p in model.parameters()),
+                "trainable_parameters": sum(
+                    p.numel() for p in model.parameters() if p.requires_grad
+                ),
+                "memory_usage_gb": final_memory,
+                "success": True,
+            },
+        },
+        save_path,
+    )
 
     print(f"💾 SUCCESS MODEL SAVED: {save_path}")
 
     return True
+
 
 if __name__ == "__main__":
     success = main()

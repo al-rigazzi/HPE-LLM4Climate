@@ -5,9 +5,9 @@ Test script to verify the training environment setup
 This script performs basic checks to ensure all components are working correctly.
 """
 
-import sys
-import subprocess
 import importlib
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -44,6 +44,7 @@ def check_cuda():
     print("🚀 Checking CUDA support...")
     try:
         import torch
+
         if torch.cuda.is_available():
             device_count = torch.cuda.device_count()
             device_name = torch.cuda.get_device_name(0) if device_count > 0 else "Unknown"
@@ -63,11 +64,13 @@ def check_deepspeed():
     print("⚡ Checking DeepSpeed...")
     try:
         import deepspeed
+
         print(f"   ✓ DeepSpeed {deepspeed.__version__}")
 
         # Check DeepSpeed operations
         try:
             from deepspeed.ops.adam import FusedAdam
+
             print("   ✓ Fused Adam optimizer available")
         except ImportError:
             print("   ⚠️  Fused optimizers not available")
@@ -85,10 +88,7 @@ def check_model_files():
     base_path = Path(__file__).parent.parent.parent
     weights_dir = base_path / "data" / "weights"
 
-    required_files = [
-        "prithvi.wxc.2300m.v1.pt",
-        "prithvi.wxc.rollout.2300m.v1.pt"
-    ]
+    required_files = ["prithvi.wxc.2300m.v1.pt", "prithvi.wxc.rollout.2300m.v1.pt"]
 
     all_found = True
     for file_name in required_files:
@@ -108,10 +108,7 @@ def check_config_files():
     print("⚙️  Checking configuration files...")
 
     config_dir = Path(__file__).parent
-    required_configs = [
-        "config.yaml",
-        "deepspeed_config.json"
-    ]
+    required_configs = ["config.yaml", "deepspeed_config.json"]
 
     all_found = True
     for config_file in required_configs:
@@ -132,12 +129,14 @@ def run_basic_model_test():
     try:
         # Test basic PyTorch functionality
         import torch
+
         x = torch.randn(2, 3)
         y = torch.mm(x, x.t())
         print("   ✓ PyTorch tensor operations working")
 
         # Test transformers (using a smaller model for testing)
         from transformers import AutoTokenizer
+
         # Use a lightweight tokenizer for testing
         try:
             tokenizer = AutoTokenizer.from_pretrained("gpt2", trust_remote_code=True)
@@ -146,11 +145,13 @@ def run_basic_model_test():
         except Exception:
             # Fallback for basic tokenization test
             from transformers import PreTrainedTokenizerFast
+
             print("   ✓ Transformers library available")
 
         # Test basic YAML loading
         import yaml
-        with open(Path(__file__).parent / "config.yaml", 'r') as f:
+
+        with open(Path(__file__).parent / "config.yaml", "r") as f:
             config = yaml.safe_load(f)
         print("   ✓ Configuration file loading working")
 
@@ -168,13 +169,18 @@ def main():
 
     checks = [
         ("Python Version", check_python_version),
-        ("Core Packages", lambda: all([
-            check_package("torch", version_attr="__version__"),
-            check_package("transformers", version_attr="__version__"),
-            check_package("numpy", version_attr="__version__"),
-            check_package("yaml", "yaml"),
-            # check_package("wandb", version_attr="__version__"),
-        ])),
+        (
+            "Core Packages",
+            lambda: all(
+                [
+                    check_package("torch", version_attr="__version__"),
+                    check_package("transformers", version_attr="__version__"),
+                    check_package("numpy", version_attr="__version__"),
+                    check_package("yaml", "yaml"),
+                    # check_package("wandb", version_attr="__version__"),
+                ]
+            ),
+        ),
         ("CUDA Support", check_cuda),
         ("DeepSpeed", check_deepspeed),
         ("Model Files", check_model_files),

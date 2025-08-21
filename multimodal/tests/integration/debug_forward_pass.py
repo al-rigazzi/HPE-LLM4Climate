@@ -3,15 +3,17 @@
 Minimal test to debug the tuple index out of range error
 """
 
-import torch
-import sys
 import os
+import sys
+
+import torch
 import yaml
 
 # Add the project root to Python path
-sys.path.append('/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate')
+sys.path.append("/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate")
 
 from multimodal.utils.encoder_extractor import PrithviWxC_Encoder
+
 
 def debug_forward_pass():
     """Debug the specific forward pass error."""
@@ -20,8 +22,10 @@ def debug_forward_pass():
     print("=" * 50)
 
     # Load config
-    config_path = "/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate/data/config.yaml"
-    with open(config_path, 'r') as f:
+    config_path = (
+        "/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate/data/config.yaml"
+    )
+    with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
     # Basic parameters from config
@@ -66,7 +70,7 @@ def debug_forward_pass():
             positional_encoding="absolute",  # Default value
             masking_mode="global",  # Default value
             encoder_shifting=False,  # Default value
-            checkpoint_encoder=config["params"]["checkpoint_encoder"]
+            checkpoint_encoder=config["params"]["checkpoint_encoder"],
         )
         print("✅ Encoder created successfully")
 
@@ -82,6 +86,7 @@ def debug_forward_pass():
     except Exception as e:
         print(f"❌ Encoder creation failed: {e}")
         import traceback
+
         traceback.print_exc()
         return
 
@@ -90,11 +95,11 @@ def debug_forward_pass():
 
     batch_size = 1
     dummy_data = {
-        'x': torch.randn(batch_size, 2, in_channels, 360, 576),
-        'static': torch.randn(batch_size, in_channels_static, 360, 576),
-        'climate': torch.randn(batch_size, in_channels, 360, 576),
-        'input_time': torch.tensor([0.5], dtype=torch.float32),
-        'lead_time': torch.tensor([1.0], dtype=torch.float32)
+        "x": torch.randn(batch_size, 2, in_channels, 360, 576),
+        "static": torch.randn(batch_size, in_channels_static, 360, 576),
+        "climate": torch.randn(batch_size, in_channels, 360, 576),
+        "input_time": torch.tensor([0.5], dtype=torch.float32),
+        "lead_time": torch.tensor([1.0], dtype=torch.float32),
     }
 
     print(f"✅ Test data created")
@@ -123,9 +128,7 @@ def debug_forward_pass():
             print("🔍 Step 4: Climate data processing...")
             climate_scaled = (
                 dummy_data["climate"] - encoder.input_scalers_mu.view(1, -1, 1, 1)
-            ) / (
-                encoder.input_scalers_sigma.view(1, -1, 1, 1) + encoder.input_scalers_epsilon
-            )
+            ) / (encoder.input_scalers_sigma.view(1, -1, 1, 1) + encoder.input_scalers_epsilon)
             print("✅ Climate data processing passed")
 
             print("🔍 Step 5: Generate mask...")
@@ -154,7 +157,9 @@ def debug_forward_pass():
             print("🔍 Step 9: Convert to patching...")
             x_embedded_patch = encoder.to_patching(x_embedded)
             static_embedded_patch = encoder.to_patching(static_embedded)
-            print(f"✅ To patching passed: x={x_embedded_patch.shape}, static={static_embedded_patch.shape}")
+            print(
+                f"✅ To patching passed: x={x_embedded_patch.shape}, static={static_embedded_patch.shape}"
+            )
 
             print("🔍 Step 10: Time encoding...")
             time_encoding = encoder.time_encoding(dummy_data["input_time"], dummy_data["lead_time"])
@@ -197,8 +202,10 @@ def debug_forward_pass():
         except Exception as e:
             print(f"❌ Forward pass failed at step: {e}")
             import traceback
+
             traceback.print_exc()
-            return    print("\\n🎉 All steps completed successfully!")
+            return print("\\n🎉 All steps completed successfully!")
+
 
 if __name__ == "__main__":
     debug_forward_pass()

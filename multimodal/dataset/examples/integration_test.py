@@ -18,12 +18,14 @@ import torch.nn as nn
 sys.path.append(str(Path(__file__).parent.parent))
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from data_loader import PrithviMERRA2Dataset, MERRA2DataLoader
+from data_loader import MERRA2DataLoader, PrithviMERRA2Dataset
+
 from multimodal.utils.encoder_extractor import PrithviWxC_Encoder
 
 # Import MERRA-2 scalers if available
 try:
     from PrithviWxC.dataloaders.merra2 import input_scalers, static_input_scalers
+
     SCALERS_AVAILABLE = True
 except ImportError:
     SCALERS_AVAILABLE = False
@@ -78,7 +80,12 @@ def create_dummy_scalers(config):
     static_input_scalers_mu = torch.zeros(in_channels_static)
     static_input_scalers_sigma = torch.ones(in_channels_static)
 
-    return input_scalers_mu, input_scalers_sigma, static_input_scalers_mu, static_input_scalers_sigma
+    return (
+        input_scalers_mu,
+        input_scalers_sigma,
+        static_input_scalers_mu,
+        static_input_scalers_sigma,
+    )
 
 
 def load_real_scalers(config):
@@ -88,9 +95,26 @@ def load_real_scalers(config):
 
     # Define variables matching our processed data
     surface_vars = [
-        "EFLUX", "GWETROOT", "HFLUX", "LAI", "LWGAB", "LWGEM", "LWTUP",
-        "PS", "QV2M", "SLP", "SWGNT", "SWTNT", "T2M", "TQI", "TQL",
-        "TQV", "TS", "U10M", "V10M", "Z0M"
+        "EFLUX",
+        "GWETROOT",
+        "HFLUX",
+        "LAI",
+        "LWGAB",
+        "LWGEM",
+        "LWTUP",
+        "PS",
+        "QV2M",
+        "SLP",
+        "SWGNT",
+        "SWTNT",
+        "T2M",
+        "TQI",
+        "TQL",
+        "TQV",
+        "TS",
+        "U10M",
+        "V10M",
+        "Z0M",
     ]
     static_surface_vars = ["FRACI", "FRLAND", "FROCEAN", "PHIS"]
     vertical_vars = ["CLOUD", "H", "OMEGA", "PL", "QI", "QL", "QV", "T", "U", "V"]
@@ -102,7 +126,9 @@ def load_real_scalers(config):
         vert_scaler_path = Path("data/climatology/musigma_vertical.nc")
 
         if surf_scaler_path.exists() and vert_scaler_path.exists():
-            in_mu, in_sig = input_scalers(surface_vars, vertical_vars, levels, surf_scaler_path, vert_scaler_path)
+            in_mu, in_sig = input_scalers(
+                surface_vars, vertical_vars, levels, surf_scaler_path, vert_scaler_path
+            )
             static_mu, static_sig = static_input_scalers(surf_scaler_path, static_surface_vars)
             return in_mu, in_sig, static_mu, static_sig
         else:
@@ -128,26 +154,26 @@ def reshape_data_for_encoder(batch, config):
     encoder_batch = {}
 
     # Input data: (batch, time, vars, lat, lon) -> (batch, time, vars, lat, lon)
-    if 'x' in batch:
-        encoder_batch['x'] = batch['x']
+    if "x" in batch:
+        encoder_batch["x"] = batch["x"]
 
     # Static data: (batch, vars, lat, lon) -> (batch, vars, lat, lon)
-    if 'static' in batch:
-        encoder_batch['static'] = batch['static']
+    if "static" in batch:
+        encoder_batch["static"] = batch["static"]
 
     # Time information
-    if 'input_time' in batch:
-        encoder_batch['input_time'] = batch['input_time'].squeeze(-1)  # Remove extra dimension
-    if 'lead_time' in batch:
-        encoder_batch['lead_time'] = batch['lead_time'].squeeze(-1)  # Remove extra dimension
+    if "input_time" in batch:
+        encoder_batch["input_time"] = batch["input_time"].squeeze(-1)  # Remove extra dimension
+    if "lead_time" in batch:
+        encoder_batch["lead_time"] = batch["lead_time"].squeeze(-1)  # Remove extra dimension
 
     # Climate data (if using residual mode)
     if config["residual"] == "climate":
         # For demo, use the same as input data
         # In practice, this would be climatological data
-        if 'x' in batch:
+        if "x" in batch:
             # Use mean across time dimension as pseudo-climate
-            encoder_batch['climate'] = batch['x'].mean(dim=1)  # (batch, vars, lat, lon)
+            encoder_batch["climate"] = batch["x"].mean(dim=1)  # (batch, vars, lat, lon)
 
     return encoder_batch
 
@@ -169,7 +195,7 @@ def test_encoder_integration(dataset_path: str, config: dict):
             dataset_path=dataset_path,
             input_time_steps=config["input_size_time"],
             time_step_hours=6,
-            lead_time_hours=6
+            lead_time_hours=6,
         )
         print(f"✅ Dataset loaded: {len(dataset)} samples")
     except Exception as e:
@@ -183,7 +209,7 @@ def test_encoder_integration(dataset_path: str, config: dict):
         batch_size=2,
         shuffle=False,
         num_workers=0,
-        input_time_steps=config["input_size_time"]
+        input_time_steps=config["input_size_time"],
     )
     print("✅ DataLoader created")
 
@@ -221,7 +247,7 @@ def test_encoder_integration(dataset_path: str, config: dict):
             masking_mode=config["masking_mode"],
             positional_encoding=config["positional_encoding"],
             encoder_shifting=config["encoder_shifting"],
-            checkpoint_encoder=config["checkpoint_encoder"]
+            checkpoint_encoder=config["checkpoint_encoder"],
         )
 
         total_params = sum(p.numel() for p in encoder.parameters())
@@ -253,7 +279,9 @@ def test_encoder_integration(dataset_path: str, config: dict):
                     encoded_features = encoder(encoder_batch)
                     print(f"     ✅ Forward pass successful")
                     print(f"     Output shape: {encoded_features.shape}")
-                    print(f"     Output range: [{encoded_features.min():.3f}, {encoded_features.max():.3f}]")
+                    print(
+                        f"     Output range: [{encoded_features.min():.3f}, {encoded_features.max():.3f}]"
+                    )
 
                 except Exception as e:
                     print(f"     ❌ Forward pass failed: {e}")
@@ -317,7 +345,7 @@ def test_multimodal_fusion_pipeline(dataset_path: str, config: dict):
                 masking_mode=encoder_config["masking_mode"],
                 positional_encoding=encoder_config["positional_encoding"],
                 encoder_shifting=encoder_config["encoder_shifting"],
-                checkpoint_encoder=encoder_config["checkpoint_encoder"]
+                checkpoint_encoder=encoder_config["checkpoint_encoder"],
             )
 
             # Simple text encoder (dummy)
@@ -327,7 +355,7 @@ def test_multimodal_fusion_pipeline(dataset_path: str, config: dict):
             self.fusion = nn.MultiheadAttention(
                 embed_dim=encoder_config["embed_dim"],
                 num_heads=encoder_config["n_heads"],
-                batch_first=True
+                batch_first=True,
             )
 
             # Output projection
@@ -343,9 +371,7 @@ def test_multimodal_fusion_pipeline(dataset_path: str, config: dict):
 
             # Fusion via cross-attention
             fused_features, _ = self.fusion(
-                query=text_encoded,
-                key=climate_encoded,
-                value=climate_encoded
+                query=text_encoded, key=climate_encoded, value=climate_encoded
             )  # (batch, 1, embed_dim)
 
             # Output projection
@@ -371,7 +397,7 @@ def test_multimodal_fusion_pipeline(dataset_path: str, config: dict):
         batch_size=2,
         shuffle=False,
         num_workers=0,
-        input_time_steps=config["input_size_time"]
+        input_time_steps=config["input_size_time"],
     )
 
     model.eval()
@@ -382,7 +408,7 @@ def test_multimodal_fusion_pipeline(dataset_path: str, config: dict):
                 climate_batch = reshape_data_for_encoder(batch, config)
 
                 # Create dummy text features
-                batch_size = batch['x'].shape[0]
+                batch_size = batch["x"].shape[0]
                 text_features = torch.randn(batch_size, 512)
 
                 # Forward pass

@@ -24,7 +24,6 @@ def _setup_flash_attn_mock():
     # Only apply workaround on Darwin (macOS) ARM systems
     if platform.system() == "Darwin" and platform.machine() == "arm64":
         if "flash_attn" not in sys.modules:
-            import types
 
             class MockFlashAttn:
                 """Mock flash attention class for compatibility when flash_attn is not available."""
@@ -304,6 +303,7 @@ class AIFSWrapper:
         if self.is_loaded and self.model is not None and hasattr(self.model, "__call__"):
             try:
                 # Call the mock model for testing
+                # pylint: disable=not-callable
                 result = self.model()
                 if isinstance(result, torch.Tensor):
                     return result

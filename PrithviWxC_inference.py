@@ -81,47 +81,47 @@ levels = [
 # The MERRA-2 dataset includes data at longitudes of -180 and +180. This represents duplicate data, so we set a padding variable to remove it.
 padding = {"level": [0, 0], "lat": [0, -1], "lon": [0, 0]}
 
-# The input to the core model consists of these variables at two different times. 
+# The input to the core model consists of these variables at two different times.
 # The time difference in hours between these samples is passed to the model and set in the input_time variable.
 # The model's task is to predict the fixed set of variables at a target time, given the input data.
 lead_times = [18]  # This variable can be change to change the task
 input_times = [-6]  # This variable can be change to change the task
 
 variable_names = surface_vars + [
-    f'{var}_level_{level}' for var in vertical_vars for level in levels
+    f"{var}_level_{level}" for var in vertical_vars for level in levels
 ]
 
-# MERRA-2 data is available from 1980 to the present day, at 3-hour temporal resolution. 
+# MERRA-2 data is available from 1980 to the present day, at 3-hour temporal resolution.
 time_range = ("2020-01-01T00:00:00", "2020-01-02T05:59:59")
 
 surf_dir = Path("/data/merra-2")
-#snapshot_download(
+# snapshot_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    allow_patterns="merra-2/MERRA2_sfc_2020010[1].nc",
 #    local_dir="data",
-#)
+# )
 
 vert_dir = Path("/data/merra-2")
-#snapshot_download(
+# snapshot_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    allow_patterns="merra-2/MERRA_pres_2020010[1].nc",
 #    local_dir="data",
-#)
+# )
 
 # The PrithviWxC model was trained to calculate the output by producing a perturbation to the climatology at the target time (residual=climate option).
 surf_clim_dir = Path("/data/climatology")
-#snapshot_download(
+# snapshot_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    allow_patterns="climatology/climate_surface_doy00[1]*.nc",
 #    local_dir="data",
-#)
+# )
 
 vert_clim_dir = Path("/data/climatology")
-#snapshot_download(
+# snapshot_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    allow_patterns="climatology/climate_vertical_doy00[1]*.nc",
 #    local_dir="data",
-#)
+# )
 
 # The position data is encoded in the model with two possible options, fourier or absolute.
 positional_encoding = "fourier"
@@ -142,35 +142,35 @@ dataset = Merra2Dataset(
 )
 assert len(dataset) > 0, "There doesn't seem to be any valid data."
 
-# The model takes as static parameters the mean and variance values of the input variables and the variance values of the target difference, i.e., the variance between climatology and instantaneous variables. 
+# The model takes as static parameters the mean and variance values of the input variables and the variance values of the target difference, i.e., the variance between climatology and instantaneous variables.
 
 surf_in_scal_path = Path("/data/climatology/musigma_surface.nc")
-#hf_hub_download(
+# hf_hub_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    filename=f"climatology/{surf_in_scal_path.name}",
 #    local_dir="data",
-#)
+# )
 
 vert_in_scal_path = Path("/data/climatology/musigma_vertical.nc")
-#hf_hub_download(
+# hf_hub_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    filename=f"climatology/{vert_in_scal_path.name}",
 #    local_dir="data",
-#)
+# )
 
 surf_out_scal_path = Path("/data/climatology/anomaly_variance_surface.nc")
-#hf_hub_download(
+# hf_hub_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    filename=f"climatology/{surf_out_scal_path.name}",
 #    local_dir="data",
-#)
+# )
 
 vert_out_scal_path = Path("/data/climatology/anomaly_variance_vertical.nc")
-#hf_hub_download(
+# hf_hub_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    filename=f"climatology/{vert_out_scal_path.name}",
 #    local_dir="data",
-#)
+# )
 
 in_mu, in_sig = input_scalers(
     surface_vars,
@@ -199,11 +199,11 @@ encoder_shifting = True
 decoder_shifting = True
 masking_ratio = 0.0
 
-#hf_hub_download(
+# hf_hub_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    filename="config.yaml",
 #    local_dir="data",
-#)
+# )
 
 with open("/data/config.yaml", "r") as f:
     config = yaml.safe_load(f)
@@ -217,9 +217,7 @@ model = PrithviWxC(
     input_scalers_epsilon=config["params"]["input_scalers_epsilon"],
     static_input_scalers_mu=static_mu,
     static_input_scalers_sigma=static_sig,
-    static_input_scalers_epsilon=config["params"][
-        "static_input_scalers_epsilon"
-    ],
+    static_input_scalers_epsilon=config["params"]["static_input_scalers_epsilon"],
     output_scalers=output_sig**0.5,
     n_lats_px=config["params"]["n_lats_px"],
     n_lons_px=config["params"]["n_lons_px"],
@@ -245,20 +243,18 @@ model = PrithviWxC(
 )
 
 weights_path = Path("/data/weights/prithvi.wxc.2300m.v1.pt")
-#hf_hub_download(
+# hf_hub_download(
 #    repo_id="ibm-nasa-geospatial/Prithvi-WxC-1.0-2300M",
 #    filename=weights_path.name,
 #    local_dir="data/weights",
-#)
+# )
 
 state_dict = torch.load(weights_path, weights_only=False)
 if "model_state" in state_dict:
     state_dict = state_dict["model_state"]
 model.load_state_dict(state_dict, strict=True)
 
-if (hasattr(model, "device") and model.device != device) or not hasattr(
-    model, "device"
-):
+if (hasattr(model, "device") and model.device != device) or not hasattr(model, "device"):
     model = model.to(device)
 
 # Inference
@@ -283,8 +279,5 @@ X, Y = np.meshgrid(lon, lat)
 
 plt.contourf(X, Y, t2m, 100)
 plt.gca().set_aspect("equal")
-#plt.show()
-plt.savefig('ex1.png')
-
-
-
+# plt.show()
+plt.savefig("ex1.png")

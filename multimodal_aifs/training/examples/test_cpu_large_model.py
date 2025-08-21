@@ -6,15 +6,16 @@ This script attempts to run training with large language models on CPU
 using 36GB RAM with aggressive memory optimization techniques.
 """
 
+import gc
+import json
 import os
 import sys
-import torch
-import numpy as np
-from pathlib import Path
-from tqdm import tqdm
-import json
-import gc
 import warnings
+from pathlib import Path
+
+import numpy as np
+import torch
+from tqdm import tqdm
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -22,27 +23,32 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # Aggressive memory optimization
 torch.set_num_threads(2)
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "true"
+warnings.filterwarnings("ignore")
 
 print("🚀 Testing large language model training on CPU...")
 print(f"💾 Available RAM: ~36GB")
 
+
 def check_memory_usage():
     """Check current memory usage"""
     import psutil
+
     process = psutil.Process(os.getpid())
     memory_gb = process.memory_info().rss / 1024**3
     return memory_gb
+
 
 def clear_memory():
     """Aggressive memory cleanup"""
     gc.collect()
 
+
 # Try to load models without quantization (CPU compatible)
 try:
-    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
     print("✅ Transformers available")
 
     # Use only Llama 3-8B (other models and DialoGPT disabled)
@@ -83,7 +89,7 @@ try:
                 torch_dtype=torch.float32,  # Use float32 for CPU
                 device_map="cpu",
                 low_cpu_mem_usage=True,
-                use_cache=False  # Disable KV cache to save memory
+                use_cache=False,  # Disable KV cache to save memory
             )
 
             # Move to CPU explicitly
@@ -122,19 +128,22 @@ except Exception as e:
 # Import real AIFS fusion components
 try:
     from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
+
     print("✅ Successfully imported real AIFS fusion model")
 except ImportError as e:
     print(f"❌ Import error: {e}")
     print("Make sure the AIFS multimodal package is properly installed")
     sys.exit(1)
 
+
 def create_aifs_fusion_model(text_model):
     """Create real AIFS fusion model for testing"""
 
     # Get the AIFS model configuration
     config_path = os.path.join(os.path.dirname(__file__), "../config.yaml")
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         import yaml
+
         config = yaml.safe_load(f)
 
     # Create real AIFS fusion model with CPU-optimized parameters
@@ -142,7 +151,7 @@ def create_aifs_fusion_model(text_model):
         aifs_encoder_path=config["model"]["aifs_encoder_path"],
         climate_dim=1024,  # Match AIFS encoder output
         text_dim=text_model.config.hidden_size,
-        fusion_dim=512,   # Reduced for CPU
+        fusion_dim=512,  # Reduced for CPU
         num_attention_heads=2,  # Reduced for CPU
         dropout=0.1,
         device="cpu",
@@ -157,8 +166,10 @@ def create_aifs_fusion_model(text_model):
 
     return aifs_model
 
+
 class MicroDataset:
     """Micro dataset for testing"""
+
     def __init__(self, num_samples=2, seq_length=8):  # Tiny
         self.num_samples = num_samples
         self.seq_length = seq_length
@@ -175,17 +186,15 @@ class MicroDataset:
         # Generate simple text descriptions
         self.texts = [
             "Climate data shows temperature patterns over time.",
-            "This sample contains weather information and trends."
+            "This sample contains weather information and trends.",
         ]
 
     def __len__(self):
         return self.num_samples
 
     def __getitem__(self, idx):
-        return {
-            'climate_data': self.climate_data[idx],
-            'text': self.texts[idx % len(self.texts)]
-        }
+        return {"climate_data": self.climate_data[idx], "text": self.texts[idx % len(self.texts)]}
+
 
 def main():
     print(f"\n🏗️ Setting up CPU-optimized fusion model...")
@@ -220,9 +229,9 @@ def main():
         batch_size=1,
         shuffle=False,
         collate_fn=lambda batch: {
-            'climate_data': torch.stack([item['climate_data'] for item in batch]),
-            'texts': [item['text'] for item in batch]
-        }
+            "climate_data": torch.stack([item["climate_data"] for item in batch]),
+            "texts": [item["text"] for item in batch],
+        },
     )
 
     print(f"✅ Dataset created: {len(dataset)} samples")
@@ -236,8 +245,8 @@ def main():
         with torch.no_grad():
             sample_batch = next(iter(dataloader))
 
-            climate_data = sample_batch['climate_data']
-            texts = sample_batch['texts']
+            climate_data = sample_batch["climate_data"]
+            texts = sample_batch["texts"]
 
             print(f"Input shapes:")
             print(f"  Climate: {climate_data.shape}")
@@ -270,14 +279,12 @@ def main():
 
         # Optimizer only for trainable parameters
         optimizer = torch.optim.AdamW(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            lr=1e-4,
-            weight_decay=0.01
+            [p for p in fusion_model.parameters() if p.requires_grad], lr=1e-4, weight_decay=0.01
         )
 
         sample_batch = next(iter(dataloader))
-        climate_data = sample_batch['climate_data']
-        texts = sample_batch['texts']
+        climate_data = sample_batch["climate_data"]
+        texts = sample_batch["texts"]
 
         memory_before = check_memory_usage()
         print(f"💾 RAM before training step: {memory_before:.2f} GB")
@@ -286,9 +293,9 @@ def main():
         outputs = fusion_model(climate_data, texts)
 
         # Compute loss from fusion output (simplified)
-        if 'fused_features' in outputs:
+        if "fused_features" in outputs:
             # Simple loss on fused features
-            loss = torch.mean(outputs['fused_features'] ** 2)
+            loss = torch.mean(outputs["fused_features"] ** 2)
         else:
             # Fallback loss if different output format
             loss = torch.tensor(1.0, requires_grad=True)
@@ -306,8 +313,7 @@ def main():
 
         # Gradient norm
         grad_norm = torch.nn.utils.clip_grad_norm_(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            max_norm=1.0
+            [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
         )
         print(f"🔧 Gradient norm: {grad_norm:.4f}")
 
@@ -338,15 +344,15 @@ def main():
             if step >= 2:  # Only 2 steps
                 break
 
-            climate_data = batch['climate_data']
-            texts = batch['texts']
+            climate_data = batch["climate_data"]
+            texts = batch["texts"]
 
             # Forward pass
             outputs = fusion_model(climate_data, texts)
 
             # Compute loss
-            if 'fused_features' in outputs:
-                loss = torch.mean(outputs['fused_features'] ** 2)
+            if "fused_features" in outputs:
+                loss = torch.mean(outputs["fused_features"] ** 2)
             else:
                 loss = torch.tensor(1.0, requires_grad=True)
 
@@ -356,8 +362,7 @@ def main():
 
             # Gradient clipping
             grad_norm = torch.nn.utils.clip_grad_norm_(
-                [p for p in fusion_model.parameters() if p.requires_grad],
-                max_norm=1.0
+                [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
             )
 
             # Optimizer step
@@ -365,7 +370,9 @@ def main():
 
             memory_gb = check_memory_usage()
 
-            print(f"Step {step+1}: Loss={loss.item():.4f}, GradNorm={grad_norm:.3f}, RAM={memory_gb:.1f}GB")
+            print(
+                f"Step {step+1}: Loss={loss.item():.4f}, GradNorm={grad_norm:.3f}, RAM={memory_gb:.1f}GB"
+            )
 
             clear_memory()
 
@@ -392,6 +399,7 @@ def main():
     print(f"  • Freezing large model and training only fusion layers works")
     print(f"  • {total_params//1000000}M parameter models fit comfortably in 36GB RAM")
     print(f"  • For Llama-3-8B: Would need ~24-32GB just for model weights")
+
 
 if __name__ == "__main__":
     main()

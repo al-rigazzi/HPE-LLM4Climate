@@ -16,17 +16,18 @@ Usage:
 import os
 import sys
 import tempfile
+from pathlib import Path
+from typing import Any, Dict
+
 import torch
 import yaml
-from pathlib import Path
-from typing import Dict, Any
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from multimodal.utils.encoder_extractor import PrithviWxC_Encoder, extract_encoder_weights
 from multimodal.core.climate_text_fusion import ClimateTextFusion
+from multimodal.utils.encoder_extractor import PrithviWxC_Encoder, extract_encoder_weights
 from PrithviWxC.model import PrithviWxC
 
 
@@ -56,7 +57,9 @@ def extract_encoder_from_checkpoint(checkpoint_path: str, config_path: str) -> P
     if "patch_embedding_static.proj.weight" in state_dict:
         static_embed_channels = state_dict["patch_embedding_static.proj.weight"].shape[1]
         actual_static_channels = static_embed_channels - actual_in_channels
-        print(f"🔍 Detected from static embedding: {actual_static_channels} static channels (climate mode)")
+        print(
+            f"🔍 Detected from static embedding: {actual_static_channels} static channels (climate mode)"
+        )
         print(f"   Static embedding expects: {static_embed_channels} total channels")
         print(f"   ({actual_in_channels} input + {actual_static_channels} static)")
     else:
@@ -80,17 +83,27 @@ def extract_encoder_from_checkpoint(checkpoint_path: str, config_path: str) -> P
 
             if scaler_static_channels > actual_static_channels:
                 # Truncate scalers
-                new_mu = state_dict["static_input_scalers_mu"][:, :actual_static_channels, :, :].clone()
-                new_sig = state_dict["static_input_scalers_sigma"][:, :actual_static_channels, :, :].clone()
-                print(f"   Truncated scalers from {scaler_static_channels} to {actual_static_channels} channels")
+                new_mu = state_dict["static_input_scalers_mu"][
+                    :, :actual_static_channels, :, :
+                ].clone()
+                new_sig = state_dict["static_input_scalers_sigma"][
+                    :, :actual_static_channels, :, :
+                ].clone()
+                print(
+                    f"   Truncated scalers from {scaler_static_channels} to {actual_static_channels} channels"
+                )
             else:
                 # Pad scalers
                 pad_size = actual_static_channels - scaler_static_channels
                 mu_pad = torch.zeros(1, pad_size, 1, 1)
                 sig_pad = torch.ones(1, pad_size, 1, 1)
                 new_mu = torch.cat([state_dict["static_input_scalers_mu"].clone(), mu_pad], dim=1)
-                new_sig = torch.cat([state_dict["static_input_scalers_sigma"].clone(), sig_pad], dim=1)
-                print(f"   Padded scalers from {scaler_static_channels} to {actual_static_channels} channels")
+                new_sig = torch.cat(
+                    [state_dict["static_input_scalers_sigma"].clone(), sig_pad], dim=1
+                )
+                print(
+                    f"   Padded scalers from {scaler_static_channels} to {actual_static_channels} channels"
+                )
 
             # Add the new scalers
             new_state_dict["static_input_scalers_mu"] = new_mu
@@ -110,8 +123,12 @@ def extract_encoder_from_checkpoint(checkpoint_path: str, config_path: str) -> P
         in_mu = torch.zeros(actual_in_channels)
         in_sig = torch.ones(actual_in_channels)
 
-    static_mu = state_dict.get("static_input_scalers_mu", torch.zeros(1, actual_static_channels, 1, 1)).clone()
-    static_sig = state_dict.get("static_input_scalers_sigma", torch.ones(1, actual_static_channels, 1, 1)).clone()    # Create encoder model with detected dimensions
+    static_mu = state_dict.get(
+        "static_input_scalers_mu", torch.zeros(1, actual_static_channels, 1, 1)
+    ).clone()
+    static_sig = state_dict.get(
+        "static_input_scalers_sigma", torch.ones(1, actual_static_channels, 1, 1)
+    ).clone()  # Create encoder model with detected dimensions
     encoder_model = PrithviWxC_Encoder(
         in_channels=actual_in_channels,
         input_size_time=config["params"]["input_size_time"],
@@ -184,14 +201,22 @@ def extract_encoder_from_checkpoint(checkpoint_path: str, config_path: str) -> P
     extract_encoder_weights(full_model, encoder_model)
 
     return encoder_model
-def create_dummy_climate_data(batch_size: int = 1, static_channels: int = 8) -> Dict[str, torch.Tensor]:
+
+
+def create_dummy_climate_data(
+    batch_size: int = 1, static_channels: int = 8
+) -> Dict[str, torch.Tensor]:
     """Create dummy climate data for testing with climate residual mode."""
     return {
-        'x': torch.randn(batch_size, 2, 160, 360, 576),  # [batch, time, channels, lat, lon]
-        'static': torch.randn(batch_size, static_channels, 360, 576),  # [batch, static_channels, lat, lon]
-        'climate': torch.randn(batch_size, 160, 360, 576),  # [batch, channels, lat, lon] for residual
-        'input_time': torch.tensor([0.5], dtype=torch.float32),
-        'lead_time': torch.tensor([1.0], dtype=torch.float32)
+        "x": torch.randn(batch_size, 2, 160, 360, 576),  # [batch, time, channels, lat, lon]
+        "static": torch.randn(
+            batch_size, static_channels, 360, 576
+        ),  # [batch, static_channels, lat, lon]
+        "climate": torch.randn(
+            batch_size, 160, 360, 576
+        ),  # [batch, channels, lat, lon] for residual
+        "input_time": torch.tensor([0.5], dtype=torch.float32),
+        "lead_time": torch.tensor([1.0], dtype=torch.float32),
     }
 
 
@@ -218,14 +243,14 @@ def test_full_encoder_pipeline():
             print(f"📁 Using existing encoder: {existing_encoder_path}")
 
             # Load through ClimateTextFusion to test the loading system
-            os.environ['SKIP_LLAMA_LOADING'] = '1'
+            os.environ["SKIP_LLAMA_LOADING"] = "1"
 
             fusion_model = ClimateTextFusion(
                 prithvi_encoder_path=str(existing_encoder_path),
                 llama_model_name="meta-llama/Meta-Llama-3-8B",
-                fusion_mode='concatenate',
+                fusion_mode="concatenate",
                 max_climate_tokens=32,
-                freeze_llama=True
+                freeze_llama=True,
             )
 
             encoder = fusion_model.climate_encoder
@@ -243,7 +268,7 @@ def test_full_encoder_pipeline():
             print(f"📁 Loading checkpoint: {checkpoint_path}")
             encoder = extract_encoder_from_checkpoint(
                 checkpoint_path=str(checkpoint_path),
-                config_path=str(project_root / "data" / "config.yaml")
+                config_path=str(project_root / "data" / "config.yaml"),
             )
             print(f"✅ Encoder extracted from checkpoint")
         print(f"   Input channels: {encoder.in_channels}")
@@ -255,44 +280,44 @@ def test_full_encoder_pipeline():
         print("\\n2️⃣ SAVING ENCODER WEIGHTS WITH METADATA")
         print("-" * 40)
 
-        with tempfile.NamedTemporaryFile(suffix='.pt', delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pt", delete=False) as tmp_file:
             temp_encoder_path = tmp_file.name
 
         # Create comprehensive metadata
         metadata = {
-            'model_type': 'PrithviWxC_Encoder',
-            'extraction_date': '2025-08-17',
-            'residual_mode': 'climate',
-            'in_channels': encoder.in_channels,
-            'static_channels': encoder.in_channels_static,
-            'embed_dim': encoder.embed_dim,
-            'n_blocks_encoder': encoder.n_blocks_encoder,
-            'n_lats_px': encoder.n_lats_px,
-            'n_lons_px': encoder.n_lons_px,
-            'patch_size_px': encoder.patch_size_px,
-            'description': 'PrithviWxC encoder extracted for climate residual mode multimodal fusion'
+            "model_type": "PrithviWxC_Encoder",
+            "extraction_date": "2025-08-17",
+            "residual_mode": "climate",
+            "in_channels": encoder.in_channels,
+            "static_channels": encoder.in_channels_static,
+            "embed_dim": encoder.embed_dim,
+            "n_blocks_encoder": encoder.n_blocks_encoder,
+            "n_lats_px": encoder.n_lats_px,
+            "n_lons_px": encoder.n_lons_px,
+            "patch_size_px": encoder.patch_size_px,
+            "description": "PrithviWxC encoder extracted for climate residual mode multimodal fusion",
         }
 
         # Save encoder state dict with metadata
         checkpoint_data = {
-            'model_state_dict': encoder.state_dict(),
-            'metadata': metadata,
-            'model_config': {
-                'in_channels': encoder.in_channels,
-                'input_size_time': 2,
-                'in_channels_static': encoder.in_channels_static,
-                'input_scalers_epsilon': 0.0,
-                'static_input_scalers_epsilon': 0.0,
-                'n_lats_px': encoder.n_lats_px,
-                'n_lons_px': encoder.n_lons_px,
-                'patch_size_px': encoder.patch_size_px,
-                'mask_unit_size_px': encoder.mask_unit_size_px,
-                'embed_dim': encoder.embed_dim,
-                'n_blocks_encoder': encoder.n_blocks_encoder,
-                'mlp_multiplier': 4,
-                'n_heads': 16,
-                'residual': 'climate'
-            }
+            "model_state_dict": encoder.state_dict(),
+            "metadata": metadata,
+            "model_config": {
+                "in_channels": encoder.in_channels,
+                "input_size_time": 2,
+                "in_channels_static": encoder.in_channels_static,
+                "input_scalers_epsilon": 0.0,
+                "static_input_scalers_epsilon": 0.0,
+                "n_lats_px": encoder.n_lats_px,
+                "n_lons_px": encoder.n_lons_px,
+                "patch_size_px": encoder.patch_size_px,
+                "mask_unit_size_px": encoder.mask_unit_size_px,
+                "embed_dim": encoder.embed_dim,
+                "n_blocks_encoder": encoder.n_blocks_encoder,
+                "mlp_multiplier": 4,
+                "n_heads": 16,
+                "residual": "climate",
+            },
         }
 
         torch.save(checkpoint_data, temp_encoder_path)
@@ -307,15 +332,15 @@ def test_full_encoder_pipeline():
         print("🔍 Loading encoder through ClimateTextFusion system...")
 
         # Disable Llama loading for this test
-        os.environ['SKIP_LLAMA_LOADING'] = '1'
+        os.environ["SKIP_LLAMA_LOADING"] = "1"
 
         try:
             fusion_model = ClimateTextFusion(
                 prithvi_encoder_path=temp_encoder_path,
                 llama_model_name="meta-llama/Meta-Llama-3-8B",  # Won't actually load due to env var
-                fusion_mode='concatenate',
+                fusion_mode="concatenate",
                 max_climate_tokens=32,
-                freeze_llama=True
+                freeze_llama=True,
             )
 
             loaded_encoder = fusion_model.climate_encoder
@@ -329,28 +354,28 @@ def test_full_encoder_pipeline():
             print("   Falling back to direct encoder loading...")
 
             # Direct encoder loading as fallback
-            checkpoint_data = torch.load(temp_encoder_path, map_location='cpu')
-            state_dict = checkpoint_data['model_state_dict']
-            metadata = checkpoint_data.get('metadata', {})
+            checkpoint_data = torch.load(temp_encoder_path, map_location="cpu")
+            state_dict = checkpoint_data["model_state_dict"]
+            metadata = checkpoint_data.get("metadata", {})
 
             # Create encoder with metadata parameters
             loaded_encoder = PrithviWxC_Encoder(
-                in_channels=metadata.get('in_channels', 160),
+                in_channels=metadata.get("in_channels", 160),
                 input_size_time=2,
-                in_channels_static=metadata.get('static_channels', 8),
+                in_channels_static=metadata.get("static_channels", 8),
                 input_scalers_mu=torch.zeros(160),
                 input_scalers_sigma=torch.ones(160),
                 input_scalers_epsilon=0.0,
-                static_input_scalers_mu=torch.zeros(1, metadata.get('static_channels', 8), 1, 1),
-                static_input_scalers_sigma=torch.ones(1, metadata.get('static_channels', 8), 1, 1),
+                static_input_scalers_mu=torch.zeros(1, metadata.get("static_channels", 8), 1, 1),
+                static_input_scalers_sigma=torch.ones(1, metadata.get("static_channels", 8), 1, 1),
                 static_input_scalers_epsilon=0.0,
-                n_lats_px=metadata.get('n_lats_px', 360),
-                n_lons_px=metadata.get('n_lons_px', 576),
-                patch_size_px=metadata.get('patch_size_px', [2, 2]),
+                n_lats_px=metadata.get("n_lats_px", 360),
+                n_lons_px=metadata.get("n_lons_px", 576),
+                patch_size_px=metadata.get("patch_size_px", [2, 2]),
                 mask_unit_size_px=[30, 32],
                 mask_ratio_inputs=0.0,
-                embed_dim=metadata.get('embed_dim', 2560),
-                n_blocks_encoder=metadata.get('n_blocks_encoder', 12),
+                embed_dim=metadata.get("embed_dim", 2560),
+                n_blocks_encoder=metadata.get("n_blocks_encoder", 12),
                 mlp_multiplier=4,
                 n_heads=16,
                 dropout=0.0,
@@ -360,7 +385,7 @@ def test_full_encoder_pipeline():
                 masking_mode="global",
                 positional_encoding="fourier",
                 encoder_shifting=False,
-                checkpoint_encoder=[]
+                checkpoint_encoder=[],
             )
 
             # Load state dict
@@ -428,18 +453,28 @@ def test_full_encoder_pipeline():
         print(f"   Residual mode: climate")
         print(f"   Input channels: {loaded_encoder.in_channels}")
         print(f"   Static channels: {loaded_encoder.in_channels_static}")
-        print(f"   Total patch embedding input: {loaded_encoder.in_channels + loaded_encoder.in_channels_static}")
+        print(
+            f"   Total patch embedding input: {loaded_encoder.in_channels + loaded_encoder.in_channels_static}"
+        )
 
         # Check if patch embedding static has the right input channels for climate mode
-        if hasattr(loaded_encoder, 'patch_embedding_static'):
-            expected_static_embed_channels = loaded_encoder.in_channels + loaded_encoder.in_channels_static
+        if hasattr(loaded_encoder, "patch_embedding_static"):
+            expected_static_embed_channels = (
+                loaded_encoder.in_channels + loaded_encoder.in_channels_static
+            )
             actual_static_embed_channels = loaded_encoder.patch_embedding_static.proj.in_channels
 
             if actual_static_embed_channels == expected_static_embed_channels:
-                print(f"✅ Climate mode validated: Static embedding expects {actual_static_embed_channels} channels")
-                print(f"   ({loaded_encoder.in_channels} input + {loaded_encoder.in_channels_static} static)")
+                print(
+                    f"✅ Climate mode validated: Static embedding expects {actual_static_embed_channels} channels"
+                )
+                print(
+                    f"   ({loaded_encoder.in_channels} input + {loaded_encoder.in_channels_static} static)"
+                )
             else:
-                print(f"⚠️  Climate mode mismatch: Expected {expected_static_embed_channels}, got {actual_static_embed_channels}")
+                print(
+                    f"⚠️  Climate mode mismatch: Expected {expected_static_embed_channels}, got {actual_static_embed_channels}"
+                )
 
         # Cleanup
         print("\\n🧹 CLEANUP")
@@ -451,8 +486,8 @@ def test_full_encoder_pipeline():
             print(f"⚠️  Cleanup warning: {e}")
 
         # Clean up environment variable
-        if 'SKIP_LLAMA_LOADING' in os.environ:
-            del os.environ['SKIP_LLAMA_LOADING']
+        if "SKIP_LLAMA_LOADING" in os.environ:
+            del os.environ["SKIP_LLAMA_LOADING"]
 
         print("\\n🎉 FULL PIPELINE TEST COMPLETED SUCCESSFULLY!")
         print("=" * 60)
@@ -471,6 +506,7 @@ def test_full_encoder_pipeline():
         print(f"Error: {e}")
         print(f"Error type: {type(e).__name__}")
         import traceback
+
         traceback.print_exc()
         return False
 

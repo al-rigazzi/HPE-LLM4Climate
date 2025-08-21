@@ -7,9 +7,10 @@ This script investigates the missing keys issue in encoder weight loading.
 
 import os
 import sys
+from pathlib import Path
+
 import torch
 import yaml
-from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -48,15 +49,21 @@ def debug_weight_loading():
     # Analyze key patterns
     encoder_keys = [k for k in state_dict.keys() if not k.startswith("decoder")]
     decoder_keys = [k for k in state_dict.keys() if k.startswith("decoder")]
-    other_keys = [k for k in state_dict.keys() if not k.startswith("encoder") and not k.startswith("decoder")]
+    other_keys = [
+        k for k in state_dict.keys() if not k.startswith("encoder") and not k.startswith("decoder")
+    ]
 
-    print(f"   Keys starting with 'encoder': {len([k for k in state_dict.keys() if k.startswith('encoder')])}")
+    print(
+        f"   Keys starting with 'encoder': {len([k for k in state_dict.keys() if k.startswith('encoder')])}"
+    )
     print(f"   Keys starting with 'decoder': {len(decoder_keys)}")
     print(f"   Other keys: {len(other_keys)}")
 
     print(f"\n📊 OTHER KEYS (non-encoder/decoder):")
     for key in sorted(other_keys)[:20]:  # Show first 20
-        print(f"     {key}: {state_dict[key].shape if torch.is_tensor(state_dict[key]) else type(state_dict[key])}")
+        print(
+            f"     {key}: {state_dict[key].shape if torch.is_tensor(state_dict[key]) else type(state_dict[key])}"
+        )
     if len(other_keys) > 20:
         print(f"     ... and {len(other_keys) - 20} more")
 
@@ -95,8 +102,12 @@ def debug_weight_loading():
         in_mu = torch.zeros(actual_in_channels)
         in_sig = torch.ones(actual_in_channels)
 
-    static_mu = state_dict.get("static_input_scalers_mu", torch.zeros(1, actual_static_channels, 1, 1)).clone()
-    static_sig = state_dict.get("static_input_scalers_sigma", torch.ones(1, actual_static_channels, 1, 1)).clone()
+    static_mu = state_dict.get(
+        "static_input_scalers_mu", torch.zeros(1, actual_static_channels, 1, 1)
+    ).clone()
+    static_sig = state_dict.get(
+        "static_input_scalers_sigma", torch.ones(1, actual_static_channels, 1, 1)
+    ).clone()
 
     # Create the FULL model first
     print(f"\n🏗️  CREATING FULL PRITHVIWXC MODEL:")
@@ -242,7 +253,9 @@ def debug_weight_loading():
         print(f"   ❌ Too many missing keys ({len(missing_keys)}) - likely architectural mismatch")
         print(f"   🔍 Check if full model configuration matches checkpoint")
     else:
-        print(f"   ✅ Missing keys count acceptable ({len(missing_keys)}) - likely just decoder keys")
+        print(
+            f"   ✅ Missing keys count acceptable ({len(missing_keys)}) - likely just decoder keys"
+        )
 
     return True
 

@@ -6,28 +6,30 @@ This script tests the integration of Llama models with our location-aware
 climate analysis system now that HF authentication is working.
 """
 
-import torch
+import os
+import sys
 import warnings
 from pathlib import Path
-import sys
-import os
+
+import torch
 
 # Add parent directory to path for imports
 current_dir = Path(__file__).parent
 project_root = current_dir.parent.parent
 sys.path.insert(0, str(project_root))
 
+
 def test_llama_models():
     """Test different Llama model configurations."""
     print("🦙 Testing Llama Integration with Location-Aware Climate Analysis")
     print("=" * 70)
 
-        # Test different working models - removed gated/problematic ones
+    # Test different working models - removed gated/problematic ones
     llama_models_to_test = [
-        "meta-llama/Meta-Llama-3-8B",        # Llama 3 8B (accessible)
-        "microsoft/DialoGPT-medium",         # Alternative chat model
-        "bert-base-uncased",                 # Standard BERT
-        "roberta-base",                      # RoBERTa base
+        "meta-llama/Meta-Llama-3-8B",  # Llama 3 8B (accessible)
+        "microsoft/DialoGPT-medium",  # Alternative chat model
+        "bert-base-uncased",  # Standard BERT
+        "roberta-base",  # RoBERTa base
     ]
 
     for model_name in llama_models_to_test:
@@ -36,7 +38,7 @@ def test_llama_models():
 
         try:
             # Test model availability first
-            from transformers import AutoTokenizer, AutoModel
+            from transformers import AutoModel, AutoTokenizer
 
             print(f"   📥 Loading tokenizer...")
             tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -46,7 +48,7 @@ def test_llama_models():
                 model_name,
                 torch_dtype=torch.float32,
                 device_map="auto" if torch.cuda.is_available() else None,
-                trust_remote_code=True
+                trust_remote_code=True,
             )
 
             print(f"   ✅ Model loaded successfully!")
@@ -89,6 +91,7 @@ def test_llama_models():
     print(f"\n❌ No Llama models could be loaded successfully")
     return None
 
+
 def test_with_location_aware_system(model_name: str):
     """Test the model with our location-aware climate analysis system."""
     try:
@@ -104,11 +107,11 @@ def test_with_location_aware_system(model_name: str):
         model = LocationAwareClimateAnalysis(
             prithvi_encoder_path=str(encoder_path),  # Use real extracted encoder
             llama_model_name=model_name,
-            fusion_mode='concatenate',  # Use simpler fusion mode
-            max_climate_tokens=128,     # Reduce for memory efficiency
-            max_text_length=64,         # Reduce for memory efficiency
+            fusion_mode="concatenate",  # Use simpler fusion mode
+            max_climate_tokens=128,  # Reduce for memory efficiency
+            max_text_length=64,  # Reduce for memory efficiency
             freeze_prithvi=True,
-            freeze_llama=True
+            freeze_llama=True,
         )
 
         print(f"   ✅ Model initialized successfully!")
@@ -130,7 +133,7 @@ def test_with_location_aware_system(model_name: str):
         test_queries = [
             "How will climate change affect agriculture in Sweden?",
             "What are the drought risks for California by 2050?",
-            "Sea level rise impacts in coastal areas"
+            "Sea level rise impacts in coastal areas",
         ]
 
         print(f"   🧪 Testing location-aware analysis...")
@@ -140,9 +143,7 @@ def test_with_location_aware_system(model_name: str):
 
             with torch.no_grad():
                 result = model.analyze_location_query(
-                    climate_features,
-                    query,
-                    return_visualization=False
+                    climate_features, query, return_visualization=False
                 )
 
             print(f"         📍 Location: {result.get('location', 'Global')}")
@@ -155,8 +156,10 @@ def test_with_location_aware_system(model_name: str):
     except Exception as e:
         print(f"   ❌ Location-aware system error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_climate_text_fusion(model_name: str):
     """Test direct climate-text fusion without location awareness."""
@@ -170,11 +173,11 @@ def test_climate_text_fusion(model_name: str):
         fusion_model = ClimateTextFusion(
             prithvi_encoder_path=str(encoder_path),  # Use real extracted encoder
             llama_model_name=model_name,
-            fusion_mode='concatenate',
+            fusion_mode="concatenate",
             max_climate_tokens=64,
             max_text_length=32,
             freeze_prithvi=True,
-            freeze_llama=True
+            freeze_llama=True,
         )
 
         print(f"   ✅ Fusion model created")
@@ -182,11 +185,11 @@ def test_climate_text_fusion(model_name: str):
         # Create simple climate batch
         def create_simple_climate_batch():
             return {
-                'x': torch.randn(1, 2, 32, 16, 24),      # Reduced size
-                'static': torch.randn(1, 4, 16, 24),     # Reduced size
-                'climate': torch.randn(1, 32, 16, 24),   # Reduced size
-                'input_time': torch.tensor([0.5]),
-                'lead_time': torch.tensor([1.0])
+                "x": torch.randn(1, 2, 32, 16, 24),  # Reduced size
+                "static": torch.randn(1, 4, 16, 24),  # Reduced size
+                "climate": torch.randn(1, 32, 16, 24),  # Reduced size
+                "input_time": torch.tensor([0.5]),
+                "lead_time": torch.tensor([1.0]),
             }
 
         climate_batch = create_simple_climate_batch()
@@ -209,6 +212,7 @@ def test_climate_text_fusion(model_name: str):
     except Exception as e:
         print(f"   ❌ Fusion test error: {e}")
         return False
+
 
 def main():
     """Main test function."""
@@ -235,6 +239,7 @@ def main():
     else:
         print(f"\n❌ No working Llama models found")
         print(f"   Check network connection and HF access permissions")
+
 
 if __name__ == "__main__":
     with warnings.catch_warnings():

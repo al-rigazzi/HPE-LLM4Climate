@@ -6,14 +6,15 @@ This script tests the limits of our 36GB RAM by loading the largest available
 models and simulating what Llama-3-8B training would require.
 """
 
+import gc
 import os
 import sys
-import torch
-import numpy as np
-from pathlib import Path
-import gc
-import warnings
 import time
+import warnings
+from pathlib import Path
+
+import numpy as np
+import torch
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -21,26 +22,32 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # Memory optimization
 torch.set_num_threads(1)  # Single thread for maximum memory
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+warnings.filterwarnings("ignore")
 
 print("🚀 Maximum Scale Test - Pushing 36GB RAM Limits")
+
 
 def check_memory_usage():
     """Check current memory usage"""
     import psutil
+
     process = psutil.Process(os.getpid())
     memory_gb = process.memory_info().rss / 1024**3
     return memory_gb
 
+
 def get_system_memory():
     """Get total system memory"""
     import psutil
+
     return psutil.virtual_memory().total / 1024**3
+
 
 def clear_memory():
     """Aggressive memory cleanup"""
     gc.collect()
+
 
 # Check system specs
 total_ram = get_system_memory()
@@ -49,7 +56,8 @@ print(f"🎯 Target: Use as much RAM as safely possible")
 
 # Try to load multiple large models or the largest available
 try:
-    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
     print("✅ Transformers available")
 
     # Use only Llama 3-8B (other models disabled)
@@ -84,7 +92,7 @@ try:
                 torch_dtype=torch.float32,
                 device_map="cpu",
                 low_cpu_mem_usage=True,
-                use_cache=False
+                use_cache=False,
             )
 
             params = sum(p.numel() for p in model.parameters())
@@ -129,6 +137,7 @@ base_model, model_desc, model_params = largest_model
 
 print(f"🎯 Using {model_desc} as base ({model_params:,} parameters)")
 
+
 class MaxScaleFusion(torch.nn.Module):
     def __init__(self, text_model, climate_dim=512):  # Larger climate features
         super().__init__()
@@ -143,7 +152,7 @@ class MaxScaleFusion(torch.nn.Module):
             torch.nn.Flatten(),
             torch.nn.Linear(256 * 8 * 8, climate_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(climate_dim, climate_dim)
+            torch.nn.Linear(climate_dim, climate_dim),
         )
 
         self.text_model = text_model
@@ -155,22 +164,23 @@ class MaxScaleFusion(torch.nn.Module):
             torch.nn.LayerNorm(self.text_hidden_size),
             torch.nn.GELU(),
             torch.nn.Linear(self.text_hidden_size, self.text_hidden_size),
-            torch.nn.LayerNorm(self.text_hidden_size)
+            torch.nn.LayerNorm(self.text_hidden_size),
         )
 
         # Multi-layer cross attention
-        self.fusion_layers = torch.nn.ModuleList([
-            torch.nn.MultiheadAttention(
-                embed_dim=self.text_hidden_size,
-                num_heads=8,
-                batch_first=True
-            ) for _ in range(4)  # Multiple fusion layers
-        ])
+        self.fusion_layers = torch.nn.ModuleList(
+            [
+                torch.nn.MultiheadAttention(
+                    embed_dim=self.text_hidden_size, num_heads=8, batch_first=True
+                )
+                for _ in range(4)  # Multiple fusion layers
+            ]
+        )
 
         # Layer norms for each fusion layer
-        self.layer_norms = torch.nn.ModuleList([
-            torch.nn.LayerNorm(self.text_hidden_size) for _ in range(4)
-        ])
+        self.layer_norms = torch.nn.ModuleList(
+            [torch.nn.LayerNorm(self.text_hidden_size) for _ in range(4)]
+        )
 
         # Output projection
         self.output_projection = torch.nn.Linear(self.text_hidden_size, 2000)  # Larger vocab
@@ -199,12 +209,12 @@ class MaxScaleFusion(torch.nn.Module):
 
         # Multi-layer fusion
         fused_features = text_embeddings
-        for i, (attention_layer, norm_layer) in enumerate(zip(self.fusion_layers, self.layer_norms)):
+        for i, (attention_layer, norm_layer) in enumerate(
+            zip(self.fusion_layers, self.layer_norms)
+        ):
             # Cross attention
             attended_features, _ = attention_layer(
-                query=fused_features,
-                key=projected_climate,
-                value=projected_climate
+                query=fused_features, key=projected_climate, value=projected_climate
             )
 
             # Residual connection and normalization
@@ -213,7 +223,8 @@ class MaxScaleFusion(torch.nn.Module):
         # Output projection
         logits = self.output_projection(fused_features)
 
-        return type('Output', (), {'logits': logits})()
+        return type("Output", (), {"logits": logits})()
+
 
 def main():
     memory_before_fusion = check_memory_usage()
@@ -242,7 +253,7 @@ def main():
     print(f"\n📊 Creating larger-scale test data...")
     batch_size = 1  # Keep small for memory
     seq_length = 64  # Longer sequences
-    time_steps = 4   # More timesteps
+    time_steps = 4  # More timesteps
 
     # Larger climate data
     climate_data = torch.randn(batch_size, time_steps, 20, 16, 16)
@@ -284,8 +295,7 @@ def main():
 
         # Optimizer
         optimizer = torch.optim.AdamW(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            lr=5e-5
+            [p for p in fusion_model.parameters() if p.requires_grad], lr=5e-5
         )
 
         # Training step with timing
@@ -294,8 +304,7 @@ def main():
         outputs = fusion_model(climate_data, input_ids)
 
         loss = torch.nn.functional.cross_entropy(
-            outputs.logits.view(-1, outputs.logits.size(-1)),
-            labels.view(-1)
+            outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
         )
 
         print(f"📊 Loss: {loss.item():.4f}")
@@ -303,8 +312,7 @@ def main():
         loss.backward()
 
         grad_norm = torch.nn.utils.clip_grad_norm_(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            max_norm=1.0
+            [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
         )
 
         optimizer.step()
@@ -334,16 +342,14 @@ def main():
 
             outputs = fusion_model(climate_data, input_ids)
             loss = torch.nn.functional.cross_entropy(
-                outputs.logits.view(-1, outputs.logits.size(-1)),
-                labels.view(-1)
+                outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
             )
 
             optimizer.zero_grad()
             loss.backward()
 
             grad_norm = torch.nn.utils.clip_grad_norm_(
-                [p for p in fusion_model.parameters() if p.requires_grad],
-                max_norm=1.0
+                [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
             )
 
             optimizer.step()
@@ -352,7 +358,9 @@ def main():
             current_memory = check_memory_usage()
             peak_memory = max(peak_memory, current_memory)
 
-            print(f"Step {step+1}: Loss={loss.item():.4f}, Time={step_time:.2f}s, RAM={current_memory:.1f}GB")
+            print(
+                f"Step {step+1}: Loss={loss.item():.4f}, Time={step_time:.2f}s, RAM={current_memory:.1f}GB"
+            )
 
             clear_memory()
 
@@ -369,7 +377,9 @@ def main():
     print(f"\n🎉 Maximum scale test completed!")
     print(f"💾 Final RAM usage: {final_memory:.2f} GB / {total_ram:.1f} GB")
     print(f"📊 Memory efficiency: {memory_efficiency:.1f}% of system RAM")
-    print(f"🏆 Safely stayed under memory limits: {'✅' if final_memory < (total_ram * 0.9) else '❌'}")
+    print(
+        f"🏆 Safely stayed under memory limits: {'✅' if final_memory < (total_ram * 0.9) else '❌'}"
+    )
 
     print(f"\n📈 Scaling Analysis:")
     print(f"  • Successfully ran {model_desc} ({model_params:,} params)")
@@ -390,6 +400,7 @@ def main():
         print(f"  💡 Llama-3-8B training should be possible!")
     else:
         print(f"  💡 Would need additional optimization (quantization, etc.)")
+
 
 if __name__ == "__main__":
     main()

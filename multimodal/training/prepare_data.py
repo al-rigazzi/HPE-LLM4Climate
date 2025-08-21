@@ -12,8 +12,8 @@ import shutil
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import torch
 import numpy as np
+import torch
 from tqdm import tqdm
 
 
@@ -40,16 +40,35 @@ def create_dummy_data(output_dir: str, num_samples: int = 1000):
         torch.save(climate_data, output_path / climate_file)
 
         # Create dummy text pairs
-        location = np.random.choice([
-            "New York", "London", "Tokyo", "Sydney", "Mumbai",
-            "São Paulo", "Cairo", "Moscow", "Lagos", "Jakarta"
-        ])
+        location = np.random.choice(
+            [
+                "New York",
+                "London",
+                "Tokyo",
+                "Sydney",
+                "Mumbai",
+                "São Paulo",
+                "Cairo",
+                "Moscow",
+                "Lagos",
+                "Jakarta",
+            ]
+        )
 
-        weather_condition = np.random.choice([
-            "heavy rainfall", "drought conditions", "extreme heat",
-            "cold temperatures", "moderate weather", "stormy conditions",
-            "high humidity", "low precipitation", "wind patterns", "snow"
-        ])
+        weather_condition = np.random.choice(
+            [
+                "heavy rainfall",
+                "drought conditions",
+                "extreme heat",
+                "cold temperatures",
+                "moderate weather",
+                "stormy conditions",
+                "high humidity",
+                "low precipitation",
+                "wind patterns",
+                "snow",
+            ]
+        )
 
         input_text = (
             f"Analyze the climate data for {location}. "
@@ -69,7 +88,7 @@ def create_dummy_data(output_dir: str, num_samples: int = 1000):
             "text": input_text,
             "target": target_text,
             "location": location,
-            "weather_condition": weather_condition
+            "weather_condition": weather_condition,
         }
 
         # 80/20 train/val split
@@ -81,13 +100,13 @@ def create_dummy_data(output_dir: str, num_samples: int = 1000):
     # Save train index
     train_dir = output_path / "train"
     train_dir.mkdir(exist_ok=True)
-    with open(train_dir / "index.json", 'w') as f:
+    with open(train_dir / "index.json", "w") as f:
         json.dump(train_samples, f, indent=2)
 
     # Save val index
     val_dir = output_path / "val"
     val_dir.mkdir(exist_ok=True)
-    with open(val_dir / "index.json", 'w') as f:
+    with open(val_dir / "index.json", "w") as f:
         json.dump(val_samples, f, indent=2)
 
     # Move climate files to appropriate directories
@@ -129,10 +148,10 @@ def validate_data_format(data_dir: str) -> bool:
 
     # Validate index content
     try:
-        with open(train_index, 'r') as f:
+        with open(train_index, "r") as f:
             train_data = json.load(f)
 
-        with open(val_index, 'r') as f:
+        with open(val_index, "r") as f:
             val_data = json.load(f)
 
         # Check required fields
@@ -165,12 +184,18 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Prepare training data")
-    parser.add_argument("--output_dir", type=str, default="multimodal/data/training",
-                       help="Output directory for training data")
-    parser.add_argument("--num_samples", type=int, default=1000,
-                       help="Number of dummy samples to create")
-    parser.add_argument("--validate_only", action="store_true",
-                       help="Only validate existing data format")
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="multimodal/data/training",
+        help="Output directory for training data",
+    )
+    parser.add_argument(
+        "--num_samples", type=int, default=1000, help="Number of dummy samples to create"
+    )
+    parser.add_argument(
+        "--validate_only", action="store_true", help="Only validate existing data format"
+    )
 
     args = parser.parse_args()
 

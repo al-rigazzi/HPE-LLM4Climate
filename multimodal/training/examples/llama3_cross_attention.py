@@ -6,30 +6,36 @@ Now implementing true cross-attention between climate and text features,
 not just simple addition. This is the real multimodal architecture!
 """
 
+import gc
 import os
 import sys
-import torch
-import numpy as np
-from pathlib import Path
-import warnings
 import time
-import gc
+import warnings
+from pathlib import Path
+
+import numpy as np
+import torch
 
 # Memory optimization
 torch.set_num_threads(1)
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+warnings.filterwarnings("ignore")
+
 
 def check_memory_usage():
     import psutil
+
     process = psutil.Process(os.getpid())
     return process.memory_info().rss / 1024**3
+
 
 def clear_memory():
     gc.collect()
 
+
 print("🦙 LLAMA-3-8B with PROPER CROSS-ATTENTION FUSION")
 print("🎯 Real multimodal architecture with attention mechanisms")
+
 
 class CrossAttentionLlama3Fusion(torch.nn.Module):
     def __init__(self, climate_dim=768):
@@ -37,7 +43,7 @@ class CrossAttentionLlama3Fusion(torch.nn.Module):
 
         print("📥 Loading Llama-3-8B...")
 
-        from transformers import AutoTokenizer, AutoModelForCausalLM
+        from transformers import AutoModelForCausalLM, AutoTokenizer
 
         # Load model
         model_name = "meta-llama/Meta-Llama-3-8B"
@@ -67,7 +73,7 @@ class CrossAttentionLlama3Fusion(torch.nn.Module):
             torch.nn.Flatten(),
             torch.nn.Linear(256 * 8 * 8, climate_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(climate_dim, climate_dim)
+            torch.nn.Linear(climate_dim, climate_dim),
         )
 
         # Get text model config
@@ -81,15 +87,12 @@ class CrossAttentionLlama3Fusion(torch.nn.Module):
             torch.nn.LayerNorm(self.hidden_size),
             torch.nn.GELU(),
             torch.nn.Linear(self.hidden_size, self.hidden_size),
-            torch.nn.LayerNorm(self.hidden_size)
+            torch.nn.LayerNorm(self.hidden_size),
         )
 
         # PROPER CROSS-ATTENTION LAYERS
         self.cross_attention = torch.nn.MultiheadAttention(
-            embed_dim=self.hidden_size,
-            num_heads=self.num_heads,
-            dropout=0.1,
-            batch_first=True
+            embed_dim=self.hidden_size, num_heads=self.num_heads, dropout=0.1, batch_first=True
         )
 
         # Layer normalization for residual connections
@@ -100,7 +103,7 @@ class CrossAttentionLlama3Fusion(torch.nn.Module):
             torch.nn.Linear(self.hidden_size, self.hidden_size * 4),
             torch.nn.GELU(),
             torch.nn.Linear(self.hidden_size * 4, self.hidden_size),
-            torch.nn.Dropout(0.1)
+            torch.nn.Dropout(0.1),
         )
 
         self.ff_norm = torch.nn.LayerNorm(self.hidden_size)
@@ -132,18 +135,22 @@ class CrossAttentionLlama3Fusion(torch.nn.Module):
         climate_sequence = torch.stack(climate_features, dim=1)  # [batch, time_steps, climate_dim]
 
         # Project climate to text embedding space
-        climate_projected = self.climate_projection(climate_sequence)  # [batch, time_steps, hidden_size]
+        climate_projected = self.climate_projection(
+            climate_sequence
+        )  # [batch, time_steps, hidden_size]
 
         # Get text embeddings (FROZEN)
         with torch.no_grad():
-            text_embeddings = self.text_model.get_input_embeddings()(input_ids)  # [batch, seq_len, hidden_size]
+            text_embeddings = self.text_model.get_input_embeddings()(
+                input_ids
+            )  # [batch, seq_len, hidden_size]
 
         # PROPER CROSS-ATTENTION: Text attends to Climate
         # Query: text embeddings, Key/Value: climate features
         attended_features, attention_weights = self.cross_attention(
-            query=text_embeddings,           # [batch, seq_len, hidden_size]
-            key=climate_projected,           # [batch, time_steps, hidden_size]
-            value=climate_projected          # [batch, time_steps, hidden_size]
+            query=text_embeddings,  # [batch, seq_len, hidden_size]
+            key=climate_projected,  # [batch, time_steps, hidden_size]
+            value=climate_projected,  # [batch, time_steps, hidden_size]
         )
 
         # Residual connection + layer norm
@@ -156,10 +163,8 @@ class CrossAttentionLlama3Fusion(torch.nn.Module):
         # Final output projection
         logits = self.output_head(final_features)
 
-        return type('ModelOutput', (), {
-            'logits': logits,
-            'attention_weights': attention_weights
-        })()
+        return type("ModelOutput", (), {"logits": logits, "attention_weights": attention_weights})()
+
 
 def main():
     print(f"\n🚀 Starting CROSS-ATTENTION Llama-3-8B training...")
@@ -181,13 +186,9 @@ def main():
 
     # Tokenize
     encoding = model.tokenizer(
-        text,
-        max_length=32,
-        padding='max_length',
-        truncation=True,
-        return_tensors='pt'
+        text, max_length=32, padding="max_length", truncation=True, return_tensors="pt"
     )
-    input_ids = encoding['input_ids']
+    input_ids = encoding["input_ids"]
     labels = input_ids.clone()
 
     print(f"📊 Data shapes:")
@@ -203,7 +204,9 @@ def main():
         print(f"✅ Cross-attention forward pass successful!")
         print(f"📊 Output logits shape: {outputs.logits.shape}")
         print(f"📊 Attention weights shape: {outputs.attention_weights.shape}")
-        print(f"🔍 Attention weights min/max: {outputs.attention_weights.min():.4f} / {outputs.attention_weights.max():.4f}")
+        print(
+            f"🔍 Attention weights min/max: {outputs.attention_weights.min():.4f} / {outputs.attention_weights.max():.4f}"
+        )
 
     memory_forward = check_memory_usage()
     print(f"💾 After forward: {memory_forward:.1f}GB (+{memory_forward-memory_model:.1f}GB)")
@@ -222,8 +225,7 @@ def main():
     outputs = model(climate_data, input_ids)
 
     loss = torch.nn.functional.cross_entropy(
-        outputs.logits.view(-1, outputs.logits.size(-1)),
-        labels.view(-1)
+        outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
     )
 
     print(f"📊 Loss: {loss.item():.4f}")
@@ -247,8 +249,7 @@ def main():
 
         outputs = model(climate_data, input_ids)
         loss = torch.nn.functional.cross_entropy(
-            outputs.logits.view(-1, outputs.logits.size(-1)),
-            labels.view(-1)
+            outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
         )
 
         optimizer.zero_grad()
@@ -265,12 +266,14 @@ def main():
             attention_mean = outputs_eval.attention_weights.mean().item()
             attention_std = outputs_eval.attention_weights.std().item()
 
-        print(f"Step {step+1}: Loss={loss.item():.4f}, "
-              f"GradNorm={grad_norm:.4f}, "
-              f"AttentionMean={attention_mean:.4f}, "
-              f"AttentionStd={attention_std:.4f}, "
-              f"Time={step_time:.2f}s, "
-              f"Memory={current_memory:.1f}GB")
+        print(
+            f"Step {step+1}: Loss={loss.item():.4f}, "
+            f"GradNorm={grad_norm:.4f}, "
+            f"AttentionMean={attention_mean:.4f}, "
+            f"AttentionStd={attention_std:.4f}, "
+            f"Time={step_time:.2f}s, "
+            f"Memory={current_memory:.1f}GB"
+        )
 
         clear_memory()
 
@@ -291,23 +294,29 @@ def main():
 
     # Save the model
     save_path = "LLAMA3_8B_CROSS_ATTENTION_FUSION.pt"
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'tokenizer': model.tokenizer,
-        'config': {
-            'model_name': 'Llama-3-8B-Cross-Attention-Fusion',
-            'architecture': 'True Cross-Attention',
-            'total_parameters': sum(p.numel() for p in model.parameters()),
-            'trainable_parameters': sum(p.numel() for p in model.parameters() if p.requires_grad),
-            'memory_usage_gb': final_memory,
-            'attention_heads': model.num_heads,
-            'success': True
-        }
-    }, save_path)
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "tokenizer": model.tokenizer,
+            "config": {
+                "model_name": "Llama-3-8B-Cross-Attention-Fusion",
+                "architecture": "True Cross-Attention",
+                "total_parameters": sum(p.numel() for p in model.parameters()),
+                "trainable_parameters": sum(
+                    p.numel() for p in model.parameters() if p.requires_grad
+                ),
+                "memory_usage_gb": final_memory,
+                "attention_heads": model.num_heads,
+                "success": True,
+            },
+        },
+        save_path,
+    )
 
     print(f"💾 CROSS-ATTENTION MODEL SAVED: {save_path}")
 
     return True
+
 
 if __name__ == "__main__":
     success = main()

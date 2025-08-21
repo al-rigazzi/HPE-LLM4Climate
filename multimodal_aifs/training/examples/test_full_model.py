@@ -6,14 +6,15 @@ This script tests training with the actual Llama-3-8B model using CPU
 with 36GB RAM. We'll use smaller models where possible but real Llama-3.
 """
 
+import gc
+import json
 import os
 import sys
-import torch
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import torch
 from tqdm import tqdm
-import json
-import gc
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -24,11 +25,12 @@ print(f"💾 Available RAM: ~36GB")
 
 # Memory management
 torch.set_num_threads(4)  # Limit CPU threads
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # Check if we can use a smaller Llama model for testing
 try:
-    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
     print("✅ Transformers available")
 
     # Use only Llama 3-8B (other models disabled)
@@ -61,7 +63,7 @@ try:
                 model_name,
                 torch_dtype=torch.float32,  # Use float32 for CPU
                 device_map="cpu",
-                low_cpu_mem_usage=True
+                low_cpu_mem_usage=True,
             )
             print(f"✅ Successfully loaded: {description}")
             break
@@ -87,13 +89,16 @@ except Exception as e:
 # Import our fusion components
 try:
     from test_mock_training import MockPrithviEncoder
+
     print("✅ Successfully imported mock climate encoder")
 except ImportError as e:
     print(f"❌ Import error: {e}")
     sys.exit(1)
 
+
 class RealClimateTextFusion(torch.nn.Module):
     """Fusion model with real text model and mock climate encoder"""
+
     def __init__(self, text_model, climate_dim=256):
         super().__init__()
         self.climate_encoder = MockPrithviEncoder(climate_dim)
@@ -107,14 +112,12 @@ class RealClimateTextFusion(torch.nn.Module):
             torch.nn.Linear(climate_dim, self.text_hidden_size),
             torch.nn.LayerNorm(self.text_hidden_size),
             torch.nn.GELU(),
-            torch.nn.Linear(self.text_hidden_size, self.text_hidden_size)
+            torch.nn.Linear(self.text_hidden_size, self.text_hidden_size),
         )
 
         # Cross attention (smaller than full model)
         self.cross_attention = torch.nn.MultiheadAttention(
-            embed_dim=self.text_hidden_size,
-            num_heads=8,  # Reduced from 32
-            batch_first=True
+            embed_dim=self.text_hidden_size, num_heads=8, batch_first=True  # Reduced from 32
         )
 
         # Freeze text model to save memory
@@ -136,29 +139,30 @@ class RealClimateTextFusion(torch.nn.Module):
 
         # Cross attention: text attends to climate
         fused_features, _ = self.cross_attention(
-            query=text_embeddings,
-            key=projected_climate,
-            value=projected_climate
+            query=text_embeddings, key=projected_climate, value=projected_climate
         )
 
         # Simple output projection (instead of full language model head)
         output_logits = torch.nn.functional.linear(
-            fused_features,
-            self.text_model.get_input_embeddings().weight
+            fused_features, self.text_model.get_input_embeddings().weight
         )
 
-        return type('Output', (), {'logits': output_logits})()
+        return type("Output", (), {"logits": output_logits})()
+
 
 def check_memory_usage():
     """Check current memory usage"""
     import psutil
+
     process = psutil.Process(os.getpid())
     memory_gb = process.memory_info().rss / 1024**3
     print(f"💾 Current RAM usage: {memory_gb:.2f} GB")
     return memory_gb
 
+
 class SmallDataset:
     """Small dataset for testing"""
+
     def __init__(self, num_samples=10, seq_length=64):
         self.num_samples = num_samples
         self.seq_length = seq_length
@@ -180,11 +184,12 @@ class SmallDataset:
 
     def __getitem__(self, idx):
         return {
-            'climate_data': self.climate_data[idx],
-            'input_ids': self.input_ids[idx],
-            'attention_mask': self.attention_mask[idx],
-            'labels': self.labels[idx]
+            "climate_data": self.climate_data[idx],
+            "input_ids": self.input_ids[idx],
+            "attention_mask": self.attention_mask[idx],
+            "labels": self.labels[idx],
         }
+
 
 def main():
     print("\n🏗️ Setting up fusion model...")
@@ -212,11 +217,11 @@ def main():
         batch_size=1,  # Very small batch size
         shuffle=False,
         collate_fn=lambda batch: {
-            'climate_data': torch.stack([item['climate_data'] for item in batch]),
-            'input_ids': torch.stack([item['input_ids'] for item in batch]),
-            'attention_mask': torch.stack([item['attention_mask'] for item in batch]),
-            'labels': torch.stack([item['labels'] for item in batch])
-        }
+            "climate_data": torch.stack([item["climate_data"] for item in batch]),
+            "input_ids": torch.stack([item["input_ids"] for item in batch]),
+            "attention_mask": torch.stack([item["attention_mask"] for item in batch]),
+            "labels": torch.stack([item["labels"] for item in batch]),
+        },
     )
 
     print(f"✅ Dataset created: {len(dataset)} samples, batch_size=1")
@@ -229,9 +234,9 @@ def main():
         with torch.no_grad():
             sample_batch = next(iter(dataloader))
 
-            climate_data = sample_batch['climate_data']
-            input_ids = sample_batch['input_ids']
-            attention_mask = sample_batch['attention_mask']
+            climate_data = sample_batch["climate_data"]
+            input_ids = sample_batch["input_ids"]
+            attention_mask = sample_batch["attention_mask"]
 
             print(f"Input shapes:")
             print(f"  Climate: {climate_data.shape}")
@@ -259,15 +264,14 @@ def main():
 
         # Only optimize the trainable parameters
         optimizer = torch.optim.AdamW(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            lr=1e-4
+            [p for p in fusion_model.parameters() if p.requires_grad], lr=1e-4
         )
 
         sample_batch = next(iter(dataloader))
-        climate_data = sample_batch['climate_data']
-        input_ids = sample_batch['input_ids']
-        attention_mask = sample_batch['attention_mask']
-        labels = sample_batch['labels']
+        climate_data = sample_batch["climate_data"]
+        input_ids = sample_batch["input_ids"]
+        attention_mask = sample_batch["attention_mask"]
+        labels = sample_batch["labels"]
 
         check_memory_usage()
 
@@ -276,8 +280,7 @@ def main():
 
         # Compute loss
         loss = torch.nn.functional.cross_entropy(
-            outputs.logits.view(-1, outputs.logits.size(-1)),
-            labels.view(-1)
+            outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
         )
 
         print(f"📊 Loss: {loss.item():.4f}")
@@ -287,8 +290,7 @@ def main():
 
         # Gradient norm (only for trainable parameters)
         grad_norm = torch.nn.utils.clip_grad_norm_(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            max_norm=1.0
+            [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
         )
         print(f"🔧 Gradient norm: {grad_norm:.4f}")
 
@@ -314,18 +316,17 @@ def main():
             if step >= 2:  # Only 2 steps
                 break
 
-            climate_data = batch['climate_data']
-            input_ids = batch['input_ids']
-            attention_mask = batch['attention_mask']
-            labels = batch['labels']
+            climate_data = batch["climate_data"]
+            input_ids = batch["input_ids"]
+            attention_mask = batch["attention_mask"]
+            labels = batch["labels"]
 
             # Forward pass
             outputs = fusion_model(climate_data, input_ids, attention_mask)
 
             # Compute loss
             loss = torch.nn.functional.cross_entropy(
-                outputs.logits.view(-1, outputs.logits.size(-1)),
-                labels.view(-1)
+                outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
             )
 
             # Backward pass
@@ -334,8 +335,7 @@ def main():
 
             # Gradient clipping
             grad_norm = torch.nn.utils.clip_grad_norm_(
-                [p for p in fusion_model.parameters() if p.requires_grad],
-                max_norm=1.0
+                [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
             )
 
             # Optimizer step
@@ -343,7 +343,9 @@ def main():
 
             memory_gb = check_memory_usage()
 
-            print(f"Step {step+1}: Loss={loss.item():.4f}, GradNorm={grad_norm:.3f}, RAM={memory_gb:.1f}GB")
+            print(
+                f"Step {step+1}: Loss={loss.item():.4f}, GradNorm={grad_norm:.3f}, RAM={memory_gb:.1f}GB"
+            )
 
             # Memory cleanup
             del outputs, loss
@@ -368,6 +370,7 @@ def main():
     print("  • Change model_name to 'meta-llama/Meta-Llama-3-8B'")
     print("  • May need HuggingFace approval for Llama models")
     print("  • Consider using quantization (4-bit/8-bit) for larger models")
+
 
 if __name__ == "__main__":
     main()

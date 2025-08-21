@@ -5,13 +5,14 @@ Simple Large Model Test with Fixed Dimensions
 This script tests training with large language models using properly sized data.
 """
 
+import gc
 import os
 import sys
-import torch
-import numpy as np
-from pathlib import Path
-import gc
 import warnings
+from pathlib import Path
+
+import numpy as np
+import torch
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -19,25 +20,30 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # Memory optimization
 torch.set_num_threads(2)
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+warnings.filterwarnings("ignore")
 
 print("🚀 Testing simplified large model training...")
+
 
 def check_memory_usage():
     """Check current memory usage"""
     import psutil
+
     process = psutil.Process(os.getpid())
     memory_gb = process.memory_info().rss / 1024**3
     return memory_gb
+
 
 def clear_memory():
     """Clear memory"""
     gc.collect()
 
+
 # Load a large model
 try:
-    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
     print("✅ Transformers available")
 
     # Use GPT-2 Large which is freely available
@@ -54,10 +60,7 @@ try:
 
     # Load model
     text_model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=torch.float32,
-        device_map="cpu",
-        low_cpu_mem_usage=True
+        model_name, torch_dtype=torch.float32, device_map="cpu", low_cpu_mem_usage=True
     )
 
     total_params = sum(p.numel() for p in text_model.parameters())
@@ -70,6 +73,7 @@ try:
 except Exception as e:
     print(f"❌ Error loading model: {e}")
     sys.exit(1)
+
 
 # Simple climate encoder that matches expected input dimensions
 class SimpleClimateEncoder(torch.nn.Module):
@@ -97,6 +101,7 @@ class SimpleClimateEncoder(torch.nn.Module):
 
         return torch.stack(outputs, dim=1)  # [batch, time, output_dim]
 
+
 class SimpleFusionModel(torch.nn.Module):
     def __init__(self, text_model, climate_dim=256):
         super().__init__()
@@ -112,9 +117,7 @@ class SimpleFusionModel(torch.nn.Module):
 
         # Simple attention
         self.attention = torch.nn.MultiheadAttention(
-            embed_dim=self.text_hidden_size,
-            num_heads=4,
-            batch_first=True
+            embed_dim=self.text_hidden_size, num_heads=4, batch_first=True
         )
 
         # Freeze text model
@@ -134,9 +137,7 @@ class SimpleFusionModel(torch.nn.Module):
 
         # Attention
         fused_features, _ = self.attention(
-            query=text_embeddings,
-            key=projected_climate,
-            value=projected_climate
+            query=text_embeddings, key=projected_climate, value=projected_climate
         )
 
         # Simple output (small vocab for testing)
@@ -144,7 +145,8 @@ class SimpleFusionModel(torch.nn.Module):
         output_projection = torch.nn.Linear(self.text_hidden_size, vocab_size)
         logits = output_projection(fused_features)
 
-        return type('Output', (), {'logits': logits})()
+        return type("Output", (), {"logits": logits})()
+
 
 def main():
     print(f"\n🏗️ Creating fusion model...")
@@ -209,8 +211,7 @@ def main():
 
         # Optimizer for trainable parameters only
         optimizer = torch.optim.AdamW(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            lr=1e-4
+            [p for p in fusion_model.parameters() if p.requires_grad], lr=1e-4
         )
 
         # Forward pass
@@ -218,8 +219,7 @@ def main():
 
         # Loss
         loss = torch.nn.functional.cross_entropy(
-            outputs.logits.view(-1, outputs.logits.size(-1)),
-            labels.view(-1)
+            outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
         )
 
         print(f"📊 Loss: {loss.item():.4f}")
@@ -229,8 +229,7 @@ def main():
 
         # Gradient norm
         grad_norm = torch.nn.utils.clip_grad_norm_(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            max_norm=1.0
+            [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
         )
         print(f"🔧 Gradient norm: {grad_norm:.4f}")
 
@@ -259,8 +258,7 @@ def main():
 
             # Loss
             loss = torch.nn.functional.cross_entropy(
-                outputs.logits.view(-1, outputs.logits.size(-1)),
-                labels.view(-1)
+                outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
             )
 
             # Backward
@@ -269,15 +267,16 @@ def main():
 
             # Update
             grad_norm = torch.nn.utils.clip_grad_norm_(
-                [p for p in fusion_model.parameters() if p.requires_grad],
-                max_norm=1.0
+                [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
             )
             optimizer.step()
 
             losses.append(loss.item())
             memory = check_memory_usage()
 
-            print(f"Step {step+1}: Loss={loss.item():.4f}, GradNorm={grad_norm:.3f}, RAM={memory:.1f}GB")
+            print(
+                f"Step {step+1}: Loss={loss.item():.4f}, GradNorm={grad_norm:.3f}, RAM={memory:.1f}GB"
+            )
 
             clear_memory()
 
@@ -305,6 +304,7 @@ def main():
     print(f"  📊 Would need ~24-32GB for model weights alone")
     print(f"  💡 Could work with current RAM + proper optimization")
     print(f"  🔧 Would need HuggingFace approval for model access")
+
 
 if __name__ == "__main__":
     main()

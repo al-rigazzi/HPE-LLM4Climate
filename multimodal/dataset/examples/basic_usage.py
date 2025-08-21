@@ -13,8 +13,8 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 
+from data_loader import MERRA2DataLoader, PrithviMERRA2Dataset, validate_dataset_compatibility
 from merra2_dataset_processor import MERRA2DatasetProcessor
-from data_loader import PrithviMERRA2Dataset, MERRA2DataLoader, validate_dataset_compatibility
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
     print(f"Output directory: {output_dir}")
 
     # Check for NASA Earthdata credentials
-    if not os.getenv('EARTHDATA_USERNAME') or not os.getenv('EARTHDATA_PASSWORD'):
+    if not os.getenv("EARTHDATA_USERNAME") or not os.getenv("EARTHDATA_PASSWORD"):
         print("\n⚠️  WARNING: NASA Earthdata credentials not found!")
         print("Set EARTHDATA_USERNAME and EARTHDATA_PASSWORD environment variables")
         print("or the download step will fail.\n")
@@ -44,8 +44,8 @@ def main():
         earthdata_username = "demo_user"
         earthdata_password = "demo_pass"
     else:
-        earthdata_username = os.getenv('EARTHDATA_USERNAME')
-        earthdata_password = os.getenv('EARTHDATA_PASSWORD')
+        earthdata_username = os.getenv("EARTHDATA_USERNAME")
+        earthdata_password = os.getenv("EARTHDATA_PASSWORD")
         print("✅ NASA Earthdata credentials found")
 
     try:
@@ -55,7 +55,7 @@ def main():
             output_dir=output_dir,
             cache_dir=cache_dir,
             earthdata_username=earthdata_username,
-            earthdata_password=earthdata_password
+            earthdata_password=earthdata_password,
         )
         print("✅ Processor created successfully")
 
@@ -66,9 +66,7 @@ def main():
 
         try:
             output_path = processor.process_timerange(
-                start_date=start_date,
-                end_date=end_date,
-                temporal_resolution=temporal_resolution
+                start_date=start_date, end_date=end_date, temporal_resolution=temporal_resolution
             )
             print(f"✅ Data processed successfully: {output_path}")
 
@@ -79,7 +77,10 @@ def main():
             # Create a dummy dataset for demonstration
             print("\n📝 Creating dummy dataset for demonstration...")
             create_dummy_dataset(output_dir, start_date, end_date, temporal_resolution)
-            output_path = Path(output_dir) / f"merra2_prithvi_{start_date}_{end_date}_{temporal_resolution}.npz"
+            output_path = (
+                Path(output_dir)
+                / f"merra2_prithvi_{start_date}_{end_date}_{temporal_resolution}.npz"
+            )
 
         # Step 3: Load and examine the dataset
         print("\n3. Loading and examining the processed dataset...")
@@ -91,26 +92,26 @@ def main():
         print(f"   Static variables: {len(info['static_vars'])}")
         print(f"   Vertical variables: {len(info['vertical_vars'])}")
 
-        if 'surface_shape' in info:
+        if "surface_shape" in info:
             print(f"   Surface data shape: {info['surface_shape']}")
-        if 'vertical_shape' in info:
+        if "vertical_shape" in info:
             print(f"   Vertical data shape: {info['vertical_shape']}")
-        if 'static_shape' in info:
+        if "static_shape" in info:
             print(f"   Static data shape: {info['static_shape']}")
 
         # Step 4: Validate compatibility with PrithviWxC_Encoder
         print("\n4. Validating compatibility with PrithviWxC_Encoder...")
         validation = validate_dataset_compatibility(output_path)
 
-        if validation['valid_dataset']:
+        if validation["valid_dataset"]:
             print("✅ Dataset is fully compatible with PrithviWxC_Encoder")
         else:
             print("⚠️  Dataset has some missing variables:")
-            if validation['missing_surface_vars']:
+            if validation["missing_surface_vars"]:
                 print(f"   Missing surface vars: {validation['missing_surface_vars']}")
-            if validation['missing_static_vars']:
+            if validation["missing_static_vars"]:
                 print(f"   Missing static vars: {validation['missing_static_vars']}")
-            if validation['missing_vertical_vars']:
+            if validation["missing_vertical_vars"]:
                 print(f"   Missing vertical vars: {validation['missing_vertical_vars']}")
 
         # Step 5: Create PyTorch dataset and dataloader
@@ -118,19 +119,13 @@ def main():
 
         # Create dataset
         dataset = PrithviMERRA2Dataset(
-            dataset_path=output_path,
-            input_time_steps=2,
-            time_step_hours=6,
-            lead_time_hours=6
+            dataset_path=output_path, input_time_steps=2, time_step_hours=6, lead_time_hours=6
         )
         print(f"✅ Dataset created with {len(dataset)} samples")
 
         # Create dataloader
         dataloader = MERRA2DataLoader.create_dataloader(
-            dataset_path=output_path,
-            batch_size=2,
-            shuffle=False,
-            num_workers=0
+            dataset_path=output_path, batch_size=2, shuffle=False, num_workers=0
         )
         print("✅ DataLoader created")
 
@@ -139,7 +134,7 @@ def main():
         for i, batch in enumerate(dataloader):
             print(f"📦 Batch {i + 1}:")
             for key, value in batch.items():
-                if isinstance(value, type(batch['x'])):  # torch.Tensor
+                if isinstance(value, type(batch["x"])):  # torch.Tensor
                     print(f"   {key}: {value.shape} ({value.dtype})")
                 else:
                     print(f"   {key}: {value}")
@@ -154,14 +149,16 @@ def main():
     except Exception as e:
         print(f"\n❌ Example failed with error: {e}")
         import traceback
+
         traceback.print_exc()
 
 
 def create_dummy_dataset(output_dir, start_date, end_date, temporal_resolution):
     """Create a dummy dataset for demonstration when downloads fail."""
-    import numpy as np
     import json
     from datetime import datetime, timedelta
+
+    import numpy as np
 
     # Create output directory
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -181,29 +178,48 @@ def create_dummy_dataset(output_dir, start_date, end_date, temporal_resolution):
     vertical_data = np.random.randn(n_times, 10, n_levels, n_lat, n_lon).astype(np.float32)
 
     # Coordinates
-    times = [datetime.fromisoformat(start_date) + timedelta(hours=3*i) for i in range(n_times)]
+    times = [datetime.fromisoformat(start_date) + timedelta(hours=3 * i) for i in range(n_times)]
     lats = np.linspace(-90, 90, n_lat)
     lons = np.linspace(-180, 179.375, n_lon)
     levels = [34.0, 39.0, 41.0, 43.0, 44.0, 45.0, 48.0, 51.0, 53.0, 56.0, 63.0, 68.0, 71.0, 72.0]
 
     coordinates = {
-        'time': [t.isoformat() for t in times],
-        'lat': lats,
-        'lon': lons,
-        'levels': levels
+        "time": [t.isoformat() for t in times],
+        "lat": lats,
+        "lon": lons,
+        "levels": levels,
     }
 
     # Variable names
     surface_vars = [
-        "EFLUX", "GWETROOT", "HFLUX", "LAI", "LWGAB", "LWGEM", "LWTUP",
-        "PS", "QV2M", "SLP", "SWGNT", "SWTNT", "T2M", "TQI", "TQL",
-        "TQV", "TS", "U10M", "V10M", "Z0M"
+        "EFLUX",
+        "GWETROOT",
+        "HFLUX",
+        "LAI",
+        "LWGAB",
+        "LWGEM",
+        "LWTUP",
+        "PS",
+        "QV2M",
+        "SLP",
+        "SWGNT",
+        "SWTNT",
+        "T2M",
+        "TQI",
+        "TQL",
+        "TQV",
+        "TS",
+        "U10M",
+        "V10M",
+        "Z0M",
     ]
     static_vars = ["FRACI", "FRLAND", "FROCEAN", "PHIS"]
     vertical_vars = ["CLOUD", "H", "OMEGA", "PL", "QI", "QL", "QV", "T", "U", "V"]
 
     # Save dataset
-    output_path = Path(output_dir) / f"merra2_prithvi_{start_date}_{end_date}_{temporal_resolution}.npz"
+    output_path = (
+        Path(output_dir) / f"merra2_prithvi_{start_date}_{end_date}_{temporal_resolution}.npz"
+    )
 
     np.savez_compressed(
         output_path,
@@ -213,22 +229,22 @@ def create_dummy_dataset(output_dir, start_date, end_date, temporal_resolution):
         coordinates=coordinates,
         surface_vars=surface_vars,
         static_vars=static_vars,
-        vertical_vars=vertical_vars
+        vertical_vars=vertical_vars,
     )
 
     # Save metadata
     metadata = {
-        'surface_vars': surface_vars,
-        'static_vars': static_vars,
-        'vertical_vars': vertical_vars,
-        'coordinates': coordinates,
-        'creation_time': datetime.now().isoformat(),
-        'format_version': '1.0',
-        'note': 'This is a dummy dataset created for demonstration purposes'
+        "surface_vars": surface_vars,
+        "static_vars": static_vars,
+        "vertical_vars": vertical_vars,
+        "coordinates": coordinates,
+        "creation_time": datetime.now().isoformat(),
+        "format_version": "1.0",
+        "note": "This is a dummy dataset created for demonstration purposes",
     }
 
-    metadata_path = output_path.with_suffix('.metadata.json')
-    with open(metadata_path, 'w') as f:
+    metadata_path = output_path.with_suffix(".metadata.json")
+    with open(metadata_path, "w") as f:
         json.dump(metadata, f, indent=2, default=str)
 
     print(f"✅ Dummy dataset created: {output_path}")

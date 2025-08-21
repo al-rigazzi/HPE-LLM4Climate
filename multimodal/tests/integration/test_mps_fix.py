@@ -6,13 +6,15 @@ This script demonstrates the fix for the MPS device allocation error
 and provides alternative approaches for running Llama models on Apple Silicon.
 """
 
-import torch
-import warnings
-import sys
 import os
+import sys
+import warnings
+
+import torch
 
 # Add multimodal to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'multimodal'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "multimodal"))
+
 
 def check_device_compatibility():
     """Check available devices and their compatibility."""
@@ -33,13 +35,14 @@ def check_device_compatibility():
 
     print()
 
+
 def test_mps_fix():
     """Test the MPS device allocation fix."""
     print("🛠️ Testing MPS Fix for Meta-Llama-3-8B")
     print("=" * 40)
 
     try:
-        from transformers import AutoTokenizer, AutoModelForCausalLM
+        from transformers import AutoModelForCausalLM, AutoTokenizer
 
         print("📥 Loading tokenizer...")
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B")
@@ -54,7 +57,7 @@ def test_mps_fix():
                 torch_dtype=torch.float32,  # Use float32 for stability
                 device_map=None,
                 trust_remote_code=True,
-                low_cpu_mem_usage=True
+                low_cpu_mem_usage=True,
             ).to("cpu")
 
             print("   ✅ CPU loading: SUCCESS")
@@ -69,11 +72,11 @@ def test_mps_fix():
                     max_new_tokens=20,
                     temperature=0.7,
                     do_sample=True,
-                    pad_token_id=tokenizer.eos_token_id
+                    pad_token_id=tokenizer.eos_token_id,
                 )
 
             response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-            generated = response[len(test_input):].strip()
+            generated = response[len(test_input) :].strip()
             print(f"   🤖 Generated: {generated[:50]}...")
             print("   ✅ CPU generation: SUCCESS")
 
@@ -101,7 +104,7 @@ def test_mps_fix():
                 torch_dtype=dtype,
                 device_map=None,
                 trust_remote_code=True,
-                low_cpu_mem_usage=True
+                low_cpu_mem_usage=True,
             ).to(device)
 
             print(f"   ✅ Smart device loading: SUCCESS")
@@ -115,11 +118,11 @@ def test_mps_fix():
                     **inputs,
                     max_new_tokens=15,
                     do_sample=False,  # Deterministic for testing
-                    pad_token_id=tokenizer.eos_token_id
+                    pad_token_id=tokenizer.eos_token_id,
                 )
 
             response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-            generated = response[len(test_input):].strip()
+            generated = response[len(test_input) :].strip()
             print(f"   🤖 Generated: {generated[:50]}...")
             print(f"   ✅ {device.upper()} generation: SUCCESS")
 
@@ -131,6 +134,7 @@ def test_mps_fix():
     except Exception as e:
         print(f"❌ Test setup error: {e}")
         return False
+
 
 def test_location_aware_with_fix():
     """Test location-aware system with MPS fix applied."""
@@ -146,11 +150,11 @@ def test_location_aware_with_fix():
         model = LocationAwareClimateAnalysis(
             prithvi_encoder_path=None,  # Demo mode
             llama_model_name="meta-llama/Meta-Llama-3-8B",
-            fusion_mode='concatenate',  # Simpler fusion
+            fusion_mode="concatenate",  # Simpler fusion
             max_climate_tokens=256,
             max_text_length=128,
             freeze_llama=True,
-            device="cpu"  # Force CPU to avoid MPS issues
+            device="cpu",  # Force CPU to avoid MPS issues
         )
 
         print("✅ Location-aware model initialized with MPS fix!")
@@ -161,9 +165,7 @@ def test_location_aware_with_fix():
 
         with torch.no_grad():
             result = model.analyze_location_query(
-                climate_features,
-                test_query,
-                return_visualization=False
+                climate_features, test_query, return_visualization=False
             )
 
         print(f"📍 Location: {result.get('location', 'N/A')}")
@@ -176,6 +178,7 @@ def test_location_aware_with_fix():
     except Exception as e:
         print(f"❌ Location-aware test error: {e}")
         return False
+
 
 def main():
     """Main function to demonstrate MPS fixes."""
@@ -207,6 +210,7 @@ def main():
             print(f"\n⚠️  MPS fixes work, but location-aware needs attention")
     else:
         print(f"\n❌ MPS fixes need further investigation")
+
 
 if __name__ == "__main__":
     with warnings.catch_warnings():

@@ -1,5 +1,7 @@
-from huggingface_hub import hf_hub_download, snapshot_download
 from pathlib import Path
+
+from huggingface_hub import hf_hub_download, snapshot_download
+
 
 def get_data():
     """
@@ -32,6 +34,7 @@ def get_data():
         allow_patterns="climatology/climate_vertical_doy00[1-6]*.nc",
         local_dir="data",
     )
+
 
 def get_model_data():
     """

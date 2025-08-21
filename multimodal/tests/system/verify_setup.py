@@ -9,14 +9,15 @@ Usage:
     python verify_setup.py
 """
 
-import sys
 import os
+import sys
 import warnings
 from typing import List, Tuple
 
 # Add project root to Python path for imports
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, project_root)
+
 
 def test_import(package_name: str, import_statement: str) -> Tuple[bool, str]:
     """Test if a package can be imported."""
@@ -27,6 +28,7 @@ def test_import(package_name: str, import_statement: str) -> Tuple[bool, str]:
         return False, str(e)
     except Exception as e:
         return False, f"Unexpected error: {e}"
+
 
 def main():
     """Run all verification tests."""
@@ -57,9 +59,18 @@ def main():
     print("\n🤖 Testing Multimodal System:")
     multimodal_tests = [
         ("Encoder Extractor", "from multimodal.utils.encoder_extractor import PrithviWxC_Encoder"),
-        ("Climate-Text Fusion", "from multimodal.core.climate_text_fusion import ClimateTextFusion"),
-        ("Location-Aware Core", "from multimodal.core.location_aware import GeographicResolver, SpatialCropper"),
-        ("Location-Aware Fusion", "from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis"),
+        (
+            "Climate-Text Fusion",
+            "from multimodal.core.climate_text_fusion import ClimateTextFusion",
+        ),
+        (
+            "Location-Aware Core",
+            "from multimodal.core.location_aware import GeographicResolver, SpatialCropper",
+        ),
+        (
+            "Location-Aware Fusion",
+            "from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis",
+        ),
     ]
 
     for name, import_stmt in multimodal_tests:
@@ -77,7 +88,7 @@ def main():
         from multimodal.core.location_aware import GeographicResolver
 
         # Test local backend
-        resolver_local = GeographicResolver(backend='local')
+        resolver_local = GeographicResolver(backend="local")
         result = resolver_local.resolve_location("sweden")
         if result:
             print(f"  ✅ Local geo resolution : Found {result.name} ({result.location_type})")
@@ -86,7 +97,7 @@ def main():
             all_passed = False
 
         # Test GeoPy backend
-        resolver_geopy = GeographicResolver(backend='geopy')
+        resolver_geopy = GeographicResolver(backend="geopy")
         result = resolver_geopy.resolve_location("Paris, France")
         if result:
             print(f"  ✅ GeoPy resolution    : Found {result.name}")
@@ -94,14 +105,15 @@ def main():
             print(f"  ⚠️  GeoPy resolution    : No result (network issue?)")
 
         # Test location-aware analysis
-        from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis
         import torch
+
+        from multimodal.core.location_aware_fusion import LocationAwareClimateAnalysis
 
         # Try different Prithvi encoder files
         encoder_files = [
             "data/weights/prithvi_encoder_fixed.pt",  # Try the one with 25 layers first
             "data/weights/prithvi_encoder_corrected.pt",
-            "data/weights/prithvi_encoder.pt"
+            "data/weights/prithvi_encoder.pt",
         ]
 
         model = None
@@ -120,7 +132,7 @@ def main():
             print(f"  ⚠️  All Prithvi encoders failed, using demo mode")
 
         # Create properly sized climate data for the fusion model
-        if hasattr(model, 'climate_text_fusion') and model.climate_text_fusion:
+        if hasattr(model, "climate_text_fusion") and model.climate_text_fusion:
             # Use actual climate encoder dimensions (2560)
             climate_dim = model.climate_text_fusion.climate_dim
             climate_data = torch.randn(1, 50, climate_dim)
@@ -131,12 +143,10 @@ def main():
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             result = model.analyze_location_query(
-                climate_data,
-                "Climate trends in Stockholm, Sweden",
-                return_visualization=False
+                climate_data, "Climate trends in Stockholm, Sweden", return_visualization=False
             )
 
-        if result and 'location' in result:
+        if result and "location" in result:
             print(f"  ✅ Climate analysis    : {result['location']} -> {result['climate_risk']}")
         else:
             print(f"  ❌ Climate analysis    : Failed")
@@ -161,6 +171,7 @@ def main():
         print("   pip install -r requirements.txt")
         print("   pip install -r multimodal/requirements-geo.txt")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

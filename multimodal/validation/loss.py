@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+
 class NormalizedMSELoss(nn.Module):
     """
     Normalized MSE Loss
@@ -49,7 +50,7 @@ class NormalizedMSELoss(nn.Module):
         Returns:
             MSE loss on the variance-normalized values
         """
-        y = batch['y']
+        y = batch["y"]
         if not y_hat.shape == y.shape:
             raise ValueError(
                 f'Unable to bring inputs y_hat and y with shapes {y_hat.shape} and {batch["y"].shape} into same shape.'

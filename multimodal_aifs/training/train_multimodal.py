@@ -41,6 +41,7 @@ from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
 try:
     import deepspeed
     from deepspeed.ops.adam import DeepSpeedCPUAdam
+
     DEEPSPEED_AVAILABLE = True
 except ImportError:
     DEEPSPEED_AVAILABLE = False
@@ -48,6 +49,7 @@ except ImportError:
 
 try:
     import wandb
+
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
@@ -55,8 +57,7 @@ except ImportError:
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -90,17 +91,19 @@ class ClimateTextDataset(Dataset):
 
         # Example: Load from a JSON index file
         if (self.data_path / "index.json").exists():
-            with open(self.data_path / "index.json", 'r') as f:
+            with open(self.data_path / "index.json", "r") as f:
                 samples = json.load(f)
         else:
             # Create dummy samples for testing
             logger.warning("No data found. Creating dummy samples for testing.")
             for i in range(100):
-                samples.append({
-                    "climate_file": f"climate_{i:03d}.pt",
-                    "text": f"Climate analysis for sample {i}",
-                    "target": f"This is the target text for sample {i}."
-                })
+                samples.append(
+                    {
+                        "climate_file": f"climate_{i:03d}.pt",
+                        "text": f"Climate analysis for sample {i}",
+                        "target": f"This is the target text for sample {i}.",
+                    }
+                )
 
         return samples
 
@@ -123,7 +126,7 @@ class ClimateTextDataset(Dataset):
             max_length=self.max_length,
             padding="max_length",
             truncation=True,
-            return_tensors="pt"
+            return_tensors="pt",
         )
 
         target_encoding = self.tokenizer(
@@ -131,7 +134,7 @@ class ClimateTextDataset(Dataset):
             max_length=self.max_length,
             padding="max_length",
             truncation=True,
-            return_tensors="pt"
+            return_tensors="pt",
         )
 
         return {
@@ -172,9 +175,7 @@ class MultimodalTrainer:
         )
 
         # Initialize tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            config["model"]["llama_model_name"]
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(config["model"]["llama_model_name"])
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
@@ -221,23 +222,23 @@ class MultimodalTrainer:
                         "lr": self.learning_rate,
                         "betas": [0.9, 0.999],
                         "eps": 1e-8,
-                        "weight_decay": 0.01
-                    }
+                        "weight_decay": 0.01,
+                    },
                 },
                 "scheduler": {
                     "type": "WarmupLR",
                     "params": {
                         "warmup_min_lr": 0,
                         "warmup_max_lr": self.learning_rate,
-                        "warmup_num_steps": self.warmup_steps
-                    }
+                        "warmup_num_steps": self.warmup_steps,
+                    },
                 },
                 "fp16": {
                     "enabled": True,
                     "loss_scale": 0,
                     "loss_scale_window": 1000,
                     "hysteresis": 2,
-                    "min_loss_scale": 1
+                    "min_loss_scale": 1,
                 },
                 "zero_optimization": {
                     "stage": 2,
@@ -246,19 +247,19 @@ class MultimodalTrainer:
                     "overlap_comm": True,
                     "reduce_scatter": True,
                     "reduce_bucket_size": 2e8,
-                    "contiguous_gradients": True
+                    "contiguous_gradients": True,
                 },
                 "activation_checkpointing": {
                     "partition_activations": True,
                     "cpu_checkpointing": True,
                     "contiguous_memory_optimization": False,
                     "number_checkpoints": 4,
-                    "synchronize_checkpoint_boundary": False
+                    "synchronize_checkpoint_boundary": False,
                 },
-                "wall_clock_breakdown": False
+                "wall_clock_breakdown": False,
             }
         else:
-            with open(deepspeed_config, 'r') as f:
+            with open(deepspeed_config, "r") as f:
                 ds_config = json.load(f)
 
         # Initialize DeepSpeed
@@ -301,8 +302,7 @@ class MultimodalTrainer:
 
         # Prepare text inputs
         text_inputs = [
-            self.tokenizer.decode(ids, skip_special_tokens=True)
-            for ids in batch["input_ids"]
+            self.tokenizer.decode(ids, skip_special_tokens=True) for ids in batch["input_ids"]
         ]
 
         # Forward pass
@@ -311,8 +311,7 @@ class MultimodalTrainer:
 
         # Generate target embeddings for loss computation
         target_inputs = [
-            self.tokenizer.decode(ids, skip_special_tokens=True)
-            for ids in batch["labels"]
+            self.tokenizer.decode(ids, skip_special_tokens=True) for ids in batch["labels"]
         ]
 
         with torch.no_grad():
@@ -323,7 +322,7 @@ class MultimodalTrainer:
         # This is a simplified example - adapt based on your specific training objective
         loss = F.mse_loss(
             fused_features.mean(dim=1),  # [batch, hidden_size]
-            target_embeddings.mean(dim=1)  # [batch, hidden_size]
+            target_embeddings.mean(dim=1),  # [batch, hidden_size]
         )
 
         return loss
@@ -334,11 +333,7 @@ class MultimodalTrainer:
         total_loss = 0.0
         num_batches = len(self.train_loader)
 
-        progress_bar = tqdm(
-            self.train_loader,
-            desc=f"Epoch {epoch+1}/{self.epochs}",
-            leave=False
-        )
+        progress_bar = tqdm(self.train_loader, desc=f"Epoch {epoch+1}/{self.epochs}", leave=False)
 
         for step, batch in enumerate(progress_bar):
             # Move batch to device
@@ -356,21 +351,31 @@ class MultimodalTrainer:
             avg_loss = total_loss / (step + 1)
 
             # Update progress bar
-            progress_bar.set_postfix({
-                "loss": f"{loss.item():.4f}",
-                "avg_loss": f"{avg_loss:.4f}",
-                "lr": f"{self.lr_scheduler.get_last_lr()[0]:.2e}" if self.lr_scheduler else "N/A"
-            })
+            progress_bar.set_postfix(
+                {
+                    "loss": f"{loss.item():.4f}",
+                    "avg_loss": f"{avg_loss:.4f}",
+                    "lr": (
+                        f"{self.lr_scheduler.get_last_lr()[0]:.2e}" if self.lr_scheduler else "N/A"
+                    ),
+                }
+            )
 
             # Log to wandb
             if WANDB_AVAILABLE and wandb.run is not None:
-                wandb.log({
-                    "train/loss": loss.item(),
-                    "train/avg_loss": avg_loss,
-                    "train/learning_rate": self.lr_scheduler.get_last_lr()[0] if self.lr_scheduler else self.learning_rate,
-                    "train/epoch": epoch,
-                    "train/step": step + epoch * num_batches,
-                })
+                wandb.log(
+                    {
+                        "train/loss": loss.item(),
+                        "train/avg_loss": avg_loss,
+                        "train/learning_rate": (
+                            self.lr_scheduler.get_last_lr()[0]
+                            if self.lr_scheduler
+                            else self.learning_rate
+                        ),
+                        "train/epoch": epoch,
+                        "train/step": step + epoch * num_batches,
+                    }
+                )
 
         return total_loss / num_batches
 
@@ -408,7 +413,7 @@ class MultimodalTrainer:
         self.tokenizer.save_pretrained(str(save_path / "tokenizer"))
 
         # Save training config
-        with open(save_path / "config.yaml", 'w') as f:
+        with open(save_path / "config.yaml", "w") as f:
             yaml.dump(self.config, f)
 
         logger.info(f"Checkpoint saved to {save_path}")
@@ -426,12 +431,12 @@ class MultimodalTrainer:
             wandb.init(
                 project=self.config["wandb"].get("project", "climate-text-fusion"),
                 name=self.config["wandb"].get("run_name", f"train_{int(time.time())}"),
-                config=self.config
+                config=self.config,
             )
 
         logger.info("Starting training...")
 
-        best_val_loss = float('inf')
+        best_val_loss = float("inf")
 
         for epoch in range(self.epochs):
             # Train
@@ -463,7 +468,7 @@ class MultimodalTrainer:
 
 def load_config(config_path: str) -> Dict:
     """Load training configuration."""
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         config = yaml.safe_load(f)
     return config
 
@@ -472,7 +477,9 @@ def main():
     parser = argparse.ArgumentParser(description="Train multimodal climate-text fusion model")
     parser.add_argument("--config", type=str, required=True, help="Path to config file")
     parser.add_argument("--deepspeed", type=str, help="Path to DeepSpeed config file")
-    parser.add_argument("--local_rank", type=int, default=-1, help="Local rank for distributed training")
+    parser.add_argument(
+        "--local_rank", type=int, default=-1, help="Local rank for distributed training"
+    )
 
     args = parser.parse_args()
 

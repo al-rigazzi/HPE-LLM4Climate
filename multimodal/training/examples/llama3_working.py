@@ -6,14 +6,15 @@ Using our proven architecture from maximum scale tests.
 This WILL work - we've validated the approach!
 """
 
+import gc
 import os
 import sys
-import torch
-import numpy as np
-from pathlib import Path
-import warnings
 import time
-import gc
+import warnings
+from pathlib import Path
+
+import numpy as np
+import torch
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -21,21 +22,26 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # Memory optimization settings
 torch.set_num_threads(2)
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+warnings.filterwarnings("ignore")
+
 
 def check_memory_usage():
     """Check current memory usage"""
     import psutil
+
     process = psutil.Process(os.getpid())
     memory_gb = process.memory_info().rss / 1024**3
     return memory_gb
+
 
 def clear_memory():
     """Aggressive memory cleanup"""
     gc.collect()
 
+
 print("🦙 Llama-3-8B Climate-Text Fusion - WORKING VERSION")
+
 
 class WorkingLlama3Fusion(torch.nn.Module):
     """
@@ -47,7 +53,7 @@ class WorkingLlama3Fusion(torch.nn.Module):
 
         print(f"🏗️ Loading Llama-3-8B for fusion...")
 
-        from transformers import AutoTokenizer, AutoModelForCausalLM
+        from transformers import AutoModelForCausalLM, AutoTokenizer
 
         # Load Llama-3-8B
         model_name = "meta-llama/Meta-Llama-3-8B"
@@ -78,7 +84,7 @@ class WorkingLlama3Fusion(torch.nn.Module):
             torch.nn.Flatten(),
             torch.nn.Linear(256 * 8 * 8, climate_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(climate_dim, climate_dim)
+            torch.nn.Linear(climate_dim, climate_dim),
         )
 
         self.text_hidden_size = self.text_model.config.hidden_size
@@ -89,7 +95,7 @@ class WorkingLlama3Fusion(torch.nn.Module):
             torch.nn.LayerNorm(self.text_hidden_size),
             torch.nn.GELU(),
             torch.nn.Linear(self.text_hidden_size, self.text_hidden_size),
-            torch.nn.LayerNorm(self.text_hidden_size)
+            torch.nn.LayerNorm(self.text_hidden_size),
         )
 
         # Simple fusion - just add features (this works!)
@@ -97,8 +103,7 @@ class WorkingLlama3Fusion(torch.nn.Module):
 
         # Output head
         self.output_projection = torch.nn.Linear(
-            self.text_hidden_size,
-            self.text_model.config.vocab_size
+            self.text_hidden_size, self.text_model.config.vocab_size
         )
 
         total_params = sum(p.numel() for p in self.parameters())
@@ -140,7 +145,8 @@ class WorkingLlama3Fusion(torch.nn.Module):
         # Final output
         logits = self.output_projection(processed_features)
 
-        return type('Output', (), {'logits': logits})()
+        return type("Output", (), {"logits": logits})()
+
 
 def simple_dataset():
     """Simple climate-text pairs"""
@@ -156,11 +162,8 @@ def simple_dataset():
         # Create climate data
         climate = torch.randn(4, 20, 16, 16)  # [time, channels, H, W]
 
-        yield {
-            'climate_data': climate,
-            'text': text,
-            'idx': i
-        }
+        yield {"climate_data": climate, "text": text, "idx": i}
+
 
 def main():
     print(f"\n🚀 Starting WORKING Llama-3-8B training...")
@@ -194,26 +197,25 @@ def main():
 
             # Tokenize
             encoding = model.tokenizer(
-                batch['text'],
+                batch["text"],
                 max_length=32,
-                padding='max_length',
+                padding="max_length",
                 truncation=True,
-                return_tensors='pt'
+                return_tensors="pt",
             )
 
-            input_ids = encoding['input_ids']
+            input_ids = encoding["input_ids"]
             labels = input_ids.clone()
 
             # Add batch dimension
-            climate_batch = batch['climate_data'].unsqueeze(0)
+            climate_batch = batch["climate_data"].unsqueeze(0)
 
             # Forward pass
             outputs = model(climate_batch, input_ids)
 
             # Loss
             loss = torch.nn.functional.cross_entropy(
-                outputs.logits.view(-1, outputs.logits.size(-1)),
-                labels.view(-1)
+                outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
             )
 
             # Backward
@@ -228,10 +230,12 @@ def main():
             step_time = time.time() - step_start
             current_memory = check_memory_usage()
 
-            print(f"  Step {step+1}: Loss={loss.item():.4f}, "
-                  f"GradNorm={grad_norm:.4f}, "
-                  f"Time={step_time:.2f}s, "
-                  f"Memory={current_memory:.1f}GB")
+            print(
+                f"  Step {step+1}: Loss={loss.item():.4f}, "
+                f"GradNorm={grad_norm:.4f}, "
+                f"Time={step_time:.2f}s, "
+                f"Memory={current_memory:.1f}GB"
+            )
 
             clear_memory()
 
@@ -243,17 +247,21 @@ def main():
 
     # Save model
     save_path = "llama3_climate_fusion_SUCCESS.pt"
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'config': {
-            'model_type': 'Llama-3-8B-Climate-Fusion',
-            'total_params': sum(p.numel() for p in model.parameters()),
-            'trainable_params': sum(p.numel() for p in model.parameters() if p.requires_grad),
-            'final_memory_gb': final_memory,
-        }
-    }, save_path)
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "config": {
+                "model_type": "Llama-3-8B-Climate-Fusion",
+                "total_params": sum(p.numel() for p in model.parameters()),
+                "trainable_params": sum(p.numel() for p in model.parameters() if p.requires_grad),
+                "final_memory_gb": final_memory,
+            },
+        },
+        save_path,
+    )
 
     print(f"💾 Model saved to: {save_path}")
+
 
 if __name__ == "__main__":
     main()

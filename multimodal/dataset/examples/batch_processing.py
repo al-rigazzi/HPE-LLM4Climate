@@ -17,8 +17,8 @@ import pandas as pd
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from merra2_dataset_processor import MERRA2DatasetProcessor
 from data_loader import MERRA2DataLoader, validate_dataset_compatibility
+from merra2_dataset_processor import MERRA2DatasetProcessor
 
 
 def process_single_period(args: Tuple[str, str, str, str, str]) -> Tuple[str, bool, str]:
@@ -38,15 +38,15 @@ def process_single_period(args: Tuple[str, str, str, str, str]) -> Tuple[str, bo
         processor = MERRA2DatasetProcessor(
             output_dir=output_dir,
             cache_dir=f"{cache_dir}_{period_id}",  # Separate cache for each process
-            earthdata_username=os.getenv('EARTHDATA_USERNAME'),
-            earthdata_password=os.getenv('EARTHDATA_PASSWORD')
+            earthdata_username=os.getenv("EARTHDATA_USERNAME"),
+            earthdata_password=os.getenv("EARTHDATA_PASSWORD"),
         )
 
         output_path = processor.process_timerange(
             start_date=start_date,
             end_date=end_date,
             temporal_resolution=temporal_resolution,
-            output_filename=f"merra2_prithvi_{period_id}.npz"
+            output_filename=f"merra2_prithvi_{period_id}.npz",
         )
 
         return period_id, True, str(output_path)
@@ -55,12 +55,14 @@ def process_single_period(args: Tuple[str, str, str, str, str]) -> Tuple[str, bo
         return period_id, False, str(e)
 
 
-def batch_process_months(year: int,
-                        months: List[int],
-                        temporal_resolution: str = "3H",
-                        output_dir: str = "./batch_output",
-                        cache_dir: str = "./batch_cache",
-                        max_workers: int = 2) -> List[Path]:
+def batch_process_months(
+    year: int,
+    months: List[int],
+    temporal_resolution: str = "3H",
+    output_dir: str = "./batch_output",
+    cache_dir: str = "./batch_cache",
+    max_workers: int = 2,
+) -> List[Path]:
     """
     Process multiple months in parallel.
 
@@ -96,10 +98,7 @@ def batch_process_months(year: int,
     # Process in parallel
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         # Submit all tasks
-        future_to_task = {
-            executor.submit(process_single_period, task): task
-            for task in tasks
-        }
+        future_to_task = {executor.submit(process_single_period, task): task for task in tasks}
 
         # Collect results
         for future in as_completed(future_to_task):
@@ -126,10 +125,12 @@ def batch_process_months(year: int,
     return successful_outputs
 
 
-def process_multiple_resolutions(start_date: str,
-                               end_date: str,
-                               resolutions: List[str] = ["1H", "3H", "Monthly"],
-                               output_dir: str = "./multi_res_output") -> List[Path]:
+def process_multiple_resolutions(
+    start_date: str,
+    end_date: str,
+    resolutions: List[str] = ["1H", "3H", "Monthly"],
+    output_dir: str = "./multi_res_output",
+) -> List[Path]:
     """
     Process the same time period at multiple temporal resolutions.
 
@@ -153,14 +154,12 @@ def process_multiple_resolutions(start_date: str,
             processor = MERRA2DatasetProcessor(
                 output_dir=output_dir,
                 cache_dir=f"./cache_{resolution}",
-                earthdata_username=os.getenv('EARTHDATA_USERNAME'),
-                earthdata_password=os.getenv('EARTHDATA_PASSWORD')
+                earthdata_username=os.getenv("EARTHDATA_USERNAME"),
+                earthdata_password=os.getenv("EARTHDATA_PASSWORD"),
             )
 
             output_path = processor.process_timerange(
-                start_date=start_date,
-                end_date=end_date,
-                temporal_resolution=resolution
+                start_date=start_date, end_date=end_date, temporal_resolution=resolution
             )
 
             print(f"✅ {resolution}: {output_path}")
@@ -193,13 +192,13 @@ def validate_batch_outputs(output_paths: List[Path]) -> None:
             # Validate compatibility
             validation = validate_dataset_compatibility(output_path)
 
-            if validation['valid_dataset']:
+            if validation["valid_dataset"]:
                 print(f"✅ Valid dataset")
                 valid_count += 1
             else:
                 print(f"⚠️  Issues found:")
-                for category in ['surface', 'static', 'vertical']:
-                    missing_key = f'missing_{category}_vars'
+                for category in ["surface", "static", "vertical"]:
+                    missing_key = f"missing_{category}_vars"
                     if validation[missing_key]:
                         print(f"   Missing {category} vars: {validation[missing_key]}")
 
@@ -207,8 +206,8 @@ def validate_batch_outputs(output_paths: List[Path]) -> None:
             total_size = output_path.stat().st_size / (1024**3)  # GB
             print(f"   Size: {total_size:.2f} GB")
 
-            if 'surface_shape' in info:
-                time_steps = info['surface_shape'][0]
+            if "surface_shape" in info:
+                time_steps = info["surface_shape"][0]
                 print(f"   Time steps: {time_steps}")
 
         except Exception as e:
@@ -219,8 +218,9 @@ def validate_batch_outputs(output_paths: List[Path]) -> None:
     print(f"📊 Validation summary: {valid_count}/{len(output_paths)} datasets are valid")
 
 
-def create_combined_dataset(output_paths: List[Path],
-                          combined_output_path: str = "./combined_dataset.npz") -> Path:
+def create_combined_dataset(
+    output_paths: List[Path], combined_output_path: str = "./combined_dataset.npz"
+) -> Path:
     """
     Combine multiple processed datasets into a single file.
 
@@ -233,9 +233,10 @@ def create_combined_dataset(output_paths: List[Path],
     """
     print(f"\n=== Combining {len(output_paths)} Datasets ===\n")
 
-    import numpy as np
     import json
     from datetime import datetime
+
+    import numpy as np
 
     # Load all datasets
     all_surface_data = []
@@ -252,23 +253,23 @@ def create_combined_dataset(output_paths: List[Path],
 
         if i == 0:
             # Use first dataset as reference for static data and variables
-            reference_static = data['static']
+            reference_static = data["static"]
             reference_vars = {
-                'surface_vars': data['surface_vars'].tolist(),
-                'static_vars': data['static_vars'].tolist(),
-                'vertical_vars': data['vertical_vars'].tolist()
+                "surface_vars": data["surface_vars"].tolist(),
+                "static_vars": data["static_vars"].tolist(),
+                "vertical_vars": data["vertical_vars"].tolist(),
             }
-            reference_coords = data['coordinates'].item()
+            reference_coords = data["coordinates"].item()
 
         # Accumulate time-varying data
-        if data['surface'] is not None:
-            all_surface_data.append(data['surface'])
-        if data['vertical'] is not None:
-            all_vertical_data.append(data['vertical'])
+        if data["surface"] is not None:
+            all_surface_data.append(data["surface"])
+        if data["vertical"] is not None:
+            all_vertical_data.append(data["vertical"])
 
         # Accumulate time coordinates
-        coords = data['coordinates'].item()
-        all_times.extend(coords['time'])
+        coords = data["coordinates"].item()
+        all_times.extend(coords["time"])
 
     # Combine arrays
     print("🔗 Combining arrays...")
@@ -277,7 +278,7 @@ def create_combined_dataset(output_paths: List[Path],
 
     # Create combined coordinates
     combined_coords = reference_coords.copy()
-    combined_coords['time'] = all_times
+    combined_coords["time"] = all_times
 
     # Save combined dataset
     print(f"💾 Saving combined dataset to {combined_output_path}...")
@@ -291,21 +292,21 @@ def create_combined_dataset(output_paths: List[Path],
         static=reference_static,
         vertical=combined_vertical,
         coordinates=combined_coords,
-        **reference_vars
+        **reference_vars,
     )
 
     # Save metadata
     metadata = {
         **reference_vars,
-        'coordinates': combined_coords,
-        'creation_time': datetime.now().isoformat(),
-        'format_version': '1.0',
-        'source_files': [str(p) for p in output_paths],
-        'combined': True
+        "coordinates": combined_coords,
+        "creation_time": datetime.now().isoformat(),
+        "format_version": "1.0",
+        "source_files": [str(p) for p in output_paths],
+        "combined": True,
     }
 
-    metadata_path = combined_path.with_suffix('.metadata.json')
-    with open(metadata_path, 'w') as f:
+    metadata_path = combined_path.with_suffix(".metadata.json")
+    with open(metadata_path, "w") as f:
         json.dump(metadata, f, indent=2, default=str)
 
     print(f"✅ Combined dataset created: {combined_path}")
@@ -323,7 +324,7 @@ def main():
     print("=== MERRA-2 Dataset Processor - Batch Processing Example ===\n")
 
     # Check credentials
-    if not os.getenv('EARTHDATA_USERNAME') or not os.getenv('EARTHDATA_PASSWORD'):
+    if not os.getenv("EARTHDATA_USERNAME") or not os.getenv("EARTHDATA_PASSWORD"):
         print("⚠️  WARNING: NASA Earthdata credentials not found!")
         print("Set EARTHDATA_USERNAME and EARTHDATA_PASSWORD environment variables")
         print("Continuing with demo mode...\n")
@@ -335,7 +336,7 @@ def main():
         months=[1, 2, 3],  # January, February, March
         temporal_resolution="3H",
         output_dir="./batch_output_3h",
-        max_workers=2
+        max_workers=2,
     )
 
     # Example 2: Process same period at multiple resolutions
@@ -344,7 +345,7 @@ def main():
         start_date="2020-01-01",
         end_date="2020-01-31",
         resolutions=["3H", "Monthly"],  # Skip 1H for demo
-        output_dir="./multi_res_output"
+        output_dir="./multi_res_output",
     )
 
     # Combine all outputs for validation
@@ -356,10 +357,7 @@ def main():
 
         # Create combined dataset (only from 3-hourly data)
         if output_paths_3h:
-            combined_path = create_combined_dataset(
-                output_paths_3h,
-                "./combined_q1_2020_3h.npz"
-            )
+            combined_path = create_combined_dataset(output_paths_3h, "./combined_q1_2020_3h.npz")
 
     print("\n🎉 Batch processing example completed!")
     print("\nGenerated datasets can be used for:")

@@ -6,15 +6,16 @@ This script attempts to run training with large language models on CPU
 using 36GB RAM with aggressive memory optimization techniques.
 """
 
+import gc
+import json
 import os
 import sys
-import torch
-import numpy as np
-from pathlib import Path
-from tqdm import tqdm
-import json
-import gc
 import warnings
+from pathlib import Path
+
+import numpy as np
+import torch
+from tqdm import tqdm
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -22,27 +23,32 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # Aggressive memory optimization
 torch.set_num_threads(2)
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "true"
+warnings.filterwarnings("ignore")
 
 print("🚀 Testing large language model training on CPU...")
 print(f"💾 Available RAM: ~36GB")
 
+
 def check_memory_usage():
     """Check current memory usage"""
     import psutil
+
     process = psutil.Process(os.getpid())
     memory_gb = process.memory_info().rss / 1024**3
     return memory_gb
+
 
 def clear_memory():
     """Aggressive memory cleanup"""
     gc.collect()
 
+
 # Try to load models without quantization (CPU compatible)
 try:
-    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
     print("✅ Transformers available")
 
     # Model options that should work without gating
@@ -50,7 +56,7 @@ try:
         ("microsoft/DialoGPT-large", "DialoGPT-Large (762M params)"),
         ("gpt2-large", "GPT-2 Large (774M params)"),
         ("gpt2-medium", "GPT-2 Medium (345M params)"),
-        ("microsoft/DialoGPT-medium", "DialoGPT-Medium (345M params)")
+        ("microsoft/DialoGPT-medium", "DialoGPT-Medium (345M params)"),
     ]
 
     model_name = None
@@ -78,7 +84,7 @@ try:
                 torch_dtype=torch.float32,  # Use float32 for CPU
                 device_map="cpu",
                 low_cpu_mem_usage=True,
-                use_cache=False  # Disable KV cache to save memory
+                use_cache=False,  # Disable KV cache to save memory
             )
 
             # Move to CPU explicitly
@@ -117,13 +123,16 @@ except Exception as e:
 # Import our fusion components
 try:
     from test_mock_training import MockPrithviEncoder
+
     print("✅ Successfully imported mock climate encoder")
 except ImportError as e:
     print(f"❌ Import error: {e}")
     sys.exit(1)
 
+
 class CPUOptimizedFusion(torch.nn.Module):
     """CPU-optimized fusion model"""
+
     def __init__(self, text_model, climate_dim=64):  # Very small climate dim
         super().__init__()
 
@@ -139,9 +148,7 @@ class CPUOptimizedFusion(torch.nn.Module):
 
         # Small cross attention
         self.cross_attention = torch.nn.MultiheadAttention(
-            embed_dim=self.text_hidden_size,
-            num_heads=2,  # Very small
-            batch_first=True
+            embed_dim=self.text_hidden_size, num_heads=2, batch_first=True  # Very small
         )
 
         # Freeze text model to save memory and computation
@@ -162,9 +169,7 @@ class CPUOptimizedFusion(torch.nn.Module):
 
         # Simple cross attention
         fused_features, _ = self.cross_attention(
-            query=text_embeddings,
-            key=projected_climate,
-            value=projected_climate
+            query=text_embeddings, key=projected_climate, value=projected_climate
         )
 
         # Simple output (avoid using full LM head)
@@ -177,10 +182,12 @@ class CPUOptimizedFusion(torch.nn.Module):
 
         output_logits = torch.nn.functional.linear(fused_features, subset_weight)
 
-        return type('Output', (), {'logits': output_logits})()
+        return type("Output", (), {"logits": output_logits})()
+
 
 class MicroDataset:
     """Micro dataset for testing"""
+
     def __init__(self, num_samples=2, seq_length=8):  # Tiny
         self.num_samples = num_samples
         self.seq_length = seq_length
@@ -203,11 +210,12 @@ class MicroDataset:
 
     def __getitem__(self, idx):
         return {
-            'climate_data': self.climate_data[idx],
-            'input_ids': self.input_ids[idx],
-            'attention_mask': self.attention_mask[idx],
-            'labels': self.labels[idx]
+            "climate_data": self.climate_data[idx],
+            "input_ids": self.input_ids[idx],
+            "attention_mask": self.attention_mask[idx],
+            "labels": self.labels[idx],
         }
+
 
 def main():
     print(f"\n🏗️ Setting up CPU-optimized fusion model...")
@@ -242,11 +250,11 @@ def main():
         batch_size=1,
         shuffle=False,
         collate_fn=lambda batch: {
-            'climate_data': torch.stack([item['climate_data'] for item in batch]),
-            'input_ids': torch.stack([item['input_ids'] for item in batch]),
-            'attention_mask': torch.stack([item['attention_mask'] for item in batch]),
-            'labels': torch.stack([item['labels'] for item in batch])
-        }
+            "climate_data": torch.stack([item["climate_data"] for item in batch]),
+            "input_ids": torch.stack([item["input_ids"] for item in batch]),
+            "attention_mask": torch.stack([item["attention_mask"] for item in batch]),
+            "labels": torch.stack([item["labels"] for item in batch]),
+        },
     )
 
     print(f"✅ Dataset created: {len(dataset)} samples")
@@ -260,9 +268,9 @@ def main():
         with torch.no_grad():
             sample_batch = next(iter(dataloader))
 
-            climate_data = sample_batch['climate_data']
-            input_ids = sample_batch['input_ids']
-            attention_mask = sample_batch['attention_mask']
+            climate_data = sample_batch["climate_data"]
+            input_ids = sample_batch["input_ids"]
+            attention_mask = sample_batch["attention_mask"]
 
             print(f"Input shapes:")
             print(f"  Climate: {climate_data.shape}")
@@ -295,16 +303,14 @@ def main():
 
         # Optimizer only for trainable parameters
         optimizer = torch.optim.AdamW(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            lr=1e-4,
-            weight_decay=0.01
+            [p for p in fusion_model.parameters() if p.requires_grad], lr=1e-4, weight_decay=0.01
         )
 
         sample_batch = next(iter(dataloader))
-        climate_data = sample_batch['climate_data']
-        input_ids = sample_batch['input_ids']
-        attention_mask = sample_batch['attention_mask']
-        labels = sample_batch['labels']
+        climate_data = sample_batch["climate_data"]
+        input_ids = sample_batch["input_ids"]
+        attention_mask = sample_batch["attention_mask"]
+        labels = sample_batch["labels"]
 
         memory_before = check_memory_usage()
         print(f"💾 RAM before training step: {memory_before:.2f} GB")
@@ -315,7 +321,7 @@ def main():
         # Compute loss (only for subset vocab)
         loss = torch.nn.functional.cross_entropy(
             outputs.logits.view(-1, outputs.logits.size(-1)),
-            labels.view(-1) % 1000  # Clamp to subset vocab
+            labels.view(-1) % 1000,  # Clamp to subset vocab
         )
 
         print(f"📊 Loss: {loss.item():.4f}")
@@ -331,8 +337,7 @@ def main():
 
         # Gradient norm
         grad_norm = torch.nn.utils.clip_grad_norm_(
-            [p for p in fusion_model.parameters() if p.requires_grad],
-            max_norm=1.0
+            [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
         )
         print(f"🔧 Gradient norm: {grad_norm:.4f}")
 
@@ -363,18 +368,17 @@ def main():
             if step >= 2:  # Only 2 steps
                 break
 
-            climate_data = batch['climate_data']
-            input_ids = batch['input_ids']
-            attention_mask = batch['attention_mask']
-            labels = batch['labels']
+            climate_data = batch["climate_data"]
+            input_ids = batch["input_ids"]
+            attention_mask = batch["attention_mask"]
+            labels = batch["labels"]
 
             # Forward pass
             outputs = fusion_model(climate_data, input_ids, attention_mask)
 
             # Compute loss
             loss = torch.nn.functional.cross_entropy(
-                outputs.logits.view(-1, outputs.logits.size(-1)),
-                labels.view(-1) % 1000
+                outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1) % 1000
             )
 
             # Backward pass
@@ -383,8 +387,7 @@ def main():
 
             # Gradient clipping
             grad_norm = torch.nn.utils.clip_grad_norm_(
-                [p for p in fusion_model.parameters() if p.requires_grad],
-                max_norm=1.0
+                [p for p in fusion_model.parameters() if p.requires_grad], max_norm=1.0
             )
 
             # Optimizer step
@@ -392,7 +395,9 @@ def main():
 
             memory_gb = check_memory_usage()
 
-            print(f"Step {step+1}: Loss={loss.item():.4f}, GradNorm={grad_norm:.3f}, RAM={memory_gb:.1f}GB")
+            print(
+                f"Step {step+1}: Loss={loss.item():.4f}, GradNorm={grad_norm:.3f}, RAM={memory_gb:.1f}GB"
+            )
 
             clear_memory()
 
@@ -419,6 +424,7 @@ def main():
     print(f"  • Freezing large model and training only fusion layers works")
     print(f"  • {total_params//1000000}M parameter models fit comfortably in 36GB RAM")
     print(f"  • For Llama-3-8B: Would need ~24-32GB just for model weights")
+
 
 if __name__ == "__main__":
     main()

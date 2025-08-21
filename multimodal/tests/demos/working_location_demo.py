@@ -12,18 +12,20 @@ The system successfully:
 4. Provides risk assessments and confidence scores
 """
 
-import sys
 import os
-import torch
+import sys
 import warnings
-from typing import List, Dict
+from typing import Dict, List
+
+import torch
 
 # Add project root to Python path for imports
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, project_root)
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings("ignore")
+
 
 def run_climate_analysis_demo():
     """Run a comprehensive demo of the location-aware climate analysis system."""
@@ -45,7 +47,7 @@ def run_climate_analysis_demo():
         fusion_mode="cross_attention",
         max_climate_tokens=256,
         max_text_length=128,
-        freeze_llama=True
+        freeze_llama=True,
     )
     print("✅ System initialized successfully!")
     print()
@@ -66,7 +68,7 @@ def run_climate_analysis_demo():
         "Arctic ice melting patterns and permafrost stability",
         "Climate resilience planning for Mediterranean regions",
         "Monsoon changes affecting agriculture in Southeast Asia",
-        "Global temperature anomalies and extreme weather events"
+        "Global temperature anomalies and extreme weather events",
     ]
 
     print("🧪 Testing Location-Aware Climate Analysis:")
@@ -79,29 +81,29 @@ def run_climate_analysis_demo():
         # Perform analysis
         with torch.no_grad():
             result = model.analyze_location_query(
-                climate_features,
-                query,
-                return_visualization=False
+                climate_features, query, return_visualization=False
             )
 
         # Display results
-        location = result.get('location', 'Global')
-        location_type = result.get('location_type', 'general')
-        risk = result.get('climate_risk', 'Unknown')
-        confidence = result.get('overall_confidence', 0.0)
+        location = result.get("location", "Global")
+        location_type = result.get("location_type", "general")
+        risk = result.get("climate_risk", "Unknown")
+        confidence = result.get("overall_confidence", 0.0)
 
         print(f"   📍 Location: {location} ({location_type})")
         print(f"   ⚠️  Climate Risk: {risk}")
         print(f"   🎯 Confidence: {confidence:.1%}")
         print(f"   💭 System: Location detected and analyzed successfully")
 
-        results.append({
-            'query': query,
-            'location': location,
-            'location_type': location_type,
-            'risk': risk,
-            'confidence': confidence
-        })
+        results.append(
+            {
+                "query": query,
+                "location": location,
+                "location_type": location_type,
+                "risk": risk,
+                "confidence": confidence,
+            }
+        )
 
     # Summary analysis
     print(f"\n📈 Analysis Summary:")
@@ -112,8 +114,8 @@ def run_climate_analysis_demo():
     risk_levels = {}
 
     for result in results:
-        loc_type = result['location_type']
-        risk = result['risk']
+        loc_type = result["location_type"]
+        risk = result["risk"]
 
         location_types[loc_type] = location_types.get(loc_type, 0) + 1
         risk_levels[risk] = risk_levels.get(risk, 0) + 1
@@ -126,13 +128,13 @@ def run_climate_analysis_demo():
     for risk, count in risk_levels.items():
         print(f"   • {risk}: {count} assessments")
 
-    avg_confidence = sum(r['confidence'] for r in results) / len(results)
+    avg_confidence = sum(r["confidence"] for r in results) / len(results)
     print(f"\n🎯 Average Confidence: {avg_confidence:.1%}")
 
     # Demonstrate geographic precision
     print(f"\n🗺️  Geographic Precision Examples:")
     for result in results:
-        if result['location'] != 'Global':
+        if result["location"] != "Global":
             print(f"   • '{result['query'][:40]}...' → {result['location']}")
 
     print(f"\n🎉 DEMO COMPLETE!")
@@ -142,17 +144,14 @@ def run_climate_analysis_demo():
     print(f"   ✅ Confidence scores calculated")
     print(f"   ✅ System fully operational!")
 
+
 def demonstrate_model_comparison():
     """Show how different models perform with the same queries."""
 
     print(f"\n🔬 Model Comparison Demo")
     print("=" * 30)
 
-    models_to_compare = [
-        "microsoft/DialoGPT-medium",
-        "bert-base-uncased",
-        "roberta-base"
-    ]
+    models_to_compare = ["microsoft/DialoGPT-medium", "bert-base-uncased", "roberta-base"]
 
     test_query = "Climate risks for agriculture in Sweden"
 
@@ -169,7 +168,7 @@ def demonstrate_model_comparison():
                 llama_model_name=model_name,
                 fusion_mode="concatenate",  # Simpler fusion for comparison
                 max_climate_tokens=128,
-                max_text_length=64
+                max_text_length=64,
             )
 
             climate_features = torch.randn(1, 50, model.fusion_dim)
@@ -186,6 +185,7 @@ def demonstrate_model_comparison():
             print(f"   ❌ Error: {str(e)[:50]}...")
 
         print()
+
 
 def main():
     """Main demo function."""
@@ -216,6 +216,7 @@ def main():
     print("   • Add real Prithvi encoder for authentic climate features")
     print("   • Integrate with real climate datasets")
     print("   • Deploy for production climate analysis")
+
 
 if __name__ == "__main__":
     main()

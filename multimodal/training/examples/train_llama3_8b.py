@@ -8,14 +8,15 @@ This script is optimized for training with the full Llama-3-8B model
 using our proven climate-text fusion architecture.
 """
 
+import gc
 import os
 import sys
-import torch
-import numpy as np
-from pathlib import Path
-import warnings
 import time
-import gc
+import warnings
+from pathlib import Path
+
+import numpy as np
+import torch
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -23,20 +24,24 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # Memory optimization settings
 torch.set_num_threads(2)  # Slightly more threads for 8B model
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+warnings.filterwarnings("ignore")
+
 
 def check_memory_usage():
     """Check current memory usage"""
     import psutil
+
     process = psutil.Process(os.getpid())
     memory_gb = process.memory_info().rss / 1024**3
     return memory_gb
+
 
 def clear_memory():
     """Aggressive memory cleanup"""
     gc.collect()
     torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
 
 print("🦙 Llama-3-8B Climate-Text Fusion Training")
 print("🎯 Target: Full 8B parameter language model with climate fusion")
@@ -45,6 +50,7 @@ print("🎯 Target: Full 8B parameter language model with climate fusion")
 total_ram = 36.0  # Your system
 current_memory = check_memory_usage()
 print(f"💾 System RAM: {total_ram}GB, Current usage: {current_memory:.1f}GB")
+
 
 class Llama3ClimateTextFusion(torch.nn.Module):
     """
@@ -59,7 +65,7 @@ class Llama3ClimateTextFusion(torch.nn.Module):
 
         # Load Llama-3-8B (requires HuggingFace approval)
         try:
-            from transformers import AutoTokenizer, AutoModelForCausalLM
+            from transformers import AutoModelForCausalLM, AutoTokenizer
 
             print(f"📥 Loading tokenizer...")
             self.tokenizer = AutoTokenizer.from_pretrained(text_model_name)
@@ -70,9 +76,9 @@ class Llama3ClimateTextFusion(torch.nn.Module):
             self.text_model = AutoModelForCausalLM.from_pretrained(
                 text_model_name,
                 torch_dtype=torch.float32,  # Full precision for training
-                device_map="cpu",           # CPU-based training
-                low_cpu_mem_usage=True,     # Memory optimization
-                use_cache=False,            # Disable KV cache for training
+                device_map="cpu",  # CPU-based training
+                low_cpu_mem_usage=True,  # Memory optimization
+                use_cache=False,  # Disable KV cache for training
             )
 
             model_params = sum(p.numel() for p in self.text_model.parameters())
@@ -94,7 +100,7 @@ class Llama3ClimateTextFusion(torch.nn.Module):
             torch.nn.Flatten(),
             torch.nn.Linear(256 * 8 * 8, climate_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(climate_dim, climate_dim)
+            torch.nn.Linear(climate_dim, climate_dim),
         )
 
         # Get text model dimensions
@@ -106,14 +112,14 @@ class Llama3ClimateTextFusion(torch.nn.Module):
             torch.nn.LayerNorm(self.text_hidden_size),
             torch.nn.GELU(),
             torch.nn.Linear(self.text_hidden_size, self.text_hidden_size),
-            torch.nn.LayerNorm(self.text_hidden_size)
+            torch.nn.LayerNorm(self.text_hidden_size),
         )
 
         # Cross-attention fusion (optimized for Llama-3)
         self.fusion_attention = torch.nn.MultiheadAttention(
             embed_dim=self.text_hidden_size,
             num_heads=32,  # Llama-3-8B has 32 attention heads
-            batch_first=True
+            batch_first=True,
         )
 
         self.fusion_norm = torch.nn.LayerNorm(self.text_hidden_size)
@@ -161,9 +167,7 @@ class Llama3ClimateTextFusion(torch.nn.Module):
 
         # Cross-attention fusion
         fused_features, _ = self.fusion_attention(
-            query=text_embeddings,
-            key=projected_climate,
-            value=projected_climate
+            query=text_embeddings, key=projected_climate, value=projected_climate
         )
 
         # Residual connection and normalization
@@ -172,7 +176,8 @@ class Llama3ClimateTextFusion(torch.nn.Module):
         # Output projection
         logits = self.output_projection(fused_features)
 
-        return type('Output', (), {'logits': logits})()
+        return type("Output", (), {"logits": logits})()
+
 
 class ClimateTextDataset:
     """Dataset for climate-text training"""
@@ -202,21 +207,18 @@ class ClimateTextDataset:
 
         # Tokenize
         encoding = self.tokenizer(
-            text,
-            max_length=64,
-            padding='max_length',
-            truncation=True,
-            return_tensors='pt'
+            text, max_length=64, padding="max_length", truncation=True, return_tensors="pt"
         )
 
         # Generate synthetic climate data
         climate_data = torch.randn(4, 20, 16, 16)  # [time, channels, H, W]
 
         return {
-            'climate_data': climate_data,
-            'input_ids': encoding['input_ids'].squeeze(),
-            'labels': encoding['input_ids'].squeeze()  # Same as input for language modeling
+            "climate_data": climate_data,
+            "input_ids": encoding["input_ids"].squeeze(),
+            "labels": encoding["input_ids"].squeeze(),  # Same as input for language modeling
         }
+
 
 def train_llama3_fusion():
     """Main training function"""
@@ -240,11 +242,12 @@ def train_llama3_fusion():
 
         # Create data loader
         from torch.utils.data import DataLoader
+
         dataloader = DataLoader(
             dataset,
             batch_size=1,  # Small batch for memory efficiency
             shuffle=True,
-            num_workers=0  # No multiprocessing for memory control
+            num_workers=0,  # No multiprocessing for memory control
         )
 
         # Optimizer (only trainable parameters)
@@ -274,14 +277,13 @@ def train_llama3_fusion():
 
                 # Forward pass
                 outputs = model(
-                    batch['climate_data'],  # Remove extra unsqueeze
-                    batch['input_ids'].unsqueeze(0)
+                    batch["climate_data"], batch["input_ids"].unsqueeze(0)  # Remove extra unsqueeze
                 )
 
                 # Calculate loss
                 loss = torch.nn.functional.cross_entropy(
                     outputs.logits.view(-1, outputs.logits.size(-1)),
-                    batch['labels'].unsqueeze(0).view(-1)
+                    batch["labels"].unsqueeze(0).view(-1),
                 )
 
                 # Backward pass
@@ -298,11 +300,13 @@ def train_llama3_fusion():
 
                 current_memory = check_memory_usage()
 
-                print(f"Epoch {epoch+1}, Step {step+1}: "
-                      f"Loss={loss.item():.4f}, "
-                      f"GradNorm={grad_norm:.4f}, "
-                      f"Time={step_time:.2f}s, "
-                      f"Memory={current_memory:.1f}GB")
+                print(
+                    f"Epoch {epoch+1}, Step {step+1}: "
+                    f"Loss={loss.item():.4f}, "
+                    f"GradNorm={grad_norm:.4f}, "
+                    f"Time={step_time:.2f}s, "
+                    f"Memory={current_memory:.1f}GB"
+                )
 
                 # Memory cleanup
                 clear_memory()
@@ -310,9 +314,11 @@ def train_llama3_fusion():
             epoch_time = time.time() - epoch_start
             avg_loss = epoch_loss / min(10, len(dataloader))
 
-            print(f"✅ Epoch {epoch+1} completed: "
-                  f"AvgLoss={avg_loss:.4f}, "
-                  f"Time={epoch_time:.1f}s")
+            print(
+                f"✅ Epoch {epoch+1} completed: "
+                f"AvgLoss={avg_loss:.4f}, "
+                f"Time={epoch_time:.1f}s"
+            )
 
         final_memory = check_memory_usage()
         print(f"\n🎉 Training completed successfully!")
@@ -321,17 +327,22 @@ def train_llama3_fusion():
 
         # Save model if successful
         save_path = Path(__file__).parent / "llama3_climate_fusion.pt"
-        torch.save({
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-        }, save_path)
+        torch.save(
+            {
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+            },
+            save_path,
+        )
 
         print(f"💾 Model saved to: {save_path}")
 
     except Exception as e:
         print(f"❌ Training failed: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     # NOTE: This requires HuggingFace approval for Llama-3

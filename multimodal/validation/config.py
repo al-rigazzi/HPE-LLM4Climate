@@ -4,6 +4,7 @@ from typing import Optional
 
 import yaml
 
+
 class DataConfig:
     def __init__(
         self,
@@ -139,11 +140,11 @@ class ExperimentConfig:
 
     @property
     def path_checkpoint(self) -> str:
-        if self.path_experiment == '':
-            return os.path.join(self.path_weights, 'train', 'checkpoint.pt')
+        if self.path_experiment == "":
+            return os.path.join(self.path_weights, "train", "checkpoint.pt")
         else:
             return os.path.join(
-                os.path.dirname(self.path_experiment), 'weights', 'train', 'checkpoint.pt'
+                os.path.dirname(self.path_experiment), "weights", "train", "checkpoint.pt"
             )
 
     @property
@@ -172,8 +173,8 @@ class ExperimentConfig:
     @staticmethod
     def from_dict(params: dict):
         return ExperimentConfig(
-            data_config=DataConfig(**params['data']),
-            model_config=ModelConfig(**params['model']),
+            data_config=DataConfig(**params["data"]),
+            model_config=ModelConfig(**params["model"]),
             **params,
         )
 
@@ -206,6 +207,7 @@ class ExperimentConfig:
             f"DL workers: {self.dl_num_workers}"
         )
 
+
 def get_config(config_path: str) -> ExperimentConfig:
-    cfg = yaml.safe_load(open(config_path, 'r'))
+    cfg = yaml.safe_load(open(config_path, "r"))
     return ExperimentConfig.from_dict(cfg)

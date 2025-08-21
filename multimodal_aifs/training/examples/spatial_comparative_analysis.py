@@ -18,15 +18,16 @@ Example questions it can handle:
 """
 
 import os
-import sys
-import torch
-import numpy as np
 import re
-from pathlib import Path
-import matplotlib.pyplot as plt
-import warnings
+import sys
 import time
-from typing import List, Dict, Tuple, Optional, Any
+import warnings
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -34,8 +35,9 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 # GeoPy for dynamic location resolution
 try:
+    from geopy.exc import GeocoderServiceError, GeocoderTimedOut
     from geopy.geocoders import Nominatim
-    from geopy.exc import GeocoderTimedOut, GeocoderServiceError
+
     GEOPY_AVAILABLE = True
 except ImportError:
     GEOPY_AVAILABLE = False
@@ -43,16 +45,20 @@ except ImportError:
 
 # Memory optimization
 torch.set_num_threads(1)
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-warnings.filterwarnings('ignore')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+warnings.filterwarnings("ignore")
+
 
 def check_memory_usage():
     import psutil
+
     process = psutil.Process(os.getpid())
     return process.memory_info().rss / 1024**3
 
+
 print("🌍 Spatial Comparative Climate Analysis Demo")
 print("📊 Demonstrating multi-location climate comparison")
+
 
 class DynamicLocationResolver:
     """Dynamic location resolver using GeoPy and Nominatim"""
@@ -63,31 +69,52 @@ class DynamicLocationResolver:
         self._cache = {}  # Cache resolved locations
 
         if self.use_geopy:
-            self.geocoder = Nominatim(
-                user_agent="climate-analysis-demo",
-                timeout=self.timeout
-            )
+            self.geocoder = Nominatim(user_agent="climate-analysis-demo", timeout=self.timeout)
             print("🌍 Using GeoPy/Nominatim for dynamic location resolution")
         else:
             print("⚠️  Using fallback location resolution (limited coverage)")
             # Minimal fallback database for demo when GeoPy not available
             self.fallback_db = {
                 "arizona": {
-                    "bounds": {"lat_min": 31.3, "lat_max": 37.0, "lon_min": -114.8, "lon_max": -109.0},
-                    "center": {"lat": 34.15, "lon": -111.9}, "type": "state"
+                    "bounds": {
+                        "lat_min": 31.3,
+                        "lat_max": 37.0,
+                        "lon_min": -114.8,
+                        "lon_max": -109.0,
+                    },
+                    "center": {"lat": 34.15, "lon": -111.9},
+                    "type": "state",
                 },
                 "alaska": {
-                    "bounds": {"lat_min": 54.7, "lat_max": 71.4, "lon_min": -179.1, "lon_max": -129.0},
-                    "center": {"lat": 63.05, "lon": -154.05}, "type": "state"
+                    "bounds": {
+                        "lat_min": 54.7,
+                        "lat_max": 71.4,
+                        "lon_min": -179.1,
+                        "lon_max": -129.0,
+                    },
+                    "center": {"lat": 63.05, "lon": -154.05},
+                    "type": "state",
                 },
                 "california": {
-                    "bounds": {"lat_min": 32.5, "lat_max": 42.0, "lon_min": -124.4, "lon_max": -114.1},
-                    "center": {"lat": 37.25, "lon": -119.25}, "type": "state"
+                    "bounds": {
+                        "lat_min": 32.5,
+                        "lat_max": 42.0,
+                        "lon_min": -124.4,
+                        "lon_max": -114.1,
+                    },
+                    "center": {"lat": 37.25, "lon": -119.25},
+                    "type": "state",
                 },
                 "texas": {
-                    "bounds": {"lat_min": 25.8, "lat_max": 36.5, "lon_min": -106.6, "lon_max": -93.5},
-                    "center": {"lat": 31.15, "lon": -100.05}, "type": "state"
-                }
+                    "bounds": {
+                        "lat_min": 25.8,
+                        "lat_max": 36.5,
+                        "lon_min": -106.6,
+                        "lon_max": -93.5,
+                    },
+                    "center": {"lat": 31.15, "lon": -100.05},
+                    "type": "state",
+                },
             }
 
     def resolve_location(self, location_name: str) -> Optional[Dict]:
@@ -117,15 +144,16 @@ class DynamicLocationResolver:
     def _is_coordinate_string(self, location_name: str) -> bool:
         """Check if the location string is actually coordinates"""
         import re
+
         # Check for patterns like "47.29°,-120.21°" or "47.29°, -120.21°"
-        coord_pattern = r'^(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?$'
+        coord_pattern = r"^(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?$"
         return bool(re.match(coord_pattern, location_name.strip()))
 
     def _resolve_coordinates(self, coord_string: str) -> Optional[Dict]:
         """Resolve coordinate string to location info"""
         import re
 
-        coord_pattern = r'^(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?$'
+        coord_pattern = r"^(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?$"
         match = re.match(coord_pattern, coord_string.strip())
 
         if not match:
@@ -142,10 +170,10 @@ class DynamicLocationResolver:
             # Create a small bounding box around the point
             margin = 0.5  # degrees
             bounds = {
-                'lat_min': lat - margin,
-                'lat_max': lat + margin,
-                'lon_min': lon - margin,
-                'lon_max': lon + margin
+                "lat_min": lat - margin,
+                "lat_max": lat + margin,
+                "lon_min": lon - margin,
+                "lon_max": lon + margin,
             }
 
             # Try reverse geocoding to get location name if GeoPy is available
@@ -163,16 +191,13 @@ class DynamicLocationResolver:
                     print(f"⚠️  Reverse geocoding failed for {coord_string}: {e}")
 
             result = {
-                'name': coord_string,
-                'bounds': bounds,
-                'center': {
-                    'lat': lat,
-                    'lon': lon
-                },
-                'type': location_type,
-                'confidence': 1.0,  # Coordinates are exact
-                'address': address,
-                'raw': {'lat': lat, 'lon': lon}
+                "name": coord_string,
+                "bounds": bounds,
+                "center": {"lat": lat, "lon": lon},
+                "type": location_type,
+                "confidence": 1.0,  # Coordinates are exact
+                "address": address,
+                "raw": {"lat": lat, "lon": lon},
             }
 
             # Cache the result
@@ -181,7 +206,9 @@ class DynamicLocationResolver:
 
             print(f"✅ Resolved coordinates: {address}")
             print(f"   📍 Center: {lat:.2f}°, {lon:.2f}°")
-            print(f"   📏 Bounds: {bounds['lat_min']:.1f} to {bounds['lat_max']:.1f}°N, {bounds['lon_min']:.1f} to {bounds['lon_max']:.1f}°E")
+            print(
+                f"   📏 Bounds: {bounds['lat_min']:.1f} to {bounds['lat_max']:.1f}°N, {bounds['lon_min']:.1f} to {bounds['lon_max']:.1f}°E"
+            )
 
             return result
 
@@ -199,7 +226,7 @@ class DynamicLocationResolver:
                 location_name,
                 exactly_one=False,
                 limit=5,  # Get up to 5 candidates
-                timeout=self.timeout
+                timeout=self.timeout,
             )
 
             if not locations:
@@ -216,40 +243,37 @@ class DynamicLocationResolver:
                 return None
 
             # Get bounding box - try to get from location first
-            if hasattr(best_location, 'raw') and 'boundingbox' in best_location.raw:
-                bbox = best_location.raw['boundingbox']
+            if hasattr(best_location, "raw") and "boundingbox" in best_location.raw:
+                bbox = best_location.raw["boundingbox"]
                 bounds = {
-                    'lat_min': float(bbox[0]),
-                    'lat_max': float(bbox[1]),
-                    'lon_min': float(bbox[2]),
-                    'lon_max': float(bbox[3])
+                    "lat_min": float(bbox[0]),
+                    "lat_max": float(bbox[1]),
+                    "lon_min": float(bbox[2]),
+                    "lon_max": float(bbox[3]),
                 }
             else:
                 # Fallback: create small bounding box around point
                 lat, lon = best_location.latitude, best_location.longitude
                 margin = 1.0  # degrees
                 bounds = {
-                    'lat_min': lat - margin,
-                    'lat_max': lat + margin,
-                    'lon_min': lon - margin,
-                    'lon_max': lon + margin
+                    "lat_min": lat - margin,
+                    "lat_max": lat + margin,
+                    "lon_min": lon - margin,
+                    "lon_max": lon + margin,
                 }
 
             # Determine location type from Nominatim response
             location_type = self._determine_location_type(best_location.raw)
 
             result = {
-                'name': location_name,
-                'bounds': bounds,
-                'center': {
-                    'lat': best_location.latitude,
-                    'lon': best_location.longitude
-                },
-                'type': location_type,
-                'confidence': 1.0,  # Nominatim found it
-                'address': best_location.address,
-                'raw': best_location.raw,
-                'candidates_count': len(locations)
+                "name": location_name,
+                "bounds": bounds,
+                "center": {"lat": best_location.latitude, "lon": best_location.longitude},
+                "type": location_type,
+                "confidence": 1.0,  # Nominatim found it
+                "address": best_location.address,
+                "raw": best_location.raw,
+                "candidates_count": len(locations),
             }
 
             # Cache the result
@@ -258,7 +282,9 @@ class DynamicLocationResolver:
 
             print(f"✅ Selected best match: {best_location.address}")
             print(f"   📍 Center: {best_location.latitude:.2f}°, {best_location.longitude:.2f}°")
-            print(f"   📏 Bounds: {bounds['lat_min']:.1f} to {bounds['lat_max']:.1f}°N, {bounds['lon_min']:.1f} to {bounds['lon_max']:.1f}°E")
+            print(
+                f"   📏 Bounds: {bounds['lat_min']:.1f} to {bounds['lat_max']:.1f}°N, {bounds['lon_min']:.1f} to {bounds['lon_max']:.1f}°E"
+            )
             print(f"   🎯 Selected from {len(locations)} candidates")
 
             return result
@@ -290,8 +316,10 @@ class DynamicLocationResolver:
         print(f"   📋 Evaluating candidates:")
         for i, candidate in enumerate(candidates):
             loc_type = self._determine_location_type(candidate.raw)
-            importance = candidate.raw.get('importance', 0)
-            print(f"      {i+1}. {candidate.address} (type: {loc_type}, importance: {importance:.3f})")
+            importance = candidate.raw.get("importance", 0)
+            print(
+                f"      {i+1}. {candidate.address} (type: {loc_type}, importance: {importance:.3f})"
+            )
 
         query_lower = query.lower().strip()
 
@@ -317,7 +345,7 @@ class DynamicLocationResolver:
         address = candidate.address.lower()
         raw = candidate.raw
         location_type = self._determine_location_type(raw)
-        importance = raw.get('importance', 0.5)
+        importance = raw.get("importance", 0.5)
 
         # 1. Exact name match bonus
         if query in address:
@@ -325,14 +353,14 @@ class DynamicLocationResolver:
 
         # 2. Location type preferences (states/countries over cities, major cities over towns)
         type_scores = {
-            'state': 1.8,
-            'country': 1.5,
-            'province': 1.5,
-            'region': 1.3,
-            'city': 1.0,
-            'town': 0.8,
-            'village': 0.6,
-            'unknown': 0.5
+            "state": 1.8,
+            "country": 1.5,
+            "province": 1.5,
+            "region": 1.3,
+            "city": 1.0,
+            "town": 0.8,
+            "village": 0.6,
+            "unknown": 0.5,
         }
         score += type_scores.get(location_type, 0.5)
 
@@ -340,11 +368,11 @@ class DynamicLocationResolver:
         score += importance * 2.0  # Double weight for importance
 
         # 4. Prefer results with bounding boxes (better geographic data)
-        if 'boundingbox' in raw:
+        if "boundingbox" in raw:
             score += 0.5
 
         # 5. Avoid very specific addresses for general queries
-        if 'house_number' in raw and len(query.split()) <= 2:
+        if "house_number" in raw and len(query.split()) <= 2:
             score -= 0.5
 
         # 6. Strong boost for major international cities by checking importance thresholds
@@ -354,8 +382,11 @@ class DynamicLocationResolver:
             score += 1.0  # Significant location bonus
 
         # 7. Strong penalty for very small US towns when query could be international
-        if (importance < 0.3 and 'united states' in address.lower() and
-            location_type in ['city', 'town', 'village']):
+        if (
+            importance < 0.3
+            and "united states" in address.lower()
+            and location_type in ["city", "town", "village"]
+        ):
             score -= 1.0  # Stronger penalty
 
         return score
@@ -366,8 +397,8 @@ class DynamicLocationResolver:
 
         if cache_key in self.fallback_db:
             result = self.fallback_db[cache_key].copy()
-            result['name'] = location_name
-            result['confidence'] = 0.8  # Lower confidence for fallback
+            result["name"] = location_name
+            result["confidence"] = 0.8  # Lower confidence for fallback
             self._cache[cache_key] = result
             print(f"✅ Resolved '{location_name}' using fallback database")
             return result
@@ -377,38 +408,38 @@ class DynamicLocationResolver:
 
     def _determine_location_type(self, raw_data: Dict) -> str:
         """Determine location type from Nominatim raw data"""
-        if 'type' in raw_data:
-            osm_type = raw_data['type']
+        if "type" in raw_data:
+            osm_type = raw_data["type"]
 
             # Map OSM types to our categories
-            if osm_type in ['administrative']:
-                if 'place_rank' in raw_data:
-                    rank = raw_data['place_rank']
+            if osm_type in ["administrative"]:
+                if "place_rank" in raw_data:
+                    rank = raw_data["place_rank"]
                     if rank <= 4:
-                        return 'country'
+                        return "country"
                     elif rank <= 8:
-                        return 'state'
+                        return "state"
                     elif rank <= 12:
-                        return 'region'
+                        return "region"
                     else:
-                        return 'city'
-            elif osm_type in ['city', 'town', 'village']:
-                return 'city'
-            elif osm_type in ['country']:
-                return 'country'
-            elif osm_type in ['state']:
-                return 'state'
+                        return "city"
+            elif osm_type in ["city", "town", "village"]:
+                return "city"
+            elif osm_type in ["country"]:
+                return "country"
+            elif osm_type in ["state"]:
+                return "state"
 
         # Fallback: analyze address components
-        if 'display_name' in raw_data:
-            address = raw_data['display_name'].lower()
-            if any(keyword in address for keyword in ['united states', 'canada', 'australia']):
-                if any(keyword in address for keyword in ['state', 'province', 'territory']):
-                    return 'state'
-            if any(keyword in address for keyword in ['country']):
-                return 'country'
+        if "display_name" in raw_data:
+            address = raw_data["display_name"].lower()
+            if any(keyword in address for keyword in ["united states", "canada", "australia"]):
+                if any(keyword in address for keyword in ["state", "province", "territory"]):
+                    return "state"
+            if any(keyword in address for keyword in ["country"]):
+                return "country"
 
-        return 'region'  # Default
+        return "region"  # Default
 
     def bulk_resolve(self, location_names: List[str]) -> Dict[str, Optional[Dict]]:
         """Resolve multiple locations efficiently"""
@@ -430,21 +461,31 @@ class DynamicLocationResolver:
         main_location = self.resolve_location(location_name)
         return [main_location] if main_location else []
 
+
 class MultiLocationExtractor:
     """Extract and resolve multiple locations from comparative queries using dynamic resolution"""
 
     def __init__(self, use_geopy: bool = True):
         self.resolver = DynamicLocationResolver(use_geopy=use_geopy)
         self.comparative_patterns = [
-            r'\b(.*?)\s+(?:vs|versus|or|and)\s+(.*?)\b',
-            r'\b(?:between|compare)\s+(.*?)\s+(?:and|with)\s+(.*?)\b',
-            r'\b(?:which|where).*?(?:between|among)\s+(.*?)\s+(?:and|or)\s+(.*?)\b'
+            r"\b(.*?)\s+(?:vs|versus|or|and)\s+(.*?)\b",
+            r"\b(?:between|compare)\s+(.*?)\s+(?:and|with)\s+(.*?)\b",
+            r"\b(?:which|where).*?(?:between|among)\s+(.*?)\s+(?:and|or)\s+(.*?)\b",
         ]
 
         # Common location indicators for better extraction
         self.location_indicators = [
-            'city', 'state', 'country', 'province', 'region', 'county',
-            'island', 'continent', 'territory', 'district', 'area'
+            "city",
+            "state",
+            "country",
+            "province",
+            "region",
+            "county",
+            "island",
+            "continent",
+            "territory",
+            "district",
+            "area",
         ]
 
     def extract_locations(self, query: str) -> List[str]:
@@ -479,11 +520,11 @@ class MultiLocationExtractor:
 
         coordinate_patterns = [
             # Patterns like "47.29°, -120.21°" or "47.29, -120.21"
-            r'(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?',
+            r"(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?",
             # Patterns like "lat: 47.29, lon: -120.21"
-            r'lat\s*:\s*(-?\d+\.?\d*)\s*,\s*lon\s*:\s*(-?\d+\.?\d*)',
+            r"lat\s*:\s*(-?\d+\.?\d*)\s*,\s*lon\s*:\s*(-?\d+\.?\d*)",
             # Patterns like "(47.29, -120.21)"
-            r'\(\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)'
+            r"\(\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)",
         ]
 
         coordinates = []
@@ -515,13 +556,13 @@ class MultiLocationExtractor:
         # Enhanced patterns to handle coordinates and mixed formats
         enhanced_patterns = [
             # Original patterns
-            r'\b(.*?)\s+(?:vs|versus|or|and)\s+(.*?)\b',
-            r'\b(?:between|compare)\s+(.*?)\s+(?:and|with)\s+(.*?)\b',
-            r'\b(?:which|where).*?(?:between|among)\s+(.*?)\s+(?:and|or)\s+(.*?)\b',
+            r"\b(.*?)\s+(?:vs|versus|or|and)\s+(.*?)\b",
+            r"\b(?:between|compare)\s+(.*?)\s+(?:and|with)\s+(.*?)\b",
+            r"\b(?:which|where).*?(?:between|among)\s+(.*?)\s+(?:and|or)\s+(.*?)\b",
             # New patterns for "X be hotter than Y" format - improved for coordinates
-            r'(?:will\s+)?(.*?)\s+(?:be|is|will\s+be)\s+(?:hotter|colder|warmer|cooler|wetter|drier).*?than\s+(.*?)$',
+            r"(?:will\s+)?(.*?)\s+(?:be|is|will\s+be)\s+(?:hotter|colder|warmer|cooler|wetter|drier).*?than\s+(.*?)$",
             # Pattern for "X hotter than Y"
-            r'\b(.*?)\s+(?:hotter|colder|warmer|cooler|wetter|drier)\s+than\s+(.*?)$'
+            r"\b(.*?)\s+(?:hotter|colder|warmer|cooler|wetter|drier)\s+than\s+(.*?)$",
         ]
 
         for pattern in enhanced_patterns:
@@ -545,14 +586,40 @@ class MultiLocationExtractor:
         import re
 
         # Look for capitalized words (potential proper nouns)
-        words = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', query)
+        words = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", query)
 
         # Filter out common non-location words
         non_locations = {
-            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
-            'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
-            'September', 'October', 'November', 'December', 'Where', 'What', 'When',
-            'How', 'Why', 'Which', 'Compare', 'Between', 'Climate', 'Weather', 'Temperature'
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+            "Where",
+            "What",
+            "When",
+            "How",
+            "Why",
+            "Which",
+            "Compare",
+            "Between",
+            "Climate",
+            "Weather",
+            "Temperature",
         }
 
         potential_locations = [word for word in words if word not in non_locations]
@@ -570,7 +637,9 @@ class MultiLocationExtractor:
             return text
 
         # Remove common non-location words for regular text
-        clean_text = re.sub(r'\b(the|a|an|is|are|will|be|more|less|better|worse)\b', '', text, flags=re.IGNORECASE)
+        clean_text = re.sub(
+            r"\b(the|a|an|is|are|will|be|more|less|better|worse)\b", "", text, flags=re.IGNORECASE
+        )
         clean_text = clean_text.strip()
 
         # Extract the main location name (often the last significant word)
@@ -588,9 +657,9 @@ class MultiLocationExtractor:
     def _is_coordinate_pattern(self, text: str) -> bool:
         """Check if text matches coordinate patterns"""
         coord_patterns = [
-            r'(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?',
-            r'lat\s*:\s*(-?\d+\.?\d*)\s*,\s*lon\s*:\s*(-?\d+\.?\d*)',
-            r'\(\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)'
+            r"(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?",
+            r"lat\s*:\s*(-?\d+\.?\d*)\s*,\s*lon\s*:\s*(-?\d+\.?\d*)",
+            r"\(\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)",
         ]
 
         for pattern in coord_patterns:
@@ -640,13 +709,15 @@ class SpatialMaskGenerator:
         self.lat_grid = np.linspace(-90, 90, self.n_lats)
         self.lon_grid = np.linspace(-180, 180, self.n_lons)
 
-    def create_location_mask(self, location_info: Dict, focus_strength: float = 1.0) -> torch.Tensor:
+    def create_location_mask(
+        self, location_info: Dict, focus_strength: float = 1.0
+    ) -> torch.Tensor:
         """Create spatial mask for a single location"""
-        bounds = location_info['bounds']
+        bounds = location_info["bounds"]
 
         # Find grid indices for location bounds
-        lat_mask = (self.lat_grid >= bounds['lat_min']) & (self.lat_grid <= bounds['lat_max'])
-        lon_mask = (self.lon_grid >= bounds['lon_min']) & (self.lon_grid <= bounds['lon_max'])
+        lat_mask = (self.lat_grid >= bounds["lat_min"]) & (self.lat_grid <= bounds["lat_max"])
+        lon_mask = (self.lon_grid >= bounds["lon_min"]) & (self.lon_grid <= bounds["lon_max"])
 
         # Create 2D mask
         mask = torch.zeros(self.n_lats, self.n_lons)
@@ -675,20 +746,23 @@ class SpatialMaskGenerator:
         individual_masks = []
 
         for i, location in enumerate(locations):
-            location_name = location.get('name', f'location_{i}')
+            location_name = location.get("name", f"location_{i}")
             mask = self.create_location_mask(location)
-            masks[f'{location_name}_mask'] = mask
+            masks[f"{location_name}_mask"] = mask
             individual_masks.append(mask)
 
         # Create union mask
-        masks['union_mask'] = self.create_union_mask(individual_masks)
+        masks["union_mask"] = self.create_union_mask(individual_masks)
 
         return masks
+
 
 class SpatialComparativeProcessor(torch.nn.Module):
     """Process climate data for spatial comparative analysis"""
 
-    def __init__(self, climate_dim: int = 512, text_dim: int = 768, grid_shape: Tuple[int, int] = (64, 128)):
+    def __init__(
+        self, climate_dim: int = 512, text_dim: int = 768, grid_shape: Tuple[int, int] = (64, 128)
+    ):
         super().__init__()
 
         self.grid_shape = grid_shape
@@ -705,7 +779,7 @@ class SpatialComparativeProcessor(torch.nn.Module):
             torch.nn.Flatten(),
             torch.nn.Linear(256 * 8 * 8, climate_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(climate_dim, climate_dim)
+            torch.nn.Linear(climate_dim, climate_dim),
         )
 
         # Text encoder
@@ -722,7 +796,7 @@ class SpatialComparativeProcessor(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Linear(64, 128),
             torch.nn.ReLU(),
-            torch.nn.Linear(128, text_dim)
+            torch.nn.Linear(128, text_dim),
         )
 
         # Comparative analysis head
@@ -732,7 +806,7 @@ class SpatialComparativeProcessor(torch.nn.Module):
             torch.nn.Dropout(0.1),
             torch.nn.Linear(text_dim, text_dim // 2),
             torch.nn.ReLU(),
-            torch.nn.Linear(text_dim // 2, 3)  # location1_better, location2_better, similar
+            torch.nn.Linear(text_dim // 2, 3),  # location1_better, location2_better, similar
         )
 
         print(f"✅ Spatial comparative processor created!")
@@ -776,8 +850,8 @@ class SpatialComparativeProcessor(torch.nn.Module):
             return self._process_global_query(query, climate_data)
 
         # Add names to location info
-        loc1_info['name'] = loc1_name
-        loc2_info['name'] = loc2_name
+        loc1_info["name"] = loc1_name
+        loc2_info["name"] = loc2_name
 
         # Generate spatial masks
         masks = self.mask_generator.create_comparative_masks([loc1_info, loc2_info])
@@ -789,8 +863,9 @@ class SpatialComparativeProcessor(torch.nn.Module):
 
         return results
 
-    def _analyze_comparative_locations(self, query: str, climate_data: torch.Tensor,
-                                     loc1_info: Dict, loc2_info: Dict, masks: Dict) -> Dict:
+    def _analyze_comparative_locations(
+        self, query: str, climate_data: torch.Tensor, loc1_info: Dict, loc2_info: Dict, masks: Dict
+    ) -> Dict:
         """Analyze climate data for two locations comparatively"""
 
         batch_size = climate_data.shape[0]
@@ -803,15 +878,33 @@ class SpatialComparativeProcessor(torch.nn.Module):
         text_features = self.text_encoder(query_tokens)  # [batch, seq_len, text_dim]
 
         # Encode location information
-        loc1_bounds = torch.tensor([
-            loc1_info['bounds']['lat_min'], loc1_info['bounds']['lat_max'],
-            loc1_info['bounds']['lon_min'], loc1_info['bounds']['lon_max']
-        ], dtype=torch.float32).unsqueeze(0).expand(batch_size, -1)
+        loc1_bounds = (
+            torch.tensor(
+                [
+                    loc1_info["bounds"]["lat_min"],
+                    loc1_info["bounds"]["lat_max"],
+                    loc1_info["bounds"]["lon_min"],
+                    loc1_info["bounds"]["lon_max"],
+                ],
+                dtype=torch.float32,
+            )
+            .unsqueeze(0)
+            .expand(batch_size, -1)
+        )
 
-        loc2_bounds = torch.tensor([
-            loc2_info['bounds']['lat_min'], loc2_info['bounds']['lat_max'],
-            loc2_info['bounds']['lon_min'], loc2_info['bounds']['lon_max']
-        ], dtype=torch.float32).unsqueeze(0).expand(batch_size, -1)
+        loc2_bounds = (
+            torch.tensor(
+                [
+                    loc2_info["bounds"]["lat_min"],
+                    loc2_info["bounds"]["lat_max"],
+                    loc2_info["bounds"]["lon_min"],
+                    loc2_info["bounds"]["lon_max"],
+                ],
+                dtype=torch.float32,
+            )
+            .unsqueeze(0)
+            .expand(batch_size, -1)
+        )
 
         loc1_encoding = self.location_encoder(loc1_bounds)  # [batch, text_dim]
         loc2_encoding = self.location_encoder(loc2_bounds)  # [batch, text_dim]
@@ -827,16 +920,16 @@ class SpatialComparativeProcessor(torch.nn.Module):
         comparison_probs = torch.softmax(comparison_logits, dim=-1)
 
         return {
-            'location1': loc1_info['name'],
-            'location2': loc2_info['name'],
-            'comparison_probs': comparison_probs,
-            'location1_mask': masks[f"{loc1_info['name']}_mask"],
-            'location2_mask': masks[f"{loc2_info['name']}_mask"],
-            'union_mask': masks['union_mask'],
-            'climate_features': climate_features,
-            'location1_encoding': loc1_encoding,
-            'location2_encoding': loc2_encoding,
-            'query': query
+            "location1": loc1_info["name"],
+            "location2": loc2_info["name"],
+            "comparison_probs": comparison_probs,
+            "location1_mask": masks[f"{loc1_info['name']}_mask"],
+            "location2_mask": masks[f"{loc2_info['name']}_mask"],
+            "union_mask": masks["union_mask"],
+            "climate_features": climate_features,
+            "location1_encoding": loc1_encoding,
+            "location2_encoding": loc2_encoding,
+            "query": query,
         }
 
     def _process_global_query(self, query: str, climate_data: torch.Tensor) -> Dict:
@@ -845,11 +938,12 @@ class SpatialComparativeProcessor(torch.nn.Module):
         climate_features = self.climate_encoder(climate_data)
 
         return {
-            'type': 'global',
-            'climate_features': climate_features,
-            'query': query,
-            'message': 'No specific locations found, processing globally'
+            "type": "global",
+            "climate_features": climate_features,
+            "query": query,
+            "message": "No specific locations found, processing globally",
         }
+
 
 def create_demo_climate_data(batch_size: int = 1) -> torch.Tensor:
     """Create realistic demo climate data for different regions"""
@@ -877,9 +971,10 @@ def create_demo_climate_data(batch_size: int = 1) -> torch.Tensor:
     ak_lon_mask = (lon_grid >= -179.1) & (lon_grid <= -129.0)
     ak_mask = ak_lat_mask & ak_lon_mask
     climate_data[:, 0:5, ak_mask] -= 20  # Much colder
-    climate_data[:, 5:10, ak_mask] += 2   # More precipitation (snow)
+    climate_data[:, 5:10, ak_mask] += 2  # More precipitation (snow)
 
     return climate_data
+
 
 def demonstrate_spatial_queries():
     """Demonstrate various spatial comparative queries"""
@@ -902,7 +997,7 @@ def demonstrate_spatial_queries():
         "Which has more extreme weather, Sweden or Norway?",
         "Arizona vs Alaska temperature comparison",
         "What are the climate differences between Arizona and Alaska?",
-        "will Malmo be hotter than 47.29°, -120.21°"
+        "will Malmo be hotter than 47.29°, -120.21°",
     ]
 
     print(f"\n🧪 Testing {len(test_queries)} spatial queries...\n")
@@ -916,13 +1011,13 @@ def demonstrate_spatial_queries():
         results = processor.process_spatial_query(query, climate_data)
         elapsed = time.time() - start_time
 
-        if results.get('type') == 'global':
+        if results.get("type") == "global":
             print(f"⚠️  {results['message']}")
         else:
             # Display comparative analysis results
-            loc1 = results['location1']
-            loc2 = results['location2']
-            probs = results['comparison_probs'][0]
+            loc1 = results["location1"]
+            loc2 = results["location2"]
+            probs = results["comparison_probs"][0]
 
             print(f"📍 Comparing: {loc1.title()} vs {loc2.title()}")
             print(f"🎯 Analysis Results:")
@@ -942,9 +1037,9 @@ def demonstrate_spatial_queries():
             print(f"🏆 Conclusion: {winner}")
 
             # Display mask information
-            mask1 = results['location1_mask']
-            mask2 = results['location2_mask']
-            union_mask = results['union_mask']
+            mask1 = results["location1_mask"]
+            mask2 = results["location2_mask"]
+            union_mask = results["union_mask"]
 
             print(f"🗺️  Spatial Coverage:")
             print(f"   {loc1.title()} mask coverage: {(mask1 > 0).sum().item()} pixels")
@@ -972,6 +1067,7 @@ def demonstrate_spatial_queries():
     print(f"   • Spatial mask union operations")
     print(f"   • Location-aware attention mechanisms")
     print(f"   • Comparative classification head")
+
 
 if __name__ == "__main__":
     demonstrate_spatial_queries()

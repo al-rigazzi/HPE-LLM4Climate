@@ -39,7 +39,7 @@ class MultimodalInference:
         # Load configuration
         config_path = self.checkpoint_path / "config.yaml"
         if config_path.exists():
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 self.config = yaml.safe_load(f)
         else:
             raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -83,9 +83,7 @@ class MultimodalInference:
             tokenizer = AutoTokenizer.from_pretrained(str(tokenizer_path))
         else:
             # Fallback to original model
-            tokenizer = AutoTokenizer.from_pretrained(
-                self.config["model"]["llama_model_name"]
-            )
+            tokenizer = AutoTokenizer.from_pretrained(self.config["model"]["llama_model_name"])
 
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
@@ -93,10 +91,7 @@ class MultimodalInference:
         return tokenizer
 
     def predict(
-        self,
-        climate_data: torch.Tensor,
-        text_query: str,
-        return_attention: bool = False
+        self, climate_data: torch.Tensor, text_query: str, return_attention: bool = False
     ) -> Dict:
         """
         Perform inference on climate data and text query.
@@ -117,8 +112,7 @@ class MultimodalInference:
             climate_batch = {
                 "dynamic": climate_data[:, :, :160, :, :].to(self.device),
                 "static": torch.zeros(
-                    climate_data.size(0), 11,
-                    climate_data.size(-2), climate_data.size(-1)
+                    climate_data.size(0), 11, climate_data.size(-2), climate_data.size(-1)
                 ).to(self.device),
             }
 
@@ -142,17 +136,14 @@ class MultimodalInference:
             return results
 
     def batch_predict(
-        self,
-        climate_data_list: List[torch.Tensor],
-        text_queries: List[str],
-        batch_size: int = 4
+        self, climate_data_list: List[torch.Tensor], text_queries: List[str], batch_size: int = 4
     ) -> List[Dict]:
         """Perform batch inference."""
         results = []
 
         for i in range(0, len(climate_data_list), batch_size):
-            batch_climate = climate_data_list[i:i+batch_size]
-            batch_queries = text_queries[i:i+batch_size]
+            batch_climate = climate_data_list[i : i + batch_size]
+            batch_queries = text_queries[i : i + batch_size]
 
             # Stack climate data
             stacked_climate = torch.stack(batch_climate)
@@ -162,8 +153,7 @@ class MultimodalInference:
                 climate_batch = {
                     "dynamic": stacked_climate[:, :, :160, :, :].to(self.device),
                     "static": torch.zeros(
-                        len(batch_climate), 11,
-                        stacked_climate.size(-2), stacked_climate.size(-1)
+                        len(batch_climate), 11, stacked_climate.size(-2), stacked_climate.size(-1)
                     ).to(self.device),
                 }
 
@@ -171,19 +161,18 @@ class MultimodalInference:
 
                 # Split batch results
                 for j in range(len(batch_climate)):
-                    results.append({
-                        "fused_features": outputs["fused_features"][j:j+1].cpu(),
-                        "query": batch_queries[j],
-                        "index": i + j,
-                    })
+                    results.append(
+                        {
+                            "fused_features": outputs["fused_features"][j : j + 1].cpu(),
+                            "query": batch_queries[j],
+                            "index": i + j,
+                        }
+                    )
 
         return results
 
     def analyze_location(
-        self,
-        climate_data: torch.Tensor,
-        location: str,
-        analysis_type: str = "general"
+        self, climate_data: torch.Tensor, location: str, analysis_type: str = "general"
     ) -> str:
         """Generate location-specific climate analysis."""
         # Prepare query based on analysis type
@@ -229,21 +218,23 @@ class MultimodalInference:
 
 def main():
     parser = argparse.ArgumentParser(description="Multimodal climate-text inference")
-    parser.add_argument("--checkpoint", type=str, required=True,
-                       help="Path to model checkpoint directory")
-    parser.add_argument("--climate_data", type=str,
-                       help="Path to climate data file (.pt)")
-    parser.add_argument("--query", type=str,
-                       help="Text query for analysis")
-    parser.add_argument("--location", type=str,
-                       help="Location name for analysis")
-    parser.add_argument("--analysis_type", type=str, default="general",
-                       choices=["general", "risks", "trends"],
-                       help="Type of analysis to perform")
-    parser.add_argument("--device", type=str, default="auto",
-                       help="Device to use (auto, cpu, cuda)")
-    parser.add_argument("--output", type=str,
-                       help="Output file for results (JSON)")
+    parser.add_argument(
+        "--checkpoint", type=str, required=True, help="Path to model checkpoint directory"
+    )
+    parser.add_argument("--climate_data", type=str, help="Path to climate data file (.pt)")
+    parser.add_argument("--query", type=str, help="Text query for analysis")
+    parser.add_argument("--location", type=str, help="Location name for analysis")
+    parser.add_argument(
+        "--analysis_type",
+        type=str,
+        default="general",
+        choices=["general", "risks", "trends"],
+        help="Type of analysis to perform",
+    )
+    parser.add_argument(
+        "--device", type=str, default="auto", help="Device to use (auto, cpu, cuda)"
+    )
+    parser.add_argument("--output", type=str, help="Output file for results (JSON)")
 
     args = parser.parse_args()
 
@@ -273,9 +264,7 @@ def main():
 
     elif args.location:
         # Location-based analysis
-        response = inference.analyze_location(
-            climate_data, args.location, args.analysis_type
-        )
+        response = inference.analyze_location(climate_data, args.location, args.analysis_type)
 
         print(f"\nLocation Analysis:")
         print(response)
@@ -299,14 +288,14 @@ def main():
                     "mean": float(torch.mean(results["fused_features"])),
                     "std": float(torch.std(results["fused_features"])),
                     "norm": float(torch.norm(results["fused_features"])),
-                }
-            }
+                },
+            },
         }
 
         if args.location:
             output_data["location_analysis"] = response
 
-        with open(args.output, 'w') as f:
+        with open(args.output, "w") as f:
             json.dump(output_data, f, indent=2)
 
         print(f"\nResults saved to: {args.output}")

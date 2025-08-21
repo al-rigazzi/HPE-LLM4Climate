@@ -8,9 +8,10 @@ that everything works without requiring large models or real climate data.
 
 import os
 import sys
-import torch
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import torch
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -31,7 +32,8 @@ print(f"🎯 Device: {device}")
 
 # Test basic imports
 try:
-    from multimodal.core.climate_text_fusion import ClimateTextFusion, ClimateFeatureProjector
+    from multimodal.core.climate_text_fusion import ClimateFeatureProjector, ClimateTextFusion
+
     print("✅ Successfully imported ClimateTextFusion")
 except ImportError as e:
     print(f"❌ Import error: {e}")
@@ -40,8 +42,10 @@ except ImportError as e:
 # Test with small mock models instead of full Llama-3
 print("\n🧪 Creating mock model components...")
 
+
 class MockPrithviEncoder(torch.nn.Module):
     """Mock PrithviWxC encoder for testing"""
+
     def __init__(self, output_dim=256):
         super().__init__()
         self.conv = torch.nn.Conv2d(20, 64, 3, padding=1)
@@ -57,27 +61,26 @@ class MockPrithviEncoder(torch.nn.Module):
         outputs = []
         for t in range(time_steps):
             x_t = self.conv(x[:, t])  # [batch, 64, height, width]
-            x_t = self.pool(x_t)      # [batch, 64, 8, 8]
-            x_t = self.flatten(x_t)   # [batch, 64*8*8]
-            x_t = self.linear(x_t)    # [batch, output_dim]
+            x_t = self.pool(x_t)  # [batch, 64, 8, 8]
+            x_t = self.flatten(x_t)  # [batch, 64*8*8]
+            x_t = self.linear(x_t)  # [batch, output_dim]
             outputs.append(x_t)
 
         # Stack timesteps: [batch, time_steps, output_dim]
         return torch.stack(outputs, dim=1)
 
+
 class MockLlamaModel(torch.nn.Module):
     """Mock Llama model for testing"""
+
     def __init__(self, vocab_size=1000, hidden_size=256, max_length=64):
         super().__init__()
         self.embedding = torch.nn.Embedding(vocab_size, hidden_size)
         self.transformer = torch.nn.TransformerEncoder(
             torch.nn.TransformerEncoderLayer(
-                d_model=hidden_size,
-                nhead=8,
-                dim_feedforward=512,
-                batch_first=True
+                d_model=hidden_size, nhead=8, dim_feedforward=512, batch_first=True
             ),
-            num_layers=2
+            num_layers=2,
         )
         self.hidden_size = hidden_size
 
@@ -91,10 +94,12 @@ class MockLlamaModel(torch.nn.Module):
             src_key_padding_mask = None
 
         output = self.transformer(embeddings, src_key_padding_mask=src_key_padding_mask)
-        return type('MockOutput', (), {'last_hidden_state': output})()
+        return type("MockOutput", (), {"last_hidden_state": output})()
+
 
 class MockClimateTextFusion(torch.nn.Module):
     """Simplified fusion model for testing"""
+
     def __init__(self, climate_dim=256, text_dim=256):
         super().__init__()
         self.climate_encoder = MockPrithviEncoder(climate_dim)
@@ -102,9 +107,7 @@ class MockClimateTextFusion(torch.nn.Module):
 
         # Cross attention
         self.cross_attention = torch.nn.MultiheadAttention(
-            embed_dim=text_dim,
-            num_heads=4,
-            batch_first=True
+            embed_dim=text_dim, num_heads=4, batch_first=True
         )
 
         # Output projection
@@ -120,15 +123,14 @@ class MockClimateTextFusion(torch.nn.Module):
 
         # Cross attention: text attends to climate
         fused_features, _ = self.cross_attention(
-            query=text_features,
-            key=climate_features,
-            value=climate_features
+            query=text_features, key=climate_features, value=climate_features
         )
 
         # Output projection
         logits = self.output_projection(fused_features)
 
-        return type('MockOutput', (), {'logits': logits})()
+        return type("MockOutput", (), {"logits": logits})()
+
 
 # Create mock model
 print("🏗️ Creating mock fusion model...")
@@ -176,8 +178,7 @@ try:
 
     # Compute loss
     loss = torch.nn.functional.cross_entropy(
-        outputs.logits.view(-1, outputs.logits.size(-1)),
-        labels.view(-1)
+        outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
     )
 
     print(f"📊 Loss: {loss.item():.4f}")
