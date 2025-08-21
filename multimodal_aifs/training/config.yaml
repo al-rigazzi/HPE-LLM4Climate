@@ -1,0 +1,40 @@
+# Training Configuration for AIFS Climate-Text Fusion Model
+# Copy this file and modify the paths and parameters for your specific setup
+
+model:
+  aifs_encoder_path: "aifs-single-1.0/aifs-single-mse-1.0.ckpt"
+  llama_model_name: "meta-llama/Meta-Llama-3-8B"  # or "meta-llama/Meta-Llama-3-8B-Instruct"
+  freeze_aifs: true  # Set to false for fine-tuning AIFS encoder
+  fusion_mode: "cross_attention"  # Options: "cross_attention", "concatenate", "add"
+  num_fusion_layers: 4
+  dropout: 0.1
+
+data:
+  train_path: "multimodal/data/training/train"  # Directory containing training data
+  val_path: "multimodal/data/training/val"      # Directory containing validation data
+  max_length: 512                    # Maximum sequence length for text
+  climate_data_shape: [2, 160, 64, 64]  # [time, channels, height, width] - AIFS compatible
+
+training:
+  epochs: 10
+  batch_size: 4                      # Per-GPU batch size
+  learning_rate: 5e-5
+  warmup_steps: 1000
+  gradient_accumulation_steps: 4     # Effective batch size = batch_size * gradient_accumulation_steps * num_gpus
+  max_grad_norm: 1.0
+  save_dir: "checkpoints/aifs_multimodal"
+  save_every: 2                      # Save checkpoint every N epochs
+
+# Weights & Biases logging (optional)
+wandb:
+  enabled: false                     # Set to true to enable W&B logging
+  project: "aifs-climate-text-fusion"
+  run_name: "aifs_multimodal_training"
+  entity: null                       # Your W&B entity/username
+
+# DeepSpeed optimization settings
+deepspeed:
+  zero_stage: 2                      # ZeRO optimization stage (1, 2, or 3)
+  fp16: true                         # Enable mixed precision training
+  gradient_checkpointing: true       # Save memory by recomputing activations
+  cpu_offload: false                 # Offload optimizer states to CPU (for very large models)

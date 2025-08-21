@@ -39,7 +39,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
     def __init__(
         self,
         aifs_encoder_path: Optional[str] = None,
-        temporal_modeling: str = "lstm",  # "lstm", "transformer", "none"
+        temporal_modeling: str = "transformer",  # "lstm", "transformer", "none"
         hidden_dim: int = 512,
         num_layers: int = 2,
         device: str = "cpu",

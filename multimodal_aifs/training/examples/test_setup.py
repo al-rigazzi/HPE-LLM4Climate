@@ -79,20 +79,21 @@ def check_deepspeed():
 
 
 def check_model_files():
-    """Check if model weight files exist."""
-    print("🏗️  Checking model files...")
+    """Check if AIFS model files exist."""
+    print("🏗️  Checking AIFS model files...")
 
-    base_path = Path(__file__).parent.parent.parent
-    weights_dir = base_path / "data" / "weights"
+    base_path = Path(__file__).parent.parent.parent.parent
+    aifs_dir = base_path / "aifs-single-1.0"
 
     required_files = [
-        "prithvi.wxc.2300m.v1.pt",
-        "prithvi.wxc.rollout.2300m.v1.pt"
+        "aifs-single-mse-1.0.ckpt",
+        "config_finetuning.yaml",
+        "config_pretraining.yaml"
     ]
 
     all_found = True
     for file_name in required_files:
-        file_path = weights_dir / file_name
+        file_path = aifs_dir / file_name
         if file_path.exists():
             size_mb = file_path.stat().st_size / (1024 * 1024)
             print(f"   ✓ {file_name} ({size_mb:.1f} MB)")
@@ -107,7 +108,7 @@ def check_config_files():
     """Check if configuration files exist."""
     print("⚙️  Checking configuration files...")
 
-    config_dir = Path(__file__).parent
+    config_dir = Path(__file__).parent.parent  # Go to training directory
     required_configs = [
         "config.yaml",
         "deepspeed_config.json"
@@ -150,7 +151,7 @@ def run_basic_model_test():
 
         # Test basic YAML loading
         import yaml
-        with open(Path(__file__).parent / "config.yaml", 'r') as f:
+        with open(Path(__file__).parent.parent / "config.yaml", 'r') as f:
             config = yaml.safe_load(f)
         print("   ✓ Configuration file loading working")
 
@@ -173,6 +174,7 @@ def main():
             check_package("transformers", version_attr="__version__"),
             check_package("numpy", version_attr="__version__"),
             check_package("yaml", "yaml"),
+            # wandb disabled for now
             # check_package("wandb", version_attr="__version__"),
         ])),
         ("CUDA Support", check_cuda),
