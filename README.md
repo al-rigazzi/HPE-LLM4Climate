@@ -2,35 +2,43 @@
 
 ## ⚠️ **EXPERIMENTAL REPOSITORY** ⚠️
 
-This is an **experimental research repository** containing **two different implementations** of multimodal climate/weather LLMs:
+This is an **experimental research repository** featuring a **multimodal climate AI system** that combines ECMWF's AI Forecasting System (AIFS) with large language models:
 
-1. **PrithviWxC-based Implementation** (`/multimodal/`, `/PrithviWxC/`) - Original climate foundation model approach
-2. **AIFS-based Implementation** (`/multimodal_aifs/`) - ECMWF AI Forecasting System integration ✅ **Currently Working**
+**🌪️ Primary Implementation: AIFS-based Multimodal System** (`/multimodal_aifs/`) ✅ **Fully Operational**
+- **ECMWF AI Forecasting System** integration with 19M parameter encoder
+- **Meta-Llama-3-8B integration** with cross-attention fusion
+- **Zarr format support** for cloud-optimized climate data
+- **Real-time testing** on CPU/GPU with comprehensive test suite
 
-> **Status**: The AIFS multimodal implementation is currently operational and tested. The PrithviWxC implementation is in development. This repository serves as a research testbed for exploring different approaches to multimodal climate AI.
+**🌍 Legacy Implementation: PrithviWxC-based** (`/multimodal/`, `/PrithviWxC/`) 🚧 **Research Archive**
+- **NASA-IBM PrithviWxC** foundation model approach
+- **Traditional climate data processing** pipeline
+- **Maintained for research comparison**
+
+> **Status**: The AIFS multimodal implementation is the primary working system. The PrithviWxC implementation is maintained as a research archive for architectural comparison.
 
 A comprehensive multimodal AI system that combines climate data processing with natural language understanding capabilities using transformer models like Llama 3.
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-orange.svg)](https://pytorch.org/)
 [![Transformers](https://img.shields.io/badge/🤗-Transformers-yellow.svg)](https://huggingface.co/transformers/)
 [![Experimental](https://img.shields.io/badge/Status-Experimental-red.svg)](#)
 
 ## 🚀 Overview
 
-This **experimental project** implements multimodal fusion systems that bridge climate science and natural language processing. It explores **two different architectural approaches**:
+This **operational project** implements a multimodal fusion system that bridges climate science and natural language processing using ECMWF's AIFS as the primary climate encoder:
 
-### 🌪️ **AIFS Multimodal Implementation** (`/multimodal_aifs/`) ✅ **Working**
+### 🌪️ **AIFS Multimodal Implementation** (`/multimodal_aifs/`) ✅ **Primary System**
 - **ECMWF AI Forecasting System** integration with 19M parameter encoder
 - **Zarr format support** for cloud-optimized climate data
 - **Meta-Llama-3-8B integration** with multimodal fusion
 - **Spatial region loading** with coordinate wrapping
 - **Real-time testing** on CPU/GPU with comprehensive test suite
 
-### 🌍 **PrithviWxC Implementation** (`/multimodal/`, `/PrithviWxC/`) 🚧 **In Development**
-- **IBM PrithviWxC** foundation model approach
+### 🌍 **PrithviWxC Implementation** (`/multimodal/`, `/PrithviWxC/`) 🗂️ **Research Archive**
+- **NASA-IBM PrithviWxC** foundation model approach
 - **Traditional climate data processing** pipeline
-- **Research exploration** of alternative architectures
+- **Maintained for research comparison**
 
 ### 🎯 **Applications Enabled**
 - **Climate Trend Analysis**: AI assistants that explain long-term climate patterns and projections
@@ -43,8 +51,8 @@ This **experimental project** implements multimodal fusion systems that bridge c
 ## ✨ Key Features
 
 ### 🏗️ Core Components
-- **PrithviWxC Encoder Extraction**: Standalone climate feature encoder with full model compatibility
-- **Multimodal Fusion Framework**: Combines climate and text data using multiple fusion strategies
+- **AIFS Encoder Integration**: Standalone ECMWF AIFS climate encoder with full model compatibility
+- **Multimodal Fusion Framework**: Combines AIFS climate features and text data using cross-attention
 - **Location-Aware Climate Analysis**: Geographic-specific analysis with spatial attention masking
 - **Transformer Integration**: Support for Llama 3, BERT, and other HuggingFace models
 - **Production-Ready Architecture**: Comprehensive testing and validation infrastructure
@@ -68,21 +76,21 @@ This **experimental project** implements multimodal fusion systems that bridge c
 - Real-world application templates
 
 ### 🌪️ ECMWF AIFS Integration
-- **Alternative Climate Backend**: Use AIFS instead of PrithviWxC for global forecasting
+- **Primary Climate Backend**: AIFS provides state-of-the-art global weather forecasting
 - **AIFS Single v1.0**: Operational AI forecasting system from ECMWF
 - **Global Weather Forecasting**: 10+ day forecasts with high accuracy
 - **Extended Variables**: Upper-air, precipitation, radiation, and land variables
-- **Flexible Architecture**: Switch between AIFS and PrithviWxC based on use case
+- **Modular Architecture**: Clean integration with multimodal text processing
 
-> **New**: ECMWF's Artificial Intelligence Forecasting System (AIFS) has been integrated as an alternative climate AI backend, providing operational weather forecasting capabilities alongside the existing PrithviWxC system. See [`docs/aifs_integration.md`](docs/aifs_integration.md) for details.
+> **Current Status**: ECMWF's Artificial Intelligence Forecasting System (AIFS) serves as the primary climate AI backend, providing operational weather forecasting capabilities with state-of-the-art accuracy. See [`multimodal_aifs/README.md`](multimodal_aifs/README.md) for details.
 
 ## 📋 Prerequisites
 
-- **Python**: 3.8 or higher (3.10+ recommended)
+- **Python**: 3.12 (exactly 3.12 required - only supported version)
 - **Hardware**:
   - **Apple Silicon Macs (M1/M2/M3)**: Native support with MPS acceleration ✅
   - **NVIDIA GPUs**: CUDA support for accelerated training/inference ✅
-  - **Intel/AMD CPUs**: CPU-only operation supported ✅
+  - **Intel/AMD CPUs**: Currently being tested.
 - **Memory**: At least 16GB RAM (32GB+ recommended for full models)
 - **Storage**: ~50GB free space for model weights and data
 
@@ -98,7 +106,27 @@ This project has **full native support** for Apple Silicon Macs (M1/M2/M3):
 
 ## 🛠️ Installation
 
-### 1. Clone the Repository
+### 1. Install Git LFS (Required)
+
+The AIFS model file (~948MB) is stored using Git LFS. Install Git LFS before cloning:
+
+```bash
+# On macOS
+brew install git-lfs
+
+# On Ubuntu/Debian
+sudo apt-get install git-lfs
+
+# On Windows (using Chocolatey)
+choco install git-lfs
+
+# Or download from: https://git-lfs.github.io/
+
+# Initialize Git LFS for your user account (run once)
+git lfs install
+```
+
+### 2. Clone the Repository
 
 ```bash
 # Clone with submodules (includes ECMWF AIFS)
@@ -109,7 +137,7 @@ cd HPE-LLM4Climate
 git submodule update --init --recursive
 ```
 
-### 2. Set Up Python Environment
+### 3. Set Up Python Environment
 
 ```bash
 # Create virtual environment
@@ -117,11 +145,11 @@ python -m venv llm4climate
 source llm4climate/bin/activate  # On Windows: llm4climate\Scripts\activate
 
 # Or using conda
-conda create -n llm4climate python=3.10
+conda create -n llm4climate python=3.12
 conda activate llm4climate
 ```
 
-### 3. Install Dependencies
+### 4. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -157,7 +185,7 @@ psutil==7.0.0                 # System monitoring
 
 **Installation for AIFS Multimodal:**
 ```bash
-# Create environment (Python 3.12+ recommended)
+# Create environment (Python 3.12 required)
 python -m venv llm4climate-aifs
 source llm4climate-aifs/bin/activate
 
@@ -192,7 +220,7 @@ pip install -r requirements.txt
 pip install shapely geopandas folium pycountry
 ```
 
-### 4. Verified System Configurations
+### 5. Verified System Configurations
 
 #### 🍎 Apple Silicon (Tested Configuration)
 **System:**
@@ -200,15 +228,16 @@ pip install shapely geopandas folium pycountry
 - **OS**: macOS 15.6+ (Darwin 24.6.0)
 - **Architecture**: ARM64 native
 - **GPU**: MPS (Metal Performance Shaders) acceleration
-- **Python**: 3.13.3 (CPython)
+- **Python**: 3.12.8 (CPython) - **ONLY SUPPORTED VERSION**
 
 **Tested Package Versions:**
 ```
-torch==2.8.0                  # MPS-optimized for Apple Silicon
-transformers==4.55.0          # Full Llama 3 support
+torch==2.4.0                  # MPS-optimized for Apple Silicon
+transformers==4.55.2          # Full Llama 3 support
 numpy==2.3.2                  # ARM64 optimized
 pandas==2.3.1                 # Native Apple Silicon
 accelerate==1.10.0            # MPS acceleration support
+deepspeed==0.17.5             # Distributed training support
 geopy==2.4.1                  # Geographic processing
 huggingface_hub==0.34.4      # Model downloads
 safetensors==0.6.2           # Efficient model storage
@@ -218,13 +247,13 @@ safetensors==0.6.2           # Efficient model storage
 **System:**
 - **Hardware**: NVIDIA GPU with CUDA 11.8+ or 12.x
 - **OS**: Linux/Windows
-- **Python**: 3.8-3.11 (3.10 recommended)
+- **Python**: 3.12 (exactly 3.12 required - only supported version)
 
 **Installation:**
 ```bash
 # CUDA 12.1 (recommended)
-pip install torch==2.8.0+cu121 torchvision==0.23.0+cu121
-pip install transformers>=4.55.0 accelerate>=1.10.0
+pip install torch==2.4.0+cu121 torchvision==0.19.0+cu121
+pip install transformers>=4.55.2 accelerate>=1.10.0
 pip install -r requirements.txt
 ```
 
@@ -232,17 +261,17 @@ pip install -r requirements.txt
 **System:**
 - **Hardware**: Intel/AMD x86_64 or ARM64
 - **OS**: Linux/Windows/macOS
-- **Python**: 3.8+ (3.10+ recommended)
+- **Python**: 3.12 (exactly 3.12 required - only supported version)
 
 **Installation:**
 ```bash
-pip install torch==2.8.0+cpu torchvision==0.23.0+cpu
+pip install torch==2.4.0+cpu torchvision==0.19.0+cpu
 pip install -r requirements.txt
 ```
 
 > **Apple Silicon Users**: The system automatically handles MPS compatibility issues by using CPU for text generation while leveraging MPS for other operations. This ensures maximum reliability and performance.
 
-### 5. Supported Language Models
+### 6. Supported Language Models
 
 The system supports a wide range of transformer models for climate-text fusion:
 
@@ -265,119 +294,98 @@ The system supports a wide range of transformer models for climate-text fusion:
 fusion_model = ClimateTextFusion(
     llama_model_name="meta-llama/Meta-Llama-3-8B"
 )
-
-# Using alternative model (no HF access needed)
-fusion_model = ClimateTextFusion(
-    llama_model_name="microsoft/DialoGPT-medium"
-)
 ```
 
 **Model Access**: Meta Llama models require HuggingFace account approval. Alternative models work immediately without approval.
 
 ## 📥 Data Setup
 
-### 1. Download Model Weights
+### 1. Download AIFS Model Weights
 
-The system will automatically download required model weights on first use, or you can download them manually:
-
-```bash
-# PrithviWxC full model (26GB)
-python -c "
-from huggingface_hub import hf_hub_download
-hf_hub_download(repo_id='Prithvi-WxC/prithvi.wxc.2300m.v1',
-                filename='prithvi.wxc.2300m.v1.pt',
-                local_dir='data/weights/')
-"
-
-# Configuration files
-python -c "
-from huggingface_hub import hf_hub_download
-hf_hub_download(repo_id='Prithvi-WxC/prithvi.wxc.2300m.v1',
-                filename='config.yaml',
-                local_dir='data/')
-"
-```
-
-### 2. Extract Encoder Weights
+The system will automatically download AIFS model weights on first use, or you can verify the setup:
 
 ```bash
-python multimodal/encoder_extractor.py \
-    --config_path data/config.yaml \
-    --weights_path data/weights/prithvi.wxc.2300m.v1.pt \
-    --output_path data/weights/prithvi_encoder.pt
+# Verify AIFS model exists (should be ~948MB)
+ls -la aifs-single-1.0/aifs-single-mse-1.0.ckpt
+
+# If missing, the model will be downloaded automatically
+# The AIFS model is included as a git submodule
 ```
 
-This creates a standalone encoder (7.3GB) from the full model (26GB).
+### 2. Verify AIFS Installation
+
+```bash
+# Test AIFS encoder extraction
+python multimodal_aifs/scripts/extract_aifs_encoder.py
+
+# Verify the extracted encoder
+python multimodal_aifs/scripts/check_encoder_signature.py
+```
+
+This extracts the AIFS encoder (~20MB) from the full model (948MB) and validates the installation.
 
 ## 🚀 Quick Start
 
-### ⚠️ **Choose Your Implementation**
+## 🚀 Quick Start
 
-This repository contains **two different multimodal implementations**:
+### ✅ **Primary AIFS Multimodal System**
 
-#### 🟢 **AIFS Multimodal** (Recommended - Working)
 ```bash
 # Navigate to AIFS implementation
 cd multimodal_aifs/
 
 # Run basic test to verify installation
-python tests/integration/test_aifs_llama_integration.py
+python training/examples/test_setup.py
 
-# Try zarr integration example
+# Test AIFS-Llama integration
+python training/examples/test_mock_training.py
+
+# Try complete zarr integration example
 python examples/zarr_aifs_multimodal_example.py
 ```
 
-#### 🟡 **PrithviWxC Multimodal** (Experimental - In Development)
-```bash
-# Navigate to PrithviWxC implementation
-cd multimodal/
-
-# This implementation is under development
-```
-
-> **Recommendation**: Use the **AIFS multimodal implementation** (`/multimodal_aifs/`) for current work. See detailed documentation in [`multimodal_aifs/README.md`](multimodal_aifs/README.md).
-
-### Basic Multimodal Fusion (PrithviWxC - Legacy)
+### Basic AIFS Multimodal Fusion
 
 ```python
-from multimodal.climate_text_fusion import ClimateTextFusion
+from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
 import torch
 
-# Initialize the fusion model
-fusion_model = ClimateTextFusion(
-    prithvi_encoder_path='data/weights/prithvi_encoder.pt',
-    llama_model_name='meta-llama/Meta-Llama-3-8B',  # Requires HF approval - use 'prajjwal1/bert-tiny' for testing
-    fusion_mode='cross_attention',
-    max_climate_tokens=1024,
-    max_text_length=512
+# Initialize the AIFS-based fusion model
+fusion_model = AIFSClimateTextFusion(
+    aifs_encoder_path='aifs-single-1.0/aifs-single-mse-1.0.ckpt',
+    climate_dim=1024,
+    text_dim=4096,  # Llama-3-8B hidden size
+    fusion_dim=512,
+    num_attention_heads=8,
+    device='cpu'  # or 'cuda' for GPU
 )
 
-# Prepare climate data
-climate_batch = {
-    'x': climate_data,           # [batch, time, channels, lat, lon]
-    'static': static_data,       # [batch, static_channels, lat, lon]
-    'climate': climate_baseline, # [batch, channels, lat, lon]
-    'input_time': input_times,   # [batch] - hours from reference
-    'lead_time': lead_times      # [batch] - climate projection time horizon
-}
+# Prepare climate data (AIFS format)
+climate_data = torch.randn(1, 20, 64, 64)  # [batch, variables, lat, lon]
 
 # Prepare text data
 text_inputs = [
-    "What is the best crop to plant in Sweden in 2050?",
-    "How sustainable will it be to live in Arizona by 2100?",
-    "How much more likely will tornadoes be in 2050 compared to now?"
+    "What will the temperature patterns be like in the Northern Hemisphere?",
+    "How might precipitation change in tropical regions?"
 ]
 
-# Run multimodal fusion
-outputs = fusion_model(climate_batch, text_inputs)
-fused_features = outputs['fused_features']  # Combined climate-text features
+# Process through the fusion model
+fusion_outputs = fusion_model(climate_data, text_inputs)
+print(f"Fusion output shape: {fusion_outputs.shape}")
+```
+
+### Training Example (AIFS)
+
+```python
+# Run AIFS training
+python multimodal_aifs/training/train_multimodal.py
 ```
 
 ### Simplified Example (Recommended for Beginners)
 
 ```python
-# Run the practical example
-python multimodal/practical_example.py
+# Run the practical AIFS example
+python multimodal_aifs/examples/zarr_aifs_multimodal_example.py
 ```
 
 This demonstrates:
@@ -600,30 +608,43 @@ risk_assessment = assessment_generator.generate_assessment(
 
 ## 🔧 Configuration Options
 
-### Fusion Modes
+### AIFS Fusion Configuration
 
 ```python
-# Cross-attention: Deep feature interaction
-fusion_model = ClimateTextFusion(fusion_mode='cross_attention')
+from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
 
-# Concatenation: Simple feature combination
-fusion_model = ClimateTextFusion(fusion_mode='concatenate')
+# Cross-attention: Deep feature interaction (recommended)
+fusion_model = AIFSClimateTextFusion(
+    aifs_encoder_path='aifs-single-1.0/aifs-single-mse-1.0.ckpt',
+    climate_dim=1024,
+    text_dim=4096,  # Meta-Llama-3-8B hidden size
+    fusion_dim=512,
+    num_attention_heads=8
+)
 
-# Additive: Element-wise feature fusion
-fusion_model = ClimateTextFusion(fusion_mode='add')
+# Lightweight configuration for testing
+fusion_model = AIFSClimateTextFusion(
+    aifs_encoder_path='aifs-single-1.0/aifs-single-mse-1.0.ckpt',
+    climate_dim=512,
+    text_dim=768,   # Smaller text models
+    fusion_dim=256,
+    num_attention_heads=4
+)
 ```
 
 ### Model Selection
 
 ```python
-# Large model (high quality, more memory)
-fusion_model = ClimateTextFusion(
-    llama_model_name='meta-llama/Meta-Llama-3-8B'
+# Production model (high quality, Meta Llama)
+fusion_model = AIFSClimateTextFusion(
+    text_model_name='meta-llama/Meta-Llama-3-8B',
+    text_dim=4096
 )
 
-# Small model (fast inference, less memory)
-fusion_model = ClimateTextFusion(
-    llama_model_name='prajjwal1/bert-tiny'
+# Testing model (fast inference, less memory)
+fusion_model = AIFSClimateTextFusion(
+    text_model_name='prajjwal1/bert-tiny',
+    text_dim=128
 )
 ```
 
@@ -642,47 +663,6 @@ fusion_model = ClimateTextFusion(
 )
 ```
 
-## 📊 Performance Benchmarks
-
-| Model Configuration | Memory Usage | Inference Time | Quality Score |
-|-------------------|--------------|----------------|---------------|
-| Llama-3.2-3B + Cross-Attention | ~24GB | 2.1s | ⭐⭐⭐⭐⭐ |
-| Llama-3.2-1B + Cross-Attention | ~12GB | 1.3s | ⭐⭐⭐⭐ |
-| BERT-base + Concatenation | ~8GB | 0.8s | ⭐⭐⭐ |
-| BERT-tiny + Concatenation | ~4GB | 0.4s | ⭐⭐ |
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **CUDA Out of Memory**
-   ```python
-   # Use smaller models or reduce batch size
-   fusion_model = ClimateTextFusion(
-       llama_model_name='prajjwal1/bert-tiny',
-       max_climate_tokens=512,
-       max_text_length=256
-   )
-   ```
-
-2. **Model Download Errors**
-   ```bash
-   # Manual download
-   huggingface-cli download Prithvi-WxC/prithvi.wxc.2300m.v1 --local-dir data/
-   ```
-
-3. **Import Errors**
-   ```bash
-   # Ensure all dependencies are installed
-   pip install -r requirements.txt
-   ```
-
-### Getting Help
-
-- 📖 Check the [multimodal README](multimodal/README.md) for detailed documentation
-- 🧪 Run test scripts to verify your setup
-- 💡 See [example_usage.py](multimodal/example_usage.py) for more examples
-- 🐛 Open an issue on GitHub for bugs or feature requests
 
 ## 🔬 Research Applications
 
@@ -693,20 +673,6 @@ This system enables novel research in:
 - **Human-Computer Interaction**: Conversational interfaces for scientific data
 - **Emergency Management**: Automated alert systems and risk communication
 - **Education**: Interactive climate learning tools
-
-## 🛣️ Roadmap
-
-### Near Term
-- [ ] Support for additional climate models (ECMWF, GFS)
-- [ ] Real-time data integration APIs
-- [ ] Web interface for easy access
-- [ ] Fine-tuning recipes for specific domains
-
-### Long Term
-- [ ] Multi-language support
-- [ ] Federated learning capabilities
-- [ ] Integration with climate simulation workflows
-- [ ] Mobile applications
 
 ## 🤝 Contributing
 
@@ -725,17 +691,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **IBM**: For the original PrithviWxC model
-- **HuggingFace**: For the transformers library and model hub
-- **PyTorch**: For the deep learning framework
-- **Climate Research Community**: For datasets and domain expertise
+- **ECMWF AIFS**: AI Forecasting System model
+  - Paper: [Lang et al. (2024) - AIFS - ECMWF's data-driven forecasting system](https://arxiv.org/abs/2406.01465)
+  - Model: [ecmwf/aifs-single-1.0](https://huggingface.co/ecmwf/aifs-single-1.0)
+- **NASA-IMPACT PrithviWxC**: Foundation weather and climate model
+  - Paper: [Bodapati et al. (2024) - Foundation Models for Weather and Climate Data Understanding: A Comprehensive Survey](https://arxiv.org/abs/2409.13598)
+  - Repository: [NASA-IMPACT/Prithvi-WxC](https://github.com/NASA-IMPACT/Prithvi-WxC)
+- **Meta**: Llama model series and open-source AI contributions
 
 ## 📬 Contact
 
 - **GitHub Issues**: For bugs and feature requests
 - **Discussions**: For questions and community support
-- **Email**: [your-email@domain.com] for collaboration inquiries
-
----
-
-**Ready to revolutionize climate AI? Get started with our multimodal fusion system today!** 🌟
