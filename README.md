@@ -1,4 +1,8 @@
 # 🌍 HPE-LLM4Climate: Multimodal Climate AI System
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-orange.svg)](https://pytorch.org/)
+[![Transformers](https://img.shields.io/badge/🤗-Transformers-yellow.svg)](https://huggingface.co/transformers/)
+[![Experimental](https://img.shields.io/badge/Status-Experimental-red.svg)](#)
 
 ## ⚠️ **EXPERIMENTAL REPOSITORY** ⚠️
 
@@ -17,12 +21,6 @@ This is an **experimental research repository** featuring a **multimodal climate
 
 > **Status**: The AIFS multimodal implementation is the primary working system. The PrithviWxC implementation is maintained as a research archive for architectural comparison.
 
-A comprehensive multimodal AI system that combines climate data processing with natural language understanding capabilities using transformer models like Llama 3.
-
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-orange.svg)](https://pytorch.org/)
-[![Transformers](https://img.shields.io/badge/🤗-Transformers-yellow.svg)](https://huggingface.co/transformers/)
-[![Experimental](https://img.shields.io/badge/Status-Experimental-red.svg)](#)
 
 ## 🚀 Overview
 
