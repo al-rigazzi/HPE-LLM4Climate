@@ -76,7 +76,6 @@ This **operational project** implements a multimodal fusion system that bridges 
 ### 🌪️ ECMWF AIFS Integration
 - **Primary Climate Backend**: AIFS provides state-of-the-art global weather forecasting
 - **AIFS Single v1.0**: Operational AI forecasting system from ECMWF
-- **Global Weather Forecasting**: 10+ day forecasts with high accuracy
 - **Extended Variables**: Upper-air, precipitation, radiation, and land variables
 - **Modular Architecture**: Clean integration with multimodal text processing
 
