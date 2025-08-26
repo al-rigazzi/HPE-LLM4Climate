@@ -173,7 +173,7 @@ class AIFSGeographicResolver(nn.Module):
 
         return torch.as_tensor(final_context)
 
-    def resolve_text_location(self, text: str) -> Optional[Tuple[float, float]]:
+    def resolve_text_location(self, text: str) -> Tuple[float, float] | None:
         """
         Extract location from text description.
 
@@ -442,7 +442,7 @@ class AIFSLocationAwareAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(
-        self, features: torch.Tensor, locations: torch.Tensor, mask: Optional[torch.Tensor] = None
+        self, features: torch.Tensor, locations: torch.Tensor, mask: torch.Tensor | None = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass of location-aware attention.

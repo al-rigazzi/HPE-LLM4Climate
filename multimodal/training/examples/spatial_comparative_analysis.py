@@ -117,7 +117,7 @@ class DynamicLocationResolver:
                 },
             }
 
-    def resolve_location(self, location_name: str) -> Optional[Dict]:
+    def resolve_location(self, location_name: str) -> Dict | None:
         """
         Resolve location name to geographic bounds using GeoPy/Nominatim
 
@@ -149,7 +149,7 @@ class DynamicLocationResolver:
         coord_pattern = r"^(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?$"
         return bool(re.match(coord_pattern, location_name.strip()))
 
-    def _resolve_coordinates(self, coord_string: str) -> Optional[Dict]:
+    def _resolve_coordinates(self, coord_string: str) -> Dict | None:
         """Resolve coordinate string to location info"""
         import re
 
@@ -216,7 +216,7 @@ class DynamicLocationResolver:
             print(f"❌ Invalid coordinate format: {coord_string}")
             return None
 
-    def _resolve_with_geopy(self, location_name: str) -> Optional[Dict]:
+    def _resolve_with_geopy(self, location_name: str) -> Dict | None:
         """Resolve location using GeoPy/Nominatim with multiple candidates"""
         try:
             print(f"🔍 Resolving '{location_name}' with Nominatim (multiple candidates)...")
@@ -296,7 +296,7 @@ class DynamicLocationResolver:
             print(f"❌ Error resolving '{location_name}': {e}")
             return None
 
-    def _select_best_candidate(self, query: str, candidates: List) -> Optional[Any]:
+    def _select_best_candidate(self, query: str, candidates: List) -> Any | None:
         """
         Select the best candidate from multiple geocoding results
 
@@ -391,7 +391,7 @@ class DynamicLocationResolver:
 
         return score
 
-    def _resolve_with_fallback(self, location_name: str) -> Optional[Dict]:
+    def _resolve_with_fallback(self, location_name: str) -> Dict | None:
         """Fallback resolution using limited local database"""
         cache_key = location_name.lower().strip()
 
@@ -441,7 +441,7 @@ class DynamicLocationResolver:
 
         return "region"  # Default
 
-    def bulk_resolve(self, location_names: List[str]) -> Dict[str, Optional[Dict]]:
+    def bulk_resolve(self, location_names: List[str]) -> Dict[str, Dict | None]:
         """Resolve multiple locations efficiently"""
         results = {}
 
@@ -625,7 +625,7 @@ class MultiLocationExtractor:
         potential_locations = [word for word in words if word not in non_locations]
         return potential_locations
 
-    def _clean_location_text(self, text: str) -> Optional[str]:
+    def _clean_location_text(self, text: str) -> str | None:
         """Clean and normalize location text"""
         if not text:
             return None
@@ -695,7 +695,7 @@ class MultiLocationExtractor:
 
         return pairs
 
-    def resolve_location(self, location_name: str) -> Optional[Dict]:
+    def resolve_location(self, location_name: str) -> Dict | None:
         """Resolve location using the dynamic resolver"""
         return self.resolver.resolve_location(location_name)
 

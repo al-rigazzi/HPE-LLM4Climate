@@ -7,7 +7,7 @@ and spatial region extraction.
 """
 
 import math
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple
 
 import numpy as np
 import torch
@@ -35,19 +35,19 @@ class LocationUtils:
     """
 
     @staticmethod
-    def degrees_to_radians(degrees: Union[float, torch.Tensor]) -> Union[float, torch.Tensor]:
+    def degrees_to_radians(degrees: float | torch.Tensor) -> float | torch.Tensor:
         """Convert degrees to radians."""
         return degrees * math.pi / 180.0
 
     @staticmethod
-    def radians_to_degrees(radians: Union[float, torch.Tensor]) -> Union[float, torch.Tensor]:
+    def radians_to_degrees(radians: float | torch.Tensor) -> float | torch.Tensor:
         """Convert radians to degrees."""
         return radians * 180.0 / math.pi
 
     @staticmethod
     def haversine_distance(
         lat1: float, lon1: float, lat2: float, lon2: float
-    ) -> Union[float, torch.Tensor]:
+    ) -> float | torch.Tensor:
         """
         Calculate the great circle distance between two points on Earth.
 
@@ -77,7 +77,7 @@ class LocationUtils:
         return EARTH_RADIUS_KM * c
 
     @staticmethod
-    def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> Union[float, torch.Tensor]:
+    def bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float | torch.Tensor:
         """
         Calculate the initial bearing from point 1 to point 2.
 
@@ -105,7 +105,7 @@ class LocationUtils:
     @staticmethod
     def destination_point(
         lat: float, lon: float, bearing: float, distance_km: float
-    ) -> Tuple[Union[float, torch.Tensor], Union[float, torch.Tensor]]:
+    ) -> Tuple[float | torch.Tensor, float | torch.Tensor]:
         """
         Calculate destination point given start point, bearing, and distance.
 
@@ -248,11 +248,11 @@ class GridUtils:
 
     def extract_region(
         self,
-        data: Union[np.ndarray, torch.Tensor],
+        data: np.ndarray | torch.Tensor,
         center_lat: float,
         center_lon: float,
         region_size_km: float,
-    ) -> Union[np.ndarray, torch.Tensor]:
+    ) -> np.ndarray | torch.Tensor:
         """
         Extract a square region around a center point.
 

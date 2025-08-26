@@ -13,7 +13,7 @@ class NormalizedMSELoss(nn.Module):
     def __init__(
         self,
         lats: list,
-        feature_weights: Optional[torch.Tensor] = None,
+        feature_weights: torch.Tensor | None = None,
     ):
         """
         Args:

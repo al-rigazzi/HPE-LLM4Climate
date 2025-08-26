@@ -291,7 +291,7 @@ class GeographicResolver:
         else:  # local
             print("🌍 Using local geographic database")
 
-    def resolve_location(self, location_text: str) -> Optional[GeographicLocation]:
+    def resolve_location(self, location_text: str) -> GeographicLocation | None:
         """
         Resolve a location string to geographic bounds.
 
@@ -329,7 +329,7 @@ class GeographicResolver:
 
         return result
 
-    def _resolve_with_geopy(self, location_text: str) -> Optional[GeographicLocation]:
+    def _resolve_with_geopy(self, location_text: str) -> GeographicLocation | None:
         """Resolve location using GeoPy/Nominatim."""
         try:
             # Search for the location
@@ -381,7 +381,7 @@ class GeographicResolver:
             warnings.warn(f"Unexpected error in geocoding '{location_text}': {e}")
             return None
 
-    def _resolve_with_geonames(self, location_text: str) -> Optional[GeographicLocation]:
+    def _resolve_with_geonames(self, location_text: str) -> GeographicLocation | None:
         """Resolve location using GeoNames API."""
         try:
             # Search for places
@@ -437,7 +437,7 @@ class GeographicResolver:
             warnings.warn(f"Unexpected error in GeoNames lookup '{location_text}': {e}")
             return None
 
-    def _resolve_with_local_db(self, location_text: str) -> Optional[GeographicLocation]:
+    def _resolve_with_local_db(self, location_text: str) -> GeographicLocation | None:
         """Resolve location using local database (original implementation)."""
         location_lower = location_text.lower().strip()
 
@@ -531,7 +531,7 @@ class GeographicResolver:
             return 0.5
         return 1.0
 
-    def _parse_coordinates(self, coord_text: str) -> Optional[GeographicLocation]:
+    def _parse_coordinates(self, coord_text: str) -> GeographicLocation | None:
         """Parse coordinate strings into geographic locations."""
         for pattern in self.coordinate_patterns:
             match = re.search(pattern, coord_text, re.IGNORECASE)
@@ -775,7 +775,7 @@ class LocationAwareAttention(nn.Module):
             nn.Sigmoid(),
         )
 
-    def forward(self, x: torch.Tensor, spatial_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, spatial_mask: torch.Tensor | None = None) -> torch.Tensor:
         """
         Forward pass with optional spatial masking.
 

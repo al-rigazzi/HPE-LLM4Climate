@@ -6,7 +6,7 @@ including climate-specific text preprocessing, tokenization, and embedding prepa
 """
 
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 import numpy as np
 import torch
@@ -323,7 +323,7 @@ class ClimateTextProcessor:
         for phrase in CLIMATE_PHRASES:
             self.climate_vocab.update(phrase.split())
 
-    def preprocess_text(self, text: Optional[str]) -> str:
+    def preprocess_text(self, text: str | None) -> str:
         """
         Preprocess text for climate analysis.
 
@@ -478,7 +478,7 @@ class ClimateTextProcessor:
 
         return locations
 
-    def extract_numerical_values(self, text: str) -> List[Dict[str, Union[str, float]]]:
+    def extract_numerical_values(self, text: str) -> List[Dict[str, str | float]]:
         """
         Extract numerical values and their units from text.
 
@@ -539,7 +539,7 @@ class ClimateTextProcessor:
 
     def create_text_features(
         self, text: str
-    ) -> Dict[str, Union[int, float, List[Any], Dict[str, float]]]:
+    ) -> Dict[str, int | float | List[Any] | Dict[str, float]]:
         """
         Create comprehensive features from text.
 
@@ -553,7 +553,7 @@ class ClimateTextProcessor:
         processed_text = self.preprocess_text(text)
 
         # Basic features
-        features: Dict[str, Union[int, float, List[Any], Dict[str, float]]] = {
+        features: Dict[str, int | float | List[Any] | Dict[str, float]] = {
             "original_length": len(original_text),
             "processed_length": len(processed_text),
             "length": len(original_text),  # Alias for compatibility
@@ -604,7 +604,7 @@ class TextEmbeddingUtils:
         self.vocab_size = vocab_size
         self.word_to_idx: Dict[str, int] = {}
         self.idx_to_word: Dict[int, str] = {}
-        self.embeddings: Optional[torch.Tensor] = None
+        self.embeddings: torch.Tensor | None = None
         self.is_fitted = False
 
     def build_vocabulary(self, texts: List[str]) -> None:
@@ -638,7 +638,7 @@ class TextEmbeddingUtils:
         self.embeddings = torch.randn(len(self.word_to_idx), self.embedding_dim)
         self.is_fitted = True
 
-    def text_to_indices(self, text: str, max_length: Optional[int] = None) -> List[int]:
+    def text_to_indices(self, text: str, max_length: int | None = None) -> List[int]:
         """
         Convert text to indices.
 
@@ -690,7 +690,7 @@ class TextEmbeddingUtils:
         text: str,
         max_length: int = 128,
         include_positional: bool = True,
-        use_positional: Optional[bool] = None,
+        use_positional: bool | None = None,
     ) -> torch.Tensor:
         """
         Create embeddings for text.

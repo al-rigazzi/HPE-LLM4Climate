@@ -205,7 +205,7 @@ class MultimodalTrainer:
         self.optimizer = None
         self.lr_scheduler = None
 
-    def setup_deepspeed(self, deepspeed_config: Optional[str] = None):
+    def setup_deepspeed(self, deepspeed_config: str | None = None):
         """Initialize DeepSpeed engine."""
         if not DEEPSPEED_AVAILABLE:
             raise RuntimeError("DeepSpeed is not available. Please install deepspeed.")
@@ -418,7 +418,7 @@ class MultimodalTrainer:
 
         logger.info(f"Checkpoint saved to {save_path}")
 
-    def train(self, deepspeed_config: Optional[str] = None):
+    def train(self, deepspeed_config: str | None = None):
         """Main training loop."""
         # Setup DeepSpeed
         self.setup_deepspeed(deepspeed_config)

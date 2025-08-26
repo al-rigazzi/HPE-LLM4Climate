@@ -9,7 +9,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import torch
 import torch.nn as nn
@@ -33,7 +33,7 @@ class AIFSEncoderExtractor:
             aifs_wrapper: Initialized AIFS wrapper instance
         """
         self.aifs_wrapper = aifs_wrapper
-        self.model_info = None
+        self.model_info: dict[str, Any] | None = None
         self.encoder = None
 
     def load_model(self):
@@ -77,7 +77,7 @@ class AIFSEncoderExtractor:
         if self.encoder is None:
             raise RuntimeError("Could not find encoder component in the model")
 
-        return self.encoder
+        return self.encoder  # type: ignore[unreachable]
 
     def analyze_encoder(self) -> Dict[str, Any]:
         """
@@ -90,7 +90,7 @@ class AIFSEncoderExtractor:
             raise RuntimeError("Encoder not extracted yet. Call extract_encoder() first.")
 
         # Count parameters
-        total_params = sum(p.numel() for p in self.encoder.parameters())
+        total_params = sum(p.numel() for p in self.encoder.parameters())  # type: ignore[unreachable]
         trainable_params = sum(p.numel() for p in self.encoder.parameters() if p.requires_grad)
 
         # Get encoder structure
@@ -150,7 +150,7 @@ class AIFSEncoderExtractor:
             raise RuntimeError("Encoder not extracted yet. Call extract_encoder() first.")
 
         # Create output directory
-        output_path = Path(output_dir)
+        output_path = Path(output_dir)  # type: ignore[unreachable]
         output_path.mkdir(exist_ok=True)
 
         saved_files = {}

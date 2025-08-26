@@ -20,7 +20,7 @@ This document describes the implemented spatial comparative analysis system that
 class DynamicLocationResolver:
     """Resolve locations using GeoPy/Nominatim with intelligent candidate selection"""
 
-    def resolve_location(self, location_name: str) -> Optional[Dict]:
+    def resolve_location(self, location_name: str) -> Dict | None:
         # Supports both location names AND coordinate strings
         if self._is_coordinate_string(location_name):
             return self._resolve_coordinates(location_name)

@@ -236,7 +236,7 @@ ignore_errors = true
 
 # Ignore scripts completely
 [[tool.mypy.overrides]]
-module = "multimodal_aifs.scripts.*"
+module = "multimodal_aifs.training.*"
 ignore_errors = true
 
 # Ignore analysis completely

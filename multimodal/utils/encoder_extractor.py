@@ -66,7 +66,7 @@ class PrithviWxC_Encoder(nn.Module):  # pylint: disable=invalid-name
         masking_mode: str,
         positional_encoding: str,
         encoder_shifting: bool = False,
-        checkpoint_encoder: Optional[list[int]] = None,
+        checkpoint_encoder: list[int] | None = None,
     ) -> None:
         """
         Initialize the encoder-only model.

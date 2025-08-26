@@ -5,7 +5,7 @@ This module provides utilities for processing climate data for use with AIFS
 multimodal analysis, including data preprocessing, normalization, and format conversion.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -68,9 +68,7 @@ class ClimateDataProcessor:
         self.variable_stats: Dict[str, Dict[str, float]] = {}
         self.is_fitted = False
 
-    def fit(
-        self, data: Union[torch.Tensor, np.ndarray], variable_names: Optional[List[str]] = None
-    ):
+    def fit(self, data: torch.Tensor | np.ndarray, variable_names: List[str] | None = None):
         """
         Fit the processor to data to compute normalization statistics.
 
@@ -108,7 +106,7 @@ class ClimateDataProcessor:
 
         self.is_fitted = True
 
-    def transform(self, data: Union[torch.Tensor, np.ndarray]) -> torch.Tensor:
+    def transform(self, data: torch.Tensor | np.ndarray) -> torch.Tensor:
         """
         Transform data using fitted normalization parameters.
 
@@ -135,7 +133,7 @@ class ClimateDataProcessor:
         return data
 
     def fit_transform(
-        self, data: Union[torch.Tensor, np.ndarray], variable_names: Optional[List[str]] = None
+        self, data: torch.Tensor | np.ndarray, variable_names: List[str] | None = None
     ) -> torch.Tensor:
         """
         Fit and transform data in one step.
@@ -173,7 +171,7 @@ class ClimateDataProcessor:
         return data
 
     def process_for_aifs(
-        self, data: Union[torch.Tensor, np.ndarray], variable_names: Optional[List[str]] = None
+        self, data: torch.Tensor | np.ndarray, variable_names: List[str] | None = None
     ) -> torch.Tensor:
         """
         Process climate data for AIFS model input.

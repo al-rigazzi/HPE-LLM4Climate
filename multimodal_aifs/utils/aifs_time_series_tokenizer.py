@@ -16,7 +16,6 @@ Date: August 20, 2025
 
 import sys
 from pathlib import Path
-from typing import Optional, Union
 
 import torch
 from torch import nn
@@ -38,7 +37,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
 
     def __init__(
         self,
-        aifs_encoder_path: Optional[str] = None,
+        aifs_encoder_path: str | None = None,
         temporal_modeling: str = "transformer",  # "lstm", "transformer", "none"
         hidden_dim: int = 512,
         num_layers: int = 2,
@@ -67,7 +66,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         self.spatial_dim = self.aifs_encoder.output_dim  # 1024
 
         # Initialize temporal modeling component - can be LSTM, TransformerEncoder, or None
-        self.temporal_model: Optional[Union[nn.LSTM, nn.TransformerEncoder]] = None
+        self.temporal_model: nn.LSTM | nn.TransformerEncoder | None = None
 
         if temporal_modeling == "lstm":
             self.temporal_model = nn.LSTM(
@@ -92,7 +91,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
             raise ValueError(f"Unsupported temporal modeling: {temporal_modeling}")
 
         # Output projection if using temporal modeling
-        self.output_projection: Union[nn.Linear, nn.Identity]
+        self.output_projection: nn.Linear | nn.Identity
         if self.temporal_model is not None:
             output_dim = hidden_dim if temporal_modeling == "lstm" else self.spatial_dim
             self.output_projection = nn.Linear(output_dim, hidden_dim)

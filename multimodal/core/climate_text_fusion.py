@@ -63,7 +63,7 @@ class ClimateFeatureProjector(nn.Module):
         self,
         climate_dim: int,
         text_dim: int,
-        hidden_dim: Optional[int] = None,
+        hidden_dim: int | None = None,
         num_layers: int = 2,
         dropout: float = 0.1,
     ):
@@ -137,7 +137,7 @@ class CrossModalAttention(nn.Module):
         query: torch.Tensor,
         key: torch.Tensor,
         value: torch.Tensor,
-        key_padding_mask: Optional[torch.Tensor] = None,
+        key_padding_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Args:

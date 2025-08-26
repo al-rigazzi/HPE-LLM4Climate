@@ -106,7 +106,7 @@ def create_mock_climate_data(grid_shape: tuple = (36, 58)) -> torch.Tensor:
 
 def visualize_attention_pattern(
     spatial_mask: torch.Tensor,
-    location_info: Optional[Dict],
+    location_info: Dict | None,
     title: str = "Spatial Attention Pattern",
 ):
     """

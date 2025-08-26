@@ -39,7 +39,7 @@ except ImportError:
     print("⚠️  cfgrib/xarray not available. Install with: pip install cfgrib xarray")
 
 
-def download_weather_data(date_str: str = None, output_file: str = None) -> Optional[str]:
+def download_weather_data(date_str: str = None, output_file: str = None) -> str | None:
     """
     Download real weather data from ECMWF.
 

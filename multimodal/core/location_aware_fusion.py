@@ -146,7 +146,7 @@ class LocationAwareClimateAnalysis(nn.Module):
         # Cache for resolved locations
         self._location_cache = {}
 
-    def process_geographic_query(self, query: str) -> Tuple[Optional[Dict], torch.Tensor]:
+    def process_geographic_query(self, query: str) -> Tuple[Dict | None, torch.Tensor]:
         """
         Process a geographic query to extract location and create spatial mask.
 
@@ -406,7 +406,7 @@ class LocationAwareClimateAnalysis(nn.Module):
         climate_features: torch.Tensor,
         query: str,
         return_visualization: bool = False,
-    ) -> Dict[str, Union[str, float, torch.Tensor]]:
+    ) -> Dict[str, str | float | torch.Tensor]:
         """
         High-level interface for location-aware climate analysis.
 

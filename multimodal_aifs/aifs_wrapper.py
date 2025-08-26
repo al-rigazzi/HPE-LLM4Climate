@@ -9,7 +9,7 @@ import os
 import sys
 import types
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -61,7 +61,7 @@ class AIFSWrapper:
     for climate prediction tasks.
     """
 
-    def __init__(self, model_path: Optional[str] = None, config_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None, config_path: str | None = None):
         """
         Initialize AIFS wrapper.
 
@@ -101,8 +101,8 @@ class AIFSWrapper:
                     raise FileNotFoundError(f"AIFS config not found at {self.config_path}")
 
         # Model will be loaded lazily
-        self._model: Optional[Dict[str, Any]] = None
-        self._config: Optional[Dict[str, Any]] = None
+        self._model: Dict[str, Any] | None = None
+        self._config: Dict[str, Any] | None = None
         self._is_loaded: bool = False
 
     def _check_availability(self) -> bool:
@@ -118,7 +118,7 @@ class AIFSWrapper:
 
         return True
 
-    def load_model(self):
+    def load_model(self) -> dict[str, Any] | None:
         """
         Public method to load and initialize AIFS model.
 
@@ -130,7 +130,7 @@ class AIFSWrapper:
         """
         return self._load_model()
 
-    def _load_model(self):
+    def _load_model(self) -> dict[str, Any] | None:
         """Load and initialize AIFS model using SimpleRunner."""
         if self._model is not None:
             return self._model
@@ -185,11 +185,11 @@ class AIFSWrapper:
 
     def predict(
         self,
-        location_or_data: Union[Tuple[float, float], torch.Tensor],
+        location_or_data: Tuple[float, float] | torch.Tensor,
         days: int = 7,
-        variables: Optional[List[str]] = None,
+        variables: List[str] | None = None,
         **kwargs,
-    ) -> Union[Dict[str, Any], torch.Tensor]:
+    ) -> Dict[str, Any] | torch.Tensor:
         """
         Generate weather forecast for a specific location or from input data.
 
@@ -207,6 +207,9 @@ class AIFSWrapper:
             real weather data input pipeline is implemented.
         """
         model_info = self._load_model()
+
+        if model_info is None:
+            raise RuntimeError("Could not load model")
 
         # Handle both location tuple and tensor data input
         if isinstance(location_or_data, torch.Tensor):
@@ -279,10 +282,10 @@ class AIFSWrapper:
     def predict_global(
         self,
         days: int = 7,
-        variables: Optional[List[str]] = None,
+        variables: List[str] | None = None,
         resolution: str = "0.25deg",
         **kwargs,
-    ) -> Union[Dict[str, Any], torch.Tensor]:
+    ) -> Dict[str, Any] | torch.Tensor:
         """
         Generate global weather forecast.
 

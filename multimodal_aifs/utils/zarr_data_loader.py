@@ -23,7 +23,7 @@ Usage:
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -61,9 +61,9 @@ class ZarrClimateLoader:
 
     def __init__(
         self,
-        zarr_path: Union[str, Path],
-        chunk_size: Optional[Dict[str, int]] = None,
-        variables: Optional[List[str]] = None,
+        zarr_path: str | Path,
+        chunk_size: Dict[str, int] | None = None,
+        variables: List[str] | None = None,
     ):
         """
         Initialize Zarr climate data loader.
@@ -130,9 +130,7 @@ class ZarrClimateLoader:
         if self.variables:
             self.available_variables = [v for v in self.available_variables if v in self.variables]
 
-    def load_time_range(
-        self, start_time: str, end_time: str, variables: Optional[List[str]] = None
-    ):
+    def load_time_range(self, start_time: str, end_time: str, variables: List[str] | None = None):
         """
         Load data for a specific time range.
 
@@ -169,8 +167,8 @@ class ZarrClimateLoader:
         self,
         lat_range: Tuple[float, float],
         lon_range: Tuple[float, float],
-        time_range: Optional[Tuple[str, str]] = None,
-        variables: Optional[List[str]] = None,
+        time_range: Tuple[str, str] | None = None,
+        variables: List[str] | None = None,
     ):
         """
         Load data for a specific spatial region and optional time range.
@@ -337,7 +335,7 @@ def load_zarr_for_aifs(
     zarr_path: str,
     start_time: str,
     end_time: str,
-    variables: Optional[List[str]] = None,
+    variables: List[str] | None = None,
     batch_size: int = 2,
     normalize: bool = True,
 ) -> torch.Tensor:

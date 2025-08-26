@@ -52,7 +52,7 @@ def demonstrate_zarr_to_aifs(
     zarr_path: str,
     start_time: str = "2024-01-01",
     end_time: str = "2024-01-07",
-    variables: Optional[List[str]] = None,
+    variables: List[str] | None = None,
 ):
     """Demonstrate loading Zarr data and processing with AIFS."""
 

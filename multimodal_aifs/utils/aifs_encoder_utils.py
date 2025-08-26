@@ -8,7 +8,7 @@ including wrapper classes and helper functions for climate data processing.
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict
 
 import numpy as np
 import torch
@@ -41,7 +41,7 @@ class AIFSEncoderWrapper(nn.Module):
     """
 
     def __init__(
-        self, encoder_path: Optional[str] = None, device: str = "cpu", use_extracted: bool = True
+        self, encoder_path: str | None = None, device: str = "cpu", use_extracted: bool = True
     ):
         """
         Initialize AIFS encoder wrapper.
@@ -55,8 +55,8 @@ class AIFSEncoderWrapper(nn.Module):
 
         self.device = device
         self.use_extracted = use_extracted
-        self.encoder: Optional[nn.Module] = None
-        self.encoder_info: Optional[Dict[str, Any]] = None
+        self.encoder: nn.Module | None = None
+        self.encoder_info: Dict[str, Any] | None = None
 
         # Input/output dimensions based on AIFS architecture
         self.input_dim = 218  # AIFS expected input features
@@ -64,7 +64,7 @@ class AIFSEncoderWrapper(nn.Module):
 
         self._load_encoder(encoder_path)
 
-    def _load_encoder(self, encoder_path: Optional[str] = None):
+    def _load_encoder(self, encoder_path: str | None = None):
         """Load the AIFS encoder."""
         if not AIFS_AVAILABLE:
             # Create a dummy encoder for testing
@@ -162,7 +162,7 @@ class AIFSEncoderWrapper(nn.Module):
 
         return encoded
 
-    def encode_climate_data(self, climate_data: Union[torch.Tensor, np.ndarray]) -> torch.Tensor:
+    def encode_climate_data(self, climate_data: torch.Tensor | np.ndarray) -> torch.Tensor:
         """
         Encode climate data with preprocessing.
 
@@ -276,7 +276,7 @@ class AIFSEncoderWrapper(nn.Module):
 
 
 def create_aifs_encoder(
-    encoder_path: Optional[str] = None, device: str = "cpu", use_extracted: bool = True
+    encoder_path: str | None = None, device: str = "cpu", use_extracted: bool = True
 ) -> AIFSEncoderWrapper:
     """
     Factory function to create AIFS encoder wrapper.

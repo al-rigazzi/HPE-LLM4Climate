@@ -168,8 +168,8 @@ class MERRA2DatasetProcessor:
         self,
         output_dir: str = "./processed_data",
         cache_dir: str = "./merra2_cache",
-        earthdata_username: Optional[str] = None,
-        earthdata_password: Optional[str] = None,
+        earthdata_username: str | None = None,
+        earthdata_password: str | None = None,
     ):
         """
         Initialize the MERRA-2 dataset processor.
@@ -309,7 +309,7 @@ class MERRA2DatasetProcessor:
         return downloaded_files
 
     def _extract_variables(
-        self, file_path: Path, variables: List[str], pressure_levels: Optional[List[float]] = None
+        self, file_path: Path, variables: List[str], pressure_levels: List[float] | None = None
     ) -> xr.Dataset:
         """
         Extract specified variables from a MERRA-2 file.
@@ -361,7 +361,7 @@ class MERRA2DatasetProcessor:
 
     def process_collection(
         self, collection: str, file_paths: List[Path], target_variables: List[str]
-    ) -> Optional[xr.Dataset]:
+    ) -> xr.Dataset | None:
         """
         Process all files from a MERRA-2 collection.
 
@@ -609,7 +609,7 @@ class MERRA2DatasetProcessor:
         start_date: str,
         end_date: str,
         temporal_resolution: str = "3H",
-        output_filename: Optional[str] = None,
+        output_filename: str | None = None,
     ) -> Path:
         """
         Complete processing pipeline for a date range.

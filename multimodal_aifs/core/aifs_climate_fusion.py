@@ -122,7 +122,7 @@ class AIFSClimateTextFusion(nn.Module):
         return torch.as_tensor(projected)
 
     def encode_text(
-        self, texts: List[str], text_embeddings: Optional[torch.Tensor] = None
+        self, texts: List[str], text_embeddings: torch.Tensor | None = None
     ) -> torch.Tensor:
         """
         Encode text descriptions.
@@ -218,7 +218,7 @@ class AIFSClimateTextFusion(nn.Module):
         self,
         climate_data: torch.Tensor,
         texts: List[str],
-        text_embeddings: Optional[torch.Tensor] = None,
+        text_embeddings: torch.Tensor | None = None,
     ) -> Dict[str, torch.Tensor]:
         """
         Forward pass of the fusion module.
@@ -271,7 +271,7 @@ class AIFSClimateTextFusion(nn.Module):
         self,
         climate_data: torch.Tensor,
         texts: List[str],
-        text_embeddings: Optional[torch.Tensor] = None,
+        text_embeddings: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
         Compute alignment between climate data and text descriptions.

@@ -78,7 +78,7 @@ class GeographicResolver:
             "great lakes": {"lat": 45.0, "lon": -84.0, "name": "Great Lakes Region"},
         }
 
-    def resolve_location(self, location_text: str) -> Optional[Dict]:
+    def resolve_location(self, location_text: str) -> Dict | None:
         """
         Resolve location text to coordinates.
 
@@ -268,7 +268,7 @@ class AIFSLocationAwareFusion(nn.Module):
         )
 
         # Initialize LLaMA model - can be either real model or mock
-        self.llama_model: Union[Any, "MockLlamaModel"]
+        self.llama_model: Any | "MockLlamaModel"
 
         # Initialize LLaMA model - try real LLaMA first, fallback to mock
         if LLAMA_AVAILABLE and not use_mock_llama:
@@ -371,7 +371,7 @@ class AIFSLocationAwareFusion(nn.Module):
             self.llama_hidden_size, 10
         )  # Example: 10 climate classes
 
-    def process_location_query(self, text_input: str) -> Optional[Dict]:
+    def process_location_query(self, text_input: str) -> Dict | None:
         """
         Process a text input to extract location information.
 
@@ -522,7 +522,7 @@ class AIFSLocationAwareFusion(nn.Module):
         self,
         ts_tokens: torch.Tensor,
         text_embeddings: torch.Tensor,
-        location_infos: List[Optional[Dict]],
+        location_infos: List[Dict | None],
     ) -> torch.Tensor:
         """Fuse modalities with location awareness."""
         # Project time series to LLaMA dimension

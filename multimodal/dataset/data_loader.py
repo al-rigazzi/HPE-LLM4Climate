@@ -27,11 +27,11 @@ class PrithviMERRA2Dataset(Dataset):
 
     def __init__(
         self,
-        dataset_path: Union[str, Path],
+        dataset_path: str | Path,
         input_time_steps: int = 2,
         time_step_hours: int = 6,
         lead_time_hours: int = 6,
-        transform: Optional[callable] = None,
+        transform: callable | None = None,
         normalize: bool = True,
     ):
         """
@@ -240,7 +240,7 @@ class MERRA2DataLoader:
 
     @staticmethod
     def create_dataloader(
-        dataset_path: Union[str, Path],
+        dataset_path: str | Path,
         batch_size: int = 1,
         shuffle: bool = True,
         num_workers: int = 0,
@@ -272,7 +272,7 @@ class MERRA2DataLoader:
         return dataloader
 
     @staticmethod
-    def load_dataset_info(dataset_path: Union[str, Path]) -> Dict:
+    def load_dataset_info(dataset_path: str | Path) -> Dict:
         """
         Load metadata and basic info about a processed dataset.
 
@@ -313,7 +313,7 @@ class MERRA2DataLoader:
 
 
 def load_multiple_datasets(
-    dataset_paths: List[Union[str, Path]], **dataloader_kwargs
+    dataset_paths: List[str | Path], **dataloader_kwargs
 ) -> List[torch.utils.data.DataLoader]:
     """
     Load multiple processed datasets and return data loaders.
@@ -335,7 +335,7 @@ def load_multiple_datasets(
     return dataloaders
 
 
-def validate_dataset_compatibility(dataset_path: Union[str, Path]) -> Dict[str, bool]:
+def validate_dataset_compatibility(dataset_path: str | Path) -> Dict[str, bool]:
     """
     Validate that a processed dataset is compatible with PrithviWxC_Encoder.
 

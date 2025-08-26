@@ -47,7 +47,7 @@ def install_ecmwf_opendata():
     return True
 
 
-def download_sample_data(output_dir: str = "sample_data") -> Optional[str]:
+def download_sample_data(output_dir: str = "sample_data") -> str | None:
     """
     Download a sample of real weather data from ECMWF Open Data.
 

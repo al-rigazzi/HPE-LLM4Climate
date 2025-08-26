@@ -54,17 +54,17 @@ class DataConfig:
 class ModelConfig:
     def __init__(
         self,
-        num_static_channels: Optional[int] = None,
-        embed_dim: Optional[int] = None,
-        token_size: Optional[tuple[int, int]] = None,
-        n_blocks_encoder: Optional[int] = None,
-        n_blocks_decoder: Optional[int] = None,
-        mlp_multiplier: Optional[int] = None,
-        n_heads: Optional[int] = None,
-        dropout_rate: Optional[float] = None,
-        residual: Optional[bool] = False,
-        train_loss: Optional[str] = None,
-        val_loss: Optional[str] = None,
+        num_static_channels: int | None = None,
+        embed_dim: int | None = None,
+        token_size: tuple[int, int] | None = None,
+        n_blocks_encoder: int | None = None,
+        n_blocks_decoder: int | None = None,
+        mlp_multiplier: int | None = None,
+        n_heads: int | None = None,
+        dropout_rate: float | None = None,
+        residual: bool | None = False,
+        train_loss: str | None = None,
+        val_loss: str | None = None,
         **kwargs,
     ):
         self.__dict__.update(kwargs)
@@ -121,9 +121,9 @@ class ExperimentConfig:
         batch_size: int,
         dl_num_workers: int,
         dl_prefetch_size: int,
-        mask_unit_size: Optional[tuple[int]] = None,
-        mask_ratio_inputs: Optional[float] = None,
-        mask_ratio_targets: Optional[float] = None,
+        mask_unit_size: tuple[int] | None = None,
+        mask_ratio_inputs: float | None = None,
+        mask_ratio_targets: float | None = None,
         **kwargs,
     ):
         # additional experiment parameters used in downstream tasks
