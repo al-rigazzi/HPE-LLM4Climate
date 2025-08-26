@@ -10,7 +10,6 @@ The AIFS encoder can be used for time series tokenization through several strate
 2. Temporal batching: Reshape time dimension as batch dimension
 3. Hybrid approach: Combine spatial encoding with temporal modeling
 
-Author: GitHub Copilot
 Date: August 20, 2025
 """
 

@@ -6,7 +6,6 @@ This script investigates whether the AIFS encoder can process 5-D tensors
 representing time series climate data with dimensions:
 [batch, time, variables, height, width]
 
-Author: GitHub Copilot
 Date: August 20, 2025
 """
 
