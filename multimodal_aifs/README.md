@@ -111,8 +111,6 @@ Output files:
 - `aifs_multimodal_architecture_diagram.{png,pdf}` - Complete AIFS system overview
 - `aifs_cross_attention_detail.{png,pdf}` - Detailed attention mechanism
 
-## Quick Start
-</```
 
 ## Quick Start
 
