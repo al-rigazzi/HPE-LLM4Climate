@@ -229,26 +229,6 @@ watch -n 1 nvidia-smi
 tail -f logs/training.log
 ```
 
-### Weights & Biases Dashboard
-If enabled, view training metrics at: https://wandb.ai/your-username/climate-text-fusion
-
-## Output
-
-### Checkpoints
-Saved in `checkpoints/multimodal/checkpoint_epoch_N/`:
-- `mp_rank_00_model_states.pt`: Model weights
-- `zero_pp_rank_0_mp_rank_00_optim_states.pt`: Optimizer states
-- `tokenizer/`: Saved tokenizer
-- `config.yaml`: Training configuration
-
-### Loading Trained Model
-```python
-from multimodal.core.climate_text_fusion import ClimateTextFusion
-
-# Load trained model
-model = ClimateTextFusion.from_pretrained("checkpoints/multimodal/checkpoint_epoch_5")
-```
-
 ## Contributing
 
 When adding new features:
