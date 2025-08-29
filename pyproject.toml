@@ -214,8 +214,6 @@ module = [
     "aifs_wrapper",
     "load_aifs_encoder",
     "test_aifs_llama_integration",
-    "multimodal.core.models",
-    "multimodal.location_aware_fusion",
 ]
 ignore_missing_imports = true
 

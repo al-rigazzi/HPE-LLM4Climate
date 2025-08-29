@@ -150,20 +150,6 @@ multimodal/data/training/
 ]
 ```
 
-### Climate Data Format
-Each `.pt` file should contain a PyTorch tensor with shape:
-- `[time_steps, channels, height, width]`
-- Example: `[2, 160, 64, 64]` for 2 time steps, 160 variables, 64x64 spatial grid
-
-## Configuration Options
-
-### Model Configuration
-- `prithvi_encoder_path`: Path to pre-trained PrithviWxC weights
-- `llama_model_name`: HuggingFace model name for text encoder
-- `freeze_prithvi`: Whether to freeze climate encoder weights
-- `fusion_mode`: Type of fusion ("cross_attention", "concatenate", "add")
-- `num_fusion_layers`: Number of cross-attention fusion layers
-
 ### Training Configuration
 - `batch_size`: Per-GPU batch size
 - `gradient_accumulation_steps`: Steps to accumulate gradients

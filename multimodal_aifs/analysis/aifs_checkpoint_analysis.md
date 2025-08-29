@@ -37,7 +37,6 @@ We have successfully loaded and analyzed the ECMWF AIFS Single v1.0 PyTorch chec
 🔄 **Fully Functional**:
 - Model loading using anemoi.inference.SimpleRunner
 - CPU-based operation (no CUDA required)
-- Alternative to PrithviWxC in HPE-LLM4Climate system
 - Complete integration framework ready
 
 ✅ **Next Steps Available**:
@@ -110,7 +109,7 @@ The checkpoint structure indicates:
 
 ### Usage in HPE-LLM4Climate
 
-The AIFSWrapper class provides the foundation for using AIFS as an alternative to PrithviWxC:
+The AIFSWrapper class provides the foundation for using AIFS:
 
 ```python
 from aifs_wrapper import AIFSWrapper
@@ -131,16 +130,3 @@ With the anemoi framework installed, this would enable:
 - Multi-day predictions (up to 10 days)
 - Multiple meteorological variables
 - High-resolution spatial grids
-
-### Comparison with PrithviWxC
-
-| Feature | AIFS Single v1.0 | PrithviWxC |
-|---------|------------------|------------|
-| Provider | ECMWF | IBM/NASA |
-| Model Size | ~948 MB | ~100MB |
-| Framework | anemoi/PyTorch | PyTorch |
-| Forecast Range | 10+ days | 7 days |
-| Variables | 25+ | Weather-focused |
-| Resolution | Global high-res | Regional focus |
-
-Both models serve as excellent backends for the HPE-LLM4Climate multimodal system, with AIFS offering operational-grade forecasting capabilities.

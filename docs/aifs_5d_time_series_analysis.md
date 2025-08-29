@@ -2,7 +2,9 @@
 
 ## Executive Summary
 
-**Yes, the AIFS encoder can be used ```python
+**Yes, the AIFS encoder can be used
+
+```python
 from aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 
 # Initialize tokenizer with temporal modeling (transformer is default)
@@ -11,6 +13,8 @@ tokenizer = AIFSTimeSeriesTokenizer(
     hidden_dim=512,
     device="cpu"
 )ze time series (5-D tensors)**, but not directly. The AIFS encoder is designed for spatial weather field data and expects 4-D inputs at most. However, we've developed several effective strategies to leverage AIFS for 5-D time series tokenization.
+
+```
 
 ## 🎯 Direct Answer
 

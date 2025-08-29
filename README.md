@@ -14,14 +14,6 @@ This is an **experimental research repository** featuring a **multimodal climate
 - **Zarr format support** for cloud-optimized climate data
 - **Real-time testing** on CPU/GPU with comprehensive test suite
 
-**🌍 Legacy Implementation: PrithviWxC-based** (`/multimodal/`, `/PrithviWxC/`) 🚧 **Research Archive**
-- **NASA-IBM PrithviWxC** foundation model approach
-- **Traditional climate data processing** pipeline
-- **Maintained for research comparison**
-
-> **Status**: The AIFS multimodal implementation is the primary working system. The PrithviWxC implementation is maintained as a research archive for architectural comparison.
-
-
 ## 🚀 Overview
 
 This **operational project** implements a multimodal fusion system that bridges climate science and natural language processing using ECMWF's AIFS as the primary climate encoder:
@@ -32,11 +24,6 @@ This **operational project** implements a multimodal fusion system that bridges 
 - **Meta-Llama-3-8B integration** with multimodal fusion
 - **Spatial region loading** with coordinate wrapping
 - **Real-time testing** on CPU/GPU with comprehensive test suite
-
-### 🌍 **PrithviWxC Implementation** (`/multimodal/`, `/PrithviWxC/`) 🗂️ **Research Archive**
-- **NASA-IBM PrithviWxC** foundation model approach
-- **Traditional climate data processing** pipeline
-- **Maintained for research comparison**
 
 ### 🎯 **Applications Enabled**
 - **Climate Trend Analysis**: AI assistants that explain long-term climate patterns and projections
@@ -423,32 +410,10 @@ HPE-LLM4Climate/                 # 🧪 EXPERIMENTAL REPOSITORY
 │   │   └── benchmarks/         # Performance tests ✅
 │   └── docs/                   # AIFS documentation
 │
-├── 🟡 multimodal/              # 🚧 IN DEVELOPMENT
-│   ├── README.md               # PrithviWxC documentation
-│   ├── core/                   # PrithviWxC fusion modules
-│   │   ├── climate_text_fusion.py      # PrithviWxC fusion framework
-│   │   ├── location_aware.py           # Geographic processing
-│   │   └── location_aware_fusion.py    # Complete analysis system
-│   ├── utils/                  # PrithviWxC utilities
-│   │   └── encoder_extractor.py        # PrithviWxC encoder extraction
-│   ├── examples/               # PrithviWxC examples (development)
-│   ├── tests/                  # PrithviWxC test suite (comprehensive) ✅
-│   ├── validation/             # PrithviWxC validation and testing ✅
-│   └── docs/                   # PrithviWxC documentation
-│
-├── 🌍 PrithviWxC/              # IBM PrithviWxC model integration
-│   ├── model.py                # PrithviWxC model implementation
-│   └── rollout.py              # PrithviWxC inference utilities
-│
 ├── 🌪️ aifs-single-1.0/         # ECMWF AIFS model
 │   ├── aifs-single-mse-1.0.ckpt        # AIFS checkpoint ✅
 │   ├── config_pretraining.yaml         # AIFS configuration ✅
 │   └── run_AIFS_v1.ipynb               # AIFS example notebook ✅
-│
-├── PrithviWxC/                  # Original climate model
-│   ├── model.py                # Core model implementation
-│   ├── rollout.py              # Inference utilities
-│   └── dataloaders/            # Data loading components
 ```
 
 ### 🎯 **Choose Your Path**
@@ -459,149 +424,11 @@ HPE-LLM4Climate/                 # 🧪 EXPERIMENTAL REPOSITORY
   - ✅ Comprehensive test suite
   - ✅ Production-ready examples
 
-- **🟡 Explore PrithviWxC** (`/multimodal/`) for:
-  - 🚧 Research and development
-  - 🚧 Alternative architecture exploration
-  - 🚧 IBM foundation model approach
-│   │   ├── test_encoder_only.py                  # Encoder functionality
-│   │   ├── test_simple_encoder_extraction.py     # Basic extraction
-│   │   ├── test_full_encoder_pipeline.py         # Complete pipeline
-│   │   ├── test_llama_integration.py             # LLM integration
-│   │   ├── test_llama_comprehensive.py           # Advanced testing
-│   │   ├── debug_weight_loading.py               # Debug utilities
-│   │   └── debug_forward_pass.py                 # Forward pass debug
-│   ├── system/                 # System verification
-│   │   └── verify_setup.py     # Complete setup validation
-│   └── demos/                  # Working demonstrations
-│       └── working_location_demo.py  # Location-aware demo
-├── PrithviWxC/                  # Original climate model
-│   ├── model.py                # Core model implementation
-│   ├── rollout.py              # Inference utilities
-│   └── dataloaders/            # Data loading components
-```
-
 ## 🧪 Testing & Validation
 
 ### Comprehensive Test Suite
 
-The system includes extensive testing across multiple components:
-
-```bash
-# Multimodal system tests
-python multimodal/tests/test_fusion.py                    # Fusion framework tests
-python multimodal/tests/test_encoder_extractor.py         # Encoder extraction tests
-python multimodal/tests/test_location_aware.py           # Geographic processing tests
-
-# Integration tests
-python multimodal/tests/integration/test_simple_encoder_extraction.py     # Basic encoder validation
-python multimodal/tests/integration/test_encoder_loading_verification.py  # Complete loading validation
-python multimodal/tests/integration/test_encoder_only.py                  # Standalone encoder tests
-python multimodal/tests/integration/test_full_encoder_pipeline.py         # End-to-end pipeline
-python multimodal/tests/integration/test_llama_integration.py             # LLM integration
-python multimodal/tests/integration/test_llama_comprehensive.py           # Advanced system tests
-
-# System verification and demos
-python multimodal/tests/system/verify_setup.py                # Complete system setup verification
-python multimodal/tests/demos/working_location_demo.py        # Location-aware demonstration
-
-# Debug utilities (for development)
-python multimodal/tests/integration/debug_weight_loading.py   # Weight loading diagnostics
-python multimodal/tests/integration/debug_forward_pass.py     # Forward pass analysis
-```
-
-### ✅ **Validation Results**
-
-**System Tests (16/16 passing):**
-- ✅ **Encoder Extraction**: PrithviWxC encoder successfully extracted and validated
-- ✅ **Multimodal Fusion**: All fusion modes (cross-attention, concatenation, additive) working
-- ✅ **Location-Aware Processing**: Geographic resolution with 100% success rate
-- ✅ **Language Model Integration**: Meta-Llama-3-8B and alternatives fully functional
-- ✅ **Apple Silicon Compatibility**: Native ARM64 support with MPS acceleration
-- ✅ **Geographic Coverage**: 6 location types (countries, states, coordinates, regions, cities)
-
-**Performance Metrics:**
-- **Location Resolution**: 8/12 queries achieved precise geographic bounds
-- **Risk Assessment**: Balanced distribution (Low: 5, Moderate: 7, High: 4)
-- **Average Confidence**: 46.9% overall, 37.5% risk-specific
-- **Model Compatibility**: 9 different transformer models tested and validated
-
-### Test Output Example
-```
-🌍 Location-Aware Climate Analysis Demo
-✅ System Status: FULLY FUNCTIONAL
-🤖 Using: Meta-Llama-3-8B (7.5B parameters)
-🗺️  Geographic: GeoPy/Nominatim geocoder
-
-📊 Analysis Summary:
-✅ Successful analyses: 12/12
-🌍 Geographic Coverage: 6 location types
-⚠️  Risk Distribution: Balanced across risk levels
-🎯 Average Confidence: 46.9%
-🏆 Best Location Identifications:
-   • 'How will climate change affect agricultural produc...' → Sverige
-   • 'What are the drought risks for California...' → California, United States
-   • 'Sea level rise impacts on coastal infrastructure i...' → 25.7°N, 80.2°W
-```
-
-## 🎯 Usage Examples
-
-### 1. Climate Question Answering
-
-```python
-from multimodal.climate_text_fusion import ClimateQuestionAnswering
-
-# Initialize QA system
-qa_model = ClimateQuestionAnswering(
-    prithvi_encoder_path='data/weights/prithvi_encoder.pt',
-    llama_model_name='meta-llama/Llama-3.2-1B'
-)
-
-# Ask questions about climate trends
-answer = qa_model.answer_question(
-    climate_data=historical_climate_data,
-    question="How much more likely will tornadoes be in 2050 compared to now?"
-)
-print(f"Answer: {answer}")
-```
-
-### 2. Climate Assessment Generation
-
-```python
-from multimodal.climate_text_fusion import ClimateTextGeneration
-
-# Initialize assessment generator
-assessment_generator = ClimateTextGeneration(
-    prithvi_encoder_path='data/weights/prithvi_encoder.pt',
-    llama_model_name='meta-llama/Llama-3.2-3B'
-)
-
-# Generate climate assessment
-report = assessment_generator.generate_report(
-    climate_data=projection_data,
-    template="Generate a climate impact assessment for agriculture in 2050:"
-)
-print(report)
-```
-
-### 3. Agricultural Climate Planning
-
-```python
-# Combine climate projections with agricultural questions
-advisory = qa_model.answer_question(
-    climate_data=long_term_climate_data,
-    question="What is the best crop to plant in Sweden considering 2050 climate projections?"
-)
-```
-
-### 4. Climate Risk Assessment
-
-```python
-# Generate climate risk analysis
-risk_assessment = assessment_generator.generate_assessment(
-    climate_data=future_climate_projections,
-    assessment_type="regional_sustainability"
-)
-```
+The system includes extensive testing across multiple components.
 
 ## 🔧 Configuration Options
 
@@ -645,21 +472,6 @@ fusion_model = AIFSClimateTextFusion(
 )
 ```
 
-### Memory Optimization
-
-```python
-# Freeze models during training
-fusion_model = ClimateTextFusion(
-    freeze_prithvi=True,    # Freeze climate encoder
-    freeze_llama=True       # Freeze text model
-)
-
-# Use gradient checkpointing
-fusion_model = ClimateTextFusion(
-    use_gradient_checkpointing=True
-)
-```
-
 
 ## 🔬 Research Applications
 
@@ -691,9 +503,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **ECMWF AIFS**: AI Forecasting System model
   - Paper: [Lang et al. (2024) - AIFS - ECMWF's data-driven forecasting system](https://arxiv.org/abs/2406.01465)
   - Model: [ecmwf/aifs-single-1.0](https://huggingface.co/ecmwf/aifs-single-1.0)
-- **NASA-IMPACT PrithviWxC**: Foundation weather and climate model
-  - Paper: [Bodapati et al. (2024) - Foundation Models for Weather and Climate Data Understanding: A Comprehensive Survey](https://arxiv.org/abs/2409.13598)
-  - Repository: [NASA-IMPACT/Prithvi-WxC](https://github.com/NASA-IMPACT/Prithvi-WxC)
 - **Meta**: Llama model series and open-source AI contributions
 
 ## 📬 Contact

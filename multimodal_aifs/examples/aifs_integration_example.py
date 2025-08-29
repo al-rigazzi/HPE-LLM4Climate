@@ -8,7 +8,6 @@ for comparative climate analysis, benchmarking, and time series tokenization.
 Features demonstrated:
 - AIFS encoder integration for spatial climate data
 - AIFSTimeSeriesTokenizer for 5-D temporal data
-- Comparative analysis between AIFS and PrithviWxC
 - Multimodal fusion of climate time series with text
 
 Requirements:
@@ -57,27 +56,6 @@ def check_aifs_availability():
 
     print("✅ AIFS submodule found and accessible")
     return True
-
-
-def check_prithvi_availability():
-    """Check if PrithviWxC components are available."""
-    try:
-        # Try importing from the actual multimodal location
-        from multimodal.core.models import MultimodalTransformer
-
-        print("✅ PrithviWxC multimodal components available")
-        return True
-    except ImportError:
-        try:
-            # Alternative import path
-            from multimodal.location_aware_fusion import LocationAwareFusion
-
-            print("✅ PrithviWxC multimodal components available")
-            return True
-        except ImportError as e:
-            print(f"❌ PrithviWxC components not available: {e}")
-            print("   Note: This demo can still show AIFS time series tokenization")
-            return False
 
 
 def demonstrate_timeseries_tokenization():
@@ -144,30 +122,6 @@ def demonstrate_timeseries_tokenization():
     print("   • Multimodal climate-text fusion")
 
 
-def demonstrate_comparative_analysis():
-    """Demonstrate comparative analysis between AIFS and PrithviWxC."""
-    print("\n🔬 Comparative Analysis Example")
-    print("=" * 50)
-
-    # Example locations for analysis
-    test_locations = [
-        {"name": "New York City", "lat": 40.7128, "lon": -74.0060},
-        {"name": "London", "lat": 51.5074, "lon": -0.1278},
-        {"name": "Tokyo", "lat": 35.6762, "lon": 139.6503},
-        {"name": "Sydney", "lat": -33.8688, "lon": 151.2093},
-    ]
-
-    print("Test locations for comparative analysis:")
-    for i, loc in enumerate(test_locations, 1):
-        print(f"  {i}. {loc['name']}: ({loc['lat']:.4f}, {loc['lon']:.4f})")
-
-    print("\n📊 Analysis capabilities:")
-    print("  • AIFS: Global 10+ day weather forecasts")
-    print("  • PrithviWxC: Regional climate analysis with multimodal fusion")
-    print("  • Comparison: Skill assessment across different time scales")
-    print("  • Ensemble: Combined predictions for improved accuracy")
-
-
 def demonstrate_data_pipeline():
     """Show how to integrate AIFS with existing data pipeline."""
     print("\n🔄 Data Pipeline Integration")
@@ -190,8 +144,6 @@ def demonstrate_data_pipeline():
     print("  1. Load MERRA-2 data using existing data_loader.py")
     print("  2. Convert to AIFS-compatible format")
     print("  3. Run AIFS inference for global forecasts")
-    print("  4. Run PrithviWxC for regional climate analysis")
-    print("  5. Compare and ensemble results")
 
 
 def show_usage_examples():
@@ -212,39 +164,6 @@ tokens = tokenizer.tokenize_time_series(climate_data_5d)
 print(f"Tokenized: {climate_data_5d.shape} -> {tokens.shape}")
             """,
         },
-        {
-            "title": "Benchmark Comparison",
-            "code": """
-# Compare AIFS and PrithviWxC predictions
-from aifs_integration import AIFSWrapper, compare_models
-
-aifs = AIFSWrapper('aifs-single-1.0/aifs-single-mse-1.0.ckpt')
-prithvi = LocationAwareFusion()
-
-results = compare_models(aifs, prithvi, location=(40.7128, -74.0060))
-print(f"RMSE - AIFS: {results['aifs_rmse']:.3f}, PrithviWxC: {results['prithvi_rmse']:.3f}")
-            """,
-        },
-        {
-            "title": "Ensemble Forecasting",
-            "code": """
-# Create ensemble predictions
-ensemble_forecast = create_ensemble([
-    aifs.predict(location, days=10),
-    prithvi.predict(location, days=10)
-], weights=[0.6, 0.4])  # Weight AIFS higher for longer forecasts
-            """,
-        },
-        {
-            "title": "Multi-scale Analysis",
-            "code": """
-# Global context from AIFS, regional details from PrithviWxC
-global_forecast = aifs.predict_global(days=7)
-regional_analysis = prithvi.analyze_region(bbox, climate_query="drought risk")
-
-combined_insight = merge_global_regional(global_forecast, regional_analysis)
-            """,
-        },
     ]
 
     for i, example in enumerate(examples, 1):
@@ -259,28 +178,16 @@ def main():
 
     # Check system status
     aifs_ok = check_aifs_availability()
-    prithvi_ok = check_prithvi_availability()
 
     if not aifs_ok:
         print("\n⚠️  AIFS not available. Please setup submodule first.")
         print("Documentation: docs/aifs_integration.md")
         return
 
-    # Show AIFS integration capabilities even without PrithviWxC
+    # Show AIFS integration capabilities
     demonstrate_timeseries_tokenization()
 
-    if not prithvi_ok:
-        print("\n⚠️  PrithviWxC not available, but AIFS time series tokenization is working!")
-        print("   You can still use:")
-        print("   • AIFSTimeSeriesTokenizer for 5-D climate data")
-        print("   • AIFS encoder for spatial climate encoding")
-        print("   • Multimodal fusion demonstrations")
-        print("\n🎯 Try the full multimodal demo:")
-        print("   python multimodal_aifs/examples/multimodal_timeseries_demo.py")
-        return
-
     # Show integration capabilities
-    demonstrate_comparative_analysis()
     demonstrate_data_pipeline()
     show_usage_examples()
 
@@ -289,8 +196,6 @@ def main():
     print("     python multimodal_aifs/examples/multimodal_timeseries_demo.py")
     print("  2. Review docs/aifs_integration.md for detailed setup")
     print("  3. Explore aifs-single-1.0/run_AIFS_v1.ipynb for AIFS examples")
-    print("  4. Run multimodal examples for PrithviWxC demonstrations")
-    print("  5. Implement comparative analysis for your use case")
 
     print("\n✨ Integration complete! Ready for comparative climate AI analysis.")
 

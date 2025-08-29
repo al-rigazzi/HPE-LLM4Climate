@@ -54,7 +54,6 @@ python docs/create_attention_detail.py
 ### Main Architecture Diagram
 - Complete multimodal fusion pipeline
 - Input specifications and tensor dimensions
-- Model components (PrithviWxC encoder, Llama-3 LLM)
 - Preprocessing steps (normalization, tokenization, location processing)
 - Cross-attention fusion mechanism
 - Technical specifications and implementation details

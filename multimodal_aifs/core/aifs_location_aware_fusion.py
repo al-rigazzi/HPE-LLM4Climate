@@ -2,8 +2,7 @@
 """
 AIFS Location-Aware Fusion Model
 
-This module provides location-aware climate-text fusion using AIFS encoder,
-similar to the Prithvi-based multimodal fusion but adapted for AIFS.
+This module provides location-aware climate-text fusion using AIFS encoder.
 
 Features:
 - Geographic text parsing and location resolution

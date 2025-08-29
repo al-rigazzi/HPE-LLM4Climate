@@ -434,10 +434,6 @@ def demo_aifs_usage():
             print("Note: Raw tensor output from mock model")
 
         print("\n✅ AIFS integration ready!")
-        print("Use AIFSWrapper as alternative to PrithviWxC for:")
-        print("  • Global weather forecasting")
-        print("  • Operational prediction tasks")
-        print("  • Long-term forecasts (10+ days)")
 
     except Exception as e:
         print(f"❌ AIFS demo failed: {e}")
