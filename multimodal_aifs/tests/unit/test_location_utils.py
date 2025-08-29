@@ -10,7 +10,6 @@ Usage:
     python -m pytest multimodal_aifs/tests/unit/test_location_utils.py -v
 """
 
-import math
 import sys
 import unittest
 from pathlib import Path

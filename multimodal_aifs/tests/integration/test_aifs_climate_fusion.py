@@ -17,7 +17,6 @@ import unittest
 import warnings
 from pathlib import Path
 
-import numpy as np
 import torch
 
 # Add project root to path

@@ -10,16 +10,13 @@ Usage:
     python -m pytest multimodal_aifs/tests/unit/test_aifs_time_series_tokenizer.py -v
 """
 
-import os
 import sys
 import time
 import unittest
 import warnings
 from pathlib import Path
 
-import numpy as np
 import torch
-import torch.nn as nn
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent.parent

@@ -17,13 +17,11 @@ Usage:
     python multimodal_aifs/examples/multimodal_timeseries_demo.py
 """
 
-import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import List
 
-import numpy as np
 import torch
 import torch.nn as nn
 

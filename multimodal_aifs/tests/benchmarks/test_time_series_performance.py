@@ -17,12 +17,9 @@ import time
 import unittest
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
-import matplotlib.pyplot as plt
-import numpy as np
 import torch
-import torch.nn as nn
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent.parent

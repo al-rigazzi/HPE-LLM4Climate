@@ -19,10 +19,7 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
-from typing import List, Optional
-
-import numpy as np
-import torch
+from typing import List
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent

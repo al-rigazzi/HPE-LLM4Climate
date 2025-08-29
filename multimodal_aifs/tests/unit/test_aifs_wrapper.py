@@ -6,14 +6,11 @@ This module tests the AIFSWrapper class and related functions for integrating
 ECMWF AIFS as a climate AI backend.
 """
 
-import os
 import sys
 import unittest
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pytest
 import torch
 
 from multimodal_aifs.aifs_wrapper import (

@@ -10,7 +10,6 @@ Usage:
     python -m pytest multimodal_aifs/tests/integration/test_time_series_integration.py -v
 """
 
-import os
 import sys
 import time
 import unittest

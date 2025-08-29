@@ -7,7 +7,6 @@ using CPU with 36GB RAM and aggressive memory optimization.
 """
 
 import gc
-import json
 import os
 import sys
 import warnings
@@ -15,7 +14,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from tqdm import tqdm
 
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent))

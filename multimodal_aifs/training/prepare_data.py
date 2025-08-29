@@ -7,10 +7,8 @@ Adapt this script to your specific data format and requirements.
 """
 
 import json
-import os
 import shutil
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 import numpy as np
 import torch

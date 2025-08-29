@@ -6,10 +6,8 @@ A utility to inspect the structure of ECMWF AIFS PyTorch checkpoints
 without requiring the full anemoi framework dependencies.
 """
 
-import io
 import os
 import zipfile
-from pathlib import Path
 
 import torch
 

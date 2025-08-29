@@ -5,10 +5,7 @@ Comprehensive tests for AIFS wrapper to achieve 80% coverage.
 
 import os
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock, patch
-
-import torch
 
 from multimodal_aifs.aifs_wrapper import AIFSWrapper, create_aifs_backend, demo_aifs_usage
 

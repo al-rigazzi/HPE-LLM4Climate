@@ -7,10 +7,7 @@ including climate-specific text preprocessing, tokenization, and embedding prepa
 """
 
 import unittest
-from unittest.mock import MagicMock, patch
 
-import numpy as np
-import pytest
 import torch
 
 from multimodal_aifs.utils.text_utils import (

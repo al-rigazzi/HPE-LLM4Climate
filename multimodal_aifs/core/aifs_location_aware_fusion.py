@@ -14,19 +14,19 @@ Features:
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
-from multimodal_aifs.utils.location_utils import GridUtils, LocationUtils, SpatialEncoder
-from multimodal_aifs.utils.text_utils import extract_location_keywords, parse_climate_query
+from multimodal_aifs.utils.location_utils import SpatialEncoder
+from multimodal_aifs.utils.text_utils import extract_location_keywords
 
 # Import LLaMA components
 try:
@@ -618,7 +618,7 @@ if __name__ == "__main__":
     climate_data, text_inputs = create_sample_location_aware_data()
 
     print(f"🌡️ Climate data shape: {climate_data.shape}")
-    print(f"💬 Text queries:")
+    print("💬 Text queries:")
     for i, text in enumerate(text_inputs):
         print(f"   {i+1}. {text}")
 
@@ -626,7 +626,7 @@ if __name__ == "__main__":
     try:
         outputs = model(climate_data=climate_data, text_inputs=text_inputs, task="embedding")
 
-        print(f"\\n✅ Location-aware fusion successful!")
+        print("\\n✅ Location-aware fusion successful!")
         print(f"📊 Output embedding shape: {outputs['embeddings'].shape}")
         print(
             f"📍 Location info: {len([loc for loc in outputs['location_info'] if loc])} locations resolved"

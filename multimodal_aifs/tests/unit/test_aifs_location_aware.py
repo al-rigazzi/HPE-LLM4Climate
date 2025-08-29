@@ -8,8 +8,6 @@ import os
 import sys
 from unittest.mock import MagicMock, patch
 
-import numpy as np
-import pytest
 import torch
 
 # Add project root to path

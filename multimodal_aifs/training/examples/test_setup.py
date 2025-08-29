@@ -6,7 +6,6 @@ This script performs basic checks to ensure all components are working correctly
 """
 
 import importlib
-import subprocess
 import sys
 from pathlib import Path
 

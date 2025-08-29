@@ -11,19 +11,7 @@ Basic usage examples:
 - **`location_aware_demo.py`** - Geographic operations and location encoding
 - **`simple_pipeline_demo.py`** - End-to-end pipeline demonstration
 
-### `advanced/`
-Advanced usage examples:
-- **`real_data_analysis.py`** - Real ECMWF data processing and analysis
-- **`multimodal_attention_demo.py`** - Location-aware attention mechanisms
-- **`spatial_analysis_demo.py`** - Spatial cropping and regional analysis
-- **`climate_similarity_analysis.py`** - Climate pattern similarity analysis
 
-### `applications/`
-Application-specific examples:
-- **`weather_forecast_analysis.py`** - Weather forecasting with multimodal analysis
-- **`climate_change_detection.py`** - Climate change pattern detection
-- **`regional_climate_comparison.py`** - Multi-region climate comparison
-- **`extreme_weather_analysis.py`** - Extreme weather event analysis
 
 ## 🚀 Quick Start
 
@@ -81,7 +69,7 @@ The examples use various data sources:
 
 To run the examples, ensure you have:
 - AIFS model weights (optional, examples work with synthetic data)
-- Required dependencies: torch, numpy, matplotlib (for visualizations)
+- Required dependencies: torch, numpy (for visualizations)
 - ECMWF data access (for real data examples)
 
 ## 📈 Performance Examples
@@ -119,24 +107,12 @@ Examples include performance benchmarks:
 # Run basic demo
 python multimodal_aifs/examples/basic/aifs_encoder_demo.py
 
-# Run advanced analysis
-python multimodal_aifs/examples/advanced/real_data_analysis.py
-
-# Run application example
-python multimodal_aifs/examples/applications/weather_forecast_analysis.py
-```
-
-### With Jupyter Notebooks
-Some examples are also available as Jupyter notebooks for interactive exploration:
-```bash
-jupyter notebook multimodal_aifs/examples/notebooks/
 ```
 
 ## 📝 Example Output
 
 Examples produce various outputs:
 - Performance metrics and timing
-- Visualization plots (when matplotlib available)
 - Analysis results and statistics
 - Model predictions and comparisons
 

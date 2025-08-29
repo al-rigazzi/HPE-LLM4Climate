@@ -16,7 +16,6 @@ Usage:
     python multimodal_aifs/examples/basic/aifs_encoder_demo.py
 """
 
-import os
 import sys
 import time
 from pathlib import Path

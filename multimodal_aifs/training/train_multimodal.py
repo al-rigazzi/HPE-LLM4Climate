@@ -19,18 +19,17 @@ Usage:
 import argparse
 import json
 import logging
-import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import torch
 import torch.nn.functional as F
 import yaml
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-from transformers import AutoTokenizer, get_linear_schedule_with_warmup
+from transformers import AutoTokenizer
 
 # Add parent directories to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
@@ -48,7 +47,7 @@ except ImportError:
     print("Warning: DeepSpeed not available. Install with: pip install deepspeed")
 
 try:
-    import wandb
+    import wandb  # pyright: ignore[reportMissingImports]
 
     WANDB_AVAILABLE = True
 except ImportError:

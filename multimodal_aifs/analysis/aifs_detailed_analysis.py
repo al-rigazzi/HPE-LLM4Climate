@@ -6,10 +6,7 @@ Deep dive into the AIFS transformer architecture with focus on specific componen
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
 
-import numpy as np
-import torch
 import torch.nn as nn
 
 # Add current directory to path for imports
@@ -144,7 +141,7 @@ def analyze_embedding_layers(model: nn.Module):
         if emb["weight_shape"]:
             print(f"      ↳ Weight: {emb['weight_shape']}, Bias: {emb['has_bias']}")
 
-    print(f"\n🎯 Key Linear Projections (Top 10 by parameters):")
+    print("\n🎯 Key Linear Projections (Top 10 by parameters):")
     projections.sort(key=lambda x: x["parameters"], reverse=True)
     for proj in projections[:10]:
         print(

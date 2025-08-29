@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./multimodal_aifs/models/extracted_models",
+        "./multimodal_aifs/tests/integration"
+    ]
+}

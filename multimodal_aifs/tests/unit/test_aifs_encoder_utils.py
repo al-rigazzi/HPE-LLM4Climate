@@ -10,11 +10,9 @@ Usage:
     python -m pytest multimodal_aifs/tests/unit/test_aifs_encoder_utils.py -v
 """
 
-import os
 import sys
 import time
 import unittest
-import warnings
 from pathlib import Path
 
 import numpy as np

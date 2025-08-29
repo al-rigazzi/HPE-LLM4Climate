@@ -6,15 +6,14 @@ combining climate data encoded through AIFS with textual descriptions for enhanc
 multimodal climate analysis.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple
 
-import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 from ..utils.aifs_encoder_utils import AIFSEncoderWrapper
-from ..utils.text_utils import ClimateTextProcessor, TextEmbeddingUtils
+from ..utils.text_utils import ClimateTextProcessor
 
 
 class AIFSClimateTextFusion(nn.Module):
@@ -379,7 +378,7 @@ def test_aifs_climate_fusion():
     # Check if AIFS model is available
     import os
 
-    aifs_path = "/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate/extracted_models/aifs_encoder_full.pth"
+    aifs_path = "../multimodal_aifs/models/extracted_models/aifs_encoder_full.pth"
 
     if not os.path.exists(aifs_path):
         print("⚠️  AIFS encoder not found, using synthetic test")
@@ -397,7 +396,7 @@ def test_aifs_climate_fusion():
             device="cpu",
         )
 
-        print(f"Fusion module initialized")
+        print("Fusion module initialized")
 
         # Create synthetic climate data
         batch_size = 4

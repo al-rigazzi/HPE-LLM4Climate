@@ -6,18 +6,17 @@ including geographic resolvers, spatial croppers, and location-aware attention
 mechanisms for spatially-informed climate analysis.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
-from ..utils.aifs_encoder_utils import AIFSEncoderWrapper
 from ..utils.location_utils import GridUtils, LocationUtils, SpatialEncoder
 
 
-class AIFSGeographicResolver(nn.Module):
+class AIFSGeographicResolver():
     """
     Geographic resolver for AIFS-based climate analysis.
 
@@ -265,7 +264,6 @@ class AIFSSpatialCropper(nn.Module):
         Returns:
             Spatial features tensor
         """
-        lat_size, lon_size = coordinates
 
         # Flatten spatial dimensions
         if climate_data.dim() == 3:  # (vars, lat, lon)

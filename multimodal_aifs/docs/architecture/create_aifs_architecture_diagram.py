@@ -25,7 +25,6 @@ from pathlib import Path
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.patches import ConnectionPatch, FancyBboxPatch
 
 # Get the directory where this script is located

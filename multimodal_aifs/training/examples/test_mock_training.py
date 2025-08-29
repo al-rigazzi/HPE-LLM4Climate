@@ -6,7 +6,6 @@ This script tests the AIFS training pipeline with small mock data to verify
 that everything works without requiring large models or real climate data.
 """
 
-import os
 import sys
 from pathlib import Path
 

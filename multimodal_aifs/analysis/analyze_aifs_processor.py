@@ -8,9 +8,8 @@ the main computation and contains the majority of the model's parameters.
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-import torch
 import torch.nn as nn
 
 # Add current directory to path for imports

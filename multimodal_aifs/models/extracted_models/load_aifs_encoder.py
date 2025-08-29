@@ -9,7 +9,6 @@ import json
 from pathlib import Path
 
 import torch
-import torch.nn as nn
 
 
 def load_aifs_encoder(

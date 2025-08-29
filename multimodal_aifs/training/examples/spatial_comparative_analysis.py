@@ -25,7 +25,6 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
