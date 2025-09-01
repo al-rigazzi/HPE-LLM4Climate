@@ -179,15 +179,106 @@ def test_real_llama_integration():
     return True
 
 
+def test_aifs_llama_fusion_real():
+    """Test AIFS + Real Llama-3-8B Fusion Model (No Mocks)"""
+    print("\n🔥 Testing AIFS + Real Llama-3-8B Fusion (NO MOCKS)")
+    print("=" * 60)
+
+    # Mock flash_attn to prevent import errors
+    import types
+    flash_attn_mock = types.ModuleType('flash_attn')
+    flash_attn_mock.__spec__ = types.ModuleType('spec')
+    flash_attn_mock.__dict__['__spec__'] = True
+    sys.modules['flash_attn'] = flash_attn_mock
+    sys.modules['flash_attn_2_cuda'] = flash_attn_mock
+
+    # Disable flash attention
+    os.environ['USE_FLASH_ATTENTION'] = 'false'
+    os.environ['TRANSFORMERS_USE_FLASH_ATTENTION_2'] = 'false'
+
+    try:
+        from multimodal_aifs.tests.integration.test_aifs_llama_integration import AIFSLlamaFusionModel
+
+        print('📦 Initializing AIFSLlamaFusionModel with REAL Llama-3-8B...')
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        print(f'🎯 Using device: {device}')
+
+        # Create fusion model with real Llama-3-8B
+        model = AIFSLlamaFusionModel(
+            time_series_dim=256,
+            llama_model_name='meta-llama/Meta-Llama-3-8B',  # Real Llama-3-8B
+            fusion_strategy='cross_attention',
+            device=device,
+            use_mock_llama=False,  # NO MOCKS!
+            use_quantization=False  # No quantization on CPU
+        )
+
+        print('✅ Model initialized successfully!')
+        print(f'🧠 AIFS tokenizer: {type(model.time_series_tokenizer).__name__}')
+        print(f'🦙 Llama model: {type(model.llama_model).__name__}')
+        print(f'⚡ Fusion strategy: {model.fusion_strategy}')
+
+        # Test with minimal climate data
+        print('\n🧪 Testing model with climate data...')
+        batch_size = 1
+        time_steps = 4
+        variables = 1  # Just temperature
+        height = 2
+        width = 2
+
+        # Create 5D climate data: [batch, time, vars, height, width]
+        dummy_climate_data = torch.randn(batch_size, time_steps, variables, height, width).to(device)
+        dummy_text_inputs = ['Predict weather patterns for tomorrow.']
+
+        print(f'📊 Climate data shape: {dummy_climate_data.shape}')
+        print(f'📝 Text: {dummy_text_inputs[0]}')
+
+        # Test different tasks
+        for task in ['embedding', 'generation']:
+            print(f'\n🔍 Testing {task} task...')
+            outputs = model.forward(dummy_climate_data, dummy_text_inputs, task=task)
+            print(f'✅ {task} task successful - Output keys: {list(outputs.keys())}')
+
+        # Verify real models are loaded
+        llama_params = sum(p.numel() for p in model.llama_model.parameters())
+        print(f'\n📊 Model Analysis:')
+        print(f'   🦙 Llama parameters: {llama_params:,}')
+
+        if llama_params > 7_000_000_000:
+            print('   ✅ CONFIRMED: Real Llama-3-8B model loaded!')
+            print('   🎯 SUCCESS: Both AIFS and Llama-3-8B working together!')
+            success = True
+        else:
+            print('   ⚠️  Parameter count suggests mock model still in use')
+            success = False
+
+        print('\n🌟 Multimodal Climate AI with AIFS + Llama-3-8B test complete!')
+        return success
+
+    except Exception as e:
+        print(f'❌ Error in fusion test: {e}')
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def main():
     """Main test runner"""
     try:
-        success = test_real_llama_integration()
-        if success:
-            print("\n🏆 All tests passed successfully!")
+        print("🚀 Running Real AIFS + Llama Integration Tests")
+        print("=" * 60)
+
+        # Run both tests
+        test1_success = test_real_llama_integration()
+        test2_success = test_aifs_llama_fusion_real()
+
+        if test1_success and test2_success:
+            print("\n🏆 All integration tests passed successfully!")
+            print("✅ Location-aware fusion test passed")
+            print("✅ AIFS + Llama-3-8B fusion test passed")
             sys.exit(0)
         else:
-            print("\n💥 Tests failed!")
+            print("\n💥 Some tests failed!")
             sys.exit(1)
     except KeyboardInterrupt:
         print("\n⏹️ Test interrupted by user")

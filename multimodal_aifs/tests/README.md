@@ -19,6 +19,10 @@ Integration tests for complex interactions:
 - **`test_aifs_location_aware.py`** - Location-aware components integration
 - **`test_aifs_full_pipeline.py`** - End-to-end multimodal pipeline testing
 - **`test_real_data_pipeline.py`** - Real ECMWF data processing pipeline
+- **`test_aifs_llama_integration.py`** - AIFS + LLaMA fusion model testing
+- **`test_real_llama_integration.py`** - Real LLaMA-3-8B integration tests
+- **`test_aifs_llama3_real_fusion.py`** - ⭐ **AIFS + Real Llama-3-8B fusion (NO MOCKS)**
+- **`test_aifs_llama3_pytest.py`** - Pytest-compatible real fusion tests
 
 ### `benchmarks/`
 Performance benchmarking tests:
@@ -48,6 +52,25 @@ python -m pytest multimodal_aifs/tests/benchmarks/ -v
 # Run all tests
 python -m pytest multimodal_aifs/tests/ -v
 ```
+
+### Real Model Integration Tests (⭐ NEW)
+```bash
+# Run AIFS + Real Llama-3-8B fusion test (standalone)
+cd "/path/to/HPE-LLM4Climate"
+PYTHONPATH="$PWD:$PYTHONPATH" python multimodal_aifs/tests/integration/test_aifs_llama3_real_fusion.py
+
+# Run with pytest
+pytest -xvs multimodal_aifs/tests/integration/test_aifs_llama3_pytest.py
+
+# Run all real LLaMA integration tests
+python multimodal_aifs/tests/integration/test_real_llama_integration.py
+```
+
+**Note**: Real model tests require:
+- ~8GB+ RAM for Llama-3-8B model
+- HuggingFace transformers library
+- Internet connection for model download
+- Time: ~30s model loading + ~2min per test
 
 ### Time Series Test Runner
 ```bash

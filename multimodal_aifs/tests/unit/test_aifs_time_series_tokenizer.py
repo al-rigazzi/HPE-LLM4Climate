@@ -63,20 +63,20 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         """Test AIFSTimeSeriesTokenizer initialization with different configurations."""
         print("\\n🔧 Testing Tokenizer Initialization")
 
-        # Test default initialization (lstm)
-        tokenizer_lstm = AIFSTimeSeriesTokenizer(device=self.device)
-        self.assertEqual(tokenizer_lstm.temporal_modeling, "lstm")
-        self.assertEqual(tokenizer_lstm.hidden_dim, 512)
-        self.assertEqual(tokenizer_lstm.device, self.device)
-        print("   ✅ LSTM tokenizer initialized (default)")
+        # Test default initialization (transformer)
+        tokenizer_default = AIFSTimeSeriesTokenizer(device=self.device)
+        self.assertEqual(tokenizer_default.temporal_modeling, "transformer")
+        self.assertEqual(tokenizer_default.hidden_dim, 512)
+        self.assertEqual(tokenizer_default.device, self.device)
+        print("   ✅ Transformer tokenizer initialized (default)")
 
-        # Test Transformer initialization
-        tokenizer_transformer = AIFSTimeSeriesTokenizer(
-            temporal_modeling="transformer", hidden_dim=256, device=self.device
+        # Test LSTM initialization
+        tokenizer_lstm = AIFSTimeSeriesTokenizer(
+            temporal_modeling="lstm", hidden_dim=256, device=self.device
         )
-        self.assertEqual(tokenizer_transformer.temporal_modeling, "transformer")
-        self.assertEqual(tokenizer_transformer.hidden_dim, 256)
-        print("   ✅ Transformer tokenizer initialized")
+        self.assertEqual(tokenizer_lstm.temporal_modeling, "lstm")
+        self.assertEqual(tokenizer_lstm.hidden_dim, 256)
+        print("   ✅ LSTM tokenizer initialized")
 
         # Test None initialization (spatial only)
         tokenizer_none = AIFSTimeSeriesTokenizer(temporal_modeling="none", device=self.device)
@@ -285,7 +285,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         for key in required_keys:
             self.assertIn(key, info)
 
-        self.assertEqual(info["temporal_modeling"], "lstm")  # Default
+        self.assertEqual(info["temporal_modeling"], "transformer")  # Default
         self.assertEqual(info["device"], self.device)
         self.assertIsInstance(info["aifs_encoder"], dict)
 

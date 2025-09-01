@@ -69,8 +69,8 @@ class AIFSWrapper:
             model_path: Path to AIFS checkpoint file
             config_path: Path to AIFS configuration file
         """
-        self.project_root = Path(__file__).parent
-        self.aifs_path = self.project_root / "models" / "aifs-single-1.0"
+        self.project_root = Path(__file__).parent.parent
+        self.aifs_path = self.project_root / "aifs-single-1.0"
 
         # Default paths if not provided
         if model_path is None:
