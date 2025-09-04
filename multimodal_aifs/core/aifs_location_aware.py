@@ -16,7 +16,7 @@ from torch import nn
 from ..utils.location_utils import GridUtils, LocationUtils, SpatialEncoder
 
 
-class AIFSGeographicResolver():
+class AIFSGeographicResolver:
     """
     Geographic resolver for AIFS-based climate analysis.
 

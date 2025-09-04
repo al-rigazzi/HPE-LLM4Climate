@@ -14,6 +14,7 @@ import torch
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, project_root)
 
+
 # Mock flash attention before any transformers imports
 def setup_flash_attn_mock():
     """Mock flash attention components that cause import issues."""
@@ -32,6 +33,7 @@ def setup_flash_attn_mock():
     with patch("transformers.utils.import_utils.is_flash_attn_2_available", return_value=False):
         with patch("transformers.utils.import_utils._is_package_available", return_value=False):
             pass
+
 
 # Setup flash attention mock before imports
 setup_flash_attn_mock()
@@ -164,7 +166,9 @@ class TestAIFSLocationAwareFusion:
     @patch("transformers.utils.import_utils._is_package_available", return_value=False)
     @patch("transformers.LlamaModel")
     @patch("transformers.LlamaTokenizer")
-    def test_model_initialization(self, mock_tokenizer, mock_model, mock_pkg_available, mock_flash_available):
+    def test_model_initialization(
+        self, mock_tokenizer, mock_model, mock_pkg_available, mock_flash_available
+    ):
         """Test model initialization with mocked components"""
         # Mock the tokenizer
         mock_tokenizer_instance = MagicMock()
@@ -200,7 +204,9 @@ class TestAIFSLocationAwareFusion:
     @patch("transformers.utils.import_utils._is_package_available", return_value=False)
     @patch("transformers.LlamaModel")
     @patch("transformers.LlamaTokenizer")
-    def test_forward_pass_mock(self, mock_tokenizer, mock_model, mock_pkg_available, mock_flash_available):
+    def test_forward_pass_mock(
+        self, mock_tokenizer, mock_model, mock_pkg_available, mock_flash_available
+    ):
         """Test forward pass with mock data"""
         # Setup mocks
         mock_tokenizer_instance = MagicMock()

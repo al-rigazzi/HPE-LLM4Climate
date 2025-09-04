@@ -280,10 +280,7 @@ class TestAIFSWrapper(unittest.TestCase):
         wrapper.is_loaded = True
 
         # Mock _load_model to return the expected format
-        mock_load_model.return_value = {
-            "pytorch_model": mock_model,
-            "type": "aifs_full"
-        }
+        mock_load_model.return_value = {"pytorch_model": mock_model, "type": "aifs_full"}
 
         # Test with torch tensor
         tensor_data = torch.randn(2, 5, 32, 32)
@@ -293,7 +290,9 @@ class TestAIFSWrapper(unittest.TestCase):
         # Test with numpy array - this will return a dictionary in the current implementation
         numpy_data = np.random.randn(2, 5, 32, 32).astype(np.float32)
         result_numpy = wrapper.predict(numpy_data)
-        self.assertIsInstance(result_numpy, dict)  # Current implementation returns dict for location-based predictions    def test_predict_with_different_parameters(self):
+        self.assertIsInstance(
+            result_numpy, dict
+        )  # Current implementation returns dict for location-based predictions    def test_predict_with_different_parameters(self):
         """Test predict method with different parameters."""
         wrapper = AIFSWrapper()
 
@@ -386,7 +385,10 @@ class TestAIFSWrapperErrorHandling(unittest.TestCase):
         """Test handling of model loading errors."""
         with (
             patch("pathlib.Path.exists", return_value=True),
-            patch("anemoi.inference.runners.simple.SimpleRunner", side_effect=Exception("Corrupted model file")),
+            patch(
+                "anemoi.inference.runners.simple.SimpleRunner",
+                side_effect=Exception("Corrupted model file"),
+            ),
         ):
 
             wrapper = AIFSWrapper(model_path="/fake/path/model.ckpt")
