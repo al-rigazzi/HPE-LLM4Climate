@@ -5,8 +5,11 @@
 *.pt
 *.nc
 **/dataset/example_*
-*grib
+*.grib
+*.idx
+*.npy
 **/.python-version
+**/extracted_models/**
 .coverage*
 coverage*
 **/.cache

@@ -261,9 +261,13 @@ class AIFSLocationAwareFusion(nn.Module):
         self.spatial_cropper = SpatialCropper(grid_shape)
         self.spatial_encoder = SpatialEncoder(encoding_dim=64)
 
-        # Initialize AIFS time series tokenizer
+        # Initialize AIFS time series tokenizer (placeholder for now - requires AIFS model)
         self.time_series_tokenizer = AIFSTimeSeriesTokenizer(
-            temporal_modeling="transformer", hidden_dim=time_series_dim, device=device
+            aifs_checkpoint_path="/path/to/aifs/checkpoint.pt",  # Will be set with real model
+            temporal_modeling="transformer",
+            hidden_dim=time_series_dim,
+            device=device,
+            verbose=False,
         )
 
         # Initialize LLaMA model - can be either real model or mock

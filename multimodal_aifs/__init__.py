@@ -58,6 +58,14 @@ __version__ = "0.1.0"
 __author__ = "HPE-LLM4Climate Team"
 __email__ = "climate-ai@hpe.com"
 
+# Core climate fusion modules
+from .core.aifs_climate_fusion import (
+    AIFSClimateEmbedding,
+    AIFSClimateTextFusion,
+    create_aifs_embedding_from_model,
+    create_aifs_fusion_from_model,
+)
+
 # Core imports
 # Core module imports - TODO: Implement these modules
 # from .core.aifs_climate_fusion import AIFSClimateTextFusion
@@ -69,13 +77,42 @@ __email__ = "climate-ai@hpe.com"
 # from .core.aifs_location_aware_fusion import (
 #     AIFSFusionMode,
 #     AIFSLocationAwareClimateAnalysis,
-# )# Utility imports
-from .utils.aifs_encoder_utils import AIFSEncoderWrapper
+# )# Core imports - Advanced AIFS Encoder utilities
+from .core.aifs_encoder_utils import (
+    AIFSCompleteEncoder,
+    check_aifs_dependencies,
+    create_aifs_encoder,
+    get_checkpoint_info,
+    get_default_checkpoint_path,
+    load_aifs_encoder,
+    save_aifs_encoder,
+    validate_checkpoint,
+)
+
+# Utility imports
+from .utils.aifs_encoder_utils import AIFSEncoderWrapper  # Legacy - use AIFSCompleteEncoder instead
+from .utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 from .utils.climate_data_utils import ClimateDataProcessor
 from .utils.location_utils import GridUtils, LocationUtils
 
 __all__ = [
-    # Utility modules
+    # Advanced AIFS Encoder utilities
+    "AIFSCompleteEncoder",
+    "save_aifs_encoder",
+    "load_aifs_encoder",
+    "create_aifs_encoder",
+    "get_checkpoint_info",
+    "validate_checkpoint",
+    "get_default_checkpoint_path",
+    "check_aifs_dependencies",
+    # Climate fusion modules
+    "AIFSClimateTextFusion",
+    "AIFSClimateEmbedding",
+    "create_aifs_fusion_from_model",
+    "create_aifs_embedding_from_model",
+    # Time series tokenization
+    "AIFSTimeSeriesTokenizer",
+    # Utility modules (legacy)
     "AIFSEncoderWrapper",
     "ClimateDataProcessor",
     "LocationUtils",
