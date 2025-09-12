@@ -413,12 +413,3 @@ plt.savefig(str(pdf_path), dpi=300, bbox_inches="tight", facecolor="white", edge
 
 print("✅ AIFS Multimodal Architecture Diagram saved as:")
 print(f"   📄 {pdf_path}")
-print("\n🎯 Diagram features (Updated 2025):")
-print("   • ECMWF AIFS encoder direct integration")
-print("   • Meta-Llama-3-8B language model")
-print("   • Real climate data processing pipeline")
-print("   • Accurate parameter counts and dimensions")
-print("   • Location-aware processing capabilities")
-print("   • Professional styling for presentations")
-
-plt.show()
