@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 AIFS + Llama-3-8B Real Fusion Integration Test
-Tests the complete multimodal fusion with real models (no mocks)
+Tests the complete multimodal fusion with real models
 """
 
 import os
@@ -59,7 +59,7 @@ def test_aifs_llama3_8b_fusion():
             llama_model_name="meta-llama/Meta-Llama-3-8B",
             fusion_strategy="cross_attention",
             device=device,
-            use_mock_llama=False,  # CRITICAL: No mocks!
+            use_mock_llama=False,  # Using real models for integration test
             use_quantization=False,  # CPU doesn't support quantization
         )
 

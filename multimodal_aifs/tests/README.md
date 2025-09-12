@@ -14,6 +14,9 @@ Unit tests for individual components:
 
 ### `integration/`
 Integration tests for complex interactions:
+- **`test_advanced_integration.py`** - Advanced component integration testing (moved from root)
+- **`test_advanced_tokenizer_integration.py`** - Advanced tokenizer integration tests (moved from root)
+- **`test_aifs_encoder_integration.py`** - AIFS encoder integration tests (moved from root)
 - **`test_aifs_climate_fusion.py`** - Climate-text fusion with AIFS encoder
 - **`test_time_series_integration.py`** - Time series tokenizer multimodal integration
 - **`test_aifs_location_aware.py`** - Location-aware components integration
@@ -21,8 +24,10 @@ Integration tests for complex interactions:
 - **`test_real_data_pipeline.py`** - Real ECMWF data processing pipeline
 - **`test_aifs_llama_integration.py`** - AIFS + LLaMA fusion model testing
 - **`test_real_llama_integration.py`** - Real LLaMA-3-8B integration tests
-- **`test_aifs_llama3_real_fusion.py`** - ⭐ **AIFS + Real Llama-3-8B fusion (NO MOCKS)**
+- **`test_aifs_llama3_real_fusion.py`** - ⭐ **AIFS + Real Llama-3-8B fusion (Real Models)**
 - **`test_aifs_llama3_pytest.py`** - Pytest-compatible real fusion tests
+- **`test_5d_aifs_capability.py`** - 5D tensor processing capability tests
+- **`zarr/`** - Zarr format integration tests
 
 ### `benchmarks/`
 Performance benchmarking tests:

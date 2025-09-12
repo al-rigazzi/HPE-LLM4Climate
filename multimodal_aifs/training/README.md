@@ -13,28 +13,27 @@ training/
 ├── requirements.txt             # Dependencies
 ├── inference.py                 # AIFS model inference
 ├── prepare_data.py              # Data preparation utilities
-├── examples/                    # 🆕 Example scripts and tests
-│   ├── README.md               # Detailed examples documentation
-│   ├── test_mock_training.py   # Basic AIFS validation
-│   ├── llama3_final_success.py # Working Llama-3-8B (simple fusion)
-│   ├── llama3_cross_attention.py # Working Llama-3-8B (cross-attention)
-│   └── ... (other test scripts)
-└── *.pt                        # Saved model checkpoints
+├── examples/                    # Training examples and demos
+│   ├── README.md               # Examples documentation
+│   ├── llama3_final_success.py # Production AIFS+Llama-3-8B fusion
+│   ├── train_llama3_8b.py      # Comprehensive training pipeline
+│   └── spatial_comparative_analysis.py # Advanced spatial analysis
+└── *.pt                        # Saved model checkpoints (generated)
 ```
 
 ## 🚀 Quick Start
 
-### 1. For Testing and Examples
+### 1. For Examples and Testing
 ```bash
 # See all available examples
 cd examples/
 cat README.md
 
-# Start with basic AIFS validation
-python examples/test_mock_training.py
+# Start with production-ready AIFS+Llama fusion
+python examples/llama3_final_success.py
 
-# Try Llama-3-8B with AIFS cross-attention
-python examples/llama3_cross_attention.py
+# Try comprehensive training pipeline
+python examples/train_llama3_8b.py
 ```
 
 ### 2. For Production AIFS Training
@@ -69,11 +68,9 @@ The production AIFS training pipeline supports:
 
 | Model Scale | Memory Usage | Status | Example Script |
 |-------------|-------------|--------|----------------|
-| Mock AIFS (2.9M) | 0.1GB | ✅ Working | `examples/test_mock_training.py` |
-| Large AIFS (774M) | 0.6GB | ✅ Working | `examples/test_large_simple.py` |
-| XL AIFS (1.6B) | 5.7GB | ✅ Working | `examples/test_maximum_scale.py` |
-| **AIFS + Llama-3-8B** | **8.5GB** | **✅ Working** | `examples/llama3_final_success.py` |
-| **AIFS + Llama-3-8B + Cross-Attention** | **10.6GB** | **✅ Working** | `examples/llama3_cross_attention.py` |
+| **AIFS + Llama-3-8B (Simple)** | **8.5GB** | **✅ Production** | `examples/llama3_final_success.py` |
+| **AIFS + Llama-3-8B (Full)** | **10.6GB** | **✅ Production** | `examples/train_llama3_8b.py` |
+| **Spatial Analysis** | **Variable** | **✅ Production** | `examples/spatial_comparative_analysis.py` |
 
 ## 📊 System Requirements
 

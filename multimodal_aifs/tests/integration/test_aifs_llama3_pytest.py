@@ -47,7 +47,7 @@ def aifs_llama_model():
         llama_model_name="meta-llama/Meta-Llama-3-8B",
         fusion_strategy="cross_attention",
         device=device,
-        use_mock_llama=False,  # NO MOCKS!
+        use_mock_llama=False,  # Use real models for testing
         use_quantization=False,
     )
 

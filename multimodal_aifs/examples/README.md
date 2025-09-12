@@ -7,9 +7,14 @@ This directory contains example scripts demonstrating the capabilities of the mu
 ### `basic/`
 Basic usage examples:
 - **`aifs_encoder_demo.py`** - Simple AIFS encoder usage and climate data encoding
-- **`climate_text_fusion_demo.py`** - Basic climate-text fusion with AIFS
 - **`location_aware_demo.py`** - Geographic operations and location encoding
-- **`simple_pipeline_demo.py`** - End-to-end pipeline demonstration
+
+### Root Examples
+Complete integration examples:
+- **`aifs_integration_example.py`** - AIFS integration with time series tokenization
+- **`aifs_llama_example.py`** - AIFS + LLaMA multimodal fusion example
+- **`multimodal_timeseries_demo.py`** - Time series multimodal demonstration
+- **`zarr_aifs_multimodal_example.py`** - Zarr format integration with AIFS
 
 
 

@@ -192,7 +192,7 @@ class AIFSGeographicResolver:
             if location["type"] == "coordinates":
                 return location["latitude"], location["longitude"]
 
-        # TODO: Add geocoding for city names, regions, etc.
+        # Add geocoding for city names, regions, etc. when needed
         return None
 
 

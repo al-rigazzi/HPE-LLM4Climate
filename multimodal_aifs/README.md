@@ -9,36 +9,30 @@ multimodal_aifs/
 ├── README.md                    # This file
 ├── requirements-aifs.txt        # AIFS-specific requirements
 ├── aifs_wrapper.py             # Main AIFS wrapper implementation
-├── TESTS_AND_EXAMPLES_SUMMARY.md  # Test and example documentation
 │
 ├── core/                       # Core multimodal fusion modules
 │   ├── __init__.py
-│   ├── climate_text_fusion.py  # Climate-text fusion implementation
-│   ├── attention_mechanisms.py # Cross-modal attention
-│   └── multimodal_models.py   # Multimodal model definitions
+│   ├── aifs_encoder_utils.py   # AIFS encoder utilities
+│   ├── aifs_climate_fusion.py  # Climate-text fusion implementation
+│   ├── aifs_location_aware.py  # Location-aware geographic processing
+│   └── aifs_location_aware_fusion.py # Complete AIFS multimodal system
 │
 ├── utils/                      # Utility modules
 │   ├── __init__.py
-│   ├── aifs_encoder_utils.py   # AIFS encoder utilities
+│   ├── aifs_encoder_utils.py   # AIFS encoder utilities (DEPRECATED - moved to core)
+│   ├── aifs_time_series_tokenizer.py # Time series tokenization
 │   ├── climate_data_utils.py   # Climate data processing
 │   ├── location_utils.py       # Geographic and spatial utilities
-│   └── text_processing_utils.py # Text processing utilities
+│   └── text_utils.py          # Text processing utilities
 │
 ├── models/                     # Model files and checkpoints
-│   ├── extracted_models/       # Extracted AIFS encoder models
-│   │   ├── aifs_encoder_full.pth
-│   │   ├── aifs_encoder_state_dict.pth
-│   │   ├── load_aifs_encoder.py
-│   │   └── aifs_encoder_analysis.json
-│   └── aifs-single-1.0/       # Original AIFS model files
-│       ├── aifs-single-mse-1.0.ckpt
-│       ├── config_pretraining.yaml
-│       └── run_AIFS_v1.ipynb
+│   └── extracted_models/       # Extracted AIFS encoder models
+│       ├── aifs_encoder_full.pth
+│       └── aifs_encoder_state_dict.pth
 │
 ├── scripts/                    # Utility and processing scripts
 │   ├── extract_aifs_encoder.py # Extract encoder from AIFS model
-│   ├── check_encoder_signature.py # Check encoder compatibility
-│   └── other utility scripts...
+│   └── check_encoder_signature.py # Check encoder compatibility
 │
 ├── data/                       # ECMWF data processing and storage
 │   ├── README.md              # Data processing documentation
@@ -46,11 +40,8 @@ multimodal_aifs/
 │   │   ├── test_ecmwf_download.py # ECMWF data download test
 │   │   ├── real_data_pipeline.py # Real data processing pipeline
 │   │   └── apply_encoder_to_data.py # Apply encoder to ECMWF data
-│   ├── grib/                  # GRIB weather data files
-│   │   └── *.grib files       # ECMWF weather data
+│   ├── grib/                  # GRIB weather data files (cache files)
 │   └── results/               # Data processing results
-│       ├── *.pt files         # Encoded climate data
-│       └── *.json files       # Processing metadata
 │
 ├── analysis/                   # Analysis and inspection tools
 │   ├── aifs_detailed_analysis.py # Detailed AIFS model analysis
@@ -62,31 +53,57 @@ multimodal_aifs/
 │   └── processor_analysis.json # Processor analysis results
 │
 ├── results/                    # Processing results and outputs
-│   └── encoder_results/        # Encoder processing results
-│       ├── encoded_data_*.pt   # Encoded data files
-│       └── encoding_results_*.json # Encoding metadata
+│   └── benchmarks/            # Performance benchmark results
 │
 ├── examples/                   # Example usage and demonstrations
 │   ├── README.md              # Example documentation
 │   ├── aifs_integration_example.py # Integration example
-│   ├── basic/                 # Basic examples
-│   │   ├── location_aware_demo.py
-│   │   └── aifs_encoder_demo.py
-│   └── advanced/              # Advanced examples (placeholder)
+│   ├── aifs_llama_example.py  # AIFS + LLaMA example
+│   ├── multimodal_timeseries_demo.py # Time series demo
+│   ├── zarr_aifs_multimodal_example.py # Zarr integration example
+│   └── basic/                 # Basic examples
+│       ├── location_aware_demo.py
+│       └── aifs_encoder_demo.py
 │
 ├── tests/                     # Test suite
 │   ├── README.md              # Test documentation
 │   ├── unit/                  # Unit tests
+│   │   ├── test_aifs_encoder_utils.py
+│   │   ├── test_aifs_time_series_tokenizer.py
+│   │   ├── test_climate_data_utils.py
 │   │   ├── test_location_utils.py
-│   │   └── test_aifs_encoder_utils.py
+│   │   └── test_text_utils*.py
 │   ├── integration/           # Integration tests
-│   │   └── test_aifs_climate_fusion.py
-│   └── system/                # System tests (placeholder)
+│   │   ├── test_advanced_integration.py # Moved from root
+│   │   ├── test_advanced_tokenizer_integration.py # Moved from root
+│   │   ├── test_aifs_encoder_integration.py # Moved from root
+│   │   ├── test_aifs_climate_fusion.py
+│   │   ├── test_time_series_integration.py
+│   │   ├── test_aifs_llama_integration.py
+│   │   ├── test_real_llama_integration.py
+│   │   ├── test_aifs_llama3_real_fusion.py
+│   │   ├── test_aifs_llama3_pytest.py
+│   │   └── zarr/              # Zarr-specific tests
+│   └── benchmarks/            # Performance benchmarks
+│       └── test_time_series_performance.py
+│
+├── training/                   # Training examples and utilities
+│   ├── README.md              # Training documentation
+│   ├── config.yaml            # Training configuration
+│   ├── deepspeed_config.json  # DeepSpeed configuration
+│   ├── inference.py           # Inference utilities
+│   ├── prepare_data.py        # Data preparation
+│   ├── setup_env.sh          # Environment setup
+│   ├── train_multimodal.py   # Main training script
+│   └── examples/              # Training examples
+│       ├── README.md
+│       ├── llama3_final_success.py # Simple AIFS+LLaMA fusion
+│       ├── spatial_comparative_analysis.py # Spatial analysis
+│       └── train_llama3_8b.py # LLaMA-3-8B training
 │
 └── docs/                      # Documentation
     ├── README.md
-    ├── aifs_integration.md
-    ├── architecture_documentation.md
+    ├── zarr_integration_guide.md
     └── architecture/              # Architecture diagrams and tools
         ├── create_aifs_architecture_diagram.py
         ├── create_aifs_attention_detail.py

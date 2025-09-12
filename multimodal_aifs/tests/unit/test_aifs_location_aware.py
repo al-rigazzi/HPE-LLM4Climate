@@ -254,7 +254,7 @@ class TestAIFSLocationAwareFusion(unittest.TestCase):
             raise
 
     def test_real_llama_integration(self):
-        """Test with real LLaMA 3-8B model (no mocking)"""
+        """Test with real LLaMA 3-8B model (real model testing)"""
         print("\n🚀 Testing Real LLaMA 3-8B Integration...")
 
         try:

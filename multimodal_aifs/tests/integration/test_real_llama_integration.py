@@ -180,8 +180,8 @@ def test_real_llama_integration():
 
 
 def test_aifs_llama_fusion_real():
-    """Test AIFS + Real Llama-3-8B Fusion Model (No Mocks)"""
-    print("\n🔥 Testing AIFS + Real Llama-3-8B Fusion (NO MOCKS)")
+    """Test AIFS + Real Llama-3-8B Fusion Model (Real Models)"""
+    print("\n🔥 Testing AIFS + Real Llama-3-8B Fusion (Real Models)")
     print("=" * 60)
 
     # Mock flash_attn to prevent import errors
@@ -212,7 +212,7 @@ def test_aifs_llama_fusion_real():
             llama_model_name="meta-llama/Meta-Llama-3-8B",  # Real Llama-3-8B
             fusion_strategy="cross_attention",
             device=device,
-            use_mock_llama=False,  # NO MOCKS!
+            use_mock_llama=False,  # Use real models
             use_quantization=False,  # No quantization on CPU
         )
 

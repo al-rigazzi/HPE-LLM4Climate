@@ -318,14 +318,14 @@ This extracts the AIFS encoder (~20MB) from the full model (948MB) and validates
 # Navigate to AIFS implementation
 cd multimodal_aifs/
 
-# Run basic test to verify installation
-python training/examples/test_setup.py
-
-# Test AIFS-Llama integration
-python training/examples/test_mock_training.py
-
 # Try complete zarr integration example
 python examples/zarr_aifs_multimodal_example.py
+
+# Test AIFS+Llama integration
+python training/examples/llama3_final_success.py
+
+# Run comprehensive tests
+python -m pytest tests/integration/ -v
 ```
 
 ### Basic AIFS Multimodal Fusion
@@ -386,10 +386,8 @@ This repository contains **two different multimodal implementations** for resear
 HPE-LLM4Climate/                 # 🧪 EXPERIMENTAL REPOSITORY
 ├── README.md                    # Main project documentation
 ├── requirements.txt             # Python dependencies
-├── data/                        # Shared model weights and configuration
-│   ├── config.yaml             # Configuration files
-│   ├── climatology/            # Climate normalization data
-│   └── weights/                # Model weight files
+├── pyproject.toml              # Project configuration
+├── example_aifs_encoder_usage.py # Basic AIFS encoder demo
 │
 ├── 🟢 multimodal_aifs/         # ✅ WORKING IMPLEMENTATION
 │   ├── README.md               # AIFS multimodal documentation
