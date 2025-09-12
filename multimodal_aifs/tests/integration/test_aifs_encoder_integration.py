@@ -16,45 +16,38 @@ def test_imports():
     print("🧪 Testing AIFS Encoder Utils Imports")
     print("=" * 50)
 
-    try:
-        # Test core imports
-        from multimodal_aifs.core.aifs_encoder_utils import (
-            AIFSCompleteEncoder,
-            check_aifs_dependencies,
-            create_aifs_encoder,
-            get_checkpoint_info,
-            get_default_checkpoint_path,
-            load_aifs_encoder,
-            save_aifs_encoder,
-            validate_checkpoint,
-        )
+    # Test core imports
+    from multimodal_aifs.core.aifs_encoder_utils import (
+        AIFSCompleteEncoder,
+        check_aifs_dependencies,
+        create_aifs_encoder,
+        get_checkpoint_info,
+        get_default_checkpoint_path,
+        load_aifs_encoder,
+        save_aifs_encoder,
+        validate_checkpoint,
+    )
 
-        print("✅ Core module imports successful")
+    print("✅ Core module imports successful")
 
-        # Test package-level imports
-        from multimodal_aifs import AIFSCompleteEncoder as PackageEncoder
-        from multimodal_aifs import create_aifs_encoder as package_create
-        from multimodal_aifs import load_aifs_encoder as package_load
-        from multimodal_aifs import save_aifs_encoder as package_save
+    # Test package-level imports
+    from multimodal_aifs import AIFSCompleteEncoder as PackageEncoder
+    from multimodal_aifs import create_aifs_encoder as package_create
+    from multimodal_aifs import load_aifs_encoder as package_load
+    from multimodal_aifs import save_aifs_encoder as package_save
 
-        print("✅ Package-level imports successful")
+    print("✅ Package-level imports successful")
 
-        # Test functions
-        deps_available = check_aifs_dependencies()
-        default_path = get_default_checkpoint_path()
+    # Test functions
+    deps_available = check_aifs_dependencies()
+    default_path = get_default_checkpoint_path()
 
-        print(f"📊 AIFS dependencies available: {deps_available}")
-        print(f"📁 Default checkpoint path: {default_path}")
+    print(f"📊 AIFS dependencies available: {deps_available}")
+    print(f"📁 Default checkpoint path: {default_path}")
 
-        print("\n🎯 All imports and basic functions work correctly!")
-        return True
-
-    except ImportError as e:
-        print(f"❌ Import failed: {e}")
-        return False
-    except Exception as e:
-        print(f"❌ Test failed: {e}")
-        return False
+    print("\n🎯 All imports and basic functions work correctly!")
+    # Assert that imports worked (if we got here, they did)
+    assert True
 
 
 def test_class_definition():
@@ -62,21 +55,14 @@ def test_class_definition():
     print("\n🔧 Testing AIFSCompleteEncoder Class Definition")
     print("=" * 55)
 
-    try:
-        from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder
+    from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder
 
-        # Check class attributes
-        assert hasattr(AIFSCompleteEncoder, "__init__"), "Missing __init__ method"
-        assert hasattr(AIFSCompleteEncoder, "forward"), "Missing forward method"
+    # Check class attributes
+    assert hasattr(AIFSCompleteEncoder, "__init__"), "Missing __init__ method"
+    assert hasattr(AIFSCompleteEncoder, "forward"), "Missing forward method"
 
-        print("✅ AIFSCompleteEncoder class definition is correct")
-        print("📋 Required methods: __init__, forward")
-
-        return True
-
-    except Exception as e:
-        print(f"❌ Class definition test failed: {e}")
-        return False
+    print("✅ AIFSCompleteEncoder class definition is correct")
+    print("📋 Required methods: __init__, forward")
 
 
 def test_utility_functions():
@@ -84,37 +70,30 @@ def test_utility_functions():
     print("\n🛠️  Testing Utility Functions")
     print("=" * 35)
 
-    try:
-        from multimodal_aifs.core.aifs_encoder_utils import (
-            DEFAULT_CHECKPOINT_DIR,
-            DEFAULT_CHECKPOINT_NAME,
-            EXPECTED_INPUT_SHAPE,
-            EXPECTED_OUTPUT_SHAPE,
-            check_aifs_dependencies,
-            get_default_checkpoint_path,
-        )
+    from multimodal_aifs.core.aifs_encoder_utils import (
+        DEFAULT_CHECKPOINT_DIR,
+        DEFAULT_CHECKPOINT_NAME,
+        EXPECTED_INPUT_SHAPE,
+        EXPECTED_OUTPUT_SHAPE,
+        check_aifs_dependencies,
+        get_default_checkpoint_path,
+    )
 
-        # Test constants
-        assert isinstance(DEFAULT_CHECKPOINT_DIR, str), "DEFAULT_CHECKPOINT_DIR must be string"
-        assert isinstance(DEFAULT_CHECKPOINT_NAME, str), "DEFAULT_CHECKPOINT_NAME must be string"
-        assert isinstance(EXPECTED_INPUT_SHAPE, list), "EXPECTED_INPUT_SHAPE must be list"
-        assert isinstance(EXPECTED_OUTPUT_SHAPE, list), "EXPECTED_OUTPUT_SHAPE must be list"
+    # Test constants
+    assert isinstance(DEFAULT_CHECKPOINT_DIR, str), "DEFAULT_CHECKPOINT_DIR must be string"
+    assert isinstance(DEFAULT_CHECKPOINT_NAME, str), "DEFAULT_CHECKPOINT_NAME must be string"
+    assert isinstance(EXPECTED_INPUT_SHAPE, list), "EXPECTED_INPUT_SHAPE must be list"
+    assert isinstance(EXPECTED_OUTPUT_SHAPE, list), "EXPECTED_OUTPUT_SHAPE must be list"
 
-        # Test functions
-        default_path = get_default_checkpoint_path()
-        deps_available = check_aifs_dependencies()
+    # Test functions
+    default_path = get_default_checkpoint_path()
+    deps_available = check_aifs_dependencies()
 
-        print("✅ Utility functions work correctly")
-        print(f"📁 Default path: {default_path}")
-        print(f"🔧 Dependencies: {deps_available}")
-        print(f"📐 Expected input shape: {EXPECTED_INPUT_SHAPE}")
-        print(f"📐 Expected output shape: {EXPECTED_OUTPUT_SHAPE}")
-
-        return True
-
-    except Exception as e:
-        print(f"❌ Utility functions test failed: {e}")
-        return False
+    print("✅ Utility functions work correctly")
+    print(f"📁 Default path: {default_path}")
+    print(f"🔧 Dependencies: {deps_available}")
+    print(f"📐 Expected input shape: {EXPECTED_INPUT_SHAPE}")
+    print(f"📐 Expected output shape: {EXPECTED_OUTPUT_SHAPE}")
 
 
 def main():

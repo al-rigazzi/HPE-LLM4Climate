@@ -117,16 +117,13 @@ def test__tokenizer():
         print("\n🎉 All  Tokenizer Tests Passed!")
         print("✨ Ready for integration with real AIFS models!")
 
-        return True
-
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
-
         traceback.print_exc()
-        return False
+        assert False, f"Test failed: {e}"
 
 
 if __name__ == "__main__":
-    success = test__tokenizer()
-    sys.exit(0 if success else 1)
+    test__tokenizer()
+    print("All tests completed successfully!")

@@ -22,11 +22,11 @@ Complete integration examples:
 
 ### Basic AIFS Encoder Usage
 ```python
-from multimodal_aifs.utils import AIFSEncoderWrapper
+from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder, create_aifs_encoder
 import torch
 
-# Initialize AIFS encoder
-encoder = AIFSEncoderWrapper("path/to/aifs/model.pth")
+# Initialize AIFS encoder (use the new approach)
+encoder = create_aifs_encoder(aifs_model)
 
 # Encode climate data
 climate_data = torch.randn(4, 218)  # Batch of climate data

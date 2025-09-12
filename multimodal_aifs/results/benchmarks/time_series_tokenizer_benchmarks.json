@@ -1,0 +1,357 @@
+{
+  "batch_size": [
+    {
+      "test_name": "batch_1",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "batch_2",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "batch_4",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "batch_8",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "batch_16",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    }
+  ],
+  "hidden_dimension": [
+    {
+      "test_name": "hidden_128",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "hidden_256",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "hidden_512",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "hidden_1024",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    }
+  ],
+  "memory_efficiency": [
+    {
+      "test_name": "memory_small_batch_long",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "memory_large_batch_short",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "memory_high_res",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "memory_many_vars",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    }
+  ],
+  "scalability": [
+    {
+      "test_name": "scale_tiny",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "scale_small",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "scale_medium",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "scale_large",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "scale_xlarge",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    }
+  ],
+  "spatial_resolution": [
+    {
+      "test_name": "spatial_8x8",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "spatial_16x16",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "spatial_32x32",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "spatial_64x64",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "spatial_128x128",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    }
+  ],
+  "temporal_length": [
+    {
+      "test_name": "time_4",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "time_8",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "time_16",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "time_32",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "time_64",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    }
+  ],
+  "temporal_modeling": [
+    {
+      "test_name": "transformer_temporal",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "lstm_temporal",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    },
+    {
+      "test_name": "none_temporal",
+      "avg_time": 0.001,
+      "std_time": 0.0,
+      "throughput": 1000.0,
+      "compression_ratio": 1.0,
+      "input_size_mb": 0.0,
+      "output_size_mb": 0.0,
+      "avg_memory_mb": 0.0,
+      "skipped": true
+    }
+  ]
+}

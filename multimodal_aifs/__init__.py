@@ -1,10 +1,7 @@
 """
 Multimodal AIFS - Location-Aware Climate Analysis
 
-This package provides multi    # Utility modules
-    "AIFSEncoderWrapper",
-    "ClimateDataProcessor",
-    "GeographicUtilities",l climate analysis capabilities using ECMWF AIFS
+This package provides multimodal climate analysis capabilities using ECMWF AIFS
 (AI Integrated Forecasting System) combined with large language models for
 location-aware climate understanding and analysis.
 
@@ -90,7 +87,6 @@ from .core.aifs_encoder_utils import (
 )
 
 # Utility imports
-from .utils.aifs_encoder_utils import AIFSEncoderWrapper  # Legacy - use AIFSCompleteEncoder instead
 from .utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 from .utils.climate_data_utils import ClimateDataProcessor
 from .utils.location_utils import GridUtils, LocationUtils
@@ -112,8 +108,7 @@ __all__ = [
     "create_aifs_embedding_from_model",
     # Time series tokenization
     "AIFSTimeSeriesTokenizer",
-    # Utility modules (legacy)
-    "AIFSEncoderWrapper",
+    # Utility modules
     "ClimateDataProcessor",
     "LocationUtils",
     "GridUtils",

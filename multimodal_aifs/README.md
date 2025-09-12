@@ -8,7 +8,6 @@ This directory contains the complete implementation of multimodal AIFS (Artifici
 multimodal_aifs/
 ├── README.md                    # This file
 ├── requirements-aifs.txt        # AIFS-specific requirements
-├── aifs_wrapper.py             # Main AIFS wrapper implementation
 │
 ├── core/                       # Core multimodal fusion modules
 │   ├── __init__.py
@@ -179,16 +178,15 @@ python multimodal_aifs/examples/zarr_aifs_multimodal_example.py
 
 ### Basic Usage
 ```python
-from multimodal_aifs.utils.aifs_encoder_utils import AIFSEncoderWrapper
-from multimodal_aifs.core.climate_text_fusion import AIFSClimateTextFusion
+from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder, create_aifs_encoder
+from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
 
-# Initialize AIFS encoder
-encoder = AIFSEncoderWrapper(
-    encoder_path="multimodal_aifs/models/extracted_models/aifs_encoder_full.pth"
-)
+# Initialize AIFS encoder (new approach)
+encoder = create_aifs_encoder(aifs_model)
 
 # Initialize multimodal fusion
 fusion = AIFSClimateTextFusion(
+    aifs_model=aifs_model
     aifs_encoder_path="multimodal_aifs/models/extracted_models/aifs_encoder_full.pth"
 )
 ```
