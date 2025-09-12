@@ -384,7 +384,7 @@ class MultimodalTimeSeriesDemo:
         print("   • Integrate with your climate datasets")
         print("   • Experiment with different temporal modeling approaches")
         print("   • Scale to larger spatial and temporal resolutions")
-        print("   • Combine with advanced text embedding models")
+        print("   • Combine with  text embedding models")
         print("   • Deploy for real-time climate analysis")
         print()
         print("✨ Ready for production climate AI applications!")

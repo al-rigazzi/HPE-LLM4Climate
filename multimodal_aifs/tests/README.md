@@ -14,8 +14,8 @@ Unit tests for individual components:
 
 ### `integration/`
 Integration tests for complex interactions:
-- **`test_advanced_integration.py`** - Advanced component integration testing (moved from root)
-- **`test_advanced_tokenizer_integration.py`** - Advanced tokenizer integration tests (moved from root)
+- **`test__integration.py`** -  component integration testing (moved from root)
+- **`test__tokenizer_integration.py`** -  tokenizer integration tests (moved from root)
 - **`test_aifs_encoder_integration.py`** - AIFS encoder integration tests (moved from root)
 - **`test_aifs_climate_fusion.py`** - Climate-text fusion with AIFS encoder
 - **`test_time_series_integration.py`** - Time series tokenizer multimodal integration

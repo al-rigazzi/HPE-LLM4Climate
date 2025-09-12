@@ -57,7 +57,7 @@ class TestAIFSClimateFusion(unittest.TestCase):
             # Test with real AIFS model
             fusion_module = AIFSClimateTextFusion(
                 aifs_checkpoint_path=str(self.aifs_model_path),
-                climate_dim=218,  # Advanced AIFS encoder dimension
+                climate_dim=218,  #  AIFS encoder dimension
                 text_dim=768,
                 fusion_dim=512,
                 num_attention_heads=8,
@@ -93,7 +93,7 @@ class TestAIFSClimateFusion(unittest.TestCase):
         try:
             fusion_module = AIFSClimateTextFusion(
                 aifs_checkpoint_path=str(self.aifs_model_path),
-                climate_dim=218,  # Advanced AIFS encoder dimension
+                climate_dim=218,  #  AIFS encoder dimension
                 text_dim=768,
                 fusion_dim=512,
                 device=self.device,
@@ -135,7 +135,7 @@ class TestAIFSClimateFusion(unittest.TestCase):
         try:
             fusion_module = AIFSClimateTextFusion(
                 aifs_checkpoint_path=str(self.aifs_model_path) if self.has_real_model else None,
-                climate_dim=218,  # Advanced AIFS encoder dimension
+                climate_dim=218,  #  AIFS encoder dimension
                 text_dim=768,
                 fusion_dim=512,
                 device=self.device,
@@ -182,7 +182,7 @@ class TestAIFSClimateFusion(unittest.TestCase):
         try:
             fusion_module = AIFSClimateTextFusion(
                 aifs_checkpoint_path=str(self.aifs_model_path),
-                climate_dim=218,  # Advanced AIFS encoder dimension
+                climate_dim=218,  #  AIFS encoder dimension
                 text_dim=768,
                 fusion_dim=512,
                 device=self.device,
@@ -289,7 +289,7 @@ class TestAIFSClimateFusion(unittest.TestCase):
         try:
             embedding_module = AIFSClimateEmbedding(
                 aifs_checkpoint_path=str(self.aifs_model_path),
-                climate_dim=218,  # Advanced AIFS encoder dimension
+                climate_dim=218,  #  AIFS encoder dimension
                 embedding_dim=256,
                 device=self.device,
             )

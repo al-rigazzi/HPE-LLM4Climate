@@ -2,7 +2,7 @@
 """
 AIFS Encoder Utils - Usage Example
 
-This example demonstrates how to use the advanced AIFS encoder utilities
+This example demonstrates how to use the  AIFS encoder utilities
 for extracting, saving, and loading the complete AIFS encoder.
 
 Usage:
@@ -24,7 +24,7 @@ def example_basic_usage():
     print("🌍 Basic AIFS Encoder Usage Example")
     print("=" * 50)
 
-    # Import the advanced encoder utilities
+    # Import the  encoder utilities
     from multimodal_aifs import (
         AIFSCompleteEncoder,
         check_aifs_dependencies,
@@ -175,7 +175,7 @@ climate_features = loaded_encoder(climate_data)
 
 def main():
     """Run all examples."""
-    print("🚀 AIFS Encoder Utils - Advanced Usage Examples")
+    print("🚀 AIFS Encoder Utils -  Usage Examples")
     print("=" * 60)
     print("This demonstrates the new encoder extraction capabilities!")
 
@@ -197,7 +197,7 @@ def main():
             print(f"❌ {example_name} failed: {e}")
 
     print("\n" + "=" * 60)
-    print("🎯 ADVANCED CODEBASE SUMMARY")
+    print("🎯  CODEBASE SUMMARY")
     print("=" * 60)
     print("✅ AIFSCompleteEncoder: Extract real AIFS encoder embeddings")
     print("✅ save_aifs_encoder: Save encoder with full metadata")

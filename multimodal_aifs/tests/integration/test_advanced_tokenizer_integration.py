@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test Advanced AIFS Time Series Tokenizer
+Test  AIFS Time Series Tokenizer
 
 This test validates that the updated tokenizer works with the new AIFSCompleteEncoder interface.
 """
@@ -17,9 +17,9 @@ sys.path.insert(0, str(project_root))
 from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 
 
-def test_advanced_tokenizer():
-    """Test the advanced AIFS time series tokenizer with new interface."""
-    print("🚀 Testing Advanced AIFS Time Series Tokenizer")
+def test__tokenizer():
+    """Test the  AIFS time series tokenizer with new interface."""
+    print("🚀 Testing  AIFS Time Series Tokenizer")
     print("=" * 60)
 
     try:
@@ -114,7 +114,7 @@ def test_advanced_tokenizer():
         except ValueError:
             print("   ✅ Missing AIFS model/checkpoint rejected")
 
-        print("\n🎉 All Advanced Tokenizer Tests Passed!")
+        print("\n🎉 All  Tokenizer Tests Passed!")
         print("✨ Ready for integration with real AIFS models!")
 
         return True
@@ -128,5 +128,5 @@ def test_advanced_tokenizer():
 
 
 if __name__ == "__main__":
-    success = test_advanced_tokenizer()
+    success = test__tokenizer()
     sys.exit(0 if success else 1)

@@ -213,7 +213,7 @@ class AIFSWrapper:
 
         # Handle both location tuple and tensor data input
         if isinstance(location_or_data, torch.Tensor):
-            # Direct tensor input - for testing and advanced use
+            # Direct tensor input - for testing and  use
             if not self.is_loaded:
                 raise RuntimeError("Model not loaded. Call load_model() first.")
 

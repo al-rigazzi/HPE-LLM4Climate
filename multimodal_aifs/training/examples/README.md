@@ -10,7 +10,7 @@ All remaining examples are **production-ready** and demonstrate different aspect
 
 - ✅ **llama3_final_success.py** - Validated simple fusion approach
 - ✅ **train_llama3_8b.py** - Complete training pipeline
-- ✅ **spatial_comparative_analysis.py** - Advanced analysis capabilities
+- ✅ **spatial_comparative_analysis.py** -  analysis capabilities
 
 ## 📋 Example Descriptions
 
@@ -29,10 +29,10 @@ Comprehensive training pipeline for AIFS + Llama-3-8B fusion. Features:
 - Model checkpointing and evaluation
 
 ### spatial_comparative_analysis.py
-Advanced spatial analysis capabilities for climate data. Includes:
+ spatial analysis capabilities for climate data. Includes:
 - Multi-scale spatial analysis
 - Comparative studies across regions
-- Advanced visualization techniques
+-  visualization techniques
 - Geographic data processing
 
 ## 💡 Best Practices
@@ -61,7 +61,7 @@ python examples/llama3_final_success.py
 python examples/train_llama3_8b.py
 ```
 
-### 3. Perform Advanced Spatial Analysis
+### 3. Perform  Spatial Analysis
 ```bash
 python examples/spatial_comparative_analysis.py
 ```
@@ -98,7 +98,7 @@ For Llama-3 scripts, you need:
 All remaining examples are production-ready and validated:
 - ✅ Simple AIFS+Llama-3-8B fusion working reliably
 - ✅ Full training pipeline with comprehensive features
-- ✅ Advanced spatial analysis capabilities
+- ✅  spatial analysis capabilities
 - ✅ Memory usage optimized and predictable
 - ✅ All examples tested and maintained
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Test Advanced AIFS Integration
+Test  AIFS Integration
 
-This test validates that all our migrated modules work with the advanced AIFSCompleteEncoder.
+This test validates that all our migrated modules work with the  AIFSCompleteEncoder.
 """
 
 import sys
@@ -15,14 +15,14 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 
-def test_advanced_integration():
-    """Test all advanced AIFS components."""
-    print("🚀 Testing Advanced AIFS Integration")
+def test__integration():
+    """Test all  AIFS components."""
+    print("🚀 Testing  AIFS Integration")
     print("=" * 60)
 
     try:
-        # Test 1: Advanced encoder utils
-        print("📦 Test 1: Advanced Encoder Utils")
+        # Test 1:  encoder utils
+        print("📦 Test 1:  Encoder Utils")
 
         from multimodal_aifs.utils.aifs_encoder_utils import AIFSEncoderWrapper, create_aifs_encoder
 
@@ -30,8 +30,8 @@ def test_advanced_integration():
         assert callable(create_aifs_encoder)
         print("✅ Encoder utility functions available")
 
-        # Test 2: Advanced time series tokenizer
-        print("\n⏱️  Test 2: Advanced Time Series Tokenizer")
+        # Test 2:  time series tokenizer
+        print("\n⏱️  Test 2:  Time Series Tokenizer")
 
         from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 
@@ -46,11 +46,11 @@ def test_advanced_integration():
 
         info = tokenizer.get_tokenizer_info()
         assert info["spatial_dim"] == 218, f"Expected 218, got {info['spatial_dim']}"
-        print("✅ Advanced tokenizer configured correctly")
+        print("✅  tokenizer configured correctly")
         print(f"   Output dimension: {info['spatial_dim']}")
 
-        # Test 3: Advanced climate fusion
-        print("\n🌍 Test 3: Advanced Climate Fusion")
+        # Test 3:  climate fusion
+        print("\n🌍 Test 3:  Climate Fusion")
 
         from multimodal_aifs.core.aifs_climate_fusion import (
             AIFSClimateEmbedding,
@@ -62,16 +62,16 @@ def test_advanced_integration():
         # Test helper functions exist
         assert callable(create_aifs_fusion_from_model)
         assert callable(create_aifs_embedding_from_model)
-        print("✅ Advanced fusion utilities available")
+        print("✅  fusion utilities available")
 
-        # Test 4: Advanced location aware fusion
-        print("\n📍 Test 4: Advanced Location Aware Fusion")
+        # Test 4:  location aware fusion
+        print("\n📍 Test 4:  Location Aware Fusion")
 
         from multimodal_aifs.core.aifs_location_aware_fusion import AIFSLocationAwareFusion
 
         # Test class exists
         assert AIFSLocationAwareFusion is not None
-        print("✅ Advanced location fusion class available")  # Test 5: Package exports
+        print("✅  location fusion class available")  # Test 5: Package exports
         print("\n📦 Test 5: Package Exports")
 
         import multimodal_aifs
@@ -87,8 +87,8 @@ def test_advanced_integration():
             assert hasattr(multimodal_aifs, func_name), f"Missing export: {func_name}"
             print(f"   ✅ {func_name}")
 
-        # Test 6: Advanced dimensions
-        print("\n📊 Test 6: Advanced Dimensions")
+        # Test 6:  dimensions
+        print("\n📊 Test 6:  Dimensions")
 
         # Test that all components use the correct 218-dimensional output
         tokenizer_info = tokenizer.get_tokenizer_info()
@@ -116,7 +116,7 @@ def test_advanced_integration():
 
             print(f"   ✅ {model_type}: spatial_dim=218, output_features={expected_features}")
 
-        print("\n🎉 All Advanced Integration Tests Passed!")
+        print("\n🎉 All  Integration Tests Passed!")
         print("✨ Complete migration successful - Ready for production!")
 
         return True
@@ -130,5 +130,5 @@ def test_advanced_integration():
 
 
 if __name__ == "__main__":
-    success = test_advanced_integration()
+    success = test__integration()
     sys.exit(0 if success else 1)

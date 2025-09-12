@@ -134,7 +134,7 @@ For troubleshooting:
 Recommended order for exploring examples:
 1. **Basic demos** - Understand individual components
 2. **Integration examples** - See how components work together
-3. **Advanced examples** - Explore sophisticated use cases
+3. ** examples** - Explore sophisticated use cases
 4. **Application examples** - See real-world applications
 
 ## 🤝 Contributing Examples

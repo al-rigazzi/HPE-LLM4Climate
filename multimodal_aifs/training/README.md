@@ -17,7 +17,7 @@ training/
 │   ├── README.md               # Examples documentation
 │   ├── llama3_final_success.py # Production AIFS+Llama-3-8B fusion
 │   ├── train_llama3_8b.py      # Comprehensive training pipeline
-│   └── spatial_comparative_analysis.py # Advanced spatial analysis
+│   └── spatial_comparative_analysis.py #  spatial analysis
 └── *.pt                        # Saved model checkpoints (generated)
 ```
 
@@ -56,7 +56,7 @@ python prepare_data.py --output_dir multimodal/data/training --num_samples 1000
 ## 🎯 AIFS Training Pipeline Features
 
 The production AIFS training pipeline supports:
-- **AIFS-based climate encoding** for advanced time-series processing
+- **AIFS-based climate encoding** for  time-series processing
 - **Cross-attention fusion** between AIFS climate features and text
 - **DeepSpeed optimization** for memory efficiency and distributed training
 - **Mixed precision training** (FP16) for faster training
@@ -102,7 +102,7 @@ deepspeed --num_gpus=8 --num_nodes=2 train_multimodal.py --config config.yaml
 
 ### Cross-Attention Fusion with AIFS
 The model uses cross-attention mechanisms to fuse AIFS climate features with text embeddings:
-- AIFS encoder extracts advanced spatial-temporal features from weather data
+- AIFS encoder extracts  spatial-temporal features from weather data
 - Text encoder processes natural language queries/descriptions
 - Cross-attention layers enable bidirectional information flow
 - Final fusion creates joint representations for downstream tasks
@@ -160,7 +160,7 @@ multimodal/data/training/
 - `gradient_checkpointing`: Enable activation checkpointing
 - `cpu_offload`: Offload optimizer states to CPU
 
-## Advanced Usage
+##  Usage
 
 ### Custom Data Loading
 Modify `ClimateTextDataset` class in `train_multimodal.py` to load your specific data format:

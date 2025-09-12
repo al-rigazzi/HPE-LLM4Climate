@@ -23,19 +23,19 @@ from torch import nn
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-# Import the advanced AIFS encoder utilities
+# Import the  AIFS encoder utilities
 from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder
 
 
 class AIFSTimeSeriesTokenizer(nn.Module):
     """
-    Time series tokenizer using the advanced AIFSCompleteEncoder for spatial-temporal climate data.
+    Time series tokenizer using the  AIFSCompleteEncoder for spatial-temporal climate data.
 
     This tokenizer can handle 5-D tensors with shape [batch, time, vars, height, width]
     and convert them into sequence tokens using the complete AIFS encoder that returns
     actual encoder embeddings [542080, 218].
 
-    Advanced Features:
+     Features:
     - Uses AIFSCompleteEncoder that returns actual encoder embeddings [batch, 218]
     - No more workaround encoders - uses the complete AIFS model from inputs to encoder output
     - Handles full 5D climate tensors efficiently
@@ -52,7 +52,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         verbose: bool = True,
     ):
         """
-        Initialize AIFS time series tokenizer with advanced encoder.
+        Initialize AIFS time series tokenizer with  encoder.
 
         Args:
             aifs_model: The complete AIFS model instance (preferred)
@@ -70,7 +70,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         self.hidden_dim = hidden_dim
         self.verbose = verbose
 
-        # Initialize the advanced AIFS Complete Encoder
+        # Initialize the  AIFS Complete Encoder
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
             self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
@@ -87,7 +87,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         else:
             raise ValueError("Either aifs_model or aifs_checkpoint_path must be provided")
 
-        # Get AIFS encoder output dimension (218 for advanced encoder)
+        # Get AIFS encoder output dimension (218 for  encoder)
         self.spatial_dim = 218  # Updated for AIFSCompleteEncoder
 
         # Initialize temporal modeling component - can be LSTM, TransformerEncoder, or None
@@ -168,7 +168,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
             # Extract timestep: [batch, vars, height, width]
             timestep_data = tensor_5d[:, t, :, :, :]
 
-            # Encode spatial features using advanced AIFS complete encoder
+            # Encode spatial features using  AIFS complete encoder
             if self.aifs_encoder is not None:
                 spatial_encoding = self.aifs_encoder(timestep_data)
             else:
@@ -223,7 +223,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         # Reshape: [batch*time, vars, height, width]
         reshaped = tensor_5d.view(batch_size * time_steps, num_vars, height, width)
 
-        # Encode all timesteps in parallel using advanced AIFS complete encoder
+        # Encode all timesteps in parallel using  AIFS complete encoder
         if self.aifs_encoder is not None:
             all_encodings = self.aifs_encoder(reshaped)
         else:
@@ -272,7 +272,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
             encoder_info = {
                 "type": "AIFSCompleteEncoder",
                 "output_dim": 218,
-                "description": "Advanced complete AIFS encoder returning actual embeddings",
+                "description": " complete AIFS encoder returning actual embeddings",
             }
         else:
             encoder_info = {
@@ -292,9 +292,9 @@ class AIFSTimeSeriesTokenizer(nn.Module):
 
 
 def demonstrate_time_series_tokenization():
-    """Demonstrate time series tokenization with advanced encoder."""
+    """Demonstrate time series tokenization with  encoder."""
 
-    print("🚀 AIFS Time Series Tokenization with Advanced Encoder")
+    print("🚀 AIFS Time Series Tokenization with  Encoder")
     print("=" * 60)
 
     # Create sample 5-D time series data
@@ -348,7 +348,7 @@ def demonstrate_time_series_tokenization():
 
         print()
 
-    print("📋 Advanced Time Series Tokenization Features:")
+    print("📋  Time Series Tokenization Features:")
     print("-" * 50)
     print("• Uses AIFSCompleteEncoder for actual AIFS embeddings [batch, 218]")
     print("• No more workaround encoders - direct AIFS model integration")

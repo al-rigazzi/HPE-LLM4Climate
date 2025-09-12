@@ -216,7 +216,7 @@ def main():
     print("=" * 60)
     print("This demo shows how to integrate AIFS spatial-temporal")
     print("climate tokenization with LLaMA language models for")
-    print("advanced climate-language understanding tasks.")
+    print(" climate-language understanding tasks.")
     print()
 
     # Run demonstrations

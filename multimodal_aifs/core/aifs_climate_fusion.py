@@ -2,7 +2,7 @@
 AIFS Climate Fusion Module
 
 This module provides climate-text fusion capabilities specifically designed for AIFS,
-combining climate data encoded through the advanced AIFSCompleteEncoder with textual
+combining climate data encoded through the  AIFSCompleteEncoder with textual
 descriptions for enhanced multimodal climate analysis.
 """
 
@@ -14,18 +14,18 @@ from torch import nn
 
 from ..utils.text_utils import ClimateTextProcessor
 
-# Import the advanced AIFS encoder utilities
+# Import the  AIFS encoder utilities
 from .aifs_encoder_utils import AIFSCompleteEncoder, load_aifs_encoder
 
 
 class AIFSClimateTextFusion(nn.Module):
     """
-    Climate-text fusion module using the advanced AIFSCompleteEncoder for climate data.
+    Climate-text fusion module using the  AIFSCompleteEncoder for climate data.
 
     This module combines AIFS-encoded climate data (complete encoder from inputs to embeddings)
     with textual descriptions to create rich multimodal representations for climate analysis.
 
-    Advanced Features:
+     Features:
     - Uses AIFSCompleteEncoder that returns actual encoder embeddings [542080, 218]
     - No more workaround encoders - uses the complete AIFS model from inputs to encoder output
     - Handles full 5D climate tensors: [batch, time, ensemble, grid_points, variables]
@@ -44,7 +44,7 @@ class AIFSClimateTextFusion(nn.Module):
         verbose: bool = True,
     ):
         """
-        Initialize AIFS climate-text fusion module with advanced encoder.
+        Initialize AIFS climate-text fusion module with  encoder.
 
         Args:
             aifs_model: The complete AIFS model instance (preferred)
@@ -66,7 +66,7 @@ class AIFSClimateTextFusion(nn.Module):
         self.device = device
         self.verbose = verbose
 
-        # Initialize the advanced AIFS Complete Encoder
+        # Initialize the  AIFS Complete Encoder
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
             self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
@@ -131,7 +131,7 @@ class AIFSClimateTextFusion(nn.Module):
 
     def encode_climate_data(self, climate_data: torch.Tensor) -> torch.Tensor:
         """
-        Encode climate data using the advanced AIFSCompleteEncoder.
+        Encode climate data using the  AIFSCompleteEncoder.
 
         Args:
             climate_data: Raw climate data tensor [batch, time, ensemble, grid_points, variables]
@@ -140,7 +140,7 @@ class AIFSClimateTextFusion(nn.Module):
             Encoded climate features [batch, 218] (actual AIFS encoder embeddings)
         """
         with torch.no_grad():
-            # Use the advanced complete encoder that returns actual AIFS embeddings
+            # Use the  complete encoder that returns actual AIFS embeddings
             encoded = self.aifs_encoder(climate_data)
 
         # Project to fusion dimension
@@ -320,7 +320,7 @@ class AIFSClimateTextFusion(nn.Module):
 
 class AIFSClimateEmbedding(nn.Module):
     """
-    Lightweight climate embedding using the advanced AIFSCompleteEncoder.
+    Lightweight climate embedding using the  AIFSCompleteEncoder.
 
     Creates embeddings directly from climate data using the complete AIFS encoder
     that returns actual encoder outputs [542080, 218].
@@ -336,7 +336,7 @@ class AIFSClimateEmbedding(nn.Module):
         verbose: bool = True,
     ):
         """
-        Initialize AIFS climate embedding with advanced encoder.
+        Initialize AIFS climate embedding with  encoder.
 
         Args:
             aifs_model: The complete AIFS model instance (preferred)
@@ -353,7 +353,7 @@ class AIFSClimateEmbedding(nn.Module):
         self.device = device
         self.verbose = verbose
 
-        # Initialize the advanced AIFS Complete Encoder
+        # Initialize the  AIFS Complete Encoder
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
             self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
@@ -379,7 +379,7 @@ class AIFSClimateEmbedding(nn.Module):
 
     def forward(self, climate_data: torch.Tensor) -> torch.Tensor:
         """
-        Create embeddings from climate data using the advanced AIFSCompleteEncoder.
+        Create embeddings from climate data using the  AIFSCompleteEncoder.
 
         Args:
             climate_data: Input climate data [batch, time, ensemble, grid_points, variables]
@@ -387,7 +387,7 @@ class AIFSClimateEmbedding(nn.Module):
         Returns:
             Climate embeddings [batch, embedding_dim]
         """
-        # Encode with advanced AIFS complete encoder
+        # Encode with  AIFS complete encoder
         with torch.no_grad():
             aifs_features = self.aifs_encoder(climate_data)
 

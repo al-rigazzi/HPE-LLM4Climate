@@ -74,8 +74,8 @@ multimodal_aifs/
 │   │   ├── test_location_utils.py
 │   │   └── test_text_utils*.py
 │   ├── integration/           # Integration tests
-│   │   ├── test_advanced_integration.py # Moved from root
-│   │   ├── test_advanced_tokenizer_integration.py # Moved from root
+│   │   ├── test__integration.py # Moved from root
+│   │   ├── test__tokenizer_integration.py # Moved from root
 │   │   ├── test_aifs_encoder_integration.py # Moved from root
 │   │   ├── test_aifs_climate_fusion.py
 │   │   ├── test_time_series_integration.py

@@ -77,7 +77,7 @@ from .core.aifs_climate_fusion import (
 # from .core.aifs_location_aware_fusion import (
 #     AIFSFusionMode,
 #     AIFSLocationAwareClimateAnalysis,
-# )# Core imports - Advanced AIFS Encoder utilities
+# )# Core imports -  AIFS Encoder utilities
 from .core.aifs_encoder_utils import (
     AIFSCompleteEncoder,
     check_aifs_dependencies,
@@ -96,7 +96,7 @@ from .utils.climate_data_utils import ClimateDataProcessor
 from .utils.location_utils import GridUtils, LocationUtils
 
 __all__ = [
-    # Advanced AIFS Encoder utilities
+    #  AIFS Encoder utilities
     "AIFSCompleteEncoder",
     "save_aifs_encoder",
     "load_aifs_encoder",

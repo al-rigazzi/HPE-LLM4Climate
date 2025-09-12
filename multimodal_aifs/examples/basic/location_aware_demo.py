@@ -445,7 +445,7 @@ def main():
 
         print("\\n🎯 Next Steps:")
         print("   - Try the climate-text fusion demo")
-        print("   - Explore advanced spatial analysis")
+        print("   - Explore  spatial analysis")
         print("   - Combine with AIFS encoder for full pipeline")
 
     except KeyboardInterrupt:
