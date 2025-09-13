@@ -82,7 +82,6 @@ from .utils.location_utils import GridUtils, LocationUtils
 # from .core.aifs_climate_fusion import AIFSClimateTextFusion
 
 
-
 __all__ = [
     #  AIFS Encoder utilities
     "AIFSCompleteEncoder",
