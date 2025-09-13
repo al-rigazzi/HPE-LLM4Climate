@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-CPU-Optimized Real Llama Test with Zarr
+CPU-Optimized Real Llama Test with Zarr using conftest fixtures
 
-This script tests with a smaller, CPU-friendly setup:
-- Uses quantization to reduce memory
+This script tests with a smaller, CPU-friendly setup using conftest infrastructure:
+- Uses conftest fixtures for model management
+- Respects environment variables for configuration
 - Processes smaller batches
 - Uses shorter sequences
-
-Usage:
-    python test_cpu_llama_zarr.py
 """
 
+import os
 import sys
 import time
 from pathlib import Path
 
 import numpy as np
+import pytest
 import torch
 import torch.nn.functional as F
 
@@ -26,25 +26,27 @@ sys.path.insert(0, str(project_root))
 print("🖥️  CPU-Optimized Llama + AIFS + Zarr Test")
 print("=" * 50)
 
-# Force CPU and check memory
-device = "cpu"
-print(f"🖥️  Device: {device}")
 
-
-def test_lightweight_llama_zarr():
-    """Test with lightweight configuration for CPU."""
+@pytest.mark.integration
+def test_lightweight_llama_zarr(aifs_llama_model):
+    """Test with lightweight configuration for CPU using conftest fixtures."""
 
     try:
-        from multimodal_aifs.tests.integration.test_aifs_llama_integration import (
-            AIFSLlamaFusionModel,
-        )
         from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
         from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
         print("✅ Modules imported")
     except ImportError as e:
         print(f"❌ Import error: {e}")
-        return False
+        pytest.fail(f"Import error: {e}")
+
+    # Use model from conftest
+    model = aifs_llama_model
+    device = model.device
+    print(f"🖥️  Device: {device}")
+    print(f"✅ Using model from conftest fixture")
+    print(f"   🧠 AIFS: {type(model.time_series_tokenizer).__name__}")
+    print(f"   🦙 LLM: {type(model.llama_model).__name__}")
 
     # Step 1: Load minimal climate data
     print(f"\n📊 Step 1: Loading Minimal Climate Data")
@@ -66,42 +68,19 @@ def test_lightweight_llama_zarr():
 
     except Exception as e:
         print(f"❌ Failed to load climate data: {e}")
-        return False
+        pytest.fail(f"Failed to load climate data: {e}")
 
     # Step 2: Initialize lightweight Llama with heavy quantization
     print(f"\n🦙 Step 2: Initializing Quantized Llama")
     print("-" * 40)
 
-    try:
-        print("   ⚗️  Using 8-bit quantization for CPU efficiency...")
+    # Model already available from conftest fixture (respects environment variables)
+    print("   ✅ Using model from conftest fixture (environment-controlled)")
+    print(f"   🎯 Device: {device}")
+    print(f"   🔧 Quantization: {os.environ.get('USE_QUANTIZATION', 'false')}")
+    print(f"   🦙 Mock LLM: {os.environ.get('USE_MOCK_LLM', 'false')}")
 
-        model = AIFSLlamaFusionModel(
-            llama_model_name="meta-llama/Meta-Llama-3-8B",
-            time_series_dim=512,
-            fusion_strategy="concat",  # Simpler fusion for CPU
-            device=device,
-            use_quantization=True,  # Essential for CPU
-            use_mock_llama=False,
-        )
-
-        print(f"✅ Quantized Llama initialized")
-
-    except Exception as e:
-        print(f"❌ Failed to initialize Llama: {e}")
-        print(f"💡 Falling back to mock model for demonstration...")
-
-        # Fallback to mock for demonstration
-        model = AIFSLlamaFusionModel(
-            llama_model_name="meta-llama/Meta-Llama-3-8B",
-            time_series_dim=512,
-            fusion_strategy="concat",
-            device=device,
-            use_quantization=False,
-            use_mock_llama=True,  # Use mock if real fails
-        )
-        print(f"✅ Mock Llama initialized for demonstration")
-
-    # Step 3: Process with CPU-optimized settings
+    # Step 3: Process with optimized settings
     print(f"\n🔄 Step 3: CPU-Optimized Processing")
     print("-" * 40)
 
@@ -130,7 +109,7 @@ def test_lightweight_llama_zarr():
 
     except Exception as e:
         print(f"❌ Processing failed: {e}")
-        return False
+        pytest.fail(f"Processing failed: {e}")
 
     # Step 4: Memory efficiency check
     print(f"\n📊 Step 4: Memory Efficiency")
@@ -160,79 +139,48 @@ def test_lightweight_llama_zarr():
         print(f"⚠️  Memory check incomplete: {e}")
 
     print(f"\n🎉 CPU Test Complete!")
-    return True
+    # Test passes by reaching this point without failures
 
 
-def compare_with_mock():
-    """Compare real vs mock performance."""
-    print(f"\n⚖️  Comparison: Real vs Mock Llama")
+@pytest.mark.integration
+def test_compare_with_mock(aifs_llama_model):
+    """Compare real vs mock performance using conftest fixtures."""
+    print(f"\n⚖️  Comparison: Real vs Mock Llama (conftest)")
     print("-" * 40)
 
+    model = aifs_llama_model
+    use_mock_env = os.environ.get("USE_MOCK_LLM", "").lower() in ("true", "1", "yes")
+
+    print(f"   🧪 Testing current configuration:")
+    print(f"   🔧 Using mock: {use_mock_env}")
+    print(f"   🎯 Device: {model.device}")
+
     try:
-        from multimodal_aifs.tests.integration.test_aifs_llama_integration import (
-            AIFSLlamaFusionModel,
-        )
+        start_time = time.time()
 
-        # Test both configurations
-        configs = [("Mock Llama", True), ("Real Llama", False)]
+        # Test the current model configuration
+        param_count = sum(p.numel() for p in model.parameters())
+        init_time = time.time() - start_time
 
-        for name, use_mock in configs:
-            print(f"\n   🧪 Testing {name}:")
+        print(f"      ✅ Model ready in {init_time:.1f}s")
+        print(f"      🔢 Parameters: {param_count:,}")
+        print(f"      🎯 Type: {'Mock' if use_mock_env else 'Real'} LLM")
 
-            try:
-                start_time = time.time()
+        # Simple performance test
+        dummy_data = torch.randn(1, 4, 3, 2, 2).to(model.device)
+        dummy_text = ["Test query"]
 
-                test_model = AIFSLlamaFusionModel(
-                    llama_model_name="meta-llama/Meta-Llama-3-8B",
-                    time_series_dim=512,
-                    fusion_strategy="concat",
-                    device="cpu",
-                    use_quantization=not use_mock,
-                    use_mock_llama=use_mock,
-                )
+        with torch.no_grad():
+            test_start = time.time()
+            result = model.forward(dummy_data, dummy_text, task="embedding")
+            test_time = time.time() - test_start
 
-                init_time = time.time() - start_time
-                param_count = sum(p.numel() for p in test_model.parameters())
-
-                print(f"      ✅ Init time: {init_time:.1f}s")
-                print(f"      🔢 Parameters: {param_count:,}")
-
-                # Clean up
-                del test_model
-
-            except Exception as e:
-                print(f"      ❌ Failed: {e}")
+        print(f"      ⚡ Inference time: {test_time:.3f}s")
 
     except Exception as e:
-        print(f"   ❌ Comparison failed: {e}")
-
-
-def main():
-    """Main function."""
-
-    # Check if test data exists
-    if not Path("test_climate.zarr").exists():
-        print(f"❌ Test dataset not found: test_climate.zarr")
-        print(f"💡 Create it first with the zarr integration test")
-        return
-
-    print(f"⚠️  Note: This test is optimized for CPU usage")
-    print(f"   Real Llama-3-8B on CPU requires significant time and memory")
-    print(f"   Expected: 5-15 minutes for full processing")
-
-    # Run main test
-    success = test_lightweight_llama_zarr()
-
-    if success:
-        # Optional comparison
-        print(f"\n🔍 Running optional comparison...")
-        compare_with_mock()
-
-        print(f"\n🏆 CPU-optimized test complete!")
-        print(f"✅ Zarr → AIFS → Real Llama pipeline verified")
-    else:
-        print(f"\n💥 Test failed - check system resources")
+        print(f"      ❌ Failed: {e}")
+        pytest.fail(f"Comparison test failed: {e}")
 
 
 if __name__ == "__main__":
-    main()
+    pytest.main([__file__, "-v", "-s"])

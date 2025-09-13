@@ -120,6 +120,7 @@ def test__tokenizer():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         assert False, f"Test failed: {e}"
 

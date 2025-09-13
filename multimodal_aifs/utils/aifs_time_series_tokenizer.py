@@ -154,56 +154,122 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         Tokenize 5-D time series tensor using AIFS encoder.
 
         Args:
-            tensor_5d: Input tensor [batch, time, vars, height, width]
+            tensor_5d: Input tensor [batch, time, vars, height, width] OR
+                      [batch, time, ensemble, grid, vars] (AIFS format)
 
         Returns:
             Tokenized sequence [batch, time, features]
         """
-        _, time_steps, _, _, _ = tensor_5d.shape
+        batch_size, time_steps, dim3, dim4, dim5 = tensor_5d.shape
 
-        # Strategy 1: Sequential processing (most accurate)
-        timestep_encodings = []
+        if self.verbose:
+            print(f"🔍 Input tensor shape: {tensor_5d.shape}")
 
-        for t in range(time_steps):
-            # Extract timestep: [batch, vars, height, width]
-            timestep_data = tensor_5d[:, t, :, :, :]
+        # Check if input is in AIFS format [batch, time, ensemble, grid, vars]
+        # AIFS format: dim3=ensemble (small), dim4=grid (large), dim5=vars (small to medium)
+        # Standard format: dim3=vars (large), dim4=height (small), dim5=width (small)
+        is_aifs_format = (
+            dim3 <= 2  # ensemble dimension should be small (1 or 2)
+            and dim4 > 1000  # grid dimension should be large (>1000 grid points)
+            and dim5 < 200  # vars dimension should be smaller than typical standard format vars
+        )
 
-            # Encode spatial features using  AIFS complete encoder
+        if is_aifs_format:
+            # Already in AIFS format [batch, time, ensemble, grid, vars]
+            if self.verbose:
+                print("✅ Input is in AIFS format [batch, time, ensemble, grid, vars]")
+
             if self.aifs_encoder is not None:
-                spatial_encoding = self.aifs_encoder(timestep_data)
+                # Process the full 5D tensor with AIFS encoder
+                if self.verbose:
+                    print(f"🚀 Processing full tensor with AIFS encoder: {tensor_5d.shape}")
+
+                # AIFS processes the full temporal sequence at once
+                spatial_encoding = self.aifs_encoder(tensor_5d)
+
+                if self.verbose:
+                    print(f"✅ AIFS encoder output shape: {spatial_encoding.shape}")
+
+                # AIFS returns [grid_points, features] = [542080, 218]
+                # We need to aggregate this to [batch, time, features] format
+
+                # Aggregate grid point embeddings to get a single representation per batch
+                # Use mean pooling across grid points to create a global climate representation
+                if len(spatial_encoding.shape) == 2:  # [grid_points, features]
+                    # Mean pool across grid points to get [features]
+                    aggregated_encoding = torch.mean(spatial_encoding, dim=0)  # [218]
+
+                    # Expand to batch dimension: [batch_size, 218]
+                    batch_encoding = aggregated_encoding.unsqueeze(0).repeat(
+                        batch_size, 1
+                    )  # [batch_size, 218]
+
+                    if self.verbose:
+                        print(f"🔄 Aggregated encoding shape: {batch_encoding.shape}")
+                else:
+                    batch_encoding = spatial_encoding
+
+                # Create time series tokens by repeating for each timestep
+                time_series_tokens = batch_encoding.unsqueeze(1).repeat(
+                    1, time_steps, 1
+                )  # [batch, time, spatial_dim]
+
+                if self.verbose:
+                    print(
+                        f"🔄 Time series tokens (before temporal modeling): {time_series_tokens.shape}"
+                    )
+
+                # Apply temporal modeling and output projection
+                if self.temporal_model is not None:
+                    if self.temporal_modeling == "lstm":
+                        # LSTM expects [batch, seq, features]
+                        temporal_output, _ = self.temporal_model(time_series_tokens)
+                        final_output = self.output_projection(temporal_output)
+                    elif self.temporal_modeling == "transformer":
+                        # Project to transformer dimension first
+                        projected_encodings = self.spatial_to_transformer(time_series_tokens)
+                        # Transformer encoder
+                        temporal_output = self.temporal_model(projected_encodings)
+                        final_output = self.output_projection(temporal_output)
+                    else:
+                        final_output = self.output_projection(time_series_tokens)
+                else:
+                    final_output = self.output_projection(time_series_tokens)
+
+                if self.verbose:
+                    print(f"✅ Final output shape: {final_output.shape}")
+
+                return final_output
             else:
                 # Fallback: Create mock spatial encoding with correct shape for testing
-                batch_size = timestep_data.shape[0]
-                spatial_encoding = torch.randn(
-                    batch_size, self.spatial_dim, device=timestep_data.device
+                time_series_tokens = torch.randn(
+                    batch_size, time_steps, self.spatial_dim, device=tensor_5d.device
                 )
                 if self.verbose:
-                    print(f"⚠️ Using mock spatial encoding with shape {spatial_encoding.shape}")
+                    print(f"⚠️ Using mock spatial encoding with shape {time_series_tokens.shape}")
+                return time_series_tokens
 
-            timestep_encodings.append(spatial_encoding)
-
-        # Stack to create sequence: [batch, time, spatial_dim]
-        sequence_encodings = torch.stack(timestep_encodings, dim=1)
-
-        # Apply temporal modeling if specified
-        if self.temporal_model is not None:
-            if self.temporal_modeling == "lstm":
-                # LSTM expects [batch, seq, features]
-                temporal_output, _ = self.temporal_model(sequence_encodings)
-                # Use last hidden state or all hidden states
-                final_output = self.output_projection(temporal_output)
-            elif self.temporal_modeling == "transformer":
-                # Project to transformer dimension first
-                projected_encodings = self.spatial_to_transformer(sequence_encodings)
-                # Transformer encoder
-                temporal_output = self.temporal_model(projected_encodings)
-                final_output = self.output_projection(temporal_output)
-            else:
-                final_output = sequence_encodings
         else:
-            final_output = sequence_encodings
+            # Standard format [batch, time, vars, height, width] - convert to AIFS format
+            if self.verbose:
+                print(
+                    "🔄 Converting from standard format [batch, time, vars, height, width] to AIFS format"
+                )
 
-        return torch.as_tensor(final_output)
+            # Reshape to AIFS format: [batch, time, ensemble=1, grid=height*width, vars]
+            batch_size, time_steps, vars, height, width = tensor_5d.shape
+            grid_size = height * width
+
+            # Reshape: [batch, time, vars, height, width] -> [batch, time, 1, height*width, vars]
+            aifs_format = tensor_5d.permute(0, 1, 3, 4, 2).reshape(
+                batch_size, time_steps, 1, grid_size, vars
+            )
+
+            if self.verbose:
+                print(f"✅ Converted to AIFS format: {aifs_format.shape}")
+
+            # Recursively call with AIFS format
+            return self.tokenize_time_series(aifs_format)
 
     def tokenize_batch_parallel(self, tensor_5d: torch.Tensor) -> torch.Tensor:
         """

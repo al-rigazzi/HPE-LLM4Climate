@@ -95,7 +95,7 @@ class ZarrClimateLoader:
             self._analyze_dataset()
 
             print("✅ Dataset loaded successfully")
-            print(f"   📊 Shape: {dict(self.ds.dims)}")
+            print(f"   📊 Shape: {dict(self.ds.sizes)}")
             print(f"   🔢 Variables: {len(self.available_variables)}")
             print(f"   📅 Time range: {self.time_range[0]} to {self.time_range[1]}")
 
@@ -114,7 +114,7 @@ class ZarrClimateLoader:
             self.spatial_shape = (self.ds.dims["lat"], self.ds.dims["lon"])
         elif "latitude" in self.ds.dims and "longitude" in self.ds.dims:
             self.spatial_dims = ("latitude", "longitude")
-            self.spatial_shape = (self.ds.dims["latitude"], self.ds.dims["longitude"])
+            self.spatial_shape = (self.ds.sizes["latitude"], self.ds.sizes["longitude"])
         else:
             raise ValueError("Could not identify spatial dimensions (lat/lon)")
 
@@ -160,7 +160,7 @@ class ZarrClimateLoader:
             print("💭 Computing data (loading into memory)...")
             subset = subset.compute()
 
-        print(f"✅ Loaded data shape: {dict(subset.dims)}")
+        print(f"✅ Loaded data shape: {dict(subset.sizes)}")
         return subset
 
     def load_spatial_region(

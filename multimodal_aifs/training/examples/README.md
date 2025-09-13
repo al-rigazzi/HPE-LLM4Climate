@@ -46,7 +46,6 @@ Comprehensive training pipeline for AIFS + Llama-3-8B fusion. Features:
 These examples integrate with:
 - AIFS encoder from `../core/aifs_encoder_utils.py`
 - Climate data utilities from `../utils/climate_data_utils.py`
-- Location-aware processing from `../core/aifs_location_aware.py`
 - Test infrastructure from `../tests/`
 
 ## 🎯 Recommended Usage

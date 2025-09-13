@@ -131,20 +131,36 @@ class AIFSClimateTextFusion(nn.Module):
 
     def encode_climate_data(self, climate_data: torch.Tensor) -> torch.Tensor:
         """
-        Encode climate data using the  AIFSCompleteEncoder.
+        Encode climate data using the AIFSCompleteEncoder.
 
         Args:
             climate_data: Raw climate data tensor [batch, time, ensemble, grid_points, variables]
 
         Returns:
-            Encoded climate features [batch, 218] (actual AIFS encoder embeddings)
+            Encoded climate features [batch, fusion_dim] (aggregated AIFS encoder embeddings)
         """
+        if self.aifs_encoder is None:
+            raise ValueError(
+                "AIFS encoder not available. Provide aifs_model during initialization."
+            )
+
         with torch.no_grad():
-            # Use the  complete encoder that returns actual AIFS embeddings
-            encoded = self.aifs_encoder(climate_data)
+            # Use the complete encoder that returns actual AIFS embeddings [grid_points, embedding_dim]
+            encoded = self.aifs_encoder(climate_data)  # [542080, 218]
+
+            # Aggregate grid point embeddings to create global climate representation
+            # Use mean pooling across grid points to get global features
+            if encoded.dim() == 2:  # [grid_points, embedding_dim]
+                # Take mean across grid points to get global representation
+                global_encoded = encoded.mean(dim=0, keepdim=True)  # [1, 218]
+                # Expand to match original batch size if needed
+                batch_size = climate_data.shape[0]
+                global_encoded = global_encoded.expand(batch_size, -1)  # [batch, 218]
+            else:
+                global_encoded = encoded  # Already in correct format
 
         # Project to fusion dimension
-        projected = self.climate_projection(encoded)
+        projected = self.climate_projection(global_encoded)
         return torch.as_tensor(projected)
 
     def encode_text(
@@ -162,8 +178,11 @@ class AIFSClimateTextFusion(nn.Module):
         """
         if text_embeddings is None:
             # Simple embedding for now - in practice, use a proper text encoder
-            batch_size = len(texts)
-            text_embeddings = torch.randn(batch_size, self.text_dim, device=self.device)
+            # Create embeddings for each text but average them to get single representation
+            num_texts = len(texts)
+            text_embeddings = torch.randn(num_texts, self.text_dim, device=self.device)
+            # Average across texts to get single text representation
+            text_embeddings = text_embeddings.mean(dim=0, keepdim=True)  # [1, text_dim]
 
         # Project to fusion dimension
         projected = self.text_projection(text_embeddings)
@@ -211,6 +230,9 @@ class AIFSClimateTextFusion(nn.Module):
         Returns:
             Fused multimodal features
         """
+        # Climate and text features are already projected to fusion_dim
+        # by encode_climate_data and encode_text methods
+
         # Apply cross-attention
         climate_attended, text_attended = self.apply_cross_attention(
             climate_features, text_features
@@ -218,9 +240,9 @@ class AIFSClimateTextFusion(nn.Module):
 
         # Residual connections and normalization
         climate_features = self.norm1(climate_features + climate_attended)
-        text_features = self.norm1(text_features + text_attended)
-
-        # Concatenate and apply self-attention
+        text_features = self.norm1(
+            text_features + text_attended
+        )  # Concatenate and apply self-attention
         combined_features = torch.stack([climate_features, text_features], dim=1)
 
         fused_features, _ = self.self_attention(
@@ -336,7 +358,7 @@ class AIFSClimateEmbedding(nn.Module):
         verbose: bool = True,
     ):
         """
-        Initialize AIFS climate embedding with  encoder.
+        Initialize AIFS climate embedding with encoder.
 
         Args:
             aifs_model: The complete AIFS model instance (preferred)
@@ -379,7 +401,7 @@ class AIFSClimateEmbedding(nn.Module):
 
     def forward(self, climate_data: torch.Tensor) -> torch.Tensor:
         """
-        Create embeddings from climate data using the  AIFSCompleteEncoder.
+        Create embeddings from climate data using the AIFSCompleteEncoder.
 
         Args:
             climate_data: Input climate data [batch, time, ensemble, grid_points, variables]
@@ -387,12 +409,28 @@ class AIFSClimateEmbedding(nn.Module):
         Returns:
             Climate embeddings [batch, embedding_dim]
         """
-        # Encode with  AIFS complete encoder
+        if self.aifs_encoder is None:
+            raise ValueError(
+                "AIFS encoder not available. Provide aifs_model during initialization."
+            )
+
+        # Encode with AIFS complete encoder
         with torch.no_grad():
-            aifs_features = self.aifs_encoder(climate_data)
+            aifs_features = self.aifs_encoder(climate_data)  # [542080, 218]
+
+            # Aggregate grid point embeddings to create global climate representation
+            # Use mean pooling across grid points to get global features
+            if aifs_features.dim() == 2:  # [grid_points, embedding_dim]
+                # Take mean across grid points to get global representation
+                global_features = aifs_features.mean(dim=0, keepdim=True)  # [1, 218]
+                # Expand to match original batch size if needed
+                batch_size = climate_data.shape[0]
+                global_features = global_features.expand(batch_size, -1)  # [batch, 218]
+            else:
+                global_features = aifs_features  # Already in correct format
 
         # Project to embedding space
-        embeddings = self.projection(aifs_features)
+        embeddings = self.projection(global_features)
 
         return torch.as_tensor(embeddings)
 

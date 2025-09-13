@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import pytest
 import torch
 import torch.nn.functional as F
 
@@ -31,16 +32,14 @@ def test_real_llama_cpu():
     """Test real Llama-3-8B on CPU without quantization."""
 
     try:
-        from multimodal_aifs.tests.integration.test_aifs_llama_integration import (
-            AIFSLlamaFusionModel,
-        )
+        from conftest import AIFSLlamaFusionModel
         from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
         from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
         print("✅ Modules imported")
     except ImportError as e:
         print(f"❌ Import error: {e}")
-        return False
+        pytest.fail(f"Import error: {e}")
 
     # Check available memory
     print(f"\n💾 System Memory Check")
@@ -79,7 +78,7 @@ def test_real_llama_cpu():
 
     except Exception as e:
         print(f"❌ Failed to load climate data: {e}")
-        return False
+        pytest.fail(f"Failed to load climate data: {e}")
 
     # Step 2: Try to load real Llama without quantization
     print(f"\n🦙 Step 2: Loading Real Llama-3-8B (Full Precision)")
@@ -111,7 +110,7 @@ def test_real_llama_cpu():
 
         if not is_real_llama:
             print("   ⚠️  Fallback to mock model occurred")
-            return False
+            pytest.skip("Real Llama model not available, test skipped")
 
     except Exception as e:
         print(f"❌ Failed to load real Llama: {e}")
@@ -119,7 +118,7 @@ def test_real_llama_cpu():
         print(f"   - Insufficient RAM (need 16+ GB)")
         print(f"   - Missing HuggingFace token")
         print(f"   - Network issues during download")
-        return False
+        pytest.skip(f"Real Llama model not available: {e}")
 
     # Step 3: Test AIFS tokenization
     print(f"\n🌍 Step 3: AIFS Climate Tokenization")
@@ -131,7 +130,7 @@ def test_real_llama_cpu():
 
     except Exception as e:
         print(f"❌ Climate tokenization failed: {e}")
-        return False
+        pytest.fail(f"Climate tokenization failed: {e}")
 
     # Step 4: Test real Llama text processing
     print(f"\n💬 Step 4: Real Llama Text Processing")
@@ -153,7 +152,7 @@ def test_real_llama_cpu():
 
     except Exception as e:
         print(f"❌ Text processing failed: {e}")
-        return False
+        pytest.fail(f"Text processing failed: {e}")
 
     # Step 5: Test real multimodal processing (lightweight)
     print(f"\n🔗 Step 5: Real Multimodal Processing")
@@ -182,7 +181,7 @@ def test_real_llama_cpu():
     except Exception as e:
         print(f"❌ Multimodal processing failed: {e}")
         print(f"   This is expected on systems with limited RAM")
-        return False
+        pytest.fail(f"Multimodal processing failed: {e}")
 
     # Step 6: Memory usage analysis
     print(f"\n📊 Step 6: Memory Analysis")
@@ -224,8 +223,7 @@ def test_real_llama_cpu():
     print(f"   💬 Real Llama text processing")
     print(f"   🔗 Multimodal fusion")
     print(f"   💾 CPU execution (full precision)")
-
-    return True
+    # Test passes by reaching this point without failures
 
 
 def test_memory_requirements():

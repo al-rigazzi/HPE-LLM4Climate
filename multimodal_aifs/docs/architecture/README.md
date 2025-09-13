@@ -12,7 +12,6 @@ Generates comprehensive system architecture showing:
 - AIFS encoder direct integration (19.9M parameters)
 - Meta-Llama-3-8B integration (8.03B parameters frozen)
 - Climate-text fusion mechanisms
-- Location-aware processing capabilities
 - Accurate technical specifications
 
 **Output**: `aifs_multimodal_architecture_diagram.pdf`

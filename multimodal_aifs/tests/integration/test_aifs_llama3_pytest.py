@@ -188,7 +188,9 @@ def test_environment_variable_info():
     print("\n🌍 Current Environment Variable Settings:")
     print(f"   USE_MOCK_LLM: {os.environ.get('USE_MOCK_LLM', 'not set')}")
     print(f"   USE_QUANTIZATION: {os.environ.get('USE_QUANTIZATION', 'not set')}")
-    print(f"   LLM_MODEL_NAME: {os.environ.get('LLM_MODEL_NAME', 'not set (default: meta-llama/Meta-Llama-3-8B)')}")
+    print(
+        f"   LLM_MODEL_NAME: {os.environ.get('LLM_MODEL_NAME', 'not set (default: meta-llama/Meta-Llama-3-8B)')}"
+    )
     print("✅ Environment info displayed")
 
 

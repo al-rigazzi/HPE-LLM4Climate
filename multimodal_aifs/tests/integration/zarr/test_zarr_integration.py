@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 import torch
 
 # Add project root to path
@@ -39,13 +40,13 @@ def test_zarr_to_aifs_pipeline():
     zarr_path = "test_climate.zarr"
     if not Path(zarr_path).exists():
         print(f"❌ Test dataset not found: {zarr_path}")
-        return False
+        pytest.fail(f"Test dataset not found: {zarr_path}")
 
     try:
         # Load dataset
         ds = xr.open_zarr(zarr_path)
         print(f"✅ Dataset loaded: {zarr_path}")
-        print(f"   📊 Dimensions: {dict(ds.dims)}")
+        print(f"   📊 Dimensions: {dict(ds.sizes)}")
         print(f"   🔢 Variables: {list(ds.data_vars.keys())}")
 
         # Get time range
@@ -54,7 +55,7 @@ def test_zarr_to_aifs_pipeline():
 
     except Exception as e:
         print(f"❌ Failed to load dataset: {e}")
-        return False
+        pytest.fail(f"Failed to load dataset: {e}")
 
     print("\n🔄 Step 2: Converting to AIFS tensor format")
     print("-" * 30)
@@ -62,7 +63,7 @@ def test_zarr_to_aifs_pipeline():
     try:
         # Select a subset of data (first 4 timesteps)
         subset = ds.isel(time=slice(0, 4))
-        print(f"✅ Selected subset: {dict(subset.dims)}")
+        print(f"✅ Selected subset: {dict(subset.sizes)}")
 
         # Get variables
         variables = list(subset.data_vars.keys())
@@ -93,7 +94,7 @@ def test_zarr_to_aifs_pipeline():
 
     except Exception as e:
         print(f"❌ Failed tensor conversion: {e}")
-        return False
+        pytest.fail(f"Failed tensor conversion: {e}")
 
     print("\n🧠 Step 3: AIFS Integration Check")
     print("-" * 30)
@@ -125,7 +126,7 @@ def test_zarr_to_aifs_pipeline():
 
     except Exception as e:
         print(f"❌ Integration check failed: {e}")
-        return False
+        pytest.fail(f"Integration check failed: {e}")
 
     print("\n🎉 Success! Zarr → AIFS Pipeline Complete")
     print("=" * 60)
@@ -136,8 +137,7 @@ def test_zarr_to_aifs_pipeline():
     print("• Integrate with AIFS TimeSeries tokenizer")
     print("• Feed tokenized data to Llama 3-8B model")
     print("• Apply cross-attention fusion for multimodal processing")
-
-    return True
+    # Test passes by reaching this point without failures
 
 
 if __name__ == "__main__":

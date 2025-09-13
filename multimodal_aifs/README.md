@@ -12,9 +12,7 @@ multimodal_aifs/
 ├── core/                       # Core multimodal fusion modules
 │   ├── __init__.py
 │   ├── aifs_encoder_utils.py   # AIFS encoder utilities
-│   ├── aifs_climate_fusion.py  # Climate-text fusion implementation
-│   ├── aifs_location_aware.py  # Location-aware geographic processing
-│   └── aifs_location_aware_fusion.py # Complete AIFS multimodal system
+│   └── aifs_climate_fusion.py  # Climate-text fusion implementation
 │
 ├── utils/                      # Utility modules
 │   ├── __init__.py
@@ -61,7 +59,6 @@ multimodal_aifs/
 │   ├── multimodal_timeseries_demo.py # Time series demo
 │   ├── zarr_aifs_multimodal_example.py # Zarr integration example
 │   └── basic/                 # Basic examples
-│       ├── location_aware_demo.py
 │       └── aifs_encoder_demo.py
 │
 ├── tests/                     # Test suite
@@ -196,9 +193,6 @@ fusion = AIFSClimateTextFusion(
 # Basic AIFS encoder demo
 python multimodal_aifs/examples/basic/aifs_encoder_demo.py
 
-# Location-aware climate analysis
-python multimodal_aifs/examples/basic/location_aware_demo.py
-
 # Integration example
 python multimodal_aifs/examples/aifs_integration_example.py
 ```
@@ -217,7 +211,6 @@ python -m pytest multimodal_aifs/tests/integration/ -v
 
 - **Real AIFS Integration**: Uses actual ECMWF AIFS encoder (19.8M parameters)
 - **Multimodal Fusion**: Climate data + text processing with cross-attention
-- **Location-Aware Processing**: Geographic and spatial analysis capabilities
 - **Performance Optimized**: High-throughput batch processing (>500k samples/s)
 - **Comprehensive Testing**: Unit, integration, and system tests
 - **Robust Error Handling**: Graceful fallbacks and error recovery

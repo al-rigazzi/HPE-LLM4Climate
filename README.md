@@ -1,5 +1,7 @@
-# 🌍 HPE-LLM4Climate: Multimodal Climate AI System
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+# 🌍 HPE-LLM4Climate: Multimodal Climate AI Sys### 🔧 Fusion Strategies
+- **Cross-Attention Fusion**: Sophisticated attention mechanisms for climate-text interaction
+- **Concatenation Fusion**: Simple feature combination for fast inference
+- **Additive Fusion**: Element-wise feature integration![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-orange.svg)](https://pytorch.org/)
 [![Transformers](https://img.shields.io/badge/🤗-Transformers-yellow.svg)](https://huggingface.co/transformers/)
 [![Experimental](https://img.shields.io/badge/Status-Experimental-red.svg)](#)
@@ -27,7 +29,6 @@ This **operational project** implements a multimodal fusion system that bridges 
 
 ### 🎯 **Applications Enabled**
 - **Climate Trend Analysis**: AI assistants that explain long-term climate patterns and projections
-- **Location-Aware Climate Analysis**: Geographic-specific climate assessments for regions, countries, or coordinates
 - **Climate Impact Assessment**: Automated analysis of climate change effects on various sectors
 - **Agricultural Climate Planning**: Long-term farming recommendations based on climate projections
 - **Climate Risk Assessment**: Analysis of future climate risks and adaptation strategies
@@ -38,13 +39,11 @@ This **operational project** implements a multimodal fusion system that bridges 
 ### 🏗️ Core Components
 - **AIFS Encoder Integration**: Standalone ECMWF AIFS climate encoder with full model compatibility
 - **Multimodal Fusion Framework**: Combines AIFS climate features and text data using cross-attention
-- **Location-Aware Climate Analysis**: Geographic-specific analysis with spatial attention masking
 - **Transformer Integration**: Support for Llama 3, BERT, and other HuggingFace models
 - **Production-Ready Architecture**: Comprehensive testing and validation infrastructure
 
 ### 🌍 Geographic Intelligence
 - **Multi-Backend Resolution**: GeoPy/Nominatim geographic coordinate resolution
-- **Spatial Context Integration**: Location-aware processing and analysis
 - **Multi-Scale Analysis**: From coordinate-level to global climate assessment
 - **Real-World Integration**: OpenStreetMap and geographic database support
 
@@ -194,7 +193,7 @@ pip install -r requirements.txt
 - `matplotlib` - Data visualization and plotting
 - `huggingface_hub` - Model downloads and HuggingFace integration
 - `accelerate`, `tokenizers`, `safetensors` - Optimized model handling
-- `geopy>=2.3.0` - Geographic data processing for location-aware analysis
+- `geopy>=2.3.0` - Geographic data processing for analysis
 - `requests>=2.31.0` - HTTP requests for geographic API integration
 - `tqdm`, `PyYAML`, `h5py`, `packaging` - Utilities and file handling
 
@@ -392,9 +391,7 @@ HPE-LLM4Climate/                 # 🧪 EXPERIMENTAL REPOSITORY
 ├── 🟢 multimodal_aifs/         # ✅ WORKING IMPLEMENTATION
 │   ├── README.md               # AIFS multimodal documentation
 │   ├── core/                   # AIFS fusion modules
-│   │   ├── aifs_climate_fusion.py      # AIFS-Llama fusion
-│   │   ├── aifs_location_aware.py      # AIFS geographic processing
-│   │   └── aifs_location_aware_fusion.py # Complete AIFS system
+│   │   └── aifs_climate_fusion.py      # AIFS-Llama fusion
 │   ├── utils/                  # AIFS utility modules
 │   │   ├── zarr_data_loader.py          # Zarr climate data loader ✅
 │   │   ├── aifs_encoder_utils.py        # AIFS encoder utilities ✅

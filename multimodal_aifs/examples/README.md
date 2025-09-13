@@ -1,13 +1,12 @@
 # Multimodal AIFS Examples
 
-This directory contains example scripts demonstrating the capabilities of the multimodal AIFS implementation for location-aware climate analysis.
+This directory contains example scripts demonstrating the capabilities of the multimodal AIFS implementation for climate analysis.
 
 ## 📁 Example Structure
 
 ### `basic/`
 Basic usage examples:
 - **`aifs_encoder_demo.py`** - Simple AIFS encoder usage and climate data encoding
-- **`location_aware_demo.py`** - Geographic operations and location encoding
 
 ### Root Examples
 Complete integration examples:
@@ -48,18 +47,6 @@ fusion = AIFSClimateTextFusion(
 texts = ["High temperature anomaly detected"]
 results = fusion(climate_data, texts)
 print(f"Fused features: {results['fused_features'].shape}")
-```
-
-### Location-Aware Analysis
-```python
-from multimodal_aifs.core import AIFSGeographicResolver
-
-# Initialize geographic resolver
-resolver = AIFSGeographicResolver()
-
-# Encode location
-london_encoding = resolver.encode_location(51.5074, -0.1278)
-print(f"Location encoding: {london_encoding.shape}")
 ```
 
 ## 📊 Example Datasets
