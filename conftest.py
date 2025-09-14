@@ -158,9 +158,10 @@ def ensure_test_zarr_dataset():
     try:
         # Create a simple zarr dataset directly
         try:
-            import zarr
-            import xarray as xr
             from datetime import datetime, timedelta
+
+            import xarray as xr
+            import zarr
         except ImportError as e:
             print(f"❌ Missing required packages for zarr creation: {e}")
             print("⚠️ Install with: pip install zarr xarray")
@@ -176,63 +177,71 @@ def ensure_test_zarr_dataset():
         times = [datetime(2024, 1, 1) + timedelta(hours=i) for i in range(time_steps)]
         lats = np.linspace(-90, 90, lat_size)
         lons = np.linspace(-180, 180, lon_size)
-        variables = ['temperature_2m', 'relative_humidity', 'surface_pressure', 'wind_speed', 'precipitation']
+        variables = [
+            "temperature_2m",
+            "relative_humidity",
+            "surface_pressure",
+            "wind_speed",
+            "precipitation",
+        ]
 
         # Create synthetic data with realistic patterns
         data_arrays = {}
 
         for i, var in enumerate(variables):
             # Create base patterns
-            if var == 'temperature_2m':
+            if var == "temperature_2m":
                 # Temperature with latitude gradient and diurnal cycle
                 base_temp = 15 + 20 * np.cos(np.radians(lats))  # Latitude gradient
                 data = np.zeros((time_steps, lat_size, lon_size))
                 for t in range(time_steps):
                     diurnal = 5 * np.sin(2 * np.pi * t / 24)  # Diurnal cycle
-                    data[t] = base_temp[:, np.newaxis] + diurnal + np.random.normal(0, 2, (lat_size, lon_size))
+                    data[t] = (
+                        base_temp[:, np.newaxis]
+                        + diurnal
+                        + np.random.normal(0, 2, (lat_size, lon_size))
+                    )
 
-            elif var == 'relative_humidity':
+            elif var == "relative_humidity":
                 # Humidity inversely related to temperature
                 data = 60 + np.random.normal(0, 15, (time_steps, lat_size, lon_size))
                 data = np.clip(data, 0, 100)
 
-            elif var == 'surface_pressure':
+            elif var == "surface_pressure":
                 # Pressure with elevation-like patterns
                 data = 1013 + np.random.normal(0, 10, (time_steps, lat_size, lon_size))
 
-            elif var == 'wind_speed':
+            elif var == "wind_speed":
                 # Wind speed with some spatial correlation
                 data = 5 + np.random.exponential(3, (time_steps, lat_size, lon_size))
 
-            elif var == 'precipitation':
+            elif var == "precipitation":
                 # Sparse precipitation events
                 data = np.random.exponential(1, (time_steps, lat_size, lon_size))
                 data = np.where(np.random.random((time_steps, lat_size, lon_size)) < 0.1, data, 0)
 
             data_arrays[var] = xr.DataArray(
                 data,
-                dims=['time', 'latitude', 'longitude'],
-                coords={
-                    'time': times,
-                    'latitude': lats,
-                    'longitude': lons
-                },
-                attrs={'units': 'varies', 'description': f'Synthetic {var} data'}
+                dims=["time", "latitude", "longitude"],
+                coords={"time": times, "latitude": lats, "longitude": lons},
+                attrs={"units": "varies", "description": f"Synthetic {var} data"},
             )
 
         # Create dataset
         ds = xr.Dataset(data_arrays)
         ds.attrs = {
-            'title': 'Synthetic Climate Dataset for Testing',
-            'created': datetime.now().isoformat(),
-            'description': 'Small synthetic climate dataset for integration tests'
+            "title": "Synthetic Climate Dataset for Testing",
+            "created": datetime.now().isoformat(),
+            "description": "Small synthetic climate dataset for integration tests",
         }
 
         # Save to zarr
-        ds.to_zarr(zarr_path, mode='w')
+        ds.to_zarr(zarr_path, mode="w")
 
         print(f"✅ Test Zarr dataset created successfully: {zarr_path}")
-        print(f"   Time steps: {time_steps}, Spatial: {lat_size}x{lon_size}, Variables: {len(variables)}")
+        print(
+            f"   Time steps: {time_steps}, Spatial: {lat_size}x{lon_size}, Variables: {len(variables)}"
+        )
 
         return str(zarr_path)
 
@@ -242,6 +251,8 @@ def ensure_test_zarr_dataset():
         # Don't fail the test session, just warn
         print("⚠️ Zarr tests may fail without test dataset")
         return None
+
+
 # =================== LLM MODEL FIXTURES ===================
 
 
