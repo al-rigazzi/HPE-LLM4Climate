@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 pytest Configuration and Fixtures for HPE-LLM4Climate
 
@@ -9,13 +8,6 @@ Environment Variables:
 - USE_MOCK_LLM: Set to "true" to force mock LLM usage instead of real models
 - USE_QUANTIZATION: Set to "true" to enable quantization for real models
 - LLM_MODEL_NAME: Override default LLM model name (default: meta-llama/Meta-Llama-3-8B)
-
-Key Fixtures:
-- llm_model: Real or mock LLM model based on USE_MOCK_LLM environment variable
-- aifs_model: AIFS model for climate data processing
-- aifs_llama_model: Complete AIFS+LLM fusion model for integration testing
-- test_climate_data: Synthetic climate data for testing
-- test_text_queries: Sample text queries for testing
 """
 
 import os
@@ -24,7 +16,7 @@ import sys
 import types
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -33,7 +25,7 @@ import torch
 import torch.nn as nn
 
 # Add project root to path
-project_root = Path(__file__).parent
+project_root = Path(__file__).parent.parent  # Go up one level to project root
 sys.path.insert(0, str(project_root))
 
 
@@ -240,7 +232,8 @@ def ensure_test_zarr_dataset():
 
         print(f"✅ Test Zarr dataset created successfully: {zarr_path}")
         print(
-            f"   Time steps: {time_steps}, Spatial: {lat_size}x{lon_size}, Variables: {len(variables)}"
+            f"   Time steps: {time_steps}, Spatial: "
+            f"{lat_size}x{lon_size}, Variables: {len(variables)}"
         )
 
         return str(zarr_path)
@@ -277,7 +270,7 @@ class MockLLMModel(nn.Module):
         self.lm_head = nn.Linear(hidden_size, vocab_size)
 
     def forward(
-        self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None, **kwargs
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor | None = None, **kwargs
     ):
         """Forward pass mimicking LLM behavior."""
         x = self.embedding(input_ids)
@@ -330,11 +323,6 @@ def llm_model_path():
         f"models/{model_name.lower()}",
         f"/models/{model_name}",
         os.path.expanduser(f"~/models/{model_name}"),
-        # Legacy paths for backward compatibility
-        "models/Meta-Llama-3-8B",
-        "models/llama-3-8b",
-        "/models/Meta-Llama-3-8B",
-        os.path.expanduser("~/models/Meta-Llama-3-8B"),
     ]
 
     for path in possible_paths:
@@ -348,14 +336,6 @@ def llm_model_path():
 def llm_model(llm_model_path, test_device):
     """
     Provide real LLM model or mock model based on USE_MOCK_LLM environment variable.
-
-    Environment Variables:
-    - USE_MOCK_LLM: Set to "true" to force mock model usage
-    - USE_QUANTIZATION: Set to "true" to enable quantization
-    - LLM_MODEL_NAME: Override default model name
-
-    This fixture tries to load a real LLM model, but can be forced to use
-    a mock model via environment variable for testing purposes.
     """
     use_mock = get_env_bool("USE_MOCK_LLM", True)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
@@ -725,7 +705,7 @@ class AIFSLlamaFusionModel(nn.Module):
         """
         return self.time_series_tokenizer.tokenize_time_series(climate_time_series)
 
-    def tokenize_text(self, text_inputs: list) -> Dict[str, torch.Tensor]:
+    def tokenize_text(self, text_inputs: list) -> dict[str, torch.Tensor]:
         """
         Tokenize text inputs for LLaMA model.
 
@@ -744,7 +724,7 @@ class AIFSLlamaFusionModel(nn.Module):
             }
         else:
             # Use real tokenizer
-            return self.tokenizer(
+            return self.llama_tokenizer(
                 text_inputs,
                 return_tensors="pt",
                 padding=True,
@@ -754,7 +734,7 @@ class AIFSLlamaFusionModel(nn.Module):
 
     def process_climate_text(
         self, climate_tokens: torch.Tensor, text_inputs: list, task: str = "generation"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process climate tokens and text inputs together.
 
@@ -799,7 +779,8 @@ class AIFSLlamaFusionModel(nn.Module):
             if task == "generation":
                 if len(text_inputs) > 0:
                     result["generated_text"] = (
-                        f"Analysis of {text_inputs[0]}: The climate data shows interesting patterns in temperature and pressure variations."
+                        f"Analysis of {text_inputs[0]}: The climate data "
+                        "shows interesting patterns in temperature and pressure variations."
                     )
                 else:
                     result["generated_text"] = "The climate data analysis is complete."
@@ -839,11 +820,6 @@ class AIFSLlamaFusionModel(nn.Module):
 def aifs_llama_model(test_device, aifs_model):
     """
     Fixture to create AIFS + LLM fusion model.
-
-    Environment Variables:
-    - USE_MOCK_LLM: Set to "true" to force mock LLM usage
-    - USE_QUANTIZATION: Set to "true" to enable quantization
-    - LLM_MODEL_NAME: Override default model name
     """
     # Setup flash attention mocking first
     setup_flash_attn_mock()
@@ -898,7 +874,8 @@ def test_climate_data():
     """Generate synthetic climate data for testing."""
     return {
         # 5D tensor for AIFS: [batch, time, ensemble, grid, vars]
-        # batch=1, time=2 (AIFS expects exactly 2 timesteps: t-6h and t0), ensemble=1, grid=542080 (real AIFS grid), vars=103
+        # batch=1, time=2 (AIFS expects exactly 2 timesteps: t-6h and t0),
+        # ensemble=1, grid=542080 (real AIFS grid), vars=103
         "tensor_5d": torch.randn(1, 2, 1, 542080, 103),
         # 4D tensor: [batch, vars, height, width]
         "tensor_4d": torch.randn(2, 103, 32, 32),

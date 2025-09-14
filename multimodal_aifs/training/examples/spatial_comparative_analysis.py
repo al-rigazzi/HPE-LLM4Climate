@@ -23,7 +23,7 @@ import sys
 import time
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -116,7 +116,7 @@ class DynamicLocationResolver:
                 },
             }
 
-    def resolve_location(self, location_name: str) -> Dict | None:
+    def resolve_location(self, location_name: str) -> dict | None:
         """
         Resolve location name to geographic bounds using GeoPy/Nominatim
 
@@ -148,7 +148,7 @@ class DynamicLocationResolver:
         coord_pattern = r"^(-?\d+\.?\d*)\s*[°]?\s*,\s*(-?\d+\.?\d*)\s*[°]?$"
         return bool(re.match(coord_pattern, location_name.strip()))
 
-    def _resolve_coordinates(self, coord_string: str) -> Dict | None:
+    def _resolve_coordinates(self, coord_string: str) -> dict | None:
         """Resolve coordinate string to location info"""
         import re
 
@@ -215,7 +215,7 @@ class DynamicLocationResolver:
             print(f"❌ Invalid coordinate format: {coord_string}")
             return None
 
-    def _resolve_with_geopy(self, location_name: str) -> Dict | None:
+    def _resolve_with_geopy(self, location_name: str) -> dict | None:
         """Resolve location using GeoPy/Nominatim with multiple candidates"""
         try:
             print(f"🔍 Resolving '{location_name}' with Nominatim (multiple candidates)...")
@@ -295,7 +295,7 @@ class DynamicLocationResolver:
             print(f"❌ Error resolving '{location_name}': {e}")
             return None
 
-    def _select_best_candidate(self, query: str, candidates: List) -> Any | None:
+    def _select_best_candidate(self, query: str, candidates: list) -> Any | None:
         """
         Select the best candidate from multiple geocoding results
 
@@ -390,7 +390,7 @@ class DynamicLocationResolver:
 
         return score
 
-    def _resolve_with_fallback(self, location_name: str) -> Dict | None:
+    def _resolve_with_fallback(self, location_name: str) -> dict | None:
         """Fallback resolution using limited local database"""
         cache_key = location_name.lower().strip()
 
@@ -405,7 +405,7 @@ class DynamicLocationResolver:
             print(f"❌ Location '{location_name}' not found in fallback database")
             return None
 
-    def _determine_location_type(self, raw_data: Dict) -> str:
+    def _determine_location_type(self, raw_data: dict) -> str:
         """Determine location type from Nominatim raw data"""
         if "type" in raw_data:
             osm_type = raw_data["type"]
@@ -440,7 +440,7 @@ class DynamicLocationResolver:
 
         return "region"  # Default
 
-    def bulk_resolve(self, location_names: List[str]) -> Dict[str, Dict | None]:
+    def bulk_resolve(self, location_names: list[str]) -> dict[str, dict | None]:
         """Resolve multiple locations efficiently"""
         results = {}
 
@@ -453,7 +453,7 @@ class DynamicLocationResolver:
 
         return results
 
-    def search_nearby_locations(self, location_name: str, radius_km: float = 100) -> List[Dict]:
+    def search_nearby_locations(self, location_name: str, radius_km: float = 100) -> list[dict]:
         """Find nearby locations (future enhancement)"""
         # This would use Nominatim's nearby search functionality
         # For now, just return the main location
@@ -487,7 +487,7 @@ class MultiLocationExtractor:
             "area",
         ]
 
-    def extract_locations(self, query: str) -> List[str]:
+    def extract_locations(self, query: str) -> list[str]:
         """Extract location names from query text using NLP patterns and validation"""
         import re
 
@@ -513,7 +513,7 @@ class MultiLocationExtractor:
 
         return validated_locations
 
-    def _extract_coordinates(self, query: str) -> List[str]:
+    def _extract_coordinates(self, query: str) -> list[str]:
         """Extract coordinate patterns from query text"""
         import re
 
@@ -546,7 +546,7 @@ class MultiLocationExtractor:
 
         return coordinates
 
-    def _extract_from_comparative_patterns(self, query: str) -> List[Tuple[str, str]]:
+    def _extract_from_comparative_patterns(self, query: str) -> list[tuple[str, str]]:
         """Extract location pairs from comparative language patterns"""
         import re
 
@@ -580,7 +580,7 @@ class MultiLocationExtractor:
 
         return pairs
 
-    def _extract_potential_locations(self, query: str) -> List[str]:
+    def _extract_potential_locations(self, query: str) -> list[str]:
         """Extract potential locations using capitalization and common patterns"""
         import re
 
@@ -666,7 +666,7 @@ class MultiLocationExtractor:
                 return True
         return False
 
-    def _validate_locations(self, locations: List[str]) -> List[str]:
+    def _validate_locations(self, locations: list[str]) -> list[str]:
         """Validate locations by attempting to resolve them"""
         validated = []
 
@@ -681,7 +681,7 @@ class MultiLocationExtractor:
 
         return validated
 
-    def extract_comparative_locations(self, query: str) -> List[Tuple[str, str]]:
+    def extract_comparative_locations(self, query: str) -> list[tuple[str, str]]:
         """Extract location pairs for comparative analysis"""
         pairs = self._extract_from_comparative_patterns(query)
 
@@ -694,7 +694,7 @@ class MultiLocationExtractor:
 
         return pairs
 
-    def resolve_location(self, location_name: str) -> Dict | None:
+    def resolve_location(self, location_name: str) -> dict | None:
         """Resolve location using the dynamic resolver"""
         return self.resolver.resolve_location(location_name)
 
@@ -702,14 +702,14 @@ class MultiLocationExtractor:
 class SpatialMaskGenerator:
     """Generate spatial attention masks for climate data"""
 
-    def __init__(self, grid_shape: Tuple[int, int] = (64, 128)):  # Simplified grid for demo
+    def __init__(self, grid_shape: tuple[int, int] = (64, 128)):  # Simplified grid for demo
         self.n_lats, self.n_lons = grid_shape
         # Simplified lat/lon grid for demo
         self.lat_grid = np.linspace(-90, 90, self.n_lats)
         self.lon_grid = np.linspace(-180, 180, self.n_lons)
 
     def create_location_mask(
-        self, location_info: Dict, focus_strength: float = 1.0
+        self, location_info: dict, focus_strength: float = 1.0
     ) -> torch.Tensor:
         """Create spatial mask for a single location"""
         bounds = location_info["bounds"]
@@ -730,7 +730,7 @@ class SpatialMaskGenerator:
 
         return mask
 
-    def create_union_mask(self, location_masks: List[torch.Tensor]) -> torch.Tensor:
+    def create_union_mask(self, location_masks: list[torch.Tensor]) -> torch.Tensor:
         """Create union mask from multiple location masks"""
         if not location_masks:
             return torch.ones(self.n_lats, self.n_lons)
@@ -739,7 +739,7 @@ class SpatialMaskGenerator:
         union_mask = torch.stack(location_masks, dim=0).max(dim=0)[0]
         return union_mask
 
-    def create_comparative_masks(self, locations: List[Dict]) -> Dict[str, torch.Tensor]:
+    def create_comparative_masks(self, locations: list[dict]) -> dict[str, torch.Tensor]:
         """Create individual and union masks for comparative analysis"""
         masks = {}
         individual_masks = []
@@ -760,7 +760,7 @@ class SpatialComparativeProcessor(torch.nn.Module):
     """Process climate data for spatial comparative analysis"""
 
     def __init__(
-        self, climate_dim: int = 512, text_dim: int = 768, grid_shape: Tuple[int, int] = (64, 128)
+        self, climate_dim: int = 512, text_dim: int = 768, grid_shape: tuple[int, int] = (64, 128)
     ):
         super().__init__()
 
@@ -812,7 +812,7 @@ class SpatialComparativeProcessor(torch.nn.Module):
         print(f"📊 Grid shape: {grid_shape}")
         print(f"🗺️  Using dynamic location resolution with GeoPy: {GEOPY_AVAILABLE}")
 
-    def process_spatial_query(self, query: str, climate_data: torch.Tensor) -> Dict:
+    def process_spatial_query(self, query: str, climate_data: torch.Tensor) -> dict:
         """
         Process a spatial comparative query
 
@@ -863,8 +863,8 @@ class SpatialComparativeProcessor(torch.nn.Module):
         return results
 
     def _analyze_comparative_locations(
-        self, query: str, climate_data: torch.Tensor, loc1_info: Dict, loc2_info: Dict, masks: Dict
-    ) -> Dict:
+        self, query: str, climate_data: torch.Tensor, loc1_info: dict, loc2_info: dict, masks: dict
+    ) -> dict:
         """Analyze climate data for two locations comparatively"""
 
         batch_size = climate_data.shape[0]
@@ -931,7 +931,7 @@ class SpatialComparativeProcessor(torch.nn.Module):
             "query": query,
         }
 
-    def _process_global_query(self, query: str, climate_data: torch.Tensor) -> Dict:
+    def _process_global_query(self, query: str, climate_data: torch.Tensor) -> dict:
         """Fallback for non-comparative queries"""
         batch_size = climate_data.shape[0]
         climate_features = self.climate_encoder(climate_data)

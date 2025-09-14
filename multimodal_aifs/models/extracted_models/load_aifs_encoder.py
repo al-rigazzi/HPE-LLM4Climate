@@ -23,7 +23,7 @@ def load_aifs_encoder(
         device: Device to load model on
 
     Returns:
-        Tuple of (encoder_model, analysis_dict)
+        tuple of (encoder_model, analysis_dict)
     """
     if model_dir is None:
         # Use the directory where this script is located

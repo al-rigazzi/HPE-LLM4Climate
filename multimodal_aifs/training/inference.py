@@ -9,7 +9,6 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List
 
 import torch
 import yaml
@@ -93,7 +92,7 @@ class AIFSMultimodalInference:
 
     def predict(
         self, climate_data: torch.Tensor, text_query: str, return_attention: bool = False
-    ) -> Dict:
+    ) -> dict:
         """
         Perform inference on climate data and text query.
 
@@ -137,8 +136,8 @@ class AIFSMultimodalInference:
             return results
 
     def batch_predict(
-        self, climate_data_list: List[torch.Tensor], text_queries: List[str], batch_size: int = 4
-    ) -> List[Dict]:
+        self, climate_data_list: list[torch.Tensor], text_queries: list[str], batch_size: int = 4
+    ) -> list[dict]:
         """Perform batch inference."""
         results = []
 

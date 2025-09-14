@@ -93,14 +93,14 @@ jobs:
     - name: Run integration tests
       if: matrix.os == 'macos-latest'
       run: |
-        python -m pytest multimodal_aifs/tests/integration/ -v --tb=short --maxfail=3
+        python -m pytest multimodal_aifs/tests/integration/ -v -s --tb=short --maxfail=3
 
     - name: Run integration tests (Ubuntu - limited subset)
       if: matrix.os == 'ubuntu-latest'
       run: |
         # Run only critical integration tests on Ubuntu for faster CI
-        python -m pytest multimodal_aifs/tests/integration/test_time_series_integration.py::test_temporal_pattern_preservation -v
-        python -m pytest multimodal_aifs/tests/integration/zarr/test_zarr_integration.py::test_zarr_to_aifs_pipeline -v
+        python -m pytest multimodal_aifs/tests/integration/test_time_series_integration.py::test_temporal_pattern_preservation -v -s
+        python -m pytest multimodal_aifs/tests/integration/zarr/test_zarr_integration.py::test_zarr_to_aifs_pipeline -v -s
 
   lint:
     name: Code Quality

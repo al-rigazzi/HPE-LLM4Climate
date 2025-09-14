@@ -23,7 +23,7 @@ Usage:
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -62,8 +62,8 @@ class ZarrClimateLoader:
     def __init__(
         self,
         zarr_path: str | Path,
-        chunk_size: Dict[str, int] | None = None,
-        variables: List[str] | None = None,
+        chunk_size: dict[str, int] | None = None,
+        variables: list[str] | None = None,
     ):
         """
         Initialize Zarr climate data loader.
@@ -71,7 +71,7 @@ class ZarrClimateLoader:
         Args:
             zarr_path: Path to Zarr dataset (local or cloud URL)
             chunk_size: Override default chunking (e.g., {"time": 24, "lat": 100})
-            variables: List of variables to load (if None, loads all)
+            variables: list of variables to load (if None, loads all)
         """
         if not ZARR_AVAILABLE:
             raise ImportError("Zarr and Xarray are required. Install with: pip install zarr xarray")
@@ -130,7 +130,7 @@ class ZarrClimateLoader:
         if self.variables:
             self.available_variables = [v for v in self.available_variables if v in self.variables]
 
-    def load_time_range(self, start_time: str, end_time: str, variables: List[str] | None = None):
+    def load_time_range(self, start_time: str, end_time: str, variables: list[str] | None = None):
         """
         Load data for a specific time range.
 
@@ -165,17 +165,17 @@ class ZarrClimateLoader:
 
     def load_spatial_region(
         self,
-        lat_range: Tuple[float, float],
-        lon_range: Tuple[float, float],
-        time_range: Tuple[str, str] | None = None,
-        variables: List[str] | None = None,
+        lat_range: tuple[float, float],
+        lon_range: tuple[float, float],
+        time_range: tuple[str, str] | None = None,
+        variables: list[str] | None = None,
     ):
         """
         Load data for a specific spatial region and optional time range.
 
         Args:
-            lat_range: Tuple of (min_lat, max_lat) in degrees
-            lon_range: Tuple of (min_lon, max_lon) in degrees
+            lat_range: tuple of (min_lat, max_lat) in degrees
+            lon_range: tuple of (min_lon, max_lon) in degrees
             time_range: Optional tuple of (start_time, end_time) strings
             variables: Variables to load (default: all available)
 
@@ -317,7 +317,7 @@ class ZarrClimateLoader:
 
         return tensor
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get dataset information."""
         return {
             "zarr_path": self.zarr_path,
@@ -335,7 +335,7 @@ def load_zarr_for_aifs(
     zarr_path: str,
     start_time: str,
     end_time: str,
-    variables: List[str] | None = None,
+    variables: list[str] | None = None,
     batch_size: int = 2,
     normalize: bool = True,
 ) -> torch.Tensor:

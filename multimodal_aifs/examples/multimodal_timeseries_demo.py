@@ -20,7 +20,6 @@ Usage:
 import sys
 import time
 from pathlib import Path
-from typing import List
 
 import torch
 import torch.nn as nn
@@ -84,7 +83,7 @@ def create_synthetic_timeseries_data(
     return data
 
 
-def create_climate_descriptions() -> List[str]:
+def create_climate_descriptions() -> list[str]:
     """Create realistic climate descriptions for multimodal fusion."""
     descriptions = [
         "High pressure system bringing clear skies and stable temperatures across the region",

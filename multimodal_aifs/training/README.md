@@ -170,7 +170,7 @@ def _load_climate_data(self, climate_file: str) -> torch.Tensor:
     # Your custom climate data loading logic
     return climate_tensor
 
-def _load_samples(self) -> List[Dict]:
+def _load_samples(self) -> list[dict]:
     # Your custom sample loading logic
     return samples_list
 ```
@@ -179,7 +179,7 @@ def _load_samples(self) -> List[Dict]:
 Modify `compute_loss` method for your specific training objective:
 
 ```python
-def compute_loss(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
+def compute_loss(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
     # Your custom loss computation
     return loss
 ```

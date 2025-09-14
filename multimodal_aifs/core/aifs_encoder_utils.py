@@ -11,13 +11,12 @@ Key Components:
 - load_aifs_encoder: Load encoder from checkpoint
 """
 
-import json
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 try:
     import einops
@@ -81,7 +80,7 @@ class AIFSCompleteEncoder(nn.Module):
             )
 
         # Check input dimensions
-        batch_size, time_steps, ensemble_size, grid_size, num_vars = x.shape
+        batch_size, _, _, grid_size, _ = x.shape
         expected_grid_size = self.aifs_model.latlons_data.shape[0]  # 542080 for AIFS-Single-1.0
 
         if grid_size != expected_grid_size:
@@ -132,11 +131,12 @@ class AIFSCompleteEncoder(nn.Module):
             data_embeddings, hidden_embeddings = encoder_output
 
         if self.verbose:
-            print(f"✅ AIFS encoder forward completed (ENCODER OUTPUT ONLY)")
+            print("✅ AIFS encoder forward completed (ENCODER OUTPUT ONLY)")
             print(f"📐 Data embeddings shape: {data_embeddings.shape}")
             print(f"📐 Hidden embeddings shape: {hidden_embeddings.shape}")
             print(
-                f"📊 Data embeddings range: [{data_embeddings.min():.4f}, {data_embeddings.max():.4f}]"
+                f"📊 Data embeddings range: [{data_embeddings.min():.4f}, "
+                f"{data_embeddings.max():.4f}]"
             )
 
         # Return the encoder embeddings (data embeddings represent the main climate features)
@@ -188,7 +188,7 @@ def save_aifs_encoder(
         torch.save(checkpoint, checkpoint_path)
 
         if verbose:
-            print(f"✅ AIFSCompleteEncoder checkpoint saved!")
+            print("✅ AIFSCompleteEncoder checkpoint saved!")
             print(f"📁 Path: {checkpoint_path}")
             print(f"📊 Size: {os.path.getsize(checkpoint_path) / 1024 / 1024:.2f} MB")
             print(f"🔧 Parameters: {checkpoint['total_parameters']:,}")
@@ -228,7 +228,7 @@ def load_aifs_encoder(
     encoder.load_state_dict(checkpoint["model_state_dict"])
 
     if verbose:
-        print(f"✅ AIFSCompleteEncoder loaded successfully!")
+        print("✅ AIFSCompleteEncoder loaded successfully!")
         print(f"📊 Parameters: {checkpoint['total_parameters']:,}")
         print(f"📐 Expected output: {checkpoint['output_shape_example']}")
 
@@ -257,7 +257,7 @@ def create_aifs_encoder(aifs_model, verbose: bool = True) -> AIFSCompleteEncoder
     return encoder
 
 
-def get_checkpoint_info(checkpoint_path: str) -> Dict[str, Any]:
+def get_checkpoint_info(checkpoint_path: str) -> dict[str, Any]:
     """
     Get information about a saved checkpoint without loading the model.
 
@@ -307,7 +307,7 @@ def validate_checkpoint(checkpoint_path: str, aifs_model, verbose: bool = True) 
         assert param_count > 0, "No parameters found"
 
         if verbose:
-            print(f"✅ Checkpoint validation passed!")
+            print("✅ Checkpoint validation passed!")
             print(f"📊 Parameters: {param_count:,}")
 
         return True

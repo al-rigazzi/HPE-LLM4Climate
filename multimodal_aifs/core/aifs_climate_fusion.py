@@ -6,8 +6,6 @@ combining climate data encoded through the  AIFSCompleteEncoder with textual
 descriptions for enhanced multimodal climate analysis.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
-
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -15,7 +13,7 @@ from torch import nn
 from ..utils.text_utils import ClimateTextProcessor
 
 # Import the  AIFS encoder utilities
-from .aifs_encoder_utils import AIFSCompleteEncoder, load_aifs_encoder
+from .aifs_encoder_utils import AIFSCompleteEncoder
 
 
 class AIFSClimateTextFusion(nn.Module):
@@ -34,7 +32,7 @@ class AIFSClimateTextFusion(nn.Module):
     def __init__(
         self,
         aifs_model=None,
-        aifs_checkpoint_path: Optional[str] = None,
+        aifs_checkpoint_path: str | None = None,
         climate_dim: int = 218,  # Updated to match actual AIFS encoder output
         text_dim: int = 768,
         fusion_dim: int = 512,
@@ -67,6 +65,7 @@ class AIFSClimateTextFusion(nn.Module):
         self.verbose = verbose
 
         # Initialize the  AIFS Complete Encoder
+        self.aifs_encoder: AIFSCompleteEncoder | None = None
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
             self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
@@ -76,7 +75,8 @@ class AIFSClimateTextFusion(nn.Module):
             # Load from checkpoint (requires AIFS model to be loaded separately)
             if verbose:
                 print(
-                    "⚠️ Loading from checkpoint requires AIFS model. Consider providing aifs_model parameter."
+                    "⚠️ Loading from checkpoint requires AIFS model. "
+                    "Consider providing aifs_model parameter."
                 )
             self.aifs_encoder = None  # Will be set when aifs_model is provided
             self.checkpoint_path = aifs_checkpoint_path
@@ -145,7 +145,8 @@ class AIFSClimateTextFusion(nn.Module):
             )
 
         with torch.no_grad():
-            # Use the complete encoder that returns actual AIFS embeddings [grid_points, embedding_dim]
+            # Use the complete encoder that returns actual AIFS embeddings
+            # [grid_points, embedding_dim]
             encoded = self.aifs_encoder(climate_data)  # [542080, 218]
 
             # Aggregate grid point embeddings to create global climate representation
@@ -164,13 +165,13 @@ class AIFSClimateTextFusion(nn.Module):
         return torch.as_tensor(projected)
 
     def encode_text(
-        self, texts: List[str], text_embeddings: torch.Tensor | None = None
+        self, texts: list[str], text_embeddings: torch.Tensor | None = None
     ) -> torch.Tensor:
         """
         Encode text descriptions.
 
         Args:
-            texts: List of text descriptions
+            texts: list of text descriptions
             text_embeddings: Pre-computed text embeddings (optional)
 
         Returns:
@@ -190,7 +191,7 @@ class AIFSClimateTextFusion(nn.Module):
 
     def apply_cross_attention(
         self, climate_features: torch.Tensor, text_features: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Apply cross-attention between climate and text features.
 
@@ -199,7 +200,7 @@ class AIFSClimateTextFusion(nn.Module):
             text_features: Text feature tensor
 
         Returns:
-            Tuple of attended features (climate, text)
+            tuple of attended features (climate, text)
         """
         # Climate attending to text
         climate_attended, _ = self.cross_attention(
@@ -265,9 +266,9 @@ class AIFSClimateTextFusion(nn.Module):
     def forward(
         self,
         climate_data: torch.Tensor,
-        texts: List[str],
+        texts: list[str],
         text_embeddings: torch.Tensor | None = None,
-    ) -> Dict[str, torch.Tensor]:
+    ) -> dict[str, torch.Tensor]:
         """
         Forward pass of the fusion module.
 
@@ -312,13 +313,15 @@ class AIFSClimateTextFusion(nn.Module):
         features2 = self.encode_climate_data(climate_data2)
 
         # Cosine similarity
+        # pylint: disable=not-callable
         similarity = F.cosine_similarity(features1, features2, dim=-1)
+        # pylint: enable=not-callable
         return similarity
 
     def get_text_climate_alignment(
         self,
         climate_data: torch.Tensor,
-        texts: List[str],
+        texts: list[str],
         text_embeddings: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """
@@ -336,7 +339,9 @@ class AIFSClimateTextFusion(nn.Module):
         text_features = self.encode_text(texts, text_embeddings)
 
         # Compute alignment as cosine similarity
+        # pylint: disable=not-callable
         alignment = F.cosine_similarity(climate_features, text_features, dim=-1)
+        # pylint: enable=not-callable
         return alignment
 
 
@@ -351,7 +356,7 @@ class AIFSClimateEmbedding(nn.Module):
     def __init__(
         self,
         aifs_model=None,
-        aifs_checkpoint_path: Optional[str] = None,
+        aifs_checkpoint_path: str | None = None,
         climate_dim: int = 218,  # Updated to match actual AIFS encoder output
         embedding_dim: int = 256,
         device: str = "cpu",
@@ -376,6 +381,7 @@ class AIFSClimateEmbedding(nn.Module):
         self.verbose = verbose
 
         # Initialize the  AIFS Complete Encoder
+        self.aifs_encoder: AIFSCompleteEncoder | None = None
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
             self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
@@ -385,7 +391,8 @@ class AIFSClimateEmbedding(nn.Module):
             # Load from checkpoint (requires AIFS model to be loaded separately)
             if verbose:
                 print(
-                    "⚠️ Loading from checkpoint requires AIFS model. Consider providing aifs_model parameter."
+                    "⚠️ Loading from checkpoint requires AIFS model. "
+                    "Consider providing aifs_model parameter."
                 )
             self.aifs_encoder = None  # Will be set when aifs_model is provided
             self.checkpoint_path = aifs_checkpoint_path

@@ -5,8 +5,6 @@ This module provides utilities for processing climate data for use with AIFS
 multimodal analysis, including data preprocessing, normalization, and format conversion.
 """
 
-from typing import Dict, List, Tuple
-
 import numpy as np
 import torch
 
@@ -65,10 +63,10 @@ class ClimateDataProcessor:
         """
         self.normalization_method = normalization_method
         self.target_features = target_features
-        self.variable_stats: Dict[str, Dict[str, float]] = {}
+        self.variable_stats: dict[str, dict[str, float]] = {}
         self.is_fitted = False
 
-    def fit(self, data: torch.Tensor | np.ndarray, variable_names: List[str] | None = None):
+    def fit(self, data: torch.Tensor | np.ndarray, variable_names: list[str] | None = None):
         """
         Fit the processor to data to compute normalization statistics.
 
@@ -133,7 +131,7 @@ class ClimateDataProcessor:
         return data
 
     def fit_transform(
-        self, data: torch.Tensor | np.ndarray, variable_names: List[str] | None = None
+        self, data: torch.Tensor | np.ndarray, variable_names: list[str] | None = None
     ) -> torch.Tensor:
         """
         Fit and transform data in one step.
@@ -171,7 +169,7 @@ class ClimateDataProcessor:
         return data
 
     def process_for_aifs(
-        self, data: torch.Tensor | np.ndarray, variable_names: List[str] | None = None
+        self, data: torch.Tensor | np.ndarray, variable_names: list[str] | None = None
     ) -> torch.Tensor:
         """
         Process climate data for AIFS model input.
@@ -244,7 +242,7 @@ class ClimateDataProcessor:
         padding = torch.zeros(batch_size, padding_size, device=data.device, dtype=data.dtype)
         return torch.cat([data, padding], dim=-1)
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get processor statistics."""
         stats = {
             "normalization_method": self.normalization_method,
@@ -270,7 +268,7 @@ class ClimateDataProcessor:
 def create_synthetic_climate_data(
     batch_size: int = 8,
     n_variables: int = 25,
-    spatial_shape: Tuple[int, int] = (64, 128),
+    spatial_shape: tuple[int, int] = (64, 128),
     add_noise: bool = True,
 ) -> torch.Tensor:
     """

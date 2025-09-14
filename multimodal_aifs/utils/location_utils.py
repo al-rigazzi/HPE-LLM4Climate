@@ -7,7 +7,6 @@ and spatial region extraction.
 """
 
 import math
-from typing import Dict, Tuple
 
 import numpy as np
 import torch
@@ -105,7 +104,7 @@ class LocationUtils:
     @staticmethod
     def destination_point(
         lat: float, lon: float, bearing: float, distance_km: float
-    ) -> Tuple[float | torch.Tensor, float | torch.Tensor]:
+    ) -> tuple[float | torch.Tensor, float | torch.Tensor]:
         """
         Calculate destination point given start point, bearing, and distance.
 
@@ -142,7 +141,7 @@ class LocationUtils:
         return lat2, lon2
 
     @staticmethod
-    def normalize_coordinates(lat: float, lon: float) -> Tuple[float, float]:
+    def normalize_coordinates(lat: float, lon: float) -> tuple[float, float]:
         """
         Normalize coordinates to standard ranges.
 
@@ -183,8 +182,8 @@ class GridUtils:
 
     def __init__(
         self,
-        lat_range: Tuple[float, float] = (-90, 90),
-        lon_range: Tuple[float, float] = (-180, 180),
+        lat_range: tuple[float, float] = (-90, 90),
+        lon_range: tuple[float, float] = (-180, 180),
         resolution: float = 0.25,
     ):
         """
@@ -210,7 +209,7 @@ class GridUtils:
         # Create coordinate grids
         self.lat_grid, self.lon_grid = np.meshgrid(self.lats, self.lons, indexing="ij")
 
-    def coordinates_to_indices(self, lat: float, lon: float) -> Tuple[int, int]:
+    def coordinates_to_indices(self, lat: float, lon: float) -> tuple[int, int]:
         """
         Convert coordinates to grid indices.
 
@@ -230,7 +229,7 @@ class GridUtils:
 
         return lat_idx, lon_idx
 
-    def indices_to_coordinates(self, lat_idx: int, lon_idx: int) -> Tuple[float, float]:
+    def indices_to_coordinates(self, lat_idx: int, lon_idx: int) -> tuple[float, float]:
         """
         Convert grid indices to coordinates.
 
@@ -339,7 +338,7 @@ class GridUtils:
 
         return weights
 
-    def get_grid_info(self) -> Dict:
+    def get_grid_info(self) -> dict:
         """Get information about the grid."""
         return {
             "lat_range": self.lat_range,

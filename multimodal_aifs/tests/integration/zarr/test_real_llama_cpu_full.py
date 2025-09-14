@@ -28,11 +28,10 @@ print("🦙 Real Llama-3-8B on CPU (Full Precision)")
 print("=" * 50)
 
 
-def test_real_llama_cpu():
+def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device):
     """Test real Llama-3-8B on CPU without quantization."""
 
     try:
-        from conftest import AIFSLlamaFusionModel
         from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
         from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
@@ -41,23 +40,10 @@ def test_real_llama_cpu():
         print(f"❌ Import error: {e}")
         pytest.fail(f"Import error: {e}")
 
-    # Check available memory
-    print(f"\n💾 System Memory Check")
-    print("-" * 30)
-    try:
-        import psutil
-
-        available_gb = psutil.virtual_memory().available / 1e9
-        total_gb = psutil.virtual_memory().total / 1e9
-        print(f"   📊 Available RAM: {available_gb:.1f} GB / {total_gb:.1f} GB")
-
-        if available_gb < 12:
-            print(f"   ⚠️  Warning: Llama-3-8B typically needs 12-16GB RAM")
-            print(f"   💡 This test may fail or be very slow")
-        else:
-            print(f"   ✅ Sufficient RAM for Llama-3-8B")
-    except ImportError:
-        print(f"   ⚠️  psutil not available, cannot check RAM")
+    # Check if we should skip this test based on mock status
+    if llm_mock_status["should_skip_real_llm_tests"]:
+        print("   ⚠️  USE_MOCK_LLM is set to true, skipping real Llama test")
+        pytest.skip("USE_MOCK_LLM is enabled, skipping real Llama test")
 
     # Step 1: Load minimal climate data
     print(f"\n📊 Step 1: Loading Climate Data")
@@ -80,45 +66,22 @@ def test_real_llama_cpu():
         print(f"❌ Failed to load climate data: {e}")
         pytest.fail(f"Failed to load climate data: {e}")
 
-    # Step 2: Try to load real Llama without quantization
-    print(f"\n🦙 Step 2: Loading Real Llama-3-8B (Full Precision)")
+    # Step 2: Use the pre-configured fusion model
+    print(f"\n🦙 Step 2: Using Fusion Model from Fixture")
     print("-" * 50)
 
-    try:
-        print("   ⏳ This may take 2-5 minutes to download and load...")
-        print("   📥 Model size: ~16GB download, ~32GB RAM when loaded")
+    # Use the pre-configured fusion model from fixture
+    model = aifs_llama_model
+    print(f"   ✅ Using fusion model from fixture")
+    print(f"   📏 Hidden size: {model.llama_hidden_size}")
 
-        start_time = time.time()
+    # Check if we actually got real Llama
+    is_real_llama = hasattr(model.llama_model, "config") and model.llama_tokenizer is not None
+    print(f"   🔍 Real Llama status: {is_real_llama}")
 
-        # Force no quantization for CPU
-        model = AIFSLlamaFusionModel(
-            llm_model_name="meta-llama/Meta-Llama-3-8B",
-            time_series_dim=512,
-            fusion_strategy="concat",  # Simpler fusion
-            device="cpu",
-            use_quantization=False,  # No quantization on CPU
-            use_mock_llama=False,  # Force real Llama
-        )
-
-        load_time = time.time() - start_time
-        print(f"✅ Real Llama loaded in {load_time:.1f}s")
-        print(f"   📏 Hidden size: {model.llama_hidden_size}")
-
-        # Check if we actually got real Llama
-        is_real_llama = hasattr(model.llama_model, "config") and model.llama_tokenizer is not None
-        print(f"   🔍 Real Llama status: {is_real_llama}")
-
-        if not is_real_llama:
-            print("   ⚠️  Fallback to mock model occurred")
-            pytest.skip("Real Llama model not available, test skipped")
-
-    except Exception as e:
-        print(f"❌ Failed to load real Llama: {e}")
-        print(f"💡 Common reasons:")
-        print(f"   - Insufficient RAM (need 16+ GB)")
-        print(f"   - Missing HuggingFace token")
-        print(f"   - Network issues during download")
-        pytest.skip(f"Real Llama model not available: {e}")
+    if not is_real_llama:
+        print("   ⚠️  Fallback to mock model occurred")
+        pytest.skip("Real Llama model not available, test skipped")
 
     # Step 3: Test AIFS tokenization
     print(f"\n🌍 Step 3: AIFS Climate Tokenization")

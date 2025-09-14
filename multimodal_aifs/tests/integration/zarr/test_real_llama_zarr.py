@@ -14,9 +14,7 @@ import argparse
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
 
-import numpy as np
 import torch
 
 # Add project root to path
@@ -41,6 +39,7 @@ try:
     sys.path.insert(0, str(project_root))
 
     from conftest import AIFSLlamaFusionModel
+
     from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
     from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 

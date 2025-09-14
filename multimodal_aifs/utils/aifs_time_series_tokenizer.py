@@ -71,6 +71,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         self.verbose = verbose
 
         # Initialize the  AIFS Complete Encoder
+        self.aifs_encoder: AIFSCompleteEncoder | None = None
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
             self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
@@ -80,7 +81,8 @@ class AIFSTimeSeriesTokenizer(nn.Module):
             # Load from checkpoint (requires AIFS model to be loaded separately)
             if verbose:
                 print(
-                    "⚠️ Loading from checkpoint requires AIFS model. Consider providing aifs_model parameter."
+                    "⚠️ Loading from checkpoint requires AIFS model. "
+                    "Consider providing aifs_model parameter."
                 )
             self.aifs_encoder = None  # Will be set when aifs_model is provided
             self.checkpoint_path = aifs_checkpoint_path
@@ -216,10 +218,12 @@ class AIFSTimeSeriesTokenizer(nn.Module):
 
                 if self.verbose:
                     print(
-                        f"🔄 Time series tokens (before temporal modeling): {time_series_tokens.shape}"
+                        f"🔄 Time series tokens (before temporal modeling): "
+                        f"{time_series_tokens.shape}"
                     )
 
                 # Apply temporal modeling and output projection
+                final_output: torch.Tensor
                 if self.temporal_model is not None:
                     if self.temporal_modeling == "lstm":
                         # LSTM expects [batch, seq, features]
@@ -240,36 +244,36 @@ class AIFSTimeSeriesTokenizer(nn.Module):
                     print(f"✅ Final output shape: {final_output.shape}")
 
                 return final_output
-            else:
-                # Fallback: Create mock spatial encoding with correct shape for testing
-                time_series_tokens = torch.randn(
-                    batch_size, time_steps, self.spatial_dim, device=tensor_5d.device
-                )
-                if self.verbose:
-                    print(f"⚠️ Using mock spatial encoding with shape {time_series_tokens.shape}")
-                return time_series_tokens
 
-        else:
-            # Standard format [batch, time, vars, height, width] - convert to AIFS format
+            # Fallback: Create mock spatial encoding with correct shape for testing
+            time_series_tokens = torch.randn(
+                batch_size, time_steps, self.spatial_dim, device=tensor_5d.device
+            )
             if self.verbose:
-                print(
-                    "🔄 Converting from standard format [batch, time, vars, height, width] to AIFS format"
-                )
+                print(f"⚠️ Using mock spatial encoding with shape {time_series_tokens.shape}")
+            return time_series_tokens
 
-            # Reshape to AIFS format: [batch, time, ensemble=1, grid=height*width, vars]
-            batch_size, time_steps, vars, height, width = tensor_5d.shape
-            grid_size = height * width
-
-            # Reshape: [batch, time, vars, height, width] -> [batch, time, 1, height*width, vars]
-            aifs_format = tensor_5d.permute(0, 1, 3, 4, 2).reshape(
-                batch_size, time_steps, 1, grid_size, vars
+        # Standard format [batch, time, vars, height, width] - convert to AIFS format
+        if self.verbose:
+            print(
+                "🔄 Converting from standard format "
+                "[batch, time, vars, height, width] to AIFS format"
             )
 
-            if self.verbose:
-                print(f"✅ Converted to AIFS format: {aifs_format.shape}")
+        # Reshape to AIFS format: [batch, time, ensemble=1, grid=height*width, vars]
+        batch_size, time_steps, num_vars, height, width = tensor_5d.shape
+        grid_size = height * width
 
-            # Recursively call with AIFS format
-            return self.tokenize_time_series(aifs_format)
+        # Reshape: [batch, time, vars, height, width] -> [batch, time, 1, height*width, vars]
+        aifs_format = tensor_5d.permute(0, 1, 3, 4, 2).reshape(
+            batch_size, time_steps, 1, grid_size, num_vars
+        )
+
+        if self.verbose:
+            print(f"✅ Converted to AIFS format: {aifs_format.shape}")
+
+        # Recursively call with AIFS format
+        return self.tokenize_time_series(aifs_format)
 
     def tokenize_batch_parallel(self, tensor_5d: torch.Tensor) -> torch.Tensor:
         """
@@ -401,12 +405,13 @@ def demonstrate_time_series_tokenization():
             print(f"   Spatial dim: {info['spatial_dim']}")
             print(f"   Temporal model: {info['temporal_modeling']}")
 
-            print(f"   ✅ Tokenizer initialized successfully in checkpoint mode")
-            print(f"   📝 Note: Requires AIFS model for actual tokenization")
+            print("   ✅ Tokenizer initialized successfully in checkpoint mode")
+            print("   📝 Note: Requires AIFS model for actual tokenization")
 
             # Note: Can't actually tokenize without AIFS model
             print(
-                f"   📊 Expected output shape: {sample_data.shape[:2]} + (218,) = {sample_data.shape[:2] + (218,)}"
+                f"   📊 Expected output shape: {sample_data.shape[:2]} + (218,) = "
+                f"{sample_data.shape[:2] + (218,)}"
             )
 
         except Exception as e:
