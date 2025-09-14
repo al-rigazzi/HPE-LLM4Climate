@@ -94,7 +94,7 @@ def demonstrate_aifs_llama_fusion():
 
     # Initialize fusion model
     model = AIFSLlamaFusionModel(
-        llama_model_name="meta-llama/Meta-Llama-3-8B",
+        llm_model_name="meta-llama/Meta-Llama-3-8B",
         fusion_strategy="cross_attention",
         time_series_dim=512,
         device="cpu",

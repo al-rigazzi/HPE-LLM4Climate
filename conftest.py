@@ -19,6 +19,7 @@ Key Fixtures:
 """
 
 import os
+import subprocess
 import sys
 import types
 import warnings
@@ -139,6 +140,108 @@ def llm_mock_status():
     }
 
 
+@pytest.fixture(scope="session", autouse=True)
+def ensure_test_zarr_dataset():
+    """Ensure test Zarr dataset exists for integration tests."""
+    from pathlib import Path
+
+    # Path to the test zarr dataset
+    zarr_path = Path("test_climate.zarr")
+
+    # Check if dataset already exists
+    if zarr_path.exists():
+        print(f"✅ Test Zarr dataset already exists: {zarr_path}")
+        return str(zarr_path)
+
+    print("🏗️ Creating test Zarr dataset for integration tests...")
+
+    try:
+        # Create a simple zarr dataset directly
+        try:
+            import zarr
+            import xarray as xr
+            from datetime import datetime, timedelta
+        except ImportError as e:
+            print(f"❌ Missing required packages for zarr creation: {e}")
+            print("⚠️ Install with: pip install zarr xarray")
+            return None
+
+        # Create synthetic climate data
+        time_steps = 24  # 1 day hourly
+        lat_size = 32
+        lon_size = 32
+        n_variables = 5
+
+        # Create coordinates
+        times = [datetime(2024, 1, 1) + timedelta(hours=i) for i in range(time_steps)]
+        lats = np.linspace(-90, 90, lat_size)
+        lons = np.linspace(-180, 180, lon_size)
+        variables = ['temperature_2m', 'relative_humidity', 'surface_pressure', 'wind_speed', 'precipitation']
+
+        # Create synthetic data with realistic patterns
+        data_arrays = {}
+
+        for i, var in enumerate(variables):
+            # Create base patterns
+            if var == 'temperature_2m':
+                # Temperature with latitude gradient and diurnal cycle
+                base_temp = 15 + 20 * np.cos(np.radians(lats))  # Latitude gradient
+                data = np.zeros((time_steps, lat_size, lon_size))
+                for t in range(time_steps):
+                    diurnal = 5 * np.sin(2 * np.pi * t / 24)  # Diurnal cycle
+                    data[t] = base_temp[:, np.newaxis] + diurnal + np.random.normal(0, 2, (lat_size, lon_size))
+
+            elif var == 'relative_humidity':
+                # Humidity inversely related to temperature
+                data = 60 + np.random.normal(0, 15, (time_steps, lat_size, lon_size))
+                data = np.clip(data, 0, 100)
+
+            elif var == 'surface_pressure':
+                # Pressure with elevation-like patterns
+                data = 1013 + np.random.normal(0, 10, (time_steps, lat_size, lon_size))
+
+            elif var == 'wind_speed':
+                # Wind speed with some spatial correlation
+                data = 5 + np.random.exponential(3, (time_steps, lat_size, lon_size))
+
+            elif var == 'precipitation':
+                # Sparse precipitation events
+                data = np.random.exponential(1, (time_steps, lat_size, lon_size))
+                data = np.where(np.random.random((time_steps, lat_size, lon_size)) < 0.1, data, 0)
+
+            data_arrays[var] = xr.DataArray(
+                data,
+                dims=['time', 'latitude', 'longitude'],
+                coords={
+                    'time': times,
+                    'latitude': lats,
+                    'longitude': lons
+                },
+                attrs={'units': 'varies', 'description': f'Synthetic {var} data'}
+            )
+
+        # Create dataset
+        ds = xr.Dataset(data_arrays)
+        ds.attrs = {
+            'title': 'Synthetic Climate Dataset for Testing',
+            'created': datetime.now().isoformat(),
+            'description': 'Small synthetic climate dataset for integration tests'
+        }
+
+        # Save to zarr
+        ds.to_zarr(zarr_path, mode='w')
+
+        print(f"✅ Test Zarr dataset created successfully: {zarr_path}")
+        print(f"   Time steps: {time_steps}, Spatial: {lat_size}x{lon_size}, Variables: {len(variables)}")
+
+        return str(zarr_path)
+
+    except Exception as e:
+        print(f"❌ Failed to create test Zarr dataset: {e}")
+        print(f"   Error type: {type(e).__name__}")
+        # Don't fail the test session, just warn
+        print("⚠️ Zarr tests may fail without test dataset")
+        return None
 # =================== LLM MODEL FIXTURES ===================
 
 

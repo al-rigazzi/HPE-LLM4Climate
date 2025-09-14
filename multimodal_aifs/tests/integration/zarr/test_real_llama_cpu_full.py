@@ -92,7 +92,7 @@ def test_real_llama_cpu():
 
         # Force no quantization for CPU
         model = AIFSLlamaFusionModel(
-            llama_model_name="meta-llama/Meta-Llama-3-8B",
+            llm_model_name="meta-llama/Meta-Llama-3-8B",
             time_series_dim=512,
             fusion_strategy="concat",  # Simpler fusion
             device="cpu",
