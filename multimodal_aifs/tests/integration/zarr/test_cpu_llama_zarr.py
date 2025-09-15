@@ -28,7 +28,7 @@ print("=" * 50)
 
 
 @pytest.mark.integration
-def test_lightweight_llama_zarr(aifs_llama_model):
+def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
     """Test with lightweight configuration for CPU using conftest fixtures."""
 
     try:
@@ -53,11 +53,11 @@ def test_lightweight_llama_zarr(aifs_llama_model):
     print("-" * 40)
 
     try:
-        loader = ZarrClimateLoader("test_climate.zarr")
+        loader = ZarrClimateLoader(zarr_dataset_path)
 
         # Load just 2 timesteps for CPU efficiency
         climate_data = loader.load_time_range(
-            "2024-01-01", "2024-01-01T03:00:00"  # Just 2 timesteps
+            "2024-01-01T00:00:00", "2024-01-01T06:00:00"  # Just 2 timesteps
         )
 
         # Convert to small tensor
@@ -143,8 +143,8 @@ def test_lightweight_llama_zarr(aifs_llama_model):
 
 
 @pytest.mark.integration
-def test_compare_with_mock(aifs_llama_model):
-    """Compare real vs mock performance using conftest fixtures."""
+def test_compare_with_mock(aifs_llama_model, zarr_dataset_path):
+    """Compare real vs mock LLM performance with same climate data."""
     print(f"\n⚖️  Comparison: Real vs Mock Llama (conftest)")
     print("-" * 40)
 
@@ -166,8 +166,8 @@ def test_compare_with_mock(aifs_llama_model):
         print(f"      🔢 Parameters: {param_count:,}")
         print(f"      🎯 Type: {'Mock' if use_mock_env else 'Real'} LLM")
 
-        # Simple performance test
-        dummy_data = torch.randn(1, 4, 3, 2, 2).to(model.device)
+        # Simple performance test - use AIFS-compatible dimensions
+        dummy_data = torch.randn(1, 2, 1, 542080, 103).to(model.device)  # AIFS format
         dummy_text = ["Test query"]
 
         with torch.no_grad():

@@ -108,15 +108,22 @@ class ZarrClimateLoader:
         coords = set(self.ds.coords.keys())
         self.available_variables = [v for v in self.ds.data_vars.keys() if v not in coords]
 
-        # Get spatial dimensions
+        # Get spatial dimensions - handle both lat/lon and AIFS grid_point formats
         if "lat" in self.ds.dims and "lon" in self.ds.dims:
             self.spatial_dims = ("lat", "lon")
             self.spatial_shape = (self.ds.dims["lat"], self.ds.dims["lon"])
+            self.is_aifs_format = False
         elif "latitude" in self.ds.dims and "longitude" in self.ds.dims:
             self.spatial_dims = ("latitude", "longitude")
             self.spatial_shape = (self.ds.sizes["latitude"], self.ds.sizes["longitude"])
+            self.is_aifs_format = False
+        elif "grid_point" in self.ds.dims:
+            # AIFS-compatible format with flattened grid points
+            self.spatial_dims = ("grid_point",)
+            self.spatial_shape = (self.ds.sizes["grid_point"],)
+            self.is_aifs_format = True
         else:
-            raise ValueError("Could not identify spatial dimensions (lat/lon)")
+            raise ValueError("Could not identify spatial dimensions (lat/lon or grid_point)")
 
         # Get time dimension
         if "time" in self.ds.dims:
@@ -252,7 +259,9 @@ class ZarrClimateLoader:
         self, data, batch_size: int = 1, normalize: bool = True  # xr.Dataset
     ) -> torch.Tensor:
         """
-        Convert Xarray dataset to AIFS 5D tensor format [B, T, V, H, W].
+        Convert Xarray dataset to AIFS tensor format.
+        For lat/lon format: [B, T, V, H, W]
+        For AIFS grid_point format: [B, T, V, grid_points]
 
         Args:
             data: Xarray dataset
@@ -260,33 +269,64 @@ class ZarrClimateLoader:
             normalize: Whether to normalize the data
 
         Returns:
-            5D tensor ready for AIFS model input
+            Tensor ready for AIFS model input
         """
         print("🔄 Converting to AIFS tensor format...")
 
         # Get data variables
         variables = list(data.data_vars.keys())
 
+        # Check if data is already in AIFS format
+        if "data" in variables and len(data.data.dims) == 5:
+            # Data is already in AIFS format [batch, time, ensemble, grid_points, variables]
+            print("✅ Data already in AIFS format, using directly")
+            tensor = torch.from_numpy(data["data"].values).float()
+            print(f"   📊 AIFS tensor shape: {tensor.shape}")
+            return tensor
+
         # Stack variables into single array
-        # Shape: [time, variables, lat, lon]
         arrays = []
         for var in variables:
             var_data = data[var].values
-            if var_data.ndim == 3:  # [time, lat, lon]
-                arrays.append(var_data)
+            if self.is_aifs_format:
+                # AIFS format: [time, grid_points]
+                if var_data.ndim == 2:
+                    arrays.append(var_data)
+                else:
+                    raise ValueError(
+                        f"AIFS format: Variable {var} has unexpected shape: {var_data.shape}"
+                    )
             else:
-                raise ValueError(f"Variable {var} has unexpected shape: {var_data.shape}")
+                # Lat/lon format: [time, lat, lon]
+                if var_data.ndim == 3:
+                    arrays.append(var_data)
+                else:
+                    raise ValueError(
+                        f"Lat/lon format: Variable {var} has unexpected shape: {var_data.shape}"
+                    )
 
-        # Stack variables: [time, variables, lat, lon]
-        stacked = np.stack(arrays, axis=1)
+        # Stack variables
+        if self.is_aifs_format:
+            # AIFS format: [time, variables, grid_points]
+            stacked = np.stack(arrays, axis=1)
+        else:
+            # Lat/lon format: [time, variables, lat, lon]
+            stacked = np.stack(arrays, axis=1)
 
         # Convert to tensor
         tensor = torch.from_numpy(stacked).float()
 
         # Add batch dimension or create batches
         if batch_size == 1:
-            # Single batch: [1, time, variables, lat, lon]
-            tensor = tensor.unsqueeze(0)
+            # Single batch
+            if self.is_aifs_format:
+                # For AIFS format, add ensemble dimension: [batch, time, 1, grid_points, vars]
+                tensor = tensor.unsqueeze(0)  # [1, time, vars, grid_points]
+                tensor = tensor.unsqueeze(2)  # [1, time, 1, vars, grid_points]
+                # Reorder to [batch, time, ensemble=1, grid_points, vars]
+                tensor = tensor.permute(0, 1, 2, 4, 3)
+            else:
+                tensor = tensor.unsqueeze(0)
         else:
             # Create batches from time series
             time_steps = tensor.shape[0]
@@ -295,25 +335,44 @@ class ZarrClimateLoader:
                 padding = batch_size - time_steps
                 tensor = torch.cat([tensor, tensor[-1:].repeat(padding, 1, 1, 1)], dim=0)
 
-            # Reshape to batches: [batch_size, time_per_batch, variables, lat, lon]
+            # Reshape to batches
             time_per_batch = tensor.shape[0] // batch_size
             tensor = tensor[: batch_size * time_per_batch]
-            tensor = tensor.view(batch_size, time_per_batch, *tensor.shape[1:])
+            if self.is_aifs_format:
+                tensor = tensor.view(batch_size, time_per_batch, *tensor.shape[1:])
+                # Add ensemble dimension for AIFS format
+                tensor = tensor.unsqueeze(2)  # Add ensemble dimension
+                # Reorder to [batch, time, ensemble=1, grid_points, vars]
+                tensor = tensor.permute(0, 1, 2, 4, 3)
+            else:
+                tensor = tensor.view(batch_size, time_per_batch, *tensor.shape[1:])
 
         # Normalize if requested
         if normalize:
             # Simple normalization: standardize each variable
             for i, var in enumerate(variables):
-                var_data = tensor[:, :, i, :, :]
+                if self.is_aifs_format:
+                    var_data = tensor[:, :, 0, :, i]  # [batch, time, ensemble=1, grid_points, vars]
+                else:
+                    var_data = tensor[:, :, i, :, :]  # [batch, time, vars, lat, lon]
                 mean = var_data.mean()
                 std = var_data.std() + 1e-8  # Avoid division by zero
-                tensor[:, :, i, :, :] = (var_data - mean) / std
+                if self.is_aifs_format:
+                    tensor[:, :, 0, :, i] = (var_data - mean) / std
+                else:
+                    tensor[:, :, i, :, :] = (var_data - mean) / std
 
         print(f"✅ AIFS tensor shape: {tensor.shape}")
-        print(
-            f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
-            f"vars={tensor.shape[2]}, height={tensor.shape[3]}, width={tensor.shape[4]}]"
-        )
+        if self.is_aifs_format:
+            print(
+                f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
+                f"ensemble={tensor.shape[2]}, grid_points={tensor.shape[3]}, vars={tensor.shape[4]}]"
+            )
+        else:
+            print(
+                f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
+                f"vars={tensor.shape[2]}, height={tensor.shape[3]}, width={tensor.shape[4]}]"
+            )
 
         return tensor
 
@@ -369,8 +428,16 @@ def test_zarr_integration():
         return False
 
     try:
-        # Test with the test dataset
-        test_path = "test_climate.zarr"
+        # Test with the test dataset - use environment variable or default
+        import os
+
+        zarr_size = os.environ.get("ZARR_SIZE", "large").lower()
+        size_to_path = {
+            "tiny": "test_aifs_tiny.zarr",
+            "small": "test_aifs_small.zarr",
+            "large": "test_aifs_large.zarr",
+        }
+        test_path = size_to_path.get(zarr_size, "test_aifs_large.zarr")
 
         if not Path(test_path).exists():
             print(f"❌ Test dataset not found: {test_path}")

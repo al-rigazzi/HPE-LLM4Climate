@@ -134,14 +134,15 @@ def test_multimodal_fusion_end_to_end(aifs_llama_model):
     model = aifs_llama_model
     device = model.device
 
-    # Create realistic climate scenario
+    # Create AIFS-compatible climate data: [batch, time, ensemble, grid, vars]
+    # AIFS expects: batch=1, time=2, ensemble=1, grid=542080, vars=103
     batch_size = 1
-    time_steps = 6  # 6 time points
-    variables = 3  # temp, pressure, humidity
-    height = 4
-    width = 4
+    time_steps = 2  # AIFS standard: exactly 2 timesteps (t-6h and t0)
+    ensemble = 1  # AIFS ensemble dimension
+    grid_points = 542080  # AIFS grid size
+    variables = 103  # AIFS standard: 103 variables
 
-    climate_data = torch.randn(batch_size, time_steps, variables, height, width).to(device)
+    climate_data = torch.randn(batch_size, time_steps, ensemble, grid_points, variables).to(device)
     text_queries = [
         "What will the weather be like in the next few hours?",
         "Analyze the atmospheric pressure patterns.",

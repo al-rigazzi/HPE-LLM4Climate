@@ -84,19 +84,9 @@ class AIFSCompleteEncoder(nn.Module):
         expected_grid_size = self.aifs_model.latlons_data.shape[0]  # 542080 for AIFS-Single-1.0
 
         if grid_size != expected_grid_size:
-            # For integration testing with mock data, fall back to a simple encoder
-            if self.verbose:
-                print(f"⚠️ Grid size mismatch: input={grid_size}, expected={expected_grid_size}")
-                print("🎭 Using mock encoder output for mismatched grid size")
-
-            # Create mock output with the expected shape: [grid_points, features] = [542080, 218]
-            # For mock purposes, we'll aggregate the input and produce the expected output shape
-            mock_output = torch.randn(expected_grid_size, 218, device=x.device, dtype=x.dtype)
-
-            if self.verbose:
-                print(f"✅ Mock AIFS encoder output shape: {mock_output.shape}")
-
-            return mock_output
+            raise ValueError(
+                f"Grid size mismatch, expected {expected_grid_size} but received {grid_size}"
+            )
 
         # Follow the EXACT same steps as AnemoiModelEncProcDec.forward() but stop at encoder
         with torch.no_grad():
@@ -131,7 +121,7 @@ class AIFSCompleteEncoder(nn.Module):
             data_embeddings, hidden_embeddings = encoder_output
 
         if self.verbose:
-            print("✅ AIFS encoder forward completed (ENCODER OUTPUT ONLY)")
+            print("✅ AIFS encoder forward completed")
             print(f"📐 Data embeddings shape: {data_embeddings.shape}")
             print(f"📐 Hidden embeddings shape: {hidden_embeddings.shape}")
             print(

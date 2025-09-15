@@ -169,34 +169,6 @@ def test_end_to_end_pipeline(aifs_llama_model, test_climate_data):
 
 
 @pytest.mark.integration
-def test_memory_efficiency(aifs_llama_model):
-    """Test memory efficiency of AIFS-LLaMA integration using conftest fixture."""
-    print("\n💾 Testing Memory Efficiency")
-
-    model = aifs_llama_model
-
-    # Test with different data sizes
-    test_configs = [
-        ("small", 1, 2, 2, (8, 8)),
-        ("medium", 2, 4, 3, (16, 16)),
-        ("large", 1, 8, 5, (32, 32)),
-    ]
-
-    for config_name, batch, time, vars, spatial in test_configs:
-        climate_data = torch.randn(batch, time, vars, *spatial)
-        text_inputs = ["Test input"] * batch
-
-        outputs = model(climate_data=climate_data, text_inputs=text_inputs, task="embedding")
-
-        # Calculate compression ratio
-        input_size = climate_data.numel() * 4  # bytes
-        output_size = outputs["embeddings"].numel() * 4  # bytes
-        compression_ratio = input_size / output_size
-
-        print(f"   ✅ {config_name}: {compression_ratio:.1f}x compression")
-
-
-@pytest.mark.integration
 def test_process_climate_text_interface(aifs_llama_model, test_climate_data):
     """Test the process_climate_text interface using conftest fixtures."""
     print("\n🔗 Testing process_climate_text Interface")

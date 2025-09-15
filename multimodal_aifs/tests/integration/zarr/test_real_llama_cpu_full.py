@@ -11,6 +11,7 @@ Usage:
 """
 
 import gc
+import os
 import sys
 import time
 from pathlib import Path
@@ -28,8 +29,8 @@ print("🦙 Real Llama-3-8B on CPU (Full Precision)")
 print("=" * 50)
 
 
-def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device):
-    """Test real Llama-3-8B on CPU without quantization."""
+def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dataset_path):
+    """Test real Llama model with AIFS on CPU with full integration."""
 
     try:
         from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
@@ -50,7 +51,7 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device):
     print("-" * 30)
 
     try:
-        loader = ZarrClimateLoader("test_climate.zarr")
+        loader = ZarrClimateLoader(zarr_dataset_path)
 
         # Load minimal data - just 1 timestep
         climate_data = loader.load_time_range(
@@ -217,9 +218,18 @@ def test_memory_requirements():
 def main():
     """Main function."""
 
+    # Get zarr path from environment or default
+    zarr_path = os.environ.get("ZARR_SIZE", "large").lower()
+    size_to_path = {
+        "tiny": "test_aifs_tiny.zarr",
+        "small": "test_aifs_small.zarr",
+        "large": "test_aifs_large.zarr",
+    }
+    zarr_file = size_to_path.get(zarr_path, "test_aifs_large.zarr")
+
     # Check prerequisites
-    if not Path("test_climate.zarr").exists():
-        print(f"❌ Test dataset not found: test_climate.zarr")
+    if not Path(zarr_file).exists():
+        print(f"❌ Test dataset not found: {zarr_file}")
         return
 
     # Memory check

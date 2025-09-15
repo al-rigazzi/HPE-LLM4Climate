@@ -44,7 +44,7 @@ def create_synthetic_zarr_dataset(
     output_path: str, size: str = "small", real_patterns: bool = False
 ) -> None:
     """
-    Create a synthetic climate dataset in Zarr format.
+    Create a synthetic climate dataset in Zarr format compatible with AIFS dimensions.
 
     Args:
         output_path: Path where to save the Zarr dataset
@@ -52,35 +52,36 @@ def create_synthetic_zarr_dataset(
         real_patterns: Whether to include realistic climate patterns
     """
 
-    # Define size configurations
+    # AIFS-compatible dimensions
+    aifs_grid_points = 542080  # Real AIFS grid size
+    aifs_variables = 103  # Number of AIFS input variables (90 prognostic + 13 forcing)
+    aifs_timesteps = 2  # AIFS expects exactly 2 timesteps (t-6h and t0)
+
+    # Define size configurations (but override with AIFS dimensions)
     size_configs = {
         "tiny": {
-            "time_steps": 4,
-            "lat_size": 8,
-            "lon_size": 8,
-            "n_variables": 3,
-            "description": "Tiny dataset for quick tests",
+            "time_steps": aifs_timesteps,
+            "n_variables": min(10, aifs_variables),
+            "grid_points": min(10000, aifs_grid_points),
+            "description": "Tiny dataset with AIFS-compatible dimensions",
         },
         "small": {
-            "time_steps": 24,  # 1 day hourly
-            "lat_size": 32,
-            "lon_size": 32,
-            "n_variables": 5,
-            "description": "Small dataset for regular testing",
+            "time_steps": aifs_timesteps,
+            "n_variables": min(25, aifs_variables),
+            "grid_points": min(50000, aifs_grid_points),
+            "description": "Small dataset with AIFS-compatible dimensions",
         },
         "medium": {
-            "time_steps": 168,  # 1 week hourly
-            "lat_size": 64,
-            "lon_size": 64,
-            "n_variables": 10,
-            "description": "Medium dataset for comprehensive testing",
+            "time_steps": aifs_timesteps,
+            "n_variables": min(103, aifs_variables),  # Use all 103 variables for testing
+            "grid_points": min(100000, aifs_grid_points),
+            "description": "Medium dataset with AIFS-compatible dimensions",
         },
         "large": {
-            "time_steps": 720,  # 1 month hourly
-            "lat_size": 128,
-            "lon_size": 128,
-            "n_variables": 15,
-            "description": "Large dataset for performance testing",
+            "time_steps": aifs_timesteps,
+            "n_variables": aifs_variables,
+            "grid_points": aifs_grid_points,
+            "description": "Full AIFS-compatible dataset dimensions",
         },
     }
 
@@ -88,42 +89,135 @@ def create_synthetic_zarr_dataset(
         raise ValueError(f"Size must be one of: {list(size_configs.keys())}")
 
     config = size_configs[size]
-    print(f"\n🌍 Creating {size} climate dataset")
+    print(f"\n🌍 Creating {size} AIFS-compatible climate dataset")
     print(f"   📊 Configuration: {config['description']}")
-    print(f"   ⏰ Time steps: {config['time_steps']}")
-    print(f"   🌐 Spatial: {config['lat_size']} x {config['lon_size']}")
-    print(f"   📈 Variables: {config['n_variables']}")
+    print(f"   ⏰ Time steps: {config['time_steps']} (AIFS standard)")
+    print(f"   🌐 Grid points: {config['grid_points']:,} (AIFS grid)")
+    print(f"   📈 Variables: {config['n_variables']} (AIFS variables)")
 
-    # Create coordinate arrays
-    times = [datetime(2024, 1, 1) + timedelta(hours=i) for i in range(config["time_steps"])]
+    # Create time coordinates (AIFS expects exactly 2 timesteps)
+    times = [
+        datetime(2024, 1, 1, 0, 0, 0),  # t-6h (reference time)
+        datetime(2024, 1, 1, 6, 0, 0),  # t0 (forecast time)
+    ]
 
-    # Create realistic coordinate grids
-    lats = np.linspace(-90, 90, config["lat_size"])
-    lons = np.linspace(-180, 180, config["lon_size"])
-
-    # Variable names (standard climate variables)
-    var_names = [
-        "temperature_2m",  # 2m temperature (K)
-        "relative_humidity",  # Relative humidity (%)
-        "surface_pressure",  # Surface pressure (Pa)
-        "wind_speed_10m",  # 10m wind speed (m/s)
-        "total_precipitation",  # Total precipitation (mm)
-        "cloud_cover",  # Cloud cover (%)
-        "solar_radiation",  # Solar radiation (W/m²)
-        "geopotential_500",  # 500 hPa geopotential (m²/s²)
-        "specific_humidity",  # Specific humidity (kg/kg)
-        "sea_level_pressure",  # Sea level pressure (Pa)
-        "wind_u_10m",  # U-component of wind (m/s)
-        "wind_v_10m",  # V-component of wind (m/s)
-        "soil_temperature",  # Soil temperature (K)
-        "snow_depth",  # Snow depth (m)
-        "boundary_layer_height",  # Boundary layer height (m)
+    # AIFS variable names - exact 103 input features (90 prognostic + 13 forcing)
+    aifs_var_names = [
+        # Prognostic variables (90 total)
+        # Atmospheric variables at 13 pressure levels (6 vars × 13 levels = 78)
+        "q_50",
+        "q_100",
+        "q_150",
+        "q_200",
+        "q_250",
+        "q_300",
+        "q_400",
+        "q_500",
+        "q_600",
+        "q_700",
+        "q_850",
+        "q_925",
+        "q_1000",
+        "t_50",
+        "t_100",
+        "t_150",
+        "t_200",
+        "t_250",
+        "t_300",
+        "t_400",
+        "t_500",
+        "t_600",
+        "t_700",
+        "t_850",
+        "t_925",
+        "t_1000",
+        "u_50",
+        "u_100",
+        "u_150",
+        "u_200",
+        "u_250",
+        "u_300",
+        "u_400",
+        "u_500",
+        "u_600",
+        "u_700",
+        "u_850",
+        "u_925",
+        "u_1000",
+        "v_50",
+        "v_100",
+        "v_150",
+        "v_200",
+        "v_250",
+        "v_300",
+        "v_400",
+        "v_500",
+        "v_600",
+        "v_700",
+        "v_850",
+        "v_925",
+        "v_1000",
+        "w_50",
+        "w_100",
+        "w_150",
+        "w_200",
+        "w_250",
+        "w_300",
+        "w_400",
+        "w_500",
+        "w_600",
+        "w_700",
+        "w_850",
+        "w_925",
+        "w_1000",
+        "z_50",
+        "z_100",
+        "z_150",
+        "z_200",
+        "z_250",
+        "z_300",
+        "z_400",
+        "z_500",
+        "z_600",
+        "z_700",
+        "z_850",
+        "z_925",
+        "z_1000",
+        # Surface prognostic variables (12 total)
+        "10u",
+        "10v",
+        "2d",
+        "2t",
+        "msl",
+        "skt",
+        "sp",
+        "tcw",
+        "stl1",
+        "stl2",
+        "swvl1",
+        "swvl2",
+        # Forcing variables (13 total)
+        "cos_latitude",
+        "cos_longitude",
+        "sin_latitude",
+        "sin_longitude",
+        "cos_julian_day",
+        "cos_local_time",
+        "sin_julian_day",
+        "sin_local_time",
+        "insolation",
+        "lsm",
+        "sdor",
+        "slor",
+        "z",
     ]
 
     # Use only the required number of variables
-    selected_vars = var_names[: config["n_variables"]]
+    selected_vars = aifs_var_names[: config["n_variables"]]
 
-    print(f"   🔬 Variables: {', '.join(selected_vars)}")
+    print(
+        f"   🔬 Variables: {', '.join(selected_vars[:5])}{'...' if len(selected_vars) > 5 else ''}"
+    )
 
     # Create data arrays for each variable
     data_vars = {}
@@ -132,59 +226,60 @@ def create_synthetic_zarr_dataset(
         print(f"   📊 Generating {var_name}...")
 
         if real_patterns:
-            # Create realistic patterns
-            data = create_realistic_variable_data(var_name, times, lats, lons, config)
-        else:
-            # Use synthetic data utility
-            synthetic_data = create_synthetic_climate_data(
-                batch_size=1,
-                time_steps=config["time_steps"],
-                n_variables=1,
-                spatial_shape=(config["lat_size"], config["lon_size"]),
+            # Create realistic patterns for AIFS grid
+            data = create_realistic_aifs_variable_data(
+                var_name, config["time_steps"], config["grid_points"]
             )
-            # Extract single variable: [1, T, 1, H, W] -> [T, H, W]
-            data = synthetic_data[0, :, 0, :, :].numpy()
+        else:
+            # Use synthetic data
+            data = create_synthetic_aifs_data(config["time_steps"], config["grid_points"])
 
-        # Create DataArray
+        # Create DataArray with AIFS-compatible dimensions
+        # AIFS format: [time, variables, grid_points]
         data_vars[var_name] = xr.DataArray(
             data,
-            dims=["time", "latitude", "longitude"],
-            coords={"time": times, "latitude": lats, "longitude": lons},
+            dims=["time", "grid_point"],
+            coords={"time": times, "grid_point": np.arange(config["grid_points"])},
             attrs={
                 "long_name": f'{var_name.replace("_", " ").title()}',
                 "units": get_variable_units(var_name),
-                "description": f"Synthetic {var_name} data for testing",
+                "description": f"Synthetic {var_name} data for AIFS testing",
+                "aifs_standard": True,
+                "grid_points": config["grid_points"],
             },
         )
 
     # Create the complete dataset
     ds = xr.Dataset(
         data_vars,
-        coords={"time": times, "latitude": lats, "longitude": lons},
+        coords={"time": times, "grid_point": np.arange(config["grid_points"])},
         attrs={
-            "title": f"Synthetic Climate Test Dataset ({size})",
+            "title": f"Synthetic AIFS-Compatible Climate Test Dataset ({size})",
             "description": config["description"],
             "source": "Synthetic data generated for AIFS testing",
             "created": datetime.now().isoformat(),
-            "conventions": "CF-1.8",
-            "spatial_resolution": f'{180/config["lat_size"]:.2f} degrees',
-            "temporal_resolution": "1 hour",
-            "variables": len(selected_vars),
-            "time_steps": config["time_steps"],
-            "grid_size": f'{config["lat_size"]}x{config["lon_size"]}',
+            "conventions": "AIFS-1.0",
+            "aifs_grid_points": config["grid_points"],
+            "aifs_variables": len(selected_vars),
+            "aifs_timesteps": config["time_steps"],
+            "standard_aifs_dims": f"{config['time_steps']}x{len(selected_vars)}x{config['grid_points']}",
+            "note": "Data follows AIFS input format: [time, variables, grid_points]",
         },
     )
 
     print(f"\n💾 Saving to Zarr format: {output_path}")
 
-    # Save to Zarr with simple chunking (no compression for compatibility)
+    # Save to Zarr with simple chunking for AIFS compatibility
     encoding = {}
     for var in selected_vars:
-        encoding[var] = {"chunks": (min(24, config["time_steps"]), 16, 16)}
+        # Chunk by time (keep all grid points together for AIFS processing)
+        encoding[var] = {"chunks": (config["time_steps"], config["grid_points"])}
 
-    print("   � Using simple chunking for compatibility")
+    print("   � Using AIFS-compatible chunking")
 
-    ds.to_zarr(output_path, mode="w", encoding=encoding)  # Verify the saved dataset
+    ds.to_zarr(output_path, mode="w", encoding=encoding)
+
+    # Verify the saved dataset
     print(f"✅ Dataset saved successfully!")
 
     # Load and verify
@@ -195,11 +290,9 @@ def create_synthetic_zarr_dataset(
     print(f"   📏 Shape: {dict(ds_verify.dims)}")
     print(f"   🔢 Variables: {list(ds_verify.data_vars.keys())}")
     print(f"   📅 Time range: {ds_verify.time.values[0]} to {ds_verify.time.values[-1]}")
+    print(f"   🌐 Grid points: {ds_verify.grid_point.size:,}")
     print(
-        f"   🌐 Spatial extent: {ds_verify.latitude.min().values:.1f}° to {ds_verify.latitude.max().values:.1f}° lat"
-    )
-    print(
-        f"   🌐                   {ds_verify.longitude.min().values:.1f}° to {ds_verify.longitude.max().values:.1f}° lon"
+        f"   📊 AIFS dimensions: [{config['time_steps']}, {len(selected_vars)}, {config['grid_points']}]"
     )
 
     # Calculate file size
@@ -208,65 +301,69 @@ def create_synthetic_zarr_dataset(
         total_size = sum(f.stat().st_size for f in zarr_path.rglob("*") if f.is_file())
         print(f"   💽 File size: {total_size / 1024**2:.2f} MB")
 
-    print(f"\n🎉 Test dataset ready for use!")
+    print(f"\n🎉 AIFS-compatible test dataset ready for use!")
     return output_path
 
 
-def create_realistic_variable_data(var_name: str, times, lats, lons, config):
-    """Create realistic patterns for specific climate variables."""
+def create_realistic_aifs_variable_data(var_name: str, time_steps: int, grid_points: int):
+    """Create realistic patterns for specific AIFS climate variables."""
 
-    time_steps = len(times)
-    lat_size = len(lats)
-    lon_size = len(lons)
-
-    # Create base grids
-    lat_grid, lon_grid = np.meshgrid(lats, lons, indexing="ij")
-    time_grid = np.arange(time_steps)
+    # Create base patterns for the flattened AIFS grid
+    grid_indices = np.arange(grid_points)
 
     if var_name == "temperature_2m":
-        # Temperature with latitude gradient and diurnal cycle
-        base_temp = 288.15 - 0.5 * np.abs(lat_grid)  # Base temperature with lat gradient
-        diurnal = 10 * np.sin(2 * np.pi * time_grid / 24)[:, None, None]  # Daily cycle
-        seasonal = 5 * np.cos(2 * np.pi * time_grid / (24 * 365))[:, None, None]  # Seasonal
-        noise = np.random.normal(0, 2, (time_steps, lat_size, lon_size))
-        return base_temp[None, :, :] + diurnal + seasonal + noise
+        # Temperature with latitude gradient (simulated via grid position)
+        base_temp = (
+            288.15 - 0.5 * np.sin(grid_indices * 2 * np.pi / grid_points) * 30
+        )  # Lat gradient
+        diurnal = 10 * np.sin(2 * np.pi * np.arange(time_steps) / 24)[:, None]  # Daily cycle
+        seasonal = 5 * np.cos(2 * np.pi * np.arange(time_steps) / (24 * 365))[:, None]  # Seasonal
+        noise = np.random.normal(0, 2, (time_steps, grid_points))
+        return base_temp[None, :] + diurnal + seasonal + noise
 
     elif var_name == "relative_humidity":
-        # Humidity patterns (higher near equator and coasts)
-        base_humidity = 50 + 30 * np.exp(-np.abs(lat_grid) / 30)
-        daily_variation = 20 * np.sin(2 * np.pi * time_grid / 24 + np.pi)[:, None, None]
-        noise = np.random.normal(0, 5, (time_steps, lat_size, lon_size))
-        humidity = base_humidity[None, :, :] + daily_variation + noise
+        # Humidity patterns
+        base_humidity = 50 + 30 * np.sin(grid_indices * 4 * np.pi / grid_points)
+        daily_variation = 20 * np.sin(2 * np.pi * np.arange(time_steps) / 24 + np.pi)[:, None]
+        noise = np.random.normal(0, 5, (time_steps, grid_points))
+        humidity = base_humidity[None, :] + daily_variation + noise
         return np.clip(humidity, 0, 100)
 
     elif var_name == "surface_pressure":
         # Pressure with realistic patterns
-        base_pressure = 101325 - 12 * np.abs(lat_grid)  # Lower pressure at higher latitudes
-        daily_cycle = 100 * np.sin(2 * np.pi * time_grid / 24)[:, None, None]
-        noise = np.random.normal(0, 500, (time_steps, lat_size, lon_size))
-        return base_pressure[None, :, :] + daily_cycle + noise
-
-    elif var_name == "wind_speed_10m":
-        # Wind patterns (stronger at higher latitudes)
-        base_wind = 5 + 5 * np.abs(lat_grid) / 90
-        daily_variation = 3 * np.sin(2 * np.pi * time_grid / 24)[:, None, None]
-        noise = np.random.normal(0, 2, (time_steps, lat_size, lon_size))
-        wind = base_wind[None, :, :] + daily_variation + noise
-        return np.clip(wind, 0, None)
+        base_pressure = 101325 - 12 * np.abs(np.sin(grid_indices * 2 * np.pi / grid_points)) * 1000
+        daily_cycle = 100 * np.sin(2 * np.pi * np.arange(time_steps) / 24)[:, None]
+        noise = np.random.normal(0, 500, (time_steps, grid_points))
+        return base_pressure[None, :] + daily_cycle + noise
 
     elif var_name == "total_precipitation":
-        # Precipitation (more near equator, sparse events)
-        precipitation_prob = 0.1 + 0.2 * np.exp(-np.abs(lat_grid) / 20)
-        events = np.random.random((time_steps, lat_size, lon_size)) < precipitation_prob[None, :, :]
-        intensity = np.random.exponential(2, (time_steps, lat_size, lon_size))
+        # Precipitation (sparse events)
+        precipitation_prob = 0.1 + 0.2 * np.sin(grid_indices * 6 * np.pi / grid_points)
+        events = np.random.random((time_steps, grid_points)) < precipitation_prob[None, :]
+        intensity = np.random.exponential(2, (time_steps, grid_points))
         return events * intensity
 
     else:
         # Default: use synthetic data
-        synthetic_data = create_synthetic_climate_data(
-            batch_size=1, time_steps=time_steps, n_variables=1, spatial_shape=(lat_size, lon_size)
-        )
-        return synthetic_data[0, :, 0, :, :].numpy()
+        return create_synthetic_aifs_data(time_steps, grid_points)
+
+
+def create_synthetic_aifs_data(time_steps: int, grid_points: int):
+    """Create synthetic AIFS-compatible data."""
+    # Create data with realistic statistical properties
+    data = np.random.normal(0, 1, (time_steps, grid_points))
+
+    # Add some spatial correlation (simplified)
+    for t in range(time_steps):
+        # Add smooth spatial patterns
+        spatial_pattern = np.sin(np.arange(grid_points) * 0.01) * 0.5
+        data[t, :] += spatial_pattern
+
+        # Add temporal correlation
+        if t > 0:
+            data[t, :] += 0.3 * data[t - 1, :]
+
+    return data
 
 
 def get_variable_units(var_name: str) -> str:
@@ -323,7 +420,7 @@ def download_real_climate_data(output_path: str):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Create test Zarr climate dataset",
+        description="Create AIFS-compatible test Zarr climate dataset",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -331,14 +428,20 @@ Examples:
   python scripts/create_test_zarr.py --size tiny --output test_tiny.zarr
   python scripts/create_test_zarr.py --size large --real-data
   python scripts/create_test_zarr.py --download-real --output era5_sample.zarr
+
+AIFS Dimensions:
+  - Time steps: Always 2 (t-6h and t0)
+  - Variables: Up to 103 (AIFS standard)
+  - Grid points: Up to 542,080 (AIFS grid)
+  - Format: [time, variables, grid_points]
         """,
     )
 
     parser.add_argument(
         "--output",
         "-o",
-        default="test_climate.zarr",
-        help="Output Zarr file path (default: test_climate.zarr)",
+        default="test_aifs_small.zarr",
+        help="Output Zarr file path (default: test_aifs_small.zarr)",
     )
 
     parser.add_argument(
@@ -346,7 +449,7 @@ Examples:
         "-s",
         choices=["tiny", "small", "medium", "large"],
         default="small",
-        help="Dataset size (default: small)",
+        help="Dataset size with AIFS-compatible dimensions (default: small)",
     )
 
     parser.add_argument(
@@ -376,11 +479,13 @@ Examples:
         else:
             result_path = create_synthetic_zarr_dataset(args.output, args.size, args.real_data)
 
-        print(f"\n✅ Success! Test dataset created at: {result_path}")
+        print(f"\n✅ Success! AIFS-compatible test dataset created at: {result_path}")
         print(f"\n🧪 To use in tests:")
         print(
             f"   ZARR_PATH={result_path} python -m pytest multimodal_aifs/tests/integration/zarr/ -v"
         )
+        print(f"\n📋 AIFS tensor format: [time, variables, grid_points]")
+        print(f"   Example: python scripts/process_aifs_data.py {result_path}")
 
         return 0
 

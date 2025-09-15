@@ -6,8 +6,8 @@ This script tests the complete pipeline with actual Meta-Llama-3-8B model:
 Zarr → AIFS Tokenization → Real Llama Processing → Multimodal Fusion
 
 Usage:
-    python test_real_llama_zarr.py --zarr-path test_climate.zarr
-    python test_real_llama_zarr.py --zarr-path test_climate.zarr --use-quantization
+    python test_real_llama_zarr.py --zarr-path test_aifs_small.zarr
+    python test_real_llama_zarr.py --zarr-path test_aifs_small.zarr --use-quantization
 """
 
 import argparse
@@ -30,7 +30,7 @@ print(f"🖥️  Device: {device}")
 print(f"📦 PyTorch: {torch.__version__}")
 
 try:
-    # Import from conftest where AIFSLlamaFusionModel is now defined
+    # Import from conftest where AIFSClimateTextFusionWrapper is now defined
     import sys
     from pathlib import Path
 
@@ -38,8 +38,7 @@ try:
     project_root = Path(__file__).parent.parent.parent.parent
     sys.path.insert(0, str(project_root))
 
-    from conftest import AIFSLlamaFusionModel
-
+    # Import required modules (AIFSLlamaFusionModel removed - using production model now)
     from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
     from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
@@ -55,11 +54,9 @@ import pytest
 
 
 @pytest.fixture
-def zarr_path():
+def zarr_path(zarr_dataset_path):
     """Provide a default zarr path for testing."""
-    return (
-        "/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate/test_climate.zarr"
-    )
+    return zarr_dataset_path
 
 
 @pytest.mark.integration
@@ -69,6 +66,7 @@ def zarr_path():
 )
 def test_real_llama_with_zarr(
     aifs_llama_model,
+    zarr_dataset_path,
     zarr_path: str = None,
     use_quantization: bool = None,
     model_name: str = None,
@@ -77,7 +75,7 @@ def test_real_llama_with_zarr(
     """Test complete pipeline with real Llama model using conftest fixtures."""
 
     # Use environment variables to control test behavior
-    zarr_path = zarr_path or os.environ.get("ZARR_PATH", "test_climate.zarr")
+    zarr_path = zarr_path or zarr_dataset_path
     use_quantization = (
         use_quantization
         if use_quantization is not None
@@ -236,7 +234,11 @@ def test_real_llama_with_zarr(
 def main():
     """Main test function."""
     parser = argparse.ArgumentParser(description="Real Llama + AIFS + Zarr Integration Test")
-    parser.add_argument("--zarr-path", default="test_climate.zarr", help="Path to Zarr dataset")
+    parser.add_argument(
+        "--zarr-path",
+        default=None,
+        help="Path to Zarr dataset (uses ZARR_SIZE env var if not specified)",
+    )
     parser.add_argument("--use-quantization", action="store_true", help="Use 8-bit quantization")
     parser.add_argument(
         "--model-name", default="meta-llama/Meta-Llama-3-8B", help="Llama model name"
