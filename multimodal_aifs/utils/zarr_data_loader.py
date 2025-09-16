@@ -80,6 +80,15 @@ class ZarrClimateLoader:
         self.chunk_size = chunk_size or {}
         self.variables = variables
 
+        # Initialize attributes with proper types
+        self.spatial_dims: tuple[str, ...] = ()
+        self.spatial_shape: tuple[int, ...] = ()
+        self.is_aifs_format: bool = False
+        self.time_dim: str = ""
+        self.time_range: tuple[str, str] = ("", "")
+        self.available_variables: list[str] = []
+        self.ds: Any = None
+
         # Load dataset
         self._load_dataset()
 
@@ -205,33 +214,44 @@ class ZarrClimateLoader:
         subset = self.ds[vars_to_load]
 
         # Apply spatial selection
-        lat_dim, lon_dim = self.spatial_dims
+        if len(self.spatial_dims) == 2:
+            if len(self.spatial_dims) >= 2:
+                lat_dim, lon_dim = self.spatial_dims[0], self.spatial_dims[1]
+            else:
+                raise ValueError("Spatial dimensions must contain at least latitude and longitude")
 
-        # Handle longitude wrapping (e.g., -180 to 180 vs 0 to 360)
-        lon_coords = subset[lon_dim].values
-        lat_coords = subset[lat_dim].values
+            # Handle longitude wrapping (e.g., -180 to 180 vs 0 to 360)
+            lon_coords = subset[lon_dim].values
+            lat_coords = subset[lat_dim].values
 
-        # Select latitude range
-        lat_mask = (lat_coords >= lat_range[0]) & (lat_coords <= lat_range[1])
+            # Select latitude range
+            lat_mask = (lat_coords >= lat_range[0]) & (lat_coords <= lat_range[1])
 
-        # Handle longitude range (accounting for potential wrapping)
-        if lon_range[0] <= lon_range[1]:
-            # Normal case: e.g., -120 to -60
-            lon_mask = (lon_coords >= lon_range[0]) & (lon_coords <= lon_range[1])
+            # Handle longitude range (accounting for potential wrapping)
+            if lon_range[0] <= lon_range[1]:
+                # Normal case: e.g., -120 to -60
+                lon_mask = (lon_coords >= lon_range[0]) & (lon_coords <= lon_range[1])
+            else:
+                # Wrapped case: e.g., 170 to -170 (crossing 180°)
+                lon_mask = (lon_coords >= lon_range[0]) | (lon_coords <= lon_range[1])
+
+            # Apply spatial selection
+            if lat_mask.any():
+                subset = subset.isel({lat_dim: lat_mask})
+            else:
+                raise ValueError(f"No data found in latitude range {lat_range}")
+
+            if lon_mask.any():
+                subset = subset.isel({lon_dim: lon_mask})
+            else:
+                raise ValueError(f"No data found in longitude range {lon_range}")
         else:
-            # Wrapped case: e.g., 170 to -170 (crossing 180°)
-            lon_mask = (lon_coords >= lon_range[0]) | (lon_coords <= lon_range[1])
-
-        # Apply spatial selection
-        if lat_mask.any():
-            subset = subset.isel({lat_dim: lat_mask})
-        else:
-            raise ValueError(f"No data found in latitude range {lat_range}")
-
-        if lon_mask.any():
-            subset = subset.isel({lon_dim: lon_mask})
-        else:
-            raise ValueError(f"No data found in longitude range {lon_range}")
+            # AIFS format with single grid_point dimension - spatial selection not applicable
+            print(
+                "   ℹ️  AIFS format detected - spatial selection not applied "
+                "(data already in grid point format)"
+            )
+            lat_dim = lon_dim = self.spatial_dims[0]  # For coordinate reporting only
 
         # Apply time selection if provided
         if time_range:
@@ -366,7 +386,8 @@ class ZarrClimateLoader:
         if self.is_aifs_format:
             print(
                 f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
-                f"ensemble={tensor.shape[2]}, grid_points={tensor.shape[3]}, vars={tensor.shape[4]}]"
+                f"ensemble={tensor.shape[2]}, grid_points={tensor.shape[3]}, "
+                f"vars={tensor.shape[4]}"
             )
         else:
             print(
