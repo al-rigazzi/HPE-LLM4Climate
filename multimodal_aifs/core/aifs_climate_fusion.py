@@ -89,7 +89,7 @@ class AIFSClimateTextFusion(nn.Module):
             nn.LayerNorm(fusion_dim),
             nn.ReLU(),
             nn.Dropout(dropout),
-        )
+        ).to(device)
 
         # Text projection
         self.text_projection = nn.Sequential(
@@ -97,17 +97,17 @@ class AIFSClimateTextFusion(nn.Module):
             nn.LayerNorm(fusion_dim),
             nn.ReLU(),
             nn.Dropout(dropout),
-        )
+        ).to(device)
 
         # Cross-attention for climate-text fusion
         self.cross_attention = nn.MultiheadAttention(
             embed_dim=fusion_dim, num_heads=num_attention_heads, dropout=dropout, batch_first=True
-        )
+        ).to(device)
 
         # Self-attention for final fusion
         self.self_attention = nn.MultiheadAttention(
             embed_dim=fusion_dim, num_heads=num_attention_heads, dropout=dropout, batch_first=True
-        )
+        ).to(device)
 
         # Feed-forward network
         self.feedforward = nn.Sequential(
@@ -116,15 +116,15 @@ class AIFSClimateTextFusion(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(fusion_dim * 4, fusion_dim),
             nn.Dropout(dropout),
-        )
+        ).to(device)
 
         # Layer normalization
-        self.norm1 = nn.LayerNorm(fusion_dim)
-        self.norm2 = nn.LayerNorm(fusion_dim)
-        self.norm3 = nn.LayerNorm(fusion_dim)
+        self.norm1 = nn.LayerNorm(fusion_dim).to(device)
+        self.norm2 = nn.LayerNorm(fusion_dim).to(device)
+        self.norm3 = nn.LayerNorm(fusion_dim).to(device)
 
         # Output projection
-        self.output_projection = nn.Linear(fusion_dim, fusion_dim)
+        self.output_projection = nn.Linear(fusion_dim, fusion_dim).to(device)
 
         # Initialize text processor
         self.text_processor = ClimateTextProcessor()
@@ -384,7 +384,7 @@ class AIFSClimateEmbedding(nn.Module):
         self.aifs_encoder: AIFSCompleteEncoder | None = None
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
-            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
+            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose).to(device)
             if verbose:
                 print("✅ Using AIFSCompleteEncoder with provided AIFS model")
         elif aifs_checkpoint_path is not None:
@@ -404,7 +404,7 @@ class AIFSClimateEmbedding(nn.Module):
             nn.Linear(climate_dim, embedding_dim),
             nn.LayerNorm(embedding_dim),
             nn.ReLU(),
-        )
+        ).to(device)
 
     def forward(self, climate_data: torch.Tensor) -> torch.Tensor:
         """
@@ -442,7 +442,9 @@ class AIFSClimateEmbedding(nn.Module):
         return torch.as_tensor(embeddings)
 
 
-def create_aifs_fusion_from_model(aifs_model, fusion_dim: int = 512, verbose: bool = True):
+def create_aifs_fusion_from_model(
+    aifs_model, fusion_dim: int = 512, verbose: bool = True, device: str = "cpu"
+):
     """
     Create AIFSClimateTextFusion from an AIFS model.
 
@@ -459,10 +461,13 @@ def create_aifs_fusion_from_model(aifs_model, fusion_dim: int = 512, verbose: bo
         climate_dim=218,  # AIFSCompleteEncoder output dimension
         fusion_dim=fusion_dim,
         verbose=verbose,
+        device=device,
     )
 
 
-def create_aifs_embedding_from_model(aifs_model, embedding_dim: int = 256, verbose: bool = True):
+def create_aifs_embedding_from_model(
+    aifs_model, embedding_dim: int = 256, verbose: bool = True, device: str = "cpu"
+):
     """
     Create AIFSClimateEmbedding from an AIFS model.
 
@@ -479,88 +484,5 @@ def create_aifs_embedding_from_model(aifs_model, embedding_dim: int = 256, verbo
         climate_dim=218,  # AIFSCompleteEncoder output dimension
         embedding_dim=embedding_dim,
         verbose=verbose,
+        device=device,
     )
-
-
-def test_aifs_climate_fusion():
-    """Test AIFS climate fusion module architecture and projections."""
-    print("🌡️ Testing AIFS Climate Fusion Module Architecture")
-    print("=" * 50)
-
-    try:
-        print("📦 Testing module initialization and projections...")
-
-        # Test projections directly (without requiring AIFS model)
-        climate_dim = 218  # AIFSCompleteEncoder output dimension
-        text_dim = 768
-        fusion_dim = 512
-        embedding_dim = 256
-
-        # Test climate projection layers
-        climate_projection = nn.Sequential(
-            nn.Linear(climate_dim, fusion_dim),
-            nn.LayerNorm(fusion_dim),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-        )
-
-        # Test embedding projection layers
-        embedding_projection = nn.Sequential(
-            nn.Linear(climate_dim, embedding_dim),
-            nn.LayerNorm(embedding_dim),
-            nn.ReLU(),
-        )
-
-        # Test text projection layers
-        text_projection = nn.Sequential(
-            nn.Linear(text_dim, fusion_dim),
-            nn.LayerNorm(fusion_dim),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-        )
-
-        # Test with synthetic encoder output (218-dim as from AIFSCompleteEncoder)
-        batch_size = 4
-        synthetic_aifs_output = torch.randn(batch_size, climate_dim)
-        synthetic_text_embeddings = torch.randn(batch_size, text_dim)
-
-        # Test climate projection
-        climate_projected = climate_projection(synthetic_aifs_output)
-        print(f"✅ Climate projection: {synthetic_aifs_output.shape} → {climate_projected.shape}")
-
-        # Test embedding projection
-        climate_embedded = embedding_projection(synthetic_aifs_output)
-        print(f"✅ Climate embedding: {synthetic_aifs_output.shape} → {climate_embedded.shape}")
-
-        # Test text projection
-        text_projected = text_projection(synthetic_text_embeddings)
-        print(f"✅ Text projection: {synthetic_text_embeddings.shape} → {text_projected.shape}")
-
-        # Test attention mechanism
-        cross_attention = nn.MultiheadAttention(
-            embed_dim=fusion_dim, num_heads=8, dropout=0.1, batch_first=True
-        )
-
-        # Test cross-attention between climate and text
-        climate_att, _ = cross_attention(
-            climate_projected.unsqueeze(1), text_projected.unsqueeze(1), text_projected.unsqueeze(1)
-        )
-        print(f"✅ Cross-attention output: {climate_att.squeeze(1).shape}")
-
-        print("\n🎉 All architecture tests passed!")
-        print("✨ Fusion module ready for integration with AIFSCompleteEncoder!")
-        print("\n💡 Usage with real AIFS model:")
-        print("   # Load your AIFS model first")
-        print("   aifs_model = load_your_aifs_model()")
-        print("   # Then create fusion module")
-        print("   fusion_module = AIFSClimateTextFusion(aifs_model=aifs_model)")
-        print("   # Or embedding module")
-        print("   embedding_module = AIFSClimateEmbedding(aifs_model=aifs_model)")
-
-    except Exception as e:
-        print(f"❌ Test failed: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    test_aifs_climate_fusion()

@@ -472,7 +472,7 @@ def llama_tokenizer(model):
 
 
 @pytest.fixture(scope="session")
-def aifs_model_available():
+def aifs_model_available(test_device):  # pylint: disable=W0621
     """Check if AIFS model is available."""
     try:
         # Setup flash attention mocking before loading AIFS model
@@ -482,8 +482,8 @@ def aifs_model_available():
 
         # Try to initialize AIFS
         checkpoint = {"huggingface": "ecmwf/aifs-single-1.0"}
-        runner = SimpleRunner(checkpoint, device="cpu")
-        aifs_model_instance = runner.model
+        runner = SimpleRunner(checkpoint, device=str(test_device))
+        aifs_model_instance = runner.model.to(str(test_device))
 
         return True, runner, aifs_model_instance
     except Exception as e:
@@ -763,17 +763,18 @@ def test_climate_data_fusion(test_device):  # pylint: disable=W0621
 
 
 @pytest.fixture(scope="session")
-def test_climate_data():
+def test_climate_data(test_device):  # pylint: disable=W0621
     """Generate synthetic climate data for testing."""
+    device = str(test_device)
     return {
         # 5D tensor for AIFS: [batch, time, ensemble, grid, vars]
         # batch=1, time=2 (AIFS expects exactly 2 timesteps: t-6h and t0),
         # ensemble=1, grid=542080 (real AIFS grid), vars=103
-        "tensor_5d": torch.randn(1, 2, 1, 542080, 103),
+        "tensor_5d": torch.randn(1, 2, 1, 542080, 103).to(device),
         # 4D tensor: [batch, vars, height, width]
-        "tensor_4d": torch.randn(2, 103, 32, 32),
+        "tensor_4d": torch.randn(2, 103, 32, 32).to(device),
         # Flattened for encoder: [batch, features]
-        "tensor_2d": torch.randn(2, 218),
+        "tensor_2d": torch.randn(2, 218).to(device),
         # Variable names
         "variables": [
             "temperature_2m",

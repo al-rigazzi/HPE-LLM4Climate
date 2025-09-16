@@ -30,7 +30,6 @@ print(f"🖥️  Device: {device}")
 print(f"📦 PyTorch: {torch.__version__}")
 
 try:
-    # Import from conftest where AIFSClimateTextFusionWrapper is now defined
     import sys
     from pathlib import Path
 

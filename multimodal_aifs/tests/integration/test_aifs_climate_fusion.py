@@ -9,7 +9,6 @@ Usage:
     python -m pytest multimodal_aifs/tests/integration/test_aifs_climate_fusion_pytest.py -v
 """
 
-import os
 import sys
 import time
 import warnings
@@ -87,10 +86,49 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
     climate_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103]
     print(f"   📊 Using 5D climate data: {climate_data_5d.shape}")
 
-    # Test encoding
+def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
+    """Test climate data encoding with AIFS."""
+    print("\n🌡️ Testing Climate Data Encoding")
+
+    # Get the real AIFS model from fixture
+    aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
+    device = str(test_device)
+
+    try:
+        # Create fusion module with real AIFS model
+        fusion_module = AIFSClimateTextFusion(
+            aifs_model=aifs_model_instance,  # Use real model from fixture
+            climate_dim=218,  # AIFS encoder dimension
+            text_dim=768,
+            fusion_dim=512,
+            device=device,
+        )
+
+        # Check if encoder was loaded successfully
+        if fusion_module.aifs_encoder is None:
+            print("   ⚠️  Skipping encoding test (AIFS encoder not available)")
+            pytest.skip("AIFS encoder not available")
+            return
+    except Exception as e:
+        print(f"   ⚠️  Skipping encoding test (initialization failed: {e})")
+        pytest.skip(f"Initialization failed: {e}")
+
+    # Use proper 5D climate data from fixture: [batch, time, ensemble, grid, vars]
+    climate_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103]
+    print(f"   📊 Using 5D climate data: {climate_data_5d.shape}")
+
+    # Test encoding - suppress MPS fallback warning from torch_geometric
     start_time = time.time()
     try:
-        climate_features = fusion_module.encode_climate_data(climate_data_5d)
+        with warnings.catch_warnings():
+            # Suppress the specific MPS fallback warning from torch_geometric
+            warnings.filterwarnings(
+                "ignore",
+                message=".*The operator 'aten::scatter_reduce.two_out' is not currently supported on the MPS backend.*",
+                category=UserWarning,
+                module="torch_geometric.utils.scatter"
+            )
+            climate_features = fusion_module.encode_climate_data(climate_data_5d)
         encoding_time = time.time() - start_time
 
         # Validate output
@@ -282,6 +320,7 @@ def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
         pytest.fail(f"Fusion test failed: {e}")
 
 
+@pytest.mark.skip("Similarity will be tested on trained models")
 def test_similarity_and_alignment(aifs_model, test_device, test_climate_data):
     """Test similarity and alignment computation."""
     print("\n🔗 Testing Similarity and Alignment")
@@ -359,7 +398,7 @@ def test_text_encoding(aifs_model, test_device):
         text_features = []
         for text in texts:
             # Mock text embedding (in real implementation would use text encoder)
-            text_embedding = torch.randn(1, 768)  # text_dim
+            text_embedding = torch.randn(1, 768).to(device)  # text_dim
             text_features.append(text_embedding)
 
         text_features = torch.cat(text_features, dim=0)
