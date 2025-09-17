@@ -78,7 +78,6 @@ multimodal_aifs/
 │   │   ├── test_aifs_llama_integration.py
 │   │   ├── test_real_llama_integration.py
 │   │   ├── test_aifs_llama3_real_fusion.py
-│   │   ├── test_aifs_llama3_pytest.py
 │   │   └── zarr/              # Zarr-specific tests
 │   └── benchmarks/            # Performance benchmarks
 │       └── test_time_series_performance.py

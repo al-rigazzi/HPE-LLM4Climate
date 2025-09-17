@@ -23,7 +23,6 @@ Integration tests for complex interactions:
 - **`test_real_data_pipeline.py`** - Real ECMWF data processing pipeline
 - **`test_aifs_llama_integration.py`** - AIFS + LLaMA fusion model testing
 - **`test_aifs_llama3_real_fusion.py`** - ⭐ **AIFS + Real Llama-3-8B fusion (Real Models)**
-- **`test_aifs_llama3_pytest.py`** - Pytest-compatible real fusion tests
 - **`test_5d_aifs_capability.py`** - 5D tensor processing capability tests
 - **`zarr/`** - Zarr format integration tests
 
@@ -61,9 +60,6 @@ python -m pytest multimodal_aifs/tests/ -v
 # Run AIFS + Real Llama-3-8B fusion test (standalone)
 cd "/path/to/HPE-LLM4Climate"
 PYTHONPATH="$PWD:$PYTHONPATH" python multimodal_aifs/tests/integration/test_aifs_llama3_real_fusion.py
-
-# Run with pytest
-pytest -xvs multimodal_aifs/tests/integration/test_aifs_llama3_pytest.py
 
 # Run all real LLaMA integration tests
 python multimodal_aifs/tests/integration/test_real_llama_integration.py
