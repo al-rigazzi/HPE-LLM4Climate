@@ -97,6 +97,10 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "unit: marks tests as unit tests")
     config.addinivalue_line("markers", "requires_llama: marks tests that require real Llama model")
     config.addinivalue_line("markers", "requires_aifs: marks tests that require real AIFS model")
+    config.addinivalue_line(
+        "markers",
+        "large_memory: marks tests that require high amounts of memory (deselect with '-m \"not large_memory\"')",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
