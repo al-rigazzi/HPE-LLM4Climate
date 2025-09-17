@@ -9,8 +9,8 @@ Usage:
     python multimodal_aifs/examples/aifs_llama_example.py
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -20,10 +20,9 @@ import torch
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
-
 # Import the fusion wrapper for backward compatibility with the example interface
 from multimodal_aifs.conftest import AIFSClimateTextFusionWrapper
+from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 
 
 def create_sample_climate_data():
