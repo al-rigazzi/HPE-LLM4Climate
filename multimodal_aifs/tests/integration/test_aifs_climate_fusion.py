@@ -240,6 +240,7 @@ def test_fusion_module_initialization(aifs_model, test_device):
         print("   ✅ Mock model initialization successful")
 
 
+@pytest.mark.large_memory
 def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
     """Test multimodal fusion functionality."""
     print("\n🔀 Testing Multimodal Fusion")
