@@ -56,6 +56,7 @@ def test_fusion_model_initialization(aifs_llama_model):
         print(f"   ✅ Model initialized successfully with AIFS encoder")
 
 
+@pytest.mark.large_memory
 @pytest.mark.integration
 def test_time_series_tokenization(aifs_llama_model, test_climate_data):
     """Test time series tokenization."""
@@ -96,6 +97,7 @@ def test_text_tokenization(aifs_llama_model):
     print(f"   ✅ Text tokenization: {len(text_inputs)} texts -> {text_tokens['input_ids'].shape}")
 
 
+@pytest.mark.large_memory
 @pytest.mark.integration
 def test_climate_language_generation(aifs_llama_model, test_climate_data):
     """Test climate-conditioned language generation."""
