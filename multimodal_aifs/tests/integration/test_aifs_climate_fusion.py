@@ -112,6 +112,7 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
         pytest.fail(f"Encoding failed: {e}")
 
 
+@pytest.mark.large_memory
 def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
     """Test AIFSClimateEmbedding module."""
     print("\n🎯 Testing Climate Embedding Module")
