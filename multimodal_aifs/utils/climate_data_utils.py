@@ -315,7 +315,7 @@ def create_synthetic_climate_data(
                 pattern *= 10 + var_idx
 
             # Add temporal variation (different for each batch)
-            time_factor = torch.tensor(np.sin(batch_idx * np.pi / batch_size))
+            time_factor = torch.tensor(np.sin(batch_idx * np.pi / batch_size), dtype=torch.float32)
             pattern += pattern * 0.1 * time_factor
 
             # Add noise if requested

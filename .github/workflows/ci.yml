@@ -56,8 +56,13 @@ jobs:
 
     - name: Install core dependencies
       run: |
-        pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu
-        pip install numpy pandas xarray
+        # Install PyTorch with appropriate backend for the platform
+        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu
+        else
+          pip install torch==2.4.0 torchvision==0.19.0
+        fi
+        pip install numpy pandas xarray zarr dask[array] h5py netcdf4
 
     - name: Install main requirements
       run: |
@@ -65,10 +70,14 @@ jobs:
 
     - name: Install AIFS requirements (with fallback)
       run: |
+        # Install scientific computing packages first
+        pip install scipy scikit-learn matplotlib seaborn plotly
         # Try to install AIFS requirements, but don't fail if some packages are not available
         pip install -r multimodal_aifs/requirements-aifs.txt || true
         # Ensure critical packages are installed
-        pip install zarr xarray dask[array] || true
+        pip install zarr xarray dask[array] h5py netcdf4 || true
+        # Install additional ML packages that might be needed
+        pip install transformers accelerate datasets || true
 
     - name: Install test dependencies
       run: |
@@ -83,8 +92,17 @@ jobs:
         echo "USE_MOCK_LLM=true" >> $GITHUB_ENV
         echo "USE_QUANTIZATION=false" >> $GITHUB_ENV
         echo "PYTHONPATH=." >> $GITHUB_ENV
+        echo "ZARR_SIZE=large" >> $GITHUB_ENV
         # Suppress zarr warnings to clean up test output
         echo "ZARR_V3_EXPERIMENTAL_API=1" >> $GITHUB_ENV
+        # Set PyTorch to use CPU for consistent testing
+        echo "PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0" >> $GITHUB_ENV
+
+    - name: Clear pytest cache
+      run: |
+        # Clear pytest cache to avoid stale test discovery
+        rm -rf .pytest_cache
+        find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
     - name: Run unit tests
       run: |
@@ -93,14 +111,13 @@ jobs:
     - name: Run integration tests
       if: matrix.os == 'macos-latest'
       run: |
-        PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 python -m pytest multimodal_aifs/tests/integration/ -v -s --tb=short --maxfail=3
+        python -m pytest multimodal_aifs/tests/integration/ -v -s --tb=short --maxfail=5 -x
 
     - name: Run integration tests (Ubuntu - limited subset)
       if: matrix.os == 'ubuntu-latest'
       run: |
         # Run only critical integration tests on Ubuntu for faster CI
-        python -m pytest multimodal_aifs/tests/integration/test_time_series_integration.py::test_temporal_pattern_preservation -v -s
-        python -m pytest multimodal_aifs/tests/integration/zarr/test_zarr_integration.py::test_zarr_to_aifs_pipeline -v -s
+        python -m pytest multimodal_aifs/tests/integration/zarr/test_zarr_integration.py::test_zarr_to_aifs_pipeline -v --tb=short -x
 
   lint:
     name: Code Quality
@@ -118,19 +135,24 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install black[jupyter] isort pylint
+        pip install black[jupyter] isort pylint flake8 mypy
 
     - name: Run Black formatter check
       run: |
-        black --check --diff .
+        black --check --diff --extend-exclude="\.git/|\.pytest_cache/|__pycache__|build/|dist/" .
 
     - name: Run isort import sorting check
       run: |
-        isort --check-only --diff .
+        isort --check-only --diff --skip-gitignore .
+
+    - name: Run Flake8 linting
+      run: |
+        flake8 multimodal_aifs/ --count --select=E9,F63,F7,F82 --show-source --statistics
+      continue-on-error: true
 
     - name: Run Pylint
       run: |
-        pylint multimodal_aifs/ --errors-only --disable=import-error,no-member
+        pylint multimodal_aifs/ --errors-only --disable=import-error,no-member,too-few-public-methods
       continue-on-error: true
 
   security:
@@ -149,12 +171,21 @@ jobs:
     - name: Install security tools
       run: |
         python -m pip install --upgrade pip
-        pip install safety bandit
+        pip install safety bandit[toml]
 
     - name: Run Safety check
       run: |
-        safety check --json || true
+        safety check --json --output safety-results.json || true
 
     - name: Run Bandit security linter
       run: |
-        bandit -r multimodal_aifs/ -f json || true
+        bandit -r multimodal_aifs/ -f json -o bandit-results.json || true
+
+    - name: Upload security results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-scan-results
+        path: |
+          safety-results.json
+          bandit-results.json
