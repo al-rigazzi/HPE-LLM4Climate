@@ -331,11 +331,17 @@ def llm_model(llm_path, device):
     """
     Provide real LLM model or mock model based on USE_MOCK_LLM environment variable.
     """
+    global _llm_model_instance
+
+    if _llm_model_instance is not None:
+        print("♻️ Reusing cached LLM model")
+        return _llm_model_instance
+
     use_mock = get_env_bool("USE_MOCK_LLM", True)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
     model_name = os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B")
 
-    print("� Loading LLM Model for Testing...")
+    print("🤖 Loading LLM Model for Testing...")
     print(f"   Model: {model_name}")
     print(f"   Use Mock: {use_mock}")
     print(f"   Use Quantization: {use_quantization}")
@@ -354,13 +360,14 @@ def llm_model(llm_path, device):
         mock_tokenizer.eos_token_id = 2
         mock_tokenizer.vocab_size = 32000
 
-        print(f"✅ Mock LLM model created on {device}")
-        return {
+        _llm_model_instance = {
             "model": mock_model,
             "tokenizer": mock_tokenizer,
             "is_mock": True,
             "model_name": "MockLLM",
         }
+        print(f"✅ Mock LLM model created and cached on {device}")
+        return _llm_model_instance
 
     try:
         # Try to load real model
@@ -412,13 +419,14 @@ def llm_model(llm_path, device):
         model.to(device)
         model.eval()
 
-        print(f"✅ Real LLM model loaded on {device}")
-        return {
+        _llm_model_instance = {
             "model": model,
             "tokenizer": tokenizer,
             "is_mock": False,
             "model_name": model_name,
         }
+        print(f"✅ Real LLM model loaded and cached on {device}")
+        return _llm_model_instance
 
     except Exception as e:
         print(f"⚠️ Could not load real LLM model: {e}")
@@ -436,13 +444,14 @@ def llm_model(llm_path, device):
         mock_tokenizer.eos_token_id = 2
         mock_tokenizer.vocab_size = 32000
 
-        print(f"✅ Mock LLM model created on {device}")
-        return {
+        _llm_model_instance = {
             "model": mock_model,
             "tokenizer": mock_tokenizer,
             "is_mock": True,
             "model_name": "MockLLM",
         }
+        print(f"✅ Mock LLM model created and cached on {device}")
+        return _llm_model_instance
 
 
 @pytest.fixture(scope="function")
@@ -468,12 +477,27 @@ def llama_tokenizer(model):
     return model["tokenizer"]
 
 
-# =================== AIFS MODEL FIXTURES ===================
+# =================== SINGLETON MODEL INSTANCES ===================
+
+# Global singleton instances to avoid re-instantiation of expensive models
+# These are cached per pytest session to improve test performance
+# Models are loaded once and reused across all tests in the session
+_aifs_model_available_instance = None  # Cached AIFS model availability check
+_aifs_model_instance = None            # Cached AIFS model instance
+_aifs_llama_model_instance = None      # Cached AIFS+LLM fusion model
+_llm_model_instance = None             # Cached LLM model instance
 
 
 @pytest.fixture(scope="session")
 def aifs_model_available(test_device):  # pylint: disable=W0621
     """Check if AIFS model is available."""
+    global _aifs_model_available_instance
+
+    if _aifs_model_available_instance is not None:
+        print("♻️ Reusing cached AIFS model availability check")
+        return _aifs_model_available_instance
+
+    print("🔍 Checking AIFS model availability...")
     try:
         # Setup flash attention mocking before loading AIFS model
         setup_flash_attn_mock()
@@ -485,10 +509,13 @@ def aifs_model_available(test_device):  # pylint: disable=W0621
         runner = SimpleRunner(checkpoint, device=str(test_device))
         aifs_model_instance = runner.model.to(str(test_device))
 
-        return True, runner, aifs_model_instance
+        _aifs_model_available_instance = (True, runner, aifs_model_instance)
+        print("✅ AIFS model availability cached")
+        return _aifs_model_available_instance
     except Exception as e:
         print(f"⚠️ AIFS model not available: {e}")
-        return False, None, None
+        _aifs_model_available_instance = (False, None, None)
+        return _aifs_model_available_instance
 
 
 @pytest.fixture(scope="session")
@@ -496,18 +523,25 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
     """
     Provide real AIFS model if available, otherwise a mock.
     """
+    global _aifs_model_instance
+
+    if _aifs_model_instance is not None:
+        print("♻️ Reusing cached AIFS model")
+        return _aifs_model_instance
+
     print("🌪️ Loading AIFS Model for Testing...")
 
     available_flag, runner, model_instance = aifs_model_available
 
     if available_flag:
-        print("✅ Real AIFS model loaded")
-        return {
+        print("✅ Real AIFS model loaded and cached")
+        _aifs_model_instance = {
             "runner": runner,
             "model": model_instance,
             "is_mock": False,
             "model_name": "AIFS-Single-1.0",
         }
+        return _aifs_model_instance
 
     print("🎭 Using mock AIFS model for testing...")
 
@@ -525,12 +559,14 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
     setattr(mock_model, "__call__", mock_forward)
     mock_runner.model = mock_model
 
-    return {
+    _aifs_model_instance = {
         "runner": mock_runner,
         "model": mock_model,
         "is_mock": True,
         "model_name": "MockAIFS",
     }
+    print("✅ Mock AIFS model cached")
+    return _aifs_model_instance
 
 
 # =================== AIFS + LLM FUSION MODEL FIXTURES ===================
@@ -691,6 +727,12 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
     """
     Fixture to create AIFS + LLM fusion model.
     """
+    global _aifs_llama_model_instance
+
+    if _aifs_llama_model_instance is not None:
+        print("♻️ Reusing cached AIFS+LLM fusion model")
+        return _aifs_llama_model_instance
+
     # Setup flash attention mocking first
     setup_flash_attn_mock()
 
@@ -743,7 +785,8 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
             verbose=True,
         )
 
-    print(f"✅ AIFS+LLM Fusion Model created on {test_device}")
+    _aifs_llama_model_instance = fusion_model
+    print(f"✅ AIFS+LLM Fusion Model created and cached on {test_device}")
     return fusion_model
 
 
