@@ -65,8 +65,28 @@ def get_env_str(env_var: str, default: str) -> str:
 # =================== PYTEST CONFIGURATION ===================
 
 
+def pytest_sessionstart(session):
+    """Set up global test environment at the start of the test session."""
+    # Set up default device for the entire test session
+    if torch.cuda.is_available():
+        default_device = torch.device("cuda")
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        default_device = torch.device("mps")
+    else:
+        default_device = torch.device("cpu")
+
+    # Set the default device for PyTorch
+    if hasattr(torch, "set_default_device"):
+        torch.set_default_device(default_device)
+    else:
+        # Fallback for older PyTorch versions
+        torch.cuda.set_device(default_device) if default_device.type == "cuda" else None
+
+    print(f"Test session configured with default device: {default_device}")
+
+
 def pytest_configure(config):
-    """Configure pytest with custom markers and settings."""
+    """Configure pytest session with custom markers and settings."""
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
@@ -331,11 +351,9 @@ def llm_model(llm_path, device):
     """
     Provide real LLM model or mock model based on USE_MOCK_LLM environment variable.
     """
-    global _llm_model_instance
-
-    if _llm_model_instance is not None:
+    if _MODEL_CACHE["llm_model"] is not None:
         print("♻️ Reusing cached LLM model")
-        return _llm_model_instance
+        return _MODEL_CACHE["llm_model"]
 
     use_mock = get_env_bool("USE_MOCK_LLM", True)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
@@ -360,14 +378,14 @@ def llm_model(llm_path, device):
         mock_tokenizer.eos_token_id = 2
         mock_tokenizer.vocab_size = 32000
 
-        _llm_model_instance = {
+        _MODEL_CACHE["llm_model"] = {
             "model": mock_model,
             "tokenizer": mock_tokenizer,
             "is_mock": True,
             "model_name": "MockLLM",
         }
         print(f"✅ Mock LLM model created and cached on {device}")
-        return _llm_model_instance
+        return _MODEL_CACHE["llm_model"]
 
     try:
         # Try to load real model
@@ -419,14 +437,14 @@ def llm_model(llm_path, device):
         model.to(device)
         model.eval()
 
-        _llm_model_instance = {
+        _MODEL_CACHE["llm_model"] = {
             "model": model,
             "tokenizer": tokenizer,
             "is_mock": False,
             "model_name": model_name,
         }
         print(f"✅ Real LLM model loaded and cached on {device}")
-        return _llm_model_instance
+        return _MODEL_CACHE["llm_model"]
 
     except Exception as e:
         print(f"⚠️ Could not load real LLM model: {e}")
@@ -444,14 +462,14 @@ def llm_model(llm_path, device):
         mock_tokenizer.eos_token_id = 2
         mock_tokenizer.vocab_size = 32000
 
-        _llm_model_instance = {
+        _MODEL_CACHE["llm_model"] = {
             "model": mock_model,
             "tokenizer": mock_tokenizer,
             "is_mock": True,
             "model_name": "MockLLM",
         }
         print(f"✅ Mock LLM model created and cached on {device}")
-        return _llm_model_instance
+        return _MODEL_CACHE["llm_model"]
 
 
 @pytest.fixture(scope="function")
@@ -479,23 +497,23 @@ def llama_tokenizer(model):
 
 # =================== SINGLETON MODEL INSTANCES ===================
 
-# Global singleton instances to avoid re-instantiation of expensive models
+# Module-level cache to avoid re-instantiation of expensive models
 # These are cached per pytest session to improve test performance
 # Models are loaded once and reused across all tests in the session
-_aifs_model_available_instance = None  # Cached AIFS model availability check
-_aifs_model_instance = None  # Cached AIFS model instance
-_aifs_llama_model_instance = None  # Cached AIFS+LLM fusion model
-_llm_model_instance = None  # Cached LLM model instance
+_MODEL_CACHE: dict[str, Any] = {
+    "aifs_model_available": None,  # Cached AIFS model availability check
+    "aifs_model": None,  # Cached AIFS model instance
+    "aifs_llama_model": None,  # Cached AIFS+LLM fusion model
+    "llm_model": None,  # Cached LLM model instance
+}
 
 
 @pytest.fixture(scope="session")
 def aifs_model_available(test_device):  # pylint: disable=W0621
     """Check if AIFS model is available."""
-    global _aifs_model_available_instance
-
-    if _aifs_model_available_instance is not None:
+    if _MODEL_CACHE["aifs_model_available"] is not None:
         print("♻️ Reusing cached AIFS model availability check")
-        return _aifs_model_available_instance
+        return _MODEL_CACHE["aifs_model_available"]
 
     print("🔍 Checking AIFS model availability...")
     try:
@@ -509,13 +527,13 @@ def aifs_model_available(test_device):  # pylint: disable=W0621
         runner = SimpleRunner(checkpoint, device=str(test_device))
         aifs_model_instance = runner.model.to(str(test_device))
 
-        _aifs_model_available_instance = (True, runner, aifs_model_instance)
+        _MODEL_CACHE["aifs_model_available"] = (True, runner, aifs_model_instance)
         print("✅ AIFS model availability cached")
-        return _aifs_model_available_instance
+        return _MODEL_CACHE["aifs_model_available"]
     except Exception as e:
         print(f"⚠️ AIFS model not available: {e}")
-        _aifs_model_available_instance = (False, None, None)
-        return _aifs_model_available_instance
+        _MODEL_CACHE["aifs_model_available"] = (False, None, None)
+        return _MODEL_CACHE["aifs_model_available"]
 
 
 @pytest.fixture(scope="session")
@@ -523,11 +541,9 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
     """
     Provide real AIFS model if available, otherwise a mock.
     """
-    global _aifs_model_instance
-
-    if _aifs_model_instance is not None:
+    if _MODEL_CACHE["aifs_model"] is not None:
         print("♻️ Reusing cached AIFS model")
-        return _aifs_model_instance
+        return _MODEL_CACHE["aifs_model"]
 
     print("🌪️ Loading AIFS Model for Testing...")
 
@@ -535,13 +551,13 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
 
     if available_flag:
         print("✅ Real AIFS model loaded and cached")
-        _aifs_model_instance = {
+        _MODEL_CACHE["aifs_model"] = {
             "runner": runner,
             "model": model_instance,
             "is_mock": False,
             "model_name": "AIFS-Single-1.0",
         }
-        return _aifs_model_instance
+        return _MODEL_CACHE["aifs_model"]
 
     print("🎭 Using mock AIFS model for testing...")
 
@@ -559,14 +575,14 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
     setattr(mock_model, "__call__", mock_forward)
     mock_runner.model = mock_model
 
-    _aifs_model_instance = {
+    _MODEL_CACHE["aifs_model"] = {
         "runner": mock_runner,
         "model": mock_model,
         "is_mock": True,
         "model_name": "MockAIFS",
     }
     print("✅ Mock AIFS model cached")
-    return _aifs_model_instance
+    return _MODEL_CACHE["aifs_model"]
 
 
 # =================== AIFS + LLM FUSION MODEL FIXTURES ===================
@@ -727,11 +743,9 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
     """
     Fixture to create AIFS + LLM fusion model.
     """
-    global _aifs_llama_model_instance
-
-    if _aifs_llama_model_instance is not None:
+    if _MODEL_CACHE["aifs_llama_model"] is not None:
         print("♻️ Reusing cached AIFS+LLM fusion model")
-        return _aifs_llama_model_instance
+        return _MODEL_CACHE["aifs_llama_model"]
 
     # Setup flash attention mocking first
     setup_flash_attn_mock()
@@ -785,7 +799,7 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
             verbose=True,
         )
 
-    _aifs_llama_model_instance = fusion_model
+    _MODEL_CACHE["aifs_llama_model"] = fusion_model
     print(f"✅ AIFS+LLM Fusion Model created and cached on {test_device}")
     return fusion_model
 

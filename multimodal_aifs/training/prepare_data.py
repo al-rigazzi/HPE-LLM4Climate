@@ -27,7 +27,7 @@ def create_dummy_data(output_dir: str, num_samples: int = 1000):
     train_samples = []
     val_samples = []
 
-    print(f"Creating {num_samples} dummy samples...")
+    print("Validating data format...")
 
     for i in tqdm(range(num_samples)):
         # Create dummy climate data [time=2, channels=160, height=64, width=64]
@@ -98,13 +98,13 @@ def create_dummy_data(output_dir: str, num_samples: int = 1000):
     # Save train index
     train_dir = output_path / "train"
     train_dir.mkdir(exist_ok=True)
-    with open(train_dir / "index.json", "w") as f:
+    with open(train_dir / "index.json", "w", encoding="utf-8") as f:
         json.dump(train_samples, f, indent=2)
 
     # Save val index
     val_dir = output_path / "val"
     val_dir.mkdir(exist_ok=True)
-    with open(val_dir / "index.json", "w") as f:
+    with open(val_dir / "index.json", "w", encoding="utf-8") as f:
         json.dump(val_samples, f, indent=2)
 
     # Move climate files to appropriate directories
@@ -146,10 +146,10 @@ def validate_data_format(data_dir: str) -> bool:
 
     # Validate index content
     try:
-        with open(train_index, "r") as f:
+        with open(train_index, "r", encoding="utf-8") as f:
             train_data = json.load(f)
 
-        with open(val_index, "r") as f:
+        with open(val_index, "r", encoding="utf-8") as f:
             val_data = json.load(f)
 
         # Check required fields

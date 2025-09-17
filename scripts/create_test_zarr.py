@@ -13,7 +13,7 @@ Usage:
 
 import argparse
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -34,7 +34,7 @@ except ImportError:
 
 def create_synthetic_zarr_dataset(
     output_path: str, size: str = "small", real_patterns: bool = False
-) -> None:
+) -> str:
     """
     Create a synthetic climate dataset in Zarr format compatible with AIFS dimensions.
 
@@ -42,6 +42,9 @@ def create_synthetic_zarr_dataset(
         output_path: Path where to save the Zarr dataset
         size: Dataset size ('tiny', 'small', 'medium', 'large')
         real_patterns: Whether to include realistic climate patterns
+
+    Returns:
+        The path to the saved Zarr dataset as a string.
     """
 
     # AIFS-compatible dimensions
@@ -204,7 +207,7 @@ def create_synthetic_zarr_dataset(
         "z",
     ]
 
-    assert config["n_variables"] is not None, "Must indicate number of variables in config"
+    assert isinstance(config["n_variables"], int), "Must indicate number of variables in config"
 
     # Use only the required number of variables
     selected_vars = aifs_var_names[: config["n_variables"]]
@@ -219,6 +222,8 @@ def create_synthetic_zarr_dataset(
     for var_name in selected_vars:
         print(f"   📊 Generating {var_name}...")
 
+        assert isinstance(config["time_steps"], int), "Must indicate time steps as int"
+        assert isinstance(config["grid_points"], int), "Must indicate grid points as int"
         if real_patterns:
             # Create realistic patterns for AIFS grid
             data = create_realistic_aifs_variable_data(
@@ -462,17 +467,17 @@ AIFS Dimensions:
             result_path = create_synthetic_zarr_dataset(args.output, args.size, args.real_data)
 
         print(f"\n✅ Success! AIFS-compatible test dataset created at: {result_path}")
-        print(f"\n🧪 To use in tests:")
+        print("\n🧪 To use in tests:")
         print(
             f"   ZARR_PATH={result_path} python -m pytest multimodal_aifs/tests/integration/zarr/"
         )
-        print(f"\n📋 AIFS tensor format: [time, variables, grid_points]")
+        print("\n📋 AIFS tensor format: [time, variables, grid_points]")
         print(f"   Example: python scripts/process_aifs_data.py {result_path}")
 
         return 0
 
     except Exception as e:
-        print("❌ Error creating test dataset: {e}")
+        print(f"❌ Error creating test dataset: {e}")
         import traceback
 
         traceback.print_exc()

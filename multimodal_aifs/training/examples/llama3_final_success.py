@@ -261,8 +261,8 @@ def main():
 
 
 if __name__ == "__main__":
-    success = main()
-    if success:
+    SUCCESS = main()
+    if SUCCESS:
         print(f"\n🚀 MISSION ACCOMPLISHED!")
         print(f"🦙 Llama-3-8B + Climate fusion working perfectly!")
         print(f"📊 Ready for production deployment!")

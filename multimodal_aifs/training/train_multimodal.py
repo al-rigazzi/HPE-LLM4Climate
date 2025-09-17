@@ -89,7 +89,7 @@ class ClimateTextDataset(Dataset):
 
         # Example: Load from a JSON index file
         if (self.data_path / "index.json").exists():
-            with open(self.data_path / "index.json", "r") as f:
+            with open(self.data_path / "index.json", "r", encoding="utf-8") as f:
                 samples = json.load(f)
         else:
             # Create dummy samples for testing
@@ -257,7 +257,7 @@ class MultimodalTrainer:
                 "wall_clock_breakdown": False,
             }
         else:
-            with open(deepspeed_config, "r") as f:
+            with open(deepspeed_config, "r", encoding="utf-8") as f:
                 ds_config = json.load(f)
 
         # Initialize DeepSpeed
@@ -411,7 +411,7 @@ class MultimodalTrainer:
         self.tokenizer.save_pretrained(str(save_path / "tokenizer"))
 
         # Save training config
-        with open(save_path / "config.yaml", "w") as f:
+        with open(save_path / "config.yaml", "w", encoding="utf-8") as f:
             yaml.dump(self.config, f)
 
         logger.info(f"Checkpoint saved to {save_path}")
@@ -466,7 +466,7 @@ class MultimodalTrainer:
 
 def load_config(config_path: str) -> dict:
     """Load training configuration."""
-    with open(config_path, "r") as f:
+    with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     return config
 

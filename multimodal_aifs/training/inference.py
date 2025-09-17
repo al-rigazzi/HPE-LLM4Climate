@@ -2,7 +2,8 @@
 """
 Inference script for trained AIFS multimodal climate-text fusion models.
 
-This script loads a trained AIFS-based model and performs inference on climate data and text queries.
+This script loads a trained AIFS-based model and performs inference on
+climate data and text queries.
 """
 
 import argparse
@@ -38,7 +39,7 @@ class AIFSMultimodalInference:
         # Load configuration
         config_path = self.checkpoint_path / "config.yaml"
         if config_path.exists():
-            with open(config_path, "r") as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 self.config = yaml.safe_load(f)
         else:
             raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -206,17 +207,21 @@ class AIFSMultimodalInference:
         else:
             intensity = "low"
 
+        text_activity = (
+            "significant climate activity" if intensity == "high" else "moderate climate conditions"
+        )
         response = (
             f"Climate analysis for {location}:\n"
             f"The climate data shows {intensity} intensity patterns with "
             f"feature magnitude of {magnitude:.2f}. "
-            f"This suggests {'significant climate activity' if intensity == 'high' else 'moderate climate conditions'}."
+            f"This suggests {text_activity}."
         )
 
         return response
 
 
 def main():
+    """Main function for multimodal climate-text inference."""
     parser = argparse.ArgumentParser(description="Multimodal climate-text inference")
     parser.add_argument(
         "--checkpoint", type=str, required=True, help="Path to model checkpoint directory"
@@ -257,7 +262,7 @@ def main():
 
         print(f"\nQuery: {args.query}")
         print(f"Fused features shape: {results['fused_features'].shape}")
-        print(f"Feature statistics:")
+        print("Feature statistics:")
         print(f"  Mean: {torch.mean(results['fused_features']):.4f}")
         print(f"  Std: {torch.std(results['fused_features']):.4f}")
         print(f"  Norm: {torch.norm(results['fused_features']):.4f}")
@@ -266,7 +271,7 @@ def main():
         # Location-based analysis
         response = inference.analyze_location(climate_data, args.location, args.analysis_type)
 
-        print(f"\nLocation Analysis:")
+        print("\nLocation Analysis:")
         print(response)
 
         # Also get raw predictions
@@ -295,7 +300,7 @@ def main():
         if args.location:
             output_data["location_analysis"] = response
 
-        with open(args.output, "w") as f:
+        with open(args.output, "w", encoding="utf-8") as f:
             json.dump(output_data, f, indent=2)
 
         print(f"\nResults saved to: {args.output}")

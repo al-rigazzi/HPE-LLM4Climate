@@ -25,8 +25,8 @@ print("🦙 Real Llama + AIFS + Zarr Integration Test")
 print("=" * 50)
 
 # Check system
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"🖥️  Device: {device}")
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"🖥️  Device: {DEVICE}")
 print(f"📦 PyTorch: {torch.__version__}")
 
 try:
