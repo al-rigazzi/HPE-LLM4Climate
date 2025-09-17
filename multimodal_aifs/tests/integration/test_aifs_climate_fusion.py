@@ -86,6 +86,7 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
     climate_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103]
     print(f"   📊 Using 5D climate data: {climate_data_5d.shape}")
 
+
 def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
     """Test climate data encoding with AIFS."""
     print("\n🌡️ Testing Climate Data Encoding")
@@ -126,7 +127,7 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
                 "ignore",
                 message=".*The operator 'aten::scatter_reduce.two_out' is not currently supported on the MPS backend.*",
                 category=UserWarning,
-                module="torch_geometric.utils.scatter"
+                module="torch_geometric.utils.scatter",
             )
             climate_features = fusion_module.encode_climate_data(climate_data_5d)
         encoding_time = time.time() - start_time

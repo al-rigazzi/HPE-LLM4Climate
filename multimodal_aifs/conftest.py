@@ -483,9 +483,9 @@ def llama_tokenizer(model):
 # These are cached per pytest session to improve test performance
 # Models are loaded once and reused across all tests in the session
 _aifs_model_available_instance = None  # Cached AIFS model availability check
-_aifs_model_instance = None            # Cached AIFS model instance
-_aifs_llama_model_instance = None      # Cached AIFS+LLM fusion model
-_llm_model_instance = None             # Cached LLM model instance
+_aifs_model_instance = None  # Cached AIFS model instance
+_aifs_llama_model_instance = None  # Cached AIFS+LLM fusion model
+_llm_model_instance = None  # Cached LLM model instance
 
 
 @pytest.fixture(scope="session")

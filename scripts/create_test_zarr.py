@@ -31,14 +31,6 @@ except ImportError:
     print("❌ zarr not available. Install with: pip install zarr")
     sys.exit(1)
 
-try:
-    from multimodal_aifs.utils.climate_data_utils import create_synthetic_climate_data
-
-    print("✅ Climate data utilities available")
-except ImportError:
-    print("❌ Could not import climate data utilities")
-    sys.exit(1)
-
 
 def create_synthetic_zarr_dataset(
     output_path: str, size: str = "small", real_patterns: bool = False
@@ -212,6 +204,8 @@ def create_synthetic_zarr_dataset(
         "z",
     ]
 
+    assert config["n_variables"] is not None, "Must indicate number of variables in config"
+
     # Use only the required number of variables
     selected_vars = aifs_var_names[: config["n_variables"]]
 
@@ -222,7 +216,7 @@ def create_synthetic_zarr_dataset(
     # Create data arrays for each variable
     data_vars = {}
 
-    for i, var_name in enumerate(selected_vars):
+    for var_name in selected_vars:
         print(f"   📊 Generating {var_name}...")
 
         if real_patterns:
@@ -249,6 +243,7 @@ def create_synthetic_zarr_dataset(
             },
         )
 
+    num_vars = len(selected_vars)
     # Create the complete dataset
     ds = xr.Dataset(
         data_vars,
@@ -260,9 +255,9 @@ def create_synthetic_zarr_dataset(
             "created": datetime.now().isoformat(),
             "conventions": "AIFS-1.0",
             "aifs_grid_points": config["grid_points"],
-            "aifs_variables": len(selected_vars),
+            "aifs_variables": num_vars,
             "aifs_timesteps": config["time_steps"],
-            "standard_aifs_dims": f"{config['time_steps']}x{len(selected_vars)}x{config['grid_points']}",
+            "standard_aifs_dims": f"{config['time_steps']}x{num_vars}x{config['grid_points']}",
             "note": "Data follows AIFS input format: [time, variables, grid_points]",
         },
     )
@@ -280,20 +275,18 @@ def create_synthetic_zarr_dataset(
     ds.to_zarr(output_path, mode="w", encoding=encoding)
 
     # Verify the saved dataset
-    print(f"✅ Dataset saved successfully!")
+    print("✅ Dataset saved successfully!")
 
     # Load and verify
     ds_verify = xr.open_zarr(output_path)
 
-    print(f"\n📊 Dataset Summary:")
+    print("\n📊 Dataset Summary:")
     print(f"   📁 Path: {output_path}")
     print(f"   📏 Shape: {dict(ds_verify.dims)}")
     print(f"   🔢 Variables: {list(ds_verify.data_vars.keys())}")
     print(f"   📅 Time range: {ds_verify.time.values[0]} to {ds_verify.time.values[-1]}")
     print(f"   🌐 Grid points: {ds_verify.grid_point.size:,}")
-    print(
-        f"   📊 AIFS dimensions: [{config['time_steps']}, {len(selected_vars)}, {config['grid_points']}]"
-    )
+    print(f"   📊 AIFS dimensions: [{config['time_steps']}, {num_vars}, {config['grid_points']}]")
 
     # Calculate file size
     zarr_path = Path(output_path)
@@ -301,7 +294,7 @@ def create_synthetic_zarr_dataset(
         total_size = sum(f.stat().st_size for f in zarr_path.rglob("*") if f.is_file())
         print(f"   💽 File size: {total_size / 1024**2:.2f} MB")
 
-    print(f"\n🎉 AIFS-compatible test dataset ready for use!")
+    print("\n🎉 AIFS-compatible test dataset ready for use!")
     return output_path
 
 
@@ -321,7 +314,7 @@ def create_realistic_aifs_variable_data(var_name: str, time_steps: int, grid_poi
         noise = np.random.normal(0, 2, (time_steps, grid_points))
         return base_temp[None, :] + diurnal + seasonal + noise
 
-    elif var_name == "relative_humidity":
+    if var_name == "relative_humidity":
         # Humidity patterns
         base_humidity = 50 + 30 * np.sin(grid_indices * 4 * np.pi / grid_points)
         daily_variation = 20 * np.sin(2 * np.pi * np.arange(time_steps) / 24 + np.pi)[:, None]
@@ -329,23 +322,21 @@ def create_realistic_aifs_variable_data(var_name: str, time_steps: int, grid_poi
         humidity = base_humidity[None, :] + daily_variation + noise
         return np.clip(humidity, 0, 100)
 
-    elif var_name == "surface_pressure":
+    if var_name == "surface_pressure":
         # Pressure with realistic patterns
         base_pressure = 101325 - 12 * np.abs(np.sin(grid_indices * 2 * np.pi / grid_points)) * 1000
         daily_cycle = 100 * np.sin(2 * np.pi * np.arange(time_steps) / 24)[:, None]
         noise = np.random.normal(0, 500, (time_steps, grid_points))
         return base_pressure[None, :] + daily_cycle + noise
 
-    elif var_name == "total_precipitation":
+    if var_name == "total_precipitation":
         # Precipitation (sparse events)
         precipitation_prob = 0.1 + 0.2 * np.sin(grid_indices * 6 * np.pi / grid_points)
         events = np.random.random((time_steps, grid_points)) < precipitation_prob[None, :]
         intensity = np.random.exponential(2, (time_steps, grid_points))
         return events * intensity
 
-    else:
-        # Default: use synthetic data
-        return create_synthetic_aifs_data(time_steps, grid_points)
+    return create_synthetic_aifs_data(time_steps, grid_points)
 
 
 def create_synthetic_aifs_data(time_steps: int, grid_points: int):
@@ -393,20 +384,10 @@ def download_real_climate_data(output_path: str):
     Download a small real climate dataset for testing.
     Uses publicly available ERA5 sample data.
     """
-    print("🌍 Downloading real climate data...")
-    print("📡 This requires internet connection and may take a few minutes")
+    # print("🌍 Downloading real climate data...")
+    # print("📡 This requires internet connection and may take a few minutes")
 
     try:
-        from urllib.parse import urlparse
-
-        import requests
-
-        # Use a small ERA5 sample dataset (this is a placeholder URL)
-        # In practice, you'd use actual data sources like:
-        # - ECMWF ERA5 samples
-        # - NOAA datasets
-        # - Climate model outputs
-
         print("⚠️  Real data download not implemented yet.")
         print("💡 For now, creating realistic synthetic data...")
 
@@ -419,6 +400,7 @@ def download_real_climate_data(output_path: str):
 
 
 def main():
+    """Create a zarr file complying to AIFS standards."""
     parser = argparse.ArgumentParser(
         description="Create AIFS-compatible test Zarr climate dataset",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -482,7 +464,7 @@ AIFS Dimensions:
         print(f"\n✅ Success! AIFS-compatible test dataset created at: {result_path}")
         print(f"\n🧪 To use in tests:")
         print(
-            f"   ZARR_PATH={result_path} python -m pytest multimodal_aifs/tests/integration/zarr/ -v"
+            f"   ZARR_PATH={result_path} python -m pytest multimodal_aifs/tests/integration/zarr/"
         )
         print(f"\n📋 AIFS tensor format: [time, variables, grid_points]")
         print(f"   Example: python scripts/process_aifs_data.py {result_path}")
@@ -490,7 +472,7 @@ AIFS Dimensions:
         return 0
 
     except Exception as e:
-        print(f"❌ Error creating test dataset: {e}")
+        print("❌ Error creating test dataset: {e}")
         import traceback
 
         traceback.print_exc()
