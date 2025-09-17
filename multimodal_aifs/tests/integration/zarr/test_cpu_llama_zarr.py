@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CPU-Optimized Real Llama Test with Zarr using conftest fixtures
+CPU-Optimized Real Llama Test with Zarr
 
 This script tests with a smaller, CPU-friendly setup using conftest infrastructure:
 - Uses conftest fixtures for model management
@@ -29,7 +29,7 @@ print("=" * 50)
 
 @pytest.mark.integration
 def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
-    """Test with lightweight configuration for CPU using conftest fixtures."""
+    """Test with lightweight configuration for CPU."""
 
     try:
         from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 AIFS + LLM Real Fusion Integration Test
-Tests the complete multimodal fusion with real models using conftest fixtures
+Tests the complete multimodal fusion with real models
 
 IMPORTANT: These tests are specifically designed to test REAL LLM fusion and will
 automatically skip when USE_MOCK_LLM=true. This ensures that:
@@ -34,7 +34,7 @@ sys.path.insert(0, str(project_root))
 
 @pytest.mark.requires_llama
 def test_aifs_llm_fusion_model(aifs_llama_model, test_climate_data_fusion, llm_mock_status):
-    """Test AIFS + LLM multimodal fusion using conftest fixtures"""
+    """Test AIFS + LLM multimodal fusion"""
 
     # Skip test if mock LLM is being used since this test is specifically for real LLM fusion
     if llm_mock_status["use_mock_llm"]:

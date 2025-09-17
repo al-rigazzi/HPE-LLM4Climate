@@ -71,7 +71,7 @@ def test_real_llama_with_zarr(
     model_name: str = None,
     max_memory_gb: float = 8.0,
 ):
-    """Test complete pipeline with real Llama model using conftest fixtures."""
+    """Test complete pipeline with real Llama model."""
 
     # Use environment variables to control test behavior
     zarr_path = zarr_path or zarr_dataset_path

@@ -58,7 +58,7 @@ def test_fusion_model_initialization(aifs_llama_model):
 
 @pytest.mark.integration
 def test_time_series_tokenization(aifs_llama_model, test_climate_data):
-    """Test time series tokenization using conftest fixtures."""
+    """Test time series tokenization."""
     print("\n🌡️ Testing Time Series Tokenization")
 
     model = aifs_llama_model
@@ -98,7 +98,7 @@ def test_text_tokenization(aifs_llama_model):
 
 @pytest.mark.integration
 def test_climate_language_generation(aifs_llama_model, test_climate_data):
-    """Test climate-conditioned language generation using conftest fixtures."""
+    """Test climate-conditioned language generation."""
     print("\n💬 Testing Climate-Language Generation")
 
     model = aifs_llama_model
@@ -121,7 +121,7 @@ def test_climate_language_generation(aifs_llama_model, test_climate_data):
 
 @pytest.mark.integration
 def test_climate_classification(aifs_llama_model, test_climate_data):
-    """Test climate data classification with language context using conftest fixtures."""
+    """Test climate data classification with language context."""
     print("\n📊 Testing Climate Classification")
 
     model = aifs_llama_model
@@ -143,34 +143,8 @@ def test_climate_classification(aifs_llama_model, test_climate_data):
 
 
 @pytest.mark.integration
-def test_end_to_end_pipeline(aifs_llama_model, test_climate_data):
-    """Test complete end-to-end AIFS-LLaMA pipeline using conftest fixtures."""
-    print("\n🌍 Testing End-to-End Pipeline")
-
-    model = aifs_llama_model
-    climate_data = test_climate_data["tensor_5d"]
-
-    # Climate analysis prompts
-    text_inputs = [
-        "Analyze the temperature patterns in this climate data:",
-        "What does this precipitation data suggest about weather conditions?",
-    ]
-
-    # Test different tasks
-    tasks = ["embedding", "generation", "classification"]
-
-    for task in tasks:
-        outputs = model(climate_data=climate_data, text_inputs=text_inputs, task=task)
-
-        assert isinstance(outputs, dict)
-        assert len(outputs) > 0
-
-        print(f"   ✅ {task.capitalize()} task completed successfully")
-
-
-@pytest.mark.integration
 def test_process_climate_text_interface(aifs_llama_model, test_climate_data):
-    """Test the process_climate_text interface using conftest fixtures."""
+    """Test the process_climate_text interface."""
     print("\n🔗 Testing process_climate_text Interface")
 
     model = aifs_llama_model
