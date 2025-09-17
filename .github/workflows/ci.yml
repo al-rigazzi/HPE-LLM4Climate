@@ -97,6 +97,7 @@ jobs:
         echo "ZARR_V3_EXPERIMENTAL_API=1" >> $GITHUB_ENV
         # Set PyTorch to use CPU for consistent testing
         echo "PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0" >> $GITHUB_ENV
+        echo "PYTORCH_ENABLE_MPS_FALLBACK=1" >> $GITHUB_ENV
 
     - name: Clear pytest cache
       run: |

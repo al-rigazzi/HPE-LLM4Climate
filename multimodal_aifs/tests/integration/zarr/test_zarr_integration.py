@@ -71,31 +71,51 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
 
         # Convert to numpy arrays and stack
         arrays = []
-        is_aifs_format = "grid_point" in subset.dims
+        is_aifs_format = "grid_point" in subset.dims or "grid_points" in subset.dims
 
-        for var in variables:
-            var_data = subset[var].values
-            if is_aifs_format:
-                # AIFS format: [time, grid_points]
-                if var_data.ndim == 2:
-                    arrays.append(var_data)
-                    print(f"   📊 {var}: {var_data.shape} (AIFS grid_point format)")
-                else:
-                    raise ValueError(
-                        f"AIFS format: Variable {var} has unexpected shape: {var_data.shape}"
-                    )
+        # Handle single "data" variable from conftest
+        if len(variables) == 1 and variables[0] == "data":
+            var_data = subset["data"].values
+            if var_data.ndim == 5:
+                # Conftest format: [batch, time, ensemble, grid_points, variables]
+                # Extract the data and reshape to [time, variables, grid_points]
+                var_data = var_data[0, :, 0, :, :]  # Remove batch and ensemble dims
+                arrays.append(var_data)
+                print(f"   📊 data: {var_data.shape} (conftest AIFS format)")
+                is_aifs_format = True
             else:
-                # Lat/lon format: [time, lat, lon]
-                if var_data.ndim == 3:
-                    arrays.append(var_data)
-                    print(f"   📊 {var}: {var_data.shape} (lat/lon format)")
+                raise ValueError(
+                    f"Conftest data format: Variable data has unexpected shape: {var_data.shape}"
+                )
+        else:
+            # Original logic for individual variables
+            for var in variables:
+                var_data = subset[var].values
+                if is_aifs_format:
+                    # AIFS format: [time, grid_points]
+                    if var_data.ndim == 2:
+                        arrays.append(var_data)
+                        print(f"   📊 {var}: {var_data.shape} (AIFS grid_point format)")
+                    else:
+                        raise ValueError(
+                            f"AIFS format: Variable {var} has unexpected shape: {var_data.shape}"
+                        )
                 else:
-                    raise ValueError(
-                        f"Lat/lon format: Variable {var} has unexpected shape: {var_data.shape}"
-                    )
+                    # Lat/lon format: [time, lat, lon]
+                    if var_data.ndim == 3:
+                        arrays.append(var_data)
+                        print(f"   📊 {var}: {var_data.shape} (lat/lon format)")
+                    else:
+                        raise ValueError(
+                            f"Lat/lon format: Variable {var} has unexpected shape: {var_data.shape}"
+                        )
 
         # Stack variables
-        if is_aifs_format:
+        if len(variables) == 1 and variables[0] == "data":
+            # Conftest format: already in correct shape [time, variables, grid_points]
+            stacked = arrays[0]
+            print(f"✅ Conftest data shape: {stacked.shape} (AIFS format)")
+        elif is_aifs_format:
             # AIFS format: [time, variables, grid_points]
             stacked = np.stack(arrays, axis=1)
             print(f"✅ Stacked shape: {stacked.shape} (AIFS format)")
@@ -111,7 +131,12 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
         tensor = tensor.unsqueeze(0)
 
         print(f"✅ Final AIFS tensor shape: {tensor.shape}")
-        if is_aifs_format:
+        if len(variables) == 1 and variables[0] == "data":
+            print(
+                f"   📏 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
+                f"vars={tensor.shape[2]}, grid_points={tensor.shape[3]}] (conftest)"
+            )
+        elif is_aifs_format:
             print(
                 f"   📏 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
                 f"vars={tensor.shape[2]}, grid_points={tensor.shape[3]}]"
@@ -147,7 +172,18 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
 
         # Simulate AIFS tokenizer input
         batch_size, time_steps, num_vars = tensor.shape[0], tensor.shape[1], tensor.shape[2]
-        if is_aifs_format:
+        if len(variables) == 1 and variables[0] == "data":
+            grid_points = tensor.shape[3]
+            print(f"\n🎯 AIFS Multimodal Integration (Conftest):")
+            print(f"   ✅ Batch size: {batch_size} (ready for processing)")
+            print(f"   ✅ Time steps: {time_steps} (temporal sequence)")
+            print(f"   ✅ Variables: {num_vars} (climate features)")
+            print(f"   ✅ Grid points: {grid_points} (flattened spatial)")
+            print(f"   ✅ Total features: {num_vars * grid_points} per timestep")
+            print(
+                f"   📊 Tensor format: [B={batch_size}, T={time_steps}, V={num_vars}, G={grid_points}] (conftest)"
+            )
+        elif is_aifs_format:
             grid_points = tensor.shape[3]
             print(f"\n🎯 AIFS Multimodal Integration:")
             print(f"   ✅ Batch size: {batch_size} (ready for processing)")
