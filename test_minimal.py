@@ -1,0 +1,1 @@
+# Test minimal output
