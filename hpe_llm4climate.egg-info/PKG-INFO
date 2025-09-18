@@ -1,3 +1,42 @@
+Metadata-Version: 2.4
+Name: hpe-llm4climate
+Version: 0.1.0
+Summary: Comprehensive Multimodal Climate-Text Fusion System
+Author: HPE LLM4Climate Team
+License: MIT
+Project-URL: Homepage, https://github.com/al-rigazzi/HPE-LLM4Climate
+Project-URL: Repository, https://github.com/al-rigazzi/HPE-LLM4Climate
+Project-URL: Issues, https://github.com/al-rigazzi/HPE-LLM4Climate/issues
+Keywords: climate,machine learning,multimodal,fusion,weather
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Scientific/Engineering :: Atmospheric Science
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: torch>=1.10.0
+Requires-Dist: numpy>=1.20.0
+Requires-Dist: xarray>=0.20.0
+Requires-Dist: transformers>=4.20.0
+Requires-Dist: PyYAML>=6.0
+Provides-Extra: geo
+Requires-Dist: geopy>=2.3.0; extra == "geo"
+Requires-Dist: requests>=2.28.0; extra == "geo"
+Requires-Dist: shapely>=1.8.0; extra == "geo"
+Requires-Dist: geopandas>=0.12.0; extra == "geo"
+Requires-Dist: folium>=0.14.0; extra == "geo"
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pylint>=2.15.0; extra == "dev"
+Requires-Dist: black>=22.0.0; extra == "dev"
+Requires-Dist: isort>=5.10.0; extra == "dev"
+Requires-Dist: mypy>=0.991; extra == "dev"
+Dynamic: license-file
+
 # 🌍 HPE-LLM4Climate: Multimodal Climate AI Sys### 🔧 Fusion Strategies
 - **Cross-Attention Fusion**: Sophisticated attention mechanisms for climate-text interaction
 - **Concatenation Fusion**: Simple feature combination for fast inference

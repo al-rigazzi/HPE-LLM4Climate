@@ -21,17 +21,17 @@ def analyze_encoder_signature():
     print("=" * 50)
 
     # Load encoder
-    encoder, analysis = load_aifs_encoder()
+    encoder, _ = load_aifs_encoder()
 
     # Get forward method signature
     forward_method = encoder.forward
     signature = inspect.signature(forward_method)
 
     print(f"📝 Encoder Type: {type(encoder).__name__}")
-    print(f"📋 Forward Method Signature:")
+    print("📋 Forward Method Signature:")
     print(f"   {signature}")
 
-    print(f"\n📌 Parameters:")
+    print("\n📌 Parameters:")
     for param_name, param in signature.parameters.items():
         print(
             f"   {param_name}: {param.annotation if param.annotation != inspect.Parameter.empty else 'Any'}"
@@ -41,7 +41,7 @@ def analyze_encoder_signature():
 
     # Try to find documentation
     if hasattr(encoder, "__doc__") and encoder.__doc__:
-        print(f"\n📚 Documentation:")
+        print("\n📚 Documentation:")
         print(f"   {encoder.__doc__}")
 
     # Check the module
@@ -49,7 +49,7 @@ def analyze_encoder_signature():
     print(f"📁 File: {inspect.getfile(encoder.__class__)}")
 
     # Look for example usage in the encoder
-    print(f"\n🔍 Available Methods:")
+    print("\n🔍 Available Methods:")
     for method_name in dir(encoder):
         if not method_name.startswith("_") and callable(getattr(encoder, method_name)):
             method = getattr(encoder, method_name)

@@ -1,133 +1,65 @@
-# ECMWF Data Processing
+# ECMWF Data Cache
 
-This directory contains all ECMWF data processing scripts, GRIB files, and results for the multimodal AIFS climate analysis system.
+This directory contains cached ECMWF climate data for the multimodal AIFS climate analysis system.
 
 ## Directory Structure
 
 ```
 multimodal_aifs/data/
 ├── README.md                          # This file
-├── scripts/                           # Data processing scripts
-│   ├── test_ecmwf_download.py        # ECMWF data download test
-│   ├── real_data_pipeline.py         # Real data processing pipeline
-│   └── apply_encoder_to_data.py      # Apply AIFS encoder to ECMWF data
-├── grib/                             # GRIB files and indices
-│   ├── ecmwf_real_data_2025-08-18.grib
-│   ├── ecmwf_real_data_2025-08-18.grib.5b7b6.idx
-│   ├── test_2025-08-18.grib
-│   └── test_download_2025-08-18.grib
-└── results/                          # Processing results
-    ├── real_data_encoding_20250819_171339.json
-    └── real_encoded_data_20250819_171339.pt
+└── grib/                             # ECMWF cached data files
+    ├── ecmwf_20250910_12_10u_10v_2d_2t_msl_skt_sp_tcw_lsm_z_slor_sdor_sfc.cache.npy
+    ├── ecmwf_20250910_12_gh_t_u_v_w_q_1000_925_850_700_600_500_400_300_250_200_150_100_50.cache.npy
+    ├── ecmwf_20250910_12_vsw_sot_1_2.cache.npy
+    ├── ecmwf_20250910_18_10u_10v_2d_2t_msl_skt_sp_tcw_lsm_z_slor_sdor_sfc.cache.npy
+    ├── ecmwf_20250910_18_gh_t_u_v_w_q_1000_925_850_700_600_500_400_300_250_200_150_100_50.cache.npy
+    └── ecmwf_20250910_18_vsw_sot_1_2.cache.npy
 ```
 
-## Scripts Overview
+## Overview
 
-### `test_ecmwf_download.py`
-- **Purpose**: Test script for downloading ECMWF data
-- **Features**: Downloads sample weather data from ECMWF Open Data
-- **Usage**: `python multimodal_aifs/data/scripts/test_ecmwf_download.py`
-
-### `real_data_pipeline.py`
-- **Purpose**: Complete pipeline for processing real ECMWF data
-- **Features**: Downloads, processes, and analyzes real weather data
-- **Usage**: `python multimodal_aifs/data/scripts/real_data_pipeline.py`
-
-### `apply_encoder_to_data.py`
-- **Purpose**: Apply AIFS encoder to ECMWF climate data
-- **Features**:
-  - Downloads real weather data from ECMWF Open Data
-  - Applies extracted AIFS encoder to the data
-  - Saves encoded results for analysis
-- **Usage**: `python multimodal_aifs/data/scripts/apply_encoder_to_data.py`
+The cached ECMWF data files contain weather forecast and atmospheric parameters processed for climate analysis. These are binary numpy arrays that have been extracted and cached from GRIB format for faster access during development and testing.
 
 ## Data Files
 
-### GRIB Files (`grib/`)
-- **Format**: GRIB (GRIdded Binary) meteorological data format
-- **Source**: ECMWF Open Data service
-- **Content**: Real weather data including temperature, pressure, wind, etc.
-- **Index Files**: `.idx` files provide metadata and indexing for GRIB files
+The GRIB cache contains weather data from ECMWF forecasts with the following variables:
 
-### Results (`results/`)
-- **Encoded Data**: `.pt` files containing PyTorch tensors with encoded climate data
-- **Metadata**: `.json` files with processing metadata, timestamps, and statistics
+**Surface-level variables (sfc):**
+- 10u, 10v: 10m u/v wind components
+- 2t: 2m temperature
+- msl: Mean sea level pressure
+- skt: Skin temperature
+- sp: Surface pressure
+- tcw: Total column water
+- lsm: Land sea mask
+- z: Geopotential
+- slor, sdor: Slope parameters
 
-## Usage Examples
+**Pressure-level variables:**
+- gh: Geopotential height
+- t: Temperature
+- u, v: Wind components
+- w: Vertical velocity
+- q: Specific humidity
+- Levels: 1000, 925, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100, 50 hPa
 
-### Download and Process New Data
-```bash
-# Download new ECMWF data
-cd /path/to/project
-python multimodal_aifs/data/scripts/test_ecmwf_download.py
+**Additional variables:**
+- vsw: Vertical integral of water vapour
+- sot: Soil temperature
 
-# Process with real data pipeline
-python multimodal_aifs/data/scripts/real_data_pipeline.py
+## Usage
 
-# Apply AIFS encoder
-python multimodal_aifs/data/scripts/apply_encoder_to_data.py
-```
-
-### Working with GRIB Files
+### Working with Cache Files
 ```python
-import xarray as xr
+import numpy as np
 
-# Load GRIB data
-data = xr.open_dataset('multimodal_aifs/data/grib/ecmwf_real_data_2025-08-18.grib',
-                      engine='cfgrib')
-print(data)
+# Load cached ECMWF data
+data = np.load('multimodal_aifs/data/grib/ecmwf_20250910_12_10u_10v_2d_2t_msl_skt_sp_tcw_lsm_z_slor_sdor_sfc.cache.npy')
+print(f"Cached data shape: {data.shape}")
+
+# Load pressure-level data
+pressure_data = np.load('multimodal_aifs/data/grib/ecmwf_20250910_12_gh_t_u_v_w_q_1000_925_850_700_600_500_400_300_250_200_150_100_50.cache.npy')
+print(f"Pressure data shape: {pressure_data.shape}")
 ```
 
-### Loading Encoded Results
-```python
-import torch
-import json
-
-# Load encoded data
-encoded_data = torch.load('multimodal_aifs/data/results/real_encoded_data_20250819_171339.pt')
-
-# Load metadata
-with open('multimodal_aifs/data/results/real_data_encoding_20250819_171339.json', 'r') as f:
-    metadata = json.load(f)
-
-print(f"Encoded shape: {encoded_data.shape}")
-print(f"Processing time: {metadata['processing_time']}")
-```
-
-## Dependencies
-
-For running the data processing scripts, you need:
-
-```bash
-# ECMWF data access
-pip install ecmwf-opendata
-
-# GRIB file processing
-pip install cfgrib xarray
-
-# Scientific computing
-pip install numpy torch
-
-# Optional: for advanced GRIB processing
-pip install eccodes
-```
-
-## Data Sources
-
-- **ECMWF Open Data**: Free access to ECMWF weather data
-  - URL: https://www.ecmwf.int/en/forecasts/datasets/open-data
-  - License: Creative Commons Attribution 4.0 International
-  - Update frequency: 4 times daily (00, 06, 12, 18 UTC)
-
-## File Naming Conventions
-
-- **GRIB files**: `{source}_{type}_{date}.grib`
-- **Encoded results**: `{type}_encoded_data_{timestamp}.pt`
-- **Metadata**: `{type}_encoding_{timestamp}.json`
-
-## Notes
-
-- GRIB files are large (typically 10-100 MB each)
-- Encoded results are compressed PyTorch tensors
-- All timestamps are in UTC
-- Results include processing metadata for reproducibility
+These cached files are automatically used by the AIFS processor for climate data analysis and can be used directly with numpy for debugging or analysis purposes.

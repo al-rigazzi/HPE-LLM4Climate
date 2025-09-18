@@ -1,27 +1,22 @@
 """
-Multimodal AIFS - Location-Aware Climate Analysis
+Multimodal AIFS - Climate Analysis
 
-This package provides multi    # Utility modules
-    "AIFSEncoderWrapper",
-    "ClimateDataProcessor",
-    "GeographicUtilities",l climate analysis capabilities using ECMWF AIFS
+This package provides multimodal climate analysis capabilities using ECMWF AIFS
 (AI Integrated Forecasting System) combined with large language models for
-location-aware climate understanding and analysis.
+climate understanding and analysis.
 
 Key Components:
 - AIFS Climate Encoder: Uses ECMWF AIFS model for climate data encoding
-- Location-Aware Fusion: Geographic-specific climate-text integration
+- Multimodal Fusion: Climate-text integration
 - Multimodal Analysis: Combined climate data and natural language processing
-- Spatial Attention: Region-specific climate pattern analysis
+- Spatial Attention: Climate pattern analysis
 
 Architecture:
     AIFS Climate Data → Graph Neural Network Encoder → Hidden Representations
                                     ↓
     Text Queries → Language Model → Text Embeddings
                                     ↓
-    Location Context → Geographic Resolver → Spatial Masks
-                                    ↓
-              Location-Aware Fusion → Climate Analysis
+              Multimodal Fusion → Climate Analysis
 
 Usage:
     from multimodal_aifs import AIFSClimateAnalysis
@@ -41,7 +36,6 @@ Usage:
 
 Features:
 - Integration with ECMWF AIFS operational weather model
-- Location-aware attention mechanisms
 - Geographic query processing
 - Spatial climate data cropping
 - Multimodal fusion strategies
@@ -66,18 +60,7 @@ from .core.aifs_climate_fusion import (
     create_aifs_fusion_from_model,
 )
 
-# Core imports
-# Core module imports - TODO: Implement these modules
-# from .core.aifs_climate_fusion import AIFSClimateTextFusion
-# from .core.aifs_location_aware import (
-#     AIFSGeographicResolver,
-#     AIFSLocationAwareAttention,
-#     AIFSSpatialCropper,
-# )
-# from .core.aifs_location_aware_fusion import (
-#     AIFSFusionMode,
-#     AIFSLocationAwareClimateAnalysis,
-# )# Core imports - Advanced AIFS Encoder utilities
+# Core imports -  AIFS Encoder utilities
 from .core.aifs_encoder_utils import (
     AIFSCompleteEncoder,
     check_aifs_dependencies,
@@ -90,13 +73,17 @@ from .core.aifs_encoder_utils import (
 )
 
 # Utility imports
-from .utils.aifs_encoder_utils import AIFSEncoderWrapper  # Legacy - use AIFSCompleteEncoder instead
 from .utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 from .utils.climate_data_utils import ClimateDataProcessor
 from .utils.location_utils import GridUtils, LocationUtils
 
+# Core imports
+# Core module imports - TODO: Implement these modules
+# from .core.aifs_climate_fusion import AIFSClimateTextFusion
+
+
 __all__ = [
-    # Advanced AIFS Encoder utilities
+    #  AIFS Encoder utilities
     "AIFSCompleteEncoder",
     "save_aifs_encoder",
     "load_aifs_encoder",
@@ -112,8 +99,7 @@ __all__ = [
     "create_aifs_embedding_from_model",
     # Time series tokenization
     "AIFSTimeSeriesTokenizer",
-    # Utility modules (legacy)
-    "AIFSEncoderWrapper",
+    # Utility modules
     "ClimateDataProcessor",
     "LocationUtils",
     "GridUtils",
@@ -141,12 +127,11 @@ def get_package_info():
     return {
         "name": "multimodal_aifs",
         "version": __version__,
-        "description": "Location-aware multimodal climate analysis with ECMWF AIFS",
+        "description": "Multimodal climate analysis with ECMWF AIFS",
         "author": __author__,
         "email": __email__,
         "core_modules": len(__all__),
         "aifs_integration": True,
-        "location_aware": True,
         "multimodal_fusion": True,
     }
 

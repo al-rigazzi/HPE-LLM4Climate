@@ -46,9 +46,9 @@ print("🦙 Llama-3-8B Climate-Text Fusion Training")
 print("🎯 Target: Full 8B parameter language model with climate fusion")
 
 # Check if we have the required memory
-total_ram = 36.0  # Your system
+TOTAL_RAM = 36.0  # Your system
 current_memory = check_memory_usage()
-print(f"💾 System RAM: {total_ram}GB, Current usage: {current_memory:.1f}GB")
+print(f"💾 System RAM: {TOTAL_RAM}GB, Current usage: {current_memory:.1f}GB")
 
 
 class Llama3ClimateTextFusion(torch.nn.Module):

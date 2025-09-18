@@ -291,5 +291,5 @@ def main():
 
 
 if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
+    EXIT_CODE = main()
+    sys.exit(EXIT_CODE)

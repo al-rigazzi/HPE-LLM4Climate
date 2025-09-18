@@ -1,0 +1,191 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.12"]
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ runner.os == 'ubuntu-latest' && '~/.cache/pip' || '~/Library/Caches/pip' }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'multimodal_aifs/requirements-aifs.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install system dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libhdf5-dev pkg-config
+
+    - name: Install system dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Install only if not already present to avoid warnings
+        brew list hdf5 || brew install hdf5
+        # pkg-config functionality is provided by pkgconf on macOS runners
+
+    - name: Upgrade pip and install build tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install wheel setuptools
+
+    - name: Install core dependencies
+      run: |
+        # Install PyTorch with appropriate backend for the platform
+        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu
+        else
+          pip install torch==2.4.0 torchvision==0.19.0
+        fi
+        pip install numpy pandas xarray zarr dask[array] h5py netcdf4
+
+    - name: Install main requirements
+      run: |
+        pip install -r requirements.txt
+
+    - name: Install AIFS requirements (with fallback)
+      run: |
+        # Install scientific computing packages first
+        pip install scipy scikit-learn matplotlib seaborn plotly
+        # Try to install AIFS requirements, but don't fail if some packages are not available
+        pip install -r multimodal_aifs/requirements-aifs.txt || true
+        # Ensure critical packages are installed
+        pip install zarr xarray dask[array] h5py netcdf4 || true
+        # Install additional ML packages that might be needed
+        pip install transformers accelerate datasets || true
+
+    - name: Install test dependencies
+      run: |
+        pip install pytest pytest-cov pytest-xdist
+
+    - name: Install package in development mode
+      run: |
+        pip install -e .
+
+    - name: Set environment variables for testing
+      run: |
+        echo "USE_MOCK_LLM=true" >> $GITHUB_ENV
+        echo "USE_QUANTIZATION=false" >> $GITHUB_ENV
+        echo "PYTHONPATH=." >> $GITHUB_ENV
+        # Suppress zarr warnings to clean up test output
+        echo "ZARR_V3_EXPERIMENTAL_API=1" >> $GITHUB_ENV
+        # Set PyTorch to use CPU for consistent testing
+        echo "PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0" >> $GITHUB_ENV
+        echo "PYTORCH_ENABLE_MPS_FALLBACK=1" >> $GITHUB_ENV
+
+    - name: Clear pytest cache
+      run: |
+        # Clear pytest cache to avoid stale test discovery
+        rm -rf .pytest_cache
+        find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+
+    - name: Run unit tests
+      run: |
+        python -m pytest multimodal_aifs/tests/unit/ -v --tb=short --maxfail=5
+
+    - name: Run integration tests
+      if: matrix.os == 'macos-latest'
+      run: |
+        python -m pytest multimodal_aifs/tests/integration/ -v -s --tb=short --maxfail=5 -m "not large_memory"
+
+    - name: Run integration tests (Ubuntu - limited subset)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        # Run only critical integration tests on Ubuntu for faster CI
+        python -m pytest multimodal_aifs/tests/integration/zarr/test_zarr_integration.py::test_zarr_to_aifs_pipeline -v --tb=short -m "not large_memory"
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black[jupyter] isort pylint flake8 mypy
+
+    - name: Run Black formatter check
+      run: |
+        black --check --diff --extend-exclude="\.git/|\.pytest_cache/|__pycache__|build/|dist/" .
+
+    - name: Run isort import sorting check
+      run: |
+        isort --check-only --diff --skip-gitignore .
+
+    - name: Run Flake8 linting
+      run: |
+        flake8 multimodal_aifs/ --count --select=E9,F63,F7,F82 --show-source --statistics
+      continue-on-error: true
+
+    - name: Run Pylint
+      run: |
+        pylint multimodal_aifs/ --errors-only --disable=import-error,no-member,too-few-public-methods
+      continue-on-error: true
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety bandit[toml]
+
+    - name: Run Safety check
+      run: |
+        safety check --json --output safety-results.json || true
+
+    - name: Run Bandit security linter
+      run: |
+        bandit -r multimodal_aifs/ -f json -o bandit-results.json || true
+
+    - name: Upload security results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-scan-results
+        path: |
+          safety-results.json
+          bandit-results.json

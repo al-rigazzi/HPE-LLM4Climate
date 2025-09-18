@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 """
-AIFS Cross-Attention Detail Diagram Generator
+AIFS Cross-Attention Detail Diagram Generator (Updated 2025)
 
-This script generates detailed technical diagrams of the cross-attention mechanism
-used in the AIFS multimodal climate system for fusing AIFS TimeSeries tokens
-with Llama 3-8B language model embeddings.
+This script generates detailed technical diagrams of the attention mechanism
+used in the AIFS multimodal climate AI system for climate-text fusion.
+
+Key Updates:
+- Real AIFS encoder dimensions (1024 embeddings)
+- Accurate Meta-Llama-3-8B specifications
+- Current fusion mechanisms and projection layers
+- Actual parameter counts and memory usage
+- Performance metrics from real implementations
 
 Features:
-- Mathematical formulation display
-- Tensor dimension tracking through layers
-- Multi-head attention computation visualization
-- Professional styling for technical documentation
-- AIFS-specific tokenization details
+- Mathematical formulation of cross-attention
+- Tensor dimension tracking through pipeline
+- Performance specifications
+- Memory usage analysis
+- Professional styling for technical presentations
 
 Usage:
     python create_aifs_attention_detail.py
 
 Output:
-    - aifs_cross_attention_detail.png
     - aifs_cross_attention_detail.pdf
 """
 
@@ -430,23 +435,18 @@ create_box(
     fontweight="normal",
 )
 
-# Save the diagram
-png_path = output_dir / "aifs_cross_attention_detail.png"
+# Save the diagram (PDF only as requested)
 pdf_path = output_dir / "aifs_cross_attention_detail.pdf"
 
 plt.tight_layout()
-plt.savefig(str(png_path), dpi=300, bbox_inches="tight", facecolor="white", edgecolor="none")
 plt.savefig(str(pdf_path), dpi=300, bbox_inches="tight", facecolor="white", edgecolor="none")
 
 print("✅ AIFS Cross-Attention Detail Diagram saved as:")
-print(f"   📊 {png_path}")
-print(f"   📄 {pdf_path}")
+print(f"    {pdf_path}")
 print("\n🔍 Diagram shows:")
-print("   • AIFS TimeSeries token processing")
-print("   • Dimension alignment (512 → 4096)")
+print("   • AIFS climate data processing")
+print("   • Dimension alignment (1024 → 4096)")
 print("   • Multi-head attention computation (32 heads)")
 print("   • Mathematical formulation details")
 print("   • Tensor dimension tracking")
 print("   • Performance specifications")
-
-plt.show()

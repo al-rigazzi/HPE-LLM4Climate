@@ -247,4 +247,5 @@ markers = [
     "integration: marks tests as integration tests (may be resource-intensive)",
     "benchmark: marks tests as benchmark tests",
     "slow: marks tests as slow running",
+    "large_memory: marks tests that require high amounts of memory (deselect with '-m \"not large_memory\"')",
 ]

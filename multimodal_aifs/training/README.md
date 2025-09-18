@@ -13,28 +13,27 @@ training/
 ├── requirements.txt             # Dependencies
 ├── inference.py                 # AIFS model inference
 ├── prepare_data.py              # Data preparation utilities
-├── examples/                    # 🆕 Example scripts and tests
-│   ├── README.md               # Detailed examples documentation
-│   ├── test_mock_training.py   # Basic AIFS validation
-│   ├── llama3_final_success.py # Working Llama-3-8B (simple fusion)
-│   ├── llama3_cross_attention.py # Working Llama-3-8B (cross-attention)
-│   └── ... (other test scripts)
-└── *.pt                        # Saved model checkpoints
+├── examples/                    # Training examples and demos
+│   ├── README.md               # Examples documentation
+│   ├── llama3_final_success.py # Production AIFS+Llama-3-8B fusion
+│   ├── train_llama3_8b.py      # Comprehensive training pipeline
+│   └── spatial_comparative_analysis.py #  spatial analysis
+└── *.pt                        # Saved model checkpoints (generated)
 ```
 
 ## 🚀 Quick Start
 
-### 1. For Testing and Examples
+### 1. For Examples and Testing
 ```bash
 # See all available examples
 cd examples/
 cat README.md
 
-# Start with basic AIFS validation
-python examples/test_mock_training.py
+# Start with production-ready AIFS+Llama fusion
+python examples/llama3_final_success.py
 
-# Try Llama-3-8B with AIFS cross-attention
-python examples/llama3_cross_attention.py
+# Try comprehensive training pipeline
+python examples/train_llama3_8b.py
 ```
 
 ### 2. For Production AIFS Training
@@ -57,7 +56,7 @@ python prepare_data.py --output_dir multimodal/data/training --num_samples 1000
 ## 🎯 AIFS Training Pipeline Features
 
 The production AIFS training pipeline supports:
-- **AIFS-based climate encoding** for advanced time-series processing
+- **AIFS-based climate encoding** for  time-series processing
 - **Cross-attention fusion** between AIFS climate features and text
 - **DeepSpeed optimization** for memory efficiency and distributed training
 - **Mixed precision training** (FP16) for faster training
@@ -69,11 +68,9 @@ The production AIFS training pipeline supports:
 
 | Model Scale | Memory Usage | Status | Example Script |
 |-------------|-------------|--------|----------------|
-| Mock AIFS (2.9M) | 0.1GB | ✅ Working | `examples/test_mock_training.py` |
-| Large AIFS (774M) | 0.6GB | ✅ Working | `examples/test_large_simple.py` |
-| XL AIFS (1.6B) | 5.7GB | ✅ Working | `examples/test_maximum_scale.py` |
-| **AIFS + Llama-3-8B** | **8.5GB** | **✅ Working** | `examples/llama3_final_success.py` |
-| **AIFS + Llama-3-8B + Cross-Attention** | **10.6GB** | **✅ Working** | `examples/llama3_cross_attention.py` |
+| **AIFS + Llama-3-8B (Simple)** | **8.5GB** | **✅ Production** | `examples/llama3_final_success.py` |
+| **AIFS + Llama-3-8B (Full)** | **10.6GB** | **✅ Production** | `examples/train_llama3_8b.py` |
+| **Spatial Analysis** | **Variable** | **✅ Production** | `examples/spatial_comparative_analysis.py` |
 
 ## 📊 System Requirements
 
@@ -105,7 +102,7 @@ deepspeed --num_gpus=8 --num_nodes=2 train_multimodal.py --config config.yaml
 
 ### Cross-Attention Fusion with AIFS
 The model uses cross-attention mechanisms to fuse AIFS climate features with text embeddings:
-- AIFS encoder extracts advanced spatial-temporal features from weather data
+- AIFS encoder extracts  spatial-temporal features from weather data
 - Text encoder processes natural language queries/descriptions
 - Cross-attention layers enable bidirectional information flow
 - Final fusion creates joint representations for downstream tasks
@@ -163,7 +160,7 @@ multimodal/data/training/
 - `gradient_checkpointing`: Enable activation checkpointing
 - `cpu_offload`: Offload optimizer states to CPU
 
-## Advanced Usage
+##  Usage
 
 ### Custom Data Loading
 Modify `ClimateTextDataset` class in `train_multimodal.py` to load your specific data format:
@@ -173,7 +170,7 @@ def _load_climate_data(self, climate_file: str) -> torch.Tensor:
     # Your custom climate data loading logic
     return climate_tensor
 
-def _load_samples(self) -> List[Dict]:
+def _load_samples(self) -> list[dict]:
     # Your custom sample loading logic
     return samples_list
 ```
@@ -182,7 +179,7 @@ def _load_samples(self) -> List[Dict]:
 Modify `compute_loss` method for your specific training objective:
 
 ```python
-def compute_loss(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
+def compute_loss(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
     # Your custom loss computation
     return loss
 ```

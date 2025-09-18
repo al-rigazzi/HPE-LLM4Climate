@@ -116,7 +116,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             # Test tokenizer configuration without actual tokenization
             # (since we don't have a real AIFS model in tests)
             info = tokenizer.get_tokenizer_info()
-            self.assertEqual(info["spatial_dim"], 218)  # Advanced encoder dimension
+            self.assertEqual(info["spatial_dim"], 218)  #  encoder dimension
 
             expected_output_shape = (
                 batch,
@@ -158,7 +158,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             # Test configuration validation
             info = tokenizer.get_tokenizer_info()
             self.assertEqual(info["temporal_modeling"], model_type)
-            self.assertEqual(info["spatial_dim"], 218)  # Advanced AIFS dimension
+            self.assertEqual(info["spatial_dim"], 218)  #  AIFS dimension
 
             if model_type == "none":
                 # Spatial-only should preserve AIFS output dimension

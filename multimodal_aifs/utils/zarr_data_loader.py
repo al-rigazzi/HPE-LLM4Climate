@@ -23,7 +23,7 @@ Usage:
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -62,8 +62,8 @@ class ZarrClimateLoader:
     def __init__(
         self,
         zarr_path: str | Path,
-        chunk_size: Dict[str, int] | None = None,
-        variables: List[str] | None = None,
+        chunk_size: dict[str, int] | None = None,
+        variables: list[str] | None = None,
     ):
         """
         Initialize Zarr climate data loader.
@@ -71,7 +71,7 @@ class ZarrClimateLoader:
         Args:
             zarr_path: Path to Zarr dataset (local or cloud URL)
             chunk_size: Override default chunking (e.g., {"time": 24, "lat": 100})
-            variables: List of variables to load (if None, loads all)
+            variables: list of variables to load (if None, loads all)
         """
         if not ZARR_AVAILABLE:
             raise ImportError("Zarr and Xarray are required. Install with: pip install zarr xarray")
@@ -79,6 +79,15 @@ class ZarrClimateLoader:
         self.zarr_path = str(zarr_path)
         self.chunk_size = chunk_size or {}
         self.variables = variables
+
+        # Initialize attributes with proper types
+        self.spatial_dims: tuple[str, ...] = ()
+        self.spatial_shape: tuple[int, ...] = ()
+        self.is_aifs_format: bool = False
+        self.time_dim: str = ""
+        self.time_range: tuple[str, str] = ("", "")
+        self.available_variables: list[str] = []
+        self.ds: Any = None
 
         # Load dataset
         self._load_dataset()
@@ -95,7 +104,7 @@ class ZarrClimateLoader:
             self._analyze_dataset()
 
             print("✅ Dataset loaded successfully")
-            print(f"   📊 Shape: {dict(self.ds.dims)}")
+            print(f"   📊 Shape: {dict(self.ds.sizes)}")
             print(f"   🔢 Variables: {len(self.available_variables)}")
             print(f"   📅 Time range: {self.time_range[0]} to {self.time_range[1]}")
 
@@ -108,15 +117,22 @@ class ZarrClimateLoader:
         coords = set(self.ds.coords.keys())
         self.available_variables = [v for v in self.ds.data_vars.keys() if v not in coords]
 
-        # Get spatial dimensions
+        # Get spatial dimensions - handle both lat/lon and AIFS grid_point formats
         if "lat" in self.ds.dims and "lon" in self.ds.dims:
             self.spatial_dims = ("lat", "lon")
             self.spatial_shape = (self.ds.dims["lat"], self.ds.dims["lon"])
+            self.is_aifs_format = False
         elif "latitude" in self.ds.dims and "longitude" in self.ds.dims:
             self.spatial_dims = ("latitude", "longitude")
-            self.spatial_shape = (self.ds.dims["latitude"], self.ds.dims["longitude"])
+            self.spatial_shape = (self.ds.sizes["latitude"], self.ds.sizes["longitude"])
+            self.is_aifs_format = False
+        elif "grid_point" in self.ds.dims:
+            # AIFS-compatible format with flattened grid points
+            self.spatial_dims = ("grid_point",)
+            self.spatial_shape = (self.ds.sizes["grid_point"],)
+            self.is_aifs_format = True
         else:
-            raise ValueError("Could not identify spatial dimensions (lat/lon)")
+            raise ValueError("Could not identify spatial dimensions (lat/lon or grid_point)")
 
         # Get time dimension
         if "time" in self.ds.dims:
@@ -130,7 +146,7 @@ class ZarrClimateLoader:
         if self.variables:
             self.available_variables = [v for v in self.available_variables if v in self.variables]
 
-    def load_time_range(self, start_time: str, end_time: str, variables: List[str] | None = None):
+    def load_time_range(self, start_time: str, end_time: str, variables: list[str] | None = None):
         """
         Load data for a specific time range.
 
@@ -160,22 +176,22 @@ class ZarrClimateLoader:
             print("💭 Computing data (loading into memory)...")
             subset = subset.compute()
 
-        print(f"✅ Loaded data shape: {dict(subset.dims)}")
+        print(f"✅ Loaded data shape: {dict(subset.sizes)}")
         return subset
 
     def load_spatial_region(
         self,
-        lat_range: Tuple[float, float],
-        lon_range: Tuple[float, float],
-        time_range: Tuple[str, str] | None = None,
-        variables: List[str] | None = None,
+        lat_range: tuple[float, float],
+        lon_range: tuple[float, float],
+        time_range: tuple[str, str] | None = None,
+        variables: list[str] | None = None,
     ):
         """
         Load data for a specific spatial region and optional time range.
 
         Args:
-            lat_range: Tuple of (min_lat, max_lat) in degrees
-            lon_range: Tuple of (min_lon, max_lon) in degrees
+            lat_range: tuple of (min_lat, max_lat) in degrees
+            lon_range: tuple of (min_lon, max_lon) in degrees
             time_range: Optional tuple of (start_time, end_time) strings
             variables: Variables to load (default: all available)
 
@@ -198,33 +214,44 @@ class ZarrClimateLoader:
         subset = self.ds[vars_to_load]
 
         # Apply spatial selection
-        lat_dim, lon_dim = self.spatial_dims
+        if len(self.spatial_dims) == 2:
+            if len(self.spatial_dims) >= 2:
+                lat_dim, lon_dim = self.spatial_dims[0], self.spatial_dims[1]
+            else:
+                raise ValueError("Spatial dimensions must contain at least latitude and longitude")
 
-        # Handle longitude wrapping (e.g., -180 to 180 vs 0 to 360)
-        lon_coords = subset[lon_dim].values
-        lat_coords = subset[lat_dim].values
+            # Handle longitude wrapping (e.g., -180 to 180 vs 0 to 360)
+            lon_coords = subset[lon_dim].values
+            lat_coords = subset[lat_dim].values
 
-        # Select latitude range
-        lat_mask = (lat_coords >= lat_range[0]) & (lat_coords <= lat_range[1])
+            # Select latitude range
+            lat_mask = (lat_coords >= lat_range[0]) & (lat_coords <= lat_range[1])
 
-        # Handle longitude range (accounting for potential wrapping)
-        if lon_range[0] <= lon_range[1]:
-            # Normal case: e.g., -120 to -60
-            lon_mask = (lon_coords >= lon_range[0]) & (lon_coords <= lon_range[1])
+            # Handle longitude range (accounting for potential wrapping)
+            if lon_range[0] <= lon_range[1]:
+                # Normal case: e.g., -120 to -60
+                lon_mask = (lon_coords >= lon_range[0]) & (lon_coords <= lon_range[1])
+            else:
+                # Wrapped case: e.g., 170 to -170 (crossing 180°)
+                lon_mask = (lon_coords >= lon_range[0]) | (lon_coords <= lon_range[1])
+
+            # Apply spatial selection
+            if lat_mask.any():
+                subset = subset.isel({lat_dim: lat_mask})
+            else:
+                raise ValueError(f"No data found in latitude range {lat_range}")
+
+            if lon_mask.any():
+                subset = subset.isel({lon_dim: lon_mask})
+            else:
+                raise ValueError(f"No data found in longitude range {lon_range}")
         else:
-            # Wrapped case: e.g., 170 to -170 (crossing 180°)
-            lon_mask = (lon_coords >= lon_range[0]) | (lon_coords <= lon_range[1])
-
-        # Apply spatial selection
-        if lat_mask.any():
-            subset = subset.isel({lat_dim: lat_mask})
-        else:
-            raise ValueError(f"No data found in latitude range {lat_range}")
-
-        if lon_mask.any():
-            subset = subset.isel({lon_dim: lon_mask})
-        else:
-            raise ValueError(f"No data found in longitude range {lon_range}")
+            # AIFS format with single grid_point dimension - spatial selection not applicable
+            print(
+                "   ℹ️  AIFS format detected - spatial selection not applied "
+                "(data already in grid point format)"
+            )
+            lat_dim = lon_dim = self.spatial_dims[0]  # For coordinate reporting only
 
         # Apply time selection if provided
         if time_range:
@@ -249,44 +276,78 @@ class ZarrClimateLoader:
         return subset
 
     def to_aifs_tensor(
-        self, data, batch_size: int = 1, normalize: bool = True  # xr.Dataset
+        self, data, batch_size: int = 1, normalize: bool = True, device: str = "cpu"
     ) -> torch.Tensor:
         """
-        Convert Xarray dataset to AIFS 5D tensor format [B, T, V, H, W].
+        Convert Xarray dataset to AIFS tensor format.
+        For lat/lon format: [B, T, V, H, W]
+        For AIFS grid_point format: [B, T, V, grid_points]
 
         Args:
             data: Xarray dataset
             batch_size: Batch size (for creating batches from time series)
             normalize: Whether to normalize the data
+            device: Device to move tensor to ("cpu", "cuda", "mps", etc.)
 
         Returns:
-            5D tensor ready for AIFS model input
+            Tensor ready for AIFS model input
         """
         print("🔄 Converting to AIFS tensor format...")
 
         # Get data variables
         variables = list(data.data_vars.keys())
 
+        # Check if data is already in AIFS format
+        if "data" in variables and len(data.data.dims) == 5:
+            # Data is already in AIFS format [batch, time, ensemble, grid_points, variables]
+            print("✅ Data already in AIFS format, using directly")
+            tensor = torch.from_numpy(data["data"].values).float()
+            print(f"   📊 AIFS tensor shape: {tensor.shape}")
+            return tensor
+
         # Stack variables into single array
-        # Shape: [time, variables, lat, lon]
         arrays = []
         for var in variables:
             var_data = data[var].values
-            if var_data.ndim == 3:  # [time, lat, lon]
-                arrays.append(var_data)
+            if self.is_aifs_format:
+                # AIFS format: [time, grid_points]
+                if var_data.ndim == 2:
+                    arrays.append(var_data)
+                else:
+                    raise ValueError(
+                        f"AIFS format: Variable {var} has unexpected shape: {var_data.shape}"
+                    )
             else:
-                raise ValueError(f"Variable {var} has unexpected shape: {var_data.shape}")
+                # Lat/lon format: [time, lat, lon]
+                if var_data.ndim == 3:
+                    arrays.append(var_data)
+                else:
+                    raise ValueError(
+                        f"Lat/lon format: Variable {var} has unexpected shape: {var_data.shape}"
+                    )
 
-        # Stack variables: [time, variables, lat, lon]
-        stacked = np.stack(arrays, axis=1)
+        # Stack variables
+        if self.is_aifs_format:
+            # AIFS format: [time, variables, grid_points]
+            stacked = np.stack(arrays, axis=1)
+        else:
+            # Lat/lon format: [time, variables, lat, lon]
+            stacked = np.stack(arrays, axis=1)
 
         # Convert to tensor
-        tensor = torch.from_numpy(stacked).float()
+        tensor = torch.from_numpy(stacked).float().to(device)
 
         # Add batch dimension or create batches
         if batch_size == 1:
-            # Single batch: [1, time, variables, lat, lon]
-            tensor = tensor.unsqueeze(0)
+            # Single batch
+            if self.is_aifs_format:
+                # For AIFS format, add ensemble dimension: [batch, time, 1, grid_points, vars]
+                tensor = tensor.unsqueeze(0)  # [1, time, vars, grid_points]
+                tensor = tensor.unsqueeze(2)  # [1, time, 1, vars, grid_points]
+                # Reorder to [batch, time, ensemble=1, grid_points, vars]
+                tensor = tensor.permute(0, 1, 2, 4, 3)
+            else:
+                tensor = tensor.unsqueeze(0)
         else:
             # Create batches from time series
             time_steps = tensor.shape[0]
@@ -295,29 +356,50 @@ class ZarrClimateLoader:
                 padding = batch_size - time_steps
                 tensor = torch.cat([tensor, tensor[-1:].repeat(padding, 1, 1, 1)], dim=0)
 
-            # Reshape to batches: [batch_size, time_per_batch, variables, lat, lon]
+            # Reshape to batches
             time_per_batch = tensor.shape[0] // batch_size
             tensor = tensor[: batch_size * time_per_batch]
-            tensor = tensor.view(batch_size, time_per_batch, *tensor.shape[1:])
+            if self.is_aifs_format:
+                tensor = tensor.view(batch_size, time_per_batch, *tensor.shape[1:])
+                # Add ensemble dimension for AIFS format
+                tensor = tensor.unsqueeze(2)  # Add ensemble dimension
+                # Reorder to [batch, time, ensemble=1, grid_points, vars]
+                tensor = tensor.permute(0, 1, 2, 4, 3)
+            else:
+                tensor = tensor.view(batch_size, time_per_batch, *tensor.shape[1:])
 
         # Normalize if requested
         if normalize:
             # Simple normalization: standardize each variable
             for i, var in enumerate(variables):
-                var_data = tensor[:, :, i, :, :]
+                if self.is_aifs_format:
+                    var_data = tensor[:, :, 0, :, i]  # [batch, time, ensemble=1, grid_points, vars]
+                else:
+                    var_data = tensor[:, :, i, :, :]  # [batch, time, vars, lat, lon]
                 mean = var_data.mean()
                 std = var_data.std() + 1e-8  # Avoid division by zero
-                tensor[:, :, i, :, :] = (var_data - mean) / std
+                if self.is_aifs_format:
+                    tensor[:, :, 0, :, i] = (var_data - mean) / std
+                else:
+                    tensor[:, :, i, :, :] = (var_data - mean) / std
 
-        print(f"✅ AIFS tensor shape: {tensor.shape}")
-        print(
-            f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
-            f"vars={tensor.shape[2]}, height={tensor.shape[3]}, width={tensor.shape[4]}]"
-        )
+        if self.is_aifs_format:
+            print(
+                f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
+                f"ensemble={tensor.shape[2]}, grid_points={tensor.shape[3]}, "
+                f"vars={tensor.shape[4]}"
+            )
+        else:
+            print(
+                f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
+                f"vars={tensor.shape[2]}, height={tensor.shape[3]}, width={tensor.shape[4]}]"
+            )
 
+        tensor = tensor.to(device)
+        return tensor
         return tensor
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get dataset information."""
         return {
             "zarr_path": self.zarr_path,
@@ -335,7 +417,7 @@ def load_zarr_for_aifs(
     zarr_path: str,
     start_time: str,
     end_time: str,
-    variables: List[str] | None = None,
+    variables: list[str] | None = None,
     batch_size: int = 2,
     normalize: bool = True,
 ) -> torch.Tensor:
@@ -370,7 +452,7 @@ def test_zarr_integration():
 
     try:
         # Test with the test dataset
-        test_path = "test_climate.zarr"
+        test_path = "test_aifs_large.zarr"
 
         if not Path(test_path).exists():
             print(f"❌ Test dataset not found: {test_path}")

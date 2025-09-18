@@ -23,7 +23,7 @@ def load_aifs_encoder(
         device: Device to load model on
 
     Returns:
-        Tuple of (encoder_model, analysis_dict)
+        tuple of (encoder_model, analysis_dict)
     """
     if model_dir is None:
         # Use the directory where this script is located
@@ -31,7 +31,7 @@ def load_aifs_encoder(
     else:
         model_path = Path(model_dir)  # Load analysis
     analysis_path = model_path / f"{model_name}_analysis.json"
-    with open(analysis_path, "r") as f:
+    with open(analysis_path, "r", encoding="utf-8") as f:
         analysis = json.load(f)
 
     # Try to load full model first
@@ -70,7 +70,7 @@ def get_encoder_info(model_dir: str = None, model_name: str = "aifs_encoder"):
     info_path = model_path / f"{model_name}_info.txt"
 
     if info_path.exists():
-        with open(info_path, "r") as f:
+        with open(info_path, "r", encoding="utf-8") as f:
             print(f.read())
     else:
         print(f"Info file not found: {info_path}")

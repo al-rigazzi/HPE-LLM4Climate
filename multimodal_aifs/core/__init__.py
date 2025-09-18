@@ -20,10 +20,8 @@ from .aifs_encoder_utils import (
     validate_checkpoint,
 )
 
-# TODO: Import these when the modules are ready
+# Additional modules available for import:
 # from .aifs_climate_fusion import AIFSClimateFusion
-# from .aifs_location_aware import AIFSLocationAware
-# from .aifs_location_aware_fusion import AIFSLocationAwareFusion
 
 __all__ = [
     # AIFS Encoder utilities
@@ -39,8 +37,6 @@ __all__ = [
     "DEFAULT_CHECKPOINT_NAME",
     "EXPECTED_INPUT_SHAPE",
     "EXPECTED_OUTPUT_SHAPE",
-    # TODO: Add these when the modules are ready
+    # Additional modules available:
     # "AIFSClimateFusion",
-    # "AIFSLocationAware",
-    # "AIFSLocationAwareFusion"
 ]

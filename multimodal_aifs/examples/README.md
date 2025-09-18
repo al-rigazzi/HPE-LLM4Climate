@@ -1,15 +1,19 @@
 # Multimodal AIFS Examples
 
-This directory contains example scripts demonstrating the capabilities of the multimodal AIFS implementation for location-aware climate analysis.
+This directory contains example scripts demonstrating the capabilities of the multimodal AIFS implementation for climate analysis.
 
 ## 📁 Example Structure
 
 ### `basic/`
 Basic usage examples:
 - **`aifs_encoder_demo.py`** - Simple AIFS encoder usage and climate data encoding
-- **`climate_text_fusion_demo.py`** - Basic climate-text fusion with AIFS
-- **`location_aware_demo.py`** - Geographic operations and location encoding
-- **`simple_pipeline_demo.py`** - End-to-end pipeline demonstration
+
+### Root Examples
+Complete integration examples:
+- **`aifs_integration_example.py`** - AIFS integration with time series tokenization
+- **`aifs_llama_example.py`** - AIFS + LLaMA multimodal fusion example
+- **`multimodal_timeseries_demo.py`** - Time series multimodal demonstration
+- **`zarr_aifs_multimodal_example.py`** - Zarr format integration with AIFS
 
 
 
@@ -17,11 +21,11 @@ Basic usage examples:
 
 ### Basic AIFS Encoder Usage
 ```python
-from multimodal_aifs.utils import AIFSEncoderWrapper
+from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder, create_aifs_encoder
 import torch
 
-# Initialize AIFS encoder
-encoder = AIFSEncoderWrapper("path/to/aifs/model.pth")
+# Initialize AIFS encoder (use the new approach)
+encoder = create_aifs_encoder(aifs_model)
 
 # Encode climate data
 climate_data = torch.randn(4, 218)  # Batch of climate data
@@ -43,18 +47,6 @@ fusion = AIFSClimateTextFusion(
 texts = ["High temperature anomaly detected"]
 results = fusion(climate_data, texts)
 print(f"Fused features: {results['fused_features'].shape}")
-```
-
-### Location-Aware Analysis
-```python
-from multimodal_aifs.core import AIFSGeographicResolver
-
-# Initialize geographic resolver
-resolver = AIFSGeographicResolver()
-
-# Encode location
-london_encoding = resolver.encode_location(51.5074, -0.1278)
-print(f"Location encoding: {london_encoding.shape}")
 ```
 
 ## 📊 Example Datasets
@@ -129,7 +121,7 @@ For troubleshooting:
 Recommended order for exploring examples:
 1. **Basic demos** - Understand individual components
 2. **Integration examples** - See how components work together
-3. **Advanced examples** - Explore sophisticated use cases
+3. ** examples** - Explore sophisticated use cases
 4. **Application examples** - See real-world applications
 
 ## 🤝 Contributing Examples

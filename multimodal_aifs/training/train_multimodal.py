@@ -22,7 +22,6 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -73,7 +72,7 @@ class ClimateTextDataset(Dataset):
         data_path: str,
         tokenizer,
         max_length: int = 512,
-        climate_data_shape: Tuple[int, int, int] = (2, 160, 64, 64),
+        climate_data_shape: tuple[int, int, int] = (2, 160, 64, 64),
     ):
         self.data_path = Path(data_path)
         self.tokenizer = tokenizer
@@ -83,14 +82,14 @@ class ClimateTextDataset(Dataset):
         # Load your data index/metadata here
         self.samples = self._load_samples()
 
-    def _load_samples(self) -> List[Dict]:
+    def _load_samples(self) -> list[dict]:
         """Load dataset samples. Adapt this to your data format."""
         # Template implementation - replace with your data loading logic
         samples = []
 
         # Example: Load from a JSON index file
         if (self.data_path / "index.json").exists():
-            with open(self.data_path / "index.json", "r") as f:
+            with open(self.data_path / "index.json", "r", encoding="utf-8") as f:
                 samples = json.load(f)
         else:
             # Create dummy samples for testing
@@ -109,7 +108,7 @@ class ClimateTextDataset(Dataset):
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         sample = self.samples[idx]
 
         # Load climate data
@@ -158,7 +157,7 @@ class ClimateTextDataset(Dataset):
 class MultimodalTrainer:
     """DeepSpeed-based trainer for multimodal climate-text fusion."""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -258,7 +257,7 @@ class MultimodalTrainer:
                 "wall_clock_breakdown": False,
             }
         else:
-            with open(deepspeed_config, "r") as f:
+            with open(deepspeed_config, "r", encoding="utf-8") as f:
                 ds_config = json.load(f)
 
         # Initialize DeepSpeed
@@ -291,7 +290,7 @@ class MultimodalTrainer:
         logger.info(f"Train dataset: {len(self.train_dataset)} samples")
         logger.info(f"Val dataset: {len(self.val_dataset)} samples")
 
-    def compute_loss(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def compute_loss(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Compute training loss."""
         # Prepare climate batch
         climate_batch = {
@@ -412,7 +411,7 @@ class MultimodalTrainer:
         self.tokenizer.save_pretrained(str(save_path / "tokenizer"))
 
         # Save training config
-        with open(save_path / "config.yaml", "w") as f:
+        with open(save_path / "config.yaml", "w", encoding="utf-8") as f:
             yaml.dump(self.config, f)
 
         logger.info(f"Checkpoint saved to {save_path}")
@@ -465,9 +464,9 @@ class MultimodalTrainer:
             wandb.finish()
 
 
-def load_config(config_path: str) -> Dict:
+def load_config(config_path: str) -> dict:
     """Load training configuration."""
-    with open(config_path, "r") as f:
+    with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     return config
 

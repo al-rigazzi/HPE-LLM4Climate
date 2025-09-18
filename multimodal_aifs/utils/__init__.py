@@ -1,16 +1,10 @@
 """
 Utilities Package for AIFS Multimodal Analysis
 
-This package provides utility modules for handling AIFS encoder integration,
-climate data processing, location-aware operations, and text processing
-for multimodal climate analysis.
+This package provides utility modules for handling climate data processing,
+location-aware operations, and text processing for multimodal climate analysis.
 """
 
-from .aifs_encoder_utils import (
-    AIFSEncoderWrapper,
-    create_aifs_encoder,
-    test_aifs_encoder,
-)
 from .climate_data_utils import (
     CLIMATE_VARIABLES,
     ClimateDataProcessor,
@@ -33,10 +27,6 @@ from .text_utils import (
 __version__ = "0.1.0"
 
 __all__ = [
-    # AIFS Encoder utilities
-    "AIFSEncoderWrapper",
-    "create_aifs_encoder",
-    "test_aifs_encoder",
     # Climate data utilities
     "ClimateDataProcessor",
     "CLIMATE_VARIABLES",
@@ -76,26 +66,20 @@ def test_all_utils():
     print("=" * 50)
 
     try:
-        # Test AIFS encoder utils
-        print("\n1. Testing AIFS Encoder Utils...")
-        from .aifs_encoder_utils import test_aifs_encoder as test_encoder_utils
-
-        test_encoder_utils()
-
         # Test climate data utils
-        print("\n2. Testing Climate Data Utils...")
+        print("\n1. Testing Climate Data Utils...")
         from .climate_data_utils import test_climate_processor
 
         test_climate_processor()
 
         # Test location utils
-        print("\n3. Testing Location Utils...")
+        print("\n2. Testing Location Utils...")
         from .location_utils import test_location_utilities
 
         test_location_utilities()
 
         # Test text utils
-        print("\n4. Testing Text Utils...")
+        print("\n3. Testing Text Utils...")
         from .text_utils import test_text_processing
 
         test_text_processing()

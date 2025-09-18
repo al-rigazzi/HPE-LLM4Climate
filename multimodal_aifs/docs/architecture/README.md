@@ -1,6 +1,6 @@
-# AIFS Multimodal Architecture Diagrams
+# AIFS Multimodal Architecture Diagrams (Updated 2025)
 
-This directory contains tools for generating professional architecture diagrams for the AIFS multimodal climate AI system that combines ECMWF AIFS TimeSeries tokenization with Llama 3-8B language models.
+This directory contains tools for generating professional architecture diagrams for the AIFS multimodal climate AI system that combines ECMWF AIFS encoder with Meta-Llama-3-8B language models.
 
 ## Available Diagrams
 
@@ -9,24 +9,24 @@ This directory contains tools for generating professional architecture diagrams 
 
 Generates comprehensive system architecture showing:
 - ECMWF climate data ingestion (5D tensors)
-- AIFS TimeSeries tokenizer processing
-- Llama 3-8B integration
-- Cross-modal fusion mechanisms
-- Technical specifications
+- AIFS encoder direct integration (19.9M parameters)
+- Meta-Llama-3-8B integration (8.03B parameters frozen)
+- Climate-text fusion mechanisms
+- Accurate technical specifications
 
-**Output**: `aifs_multimodal_architecture_diagram.{png,pdf}`
+**Output**: `aifs_multimodal_architecture_diagram.pdf`
 
 ### 2. Cross-Attention Detail Diagram
 **File**: `create_aifs_attention_detail.py`
 
 Generates detailed technical diagram of the attention mechanism:
 - Mathematical formulation of cross-attention
-- Tensor dimension tracking (512 → 4096 projection)
+- Tensor dimension tracking (1024 → 4096 projection)
 - Multi-head attention computation (32 heads)
-- AIFS-Llama token fusion details
+- AIFS-Llama fusion details
 - Performance specifications
 
-**Output**: `aifs_cross_attention_detail.{png,pdf}`
+**Output**: `aifs_cross_attention_detail.pdf`
 
 ## Usage
 
@@ -49,23 +49,23 @@ python create_aifs_attention_detail.py
 
 ## Output Files
 
-All diagrams are generated in both PNG and PDF formats:
+All diagrams are generated in PDF format for professional presentations and documentation:
 
-- **PNG files**: High-resolution (300 DPI) for presentations and web use
-- **PDF files**: Vector format for printing and executive documents
+- **PDF files**: Vector format for printing and executive documents, high-quality scaling
 
 ### File Naming Convention
-- `aifs_multimodal_architecture_diagram.{png,pdf}` - Complete system overview
-- `aifs_cross_attention_detail.{png,pdf}` - Detailed attention mechanism
+- `aifs_multimodal_architecture_diagram.pdf` - Complete system overview
+- `aifs_cross_attention_detail.pdf` - Detailed attention mechanism
 
-## Technical Details
+## Technical Details (Updated 2025)
 
 ### AIFS Architecture Features
-- **Data Source**: ECMWF climate data (GRIB/NetCDF)
-- **Model**: AIFS-Single-1.0 (MSE-trained)
-- **Tokenizer**: TimeSeries transformer with 5D→token conversion
-- **Integration**: Llama 3-8B language model
-- **Fusion**: Multi-head cross-attention (32 heads)
+- **Data Source**: ECMWF climate data (GRIB/Cached Arrays)
+- **Model**: AIFS-Single-1.0 (Encoder extracted, 19.9M parameters)
+- **Processing**: Direct encoder integration (no tokenization)
+- **Integration**: Meta-Llama-3-8B language model (8.03B parameters)
+- **Fusion**: Element-wise addition, gated fusion, cross-attention
+- **Memory**: 8.5-10.6GB training, CPU optimized
 
 ### Diagram Features
 - Professional styling suitable for technical presentations

@@ -19,7 +19,6 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
-from typing import List
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -49,7 +48,7 @@ def demonstrate_zarr_to_aifs(
     zarr_path: str,
     start_time: str = "2024-01-01",
     end_time: str = "2024-01-07",
-    variables: List[str] | None = None,
+    variables: list[str] | None = None,
 ):
     """Demonstrate loading Zarr data and processing with AIFS."""
 
@@ -130,7 +129,7 @@ def demonstrate_zarr_to_aifs(
         try:
             # Initialize multimodal fusion model
             model = AIFSLlamaFusionModel(
-                llama_model_name="meta-llama/Meta-Llama-3-8B",
+                llm_model_name="meta-llama/Meta-Llama-3-8B",
                 time_series_dim=512,
                 fusion_strategy="cross_attention",
                 device="cpu",

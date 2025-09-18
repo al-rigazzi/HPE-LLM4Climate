@@ -6,17 +6,15 @@ This script tests the complete pipeline with actual Meta-Llama-3-8B model:
 Zarr → AIFS Tokenization → Real Llama Processing → Multimodal Fusion
 
 Usage:
-    python test_real_llama_zarr.py --zarr-path test_climate.zarr
-    python test_real_llama_zarr.py --zarr-path test_climate.zarr --use-quantization
+    python test_real_llama_zarr.py --zarr-path test_aifs_small.zarr
+    python test_real_llama_zarr.py --zarr-path test_aifs_small.zarr --use-quantization
 """
 
 import argparse
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
 
-import numpy as np
 import torch
 
 # Add project root to path
@@ -27,12 +25,19 @@ print("🦙 Real Llama + AIFS + Zarr Integration Test")
 print("=" * 50)
 
 # Check system
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"🖥️  Device: {device}")
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"🖥️  Device: {DEVICE}")
 print(f"📦 PyTorch: {torch.__version__}")
 
 try:
-    from multimodal_aifs.tests.integration.test_aifs_llama_integration import AIFSLlamaFusionModel
+    import sys
+    from pathlib import Path
+
+    # Add the project root to path to import conftest
+    project_root = Path(__file__).parent.parent.parent.parent
+    sys.path.insert(0, str(project_root))
+
+    # Import required modules (AIFSLlamaFusionModel removed - using production model now)
     from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
     from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
@@ -48,11 +53,9 @@ import pytest
 
 
 @pytest.fixture
-def zarr_path():
+def zarr_path(zarr_dataset_path):
     """Provide a default zarr path for testing."""
-    return (
-        "/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate/test_climate.zarr"
-    )
+    return zarr_dataset_path
 
 
 @pytest.mark.integration
@@ -61,18 +64,37 @@ def zarr_path():
     reason="Real Llama tests are resource-intensive and require RUN_REAL_LLAMA_TESTS=1",
 )
 def test_real_llama_with_zarr(
-    zarr_path: str,
-    use_quantization: bool = False,
-    model_name: str = "meta-llama/Meta-Llama-3-8B",
+    aifs_llama_model,
+    zarr_dataset_path,
+    zarr_path: str = None,
+    use_quantization: bool = None,
+    model_name: str = None,
     max_memory_gb: float = 8.0,
 ):
     """Test complete pipeline with real Llama model."""
 
-    print(f"\n🚀 Starting Real Llama Integration Test")
+    # Use environment variables to control test behavior
+    zarr_path = zarr_path or zarr_dataset_path
+    use_quantization = (
+        use_quantization
+        if use_quantization is not None
+        else os.environ.get("USE_QUANTIZATION", "false").lower() in ("true", "1", "yes")
+    )
+    model_name = model_name or os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B")
+
+    print(f"\n🚀 Starting Real Llama Integration Test (conftest)")
     print(f"📁 Zarr path: {zarr_path}")
     print(f"🦙 Model: {model_name}")
     print(f"⚗️  Quantization: {use_quantization}")
     print(f"💾 Max memory: {max_memory_gb} GB")
+
+    # Use model from conftest fixture
+    model = aifs_llama_model
+    print(f"✅ Using model from conftest fixture")
+    print(f"   🧠 AIFS: {type(model.time_series_tokenizer).__name__}")
+    print(f"   🦙 LLM: {type(model.llama_model).__name__}")
+    print(f"   📏 Hidden size: {model.llama_hidden_size}")
+    print(f"   🎯 Device: {model.device}")
 
     # Step 1: Load Zarr Climate Data
     print(f"\n📊 Step 1: Loading Climate Data from Zarr")
@@ -97,39 +119,9 @@ def test_real_llama_with_zarr(
         print(f"❌ Failed to load climate data: {e}")
         return False
 
-    # Step 2: Initialize Real Llama Model
-    print(f"\n🦙 Step 2: Initializing Real Llama Model")
+    # Step 2: Climate Data Processing with AIFS
+    print(f"\n🧠 Step 2: Processing Climate Data with AIFS")
     print("-" * 40)
-
-    try:
-        # Configure for CPU and memory constraints
-        model = AIFSLlamaFusionModel(
-            llama_model_name=model_name,
-            time_series_dim=512,
-            fusion_strategy="cross_attention",
-            device=device,
-            use_quantization=use_quantization,
-            use_mock_llama=False,  # Force real Llama
-        )
-
-        print(f"✅ Real Llama model initialized successfully")
-        print(f"   📏 Hidden size: {model.llama_hidden_size}")
-        print(
-            f"   🔢 Tokenizer vocab: {len(model.llama_tokenizer) if model.llama_tokenizer else 'N/A'}"
-        )
-
-        # Check memory usage
-        if hasattr(model.llama_model, "get_memory_footprint"):
-            memory_mb = model.llama_model.get_memory_footprint() / 1e6
-            print(f"   💾 Model memory: {memory_mb:.1f} MB")
-
-    except Exception as e:
-        print(f"❌ Failed to initialize Llama model: {e}")
-        print(f"💡 This may be due to:")
-        print(f"   - Insufficient memory (Llama-3-8B needs ~16GB)")
-        print(f"   - Missing HuggingFace authentication")
-        print(f"   - PyTorch/Transformers version compatibility")
-        return False
 
     # Step 3: AIFS Climate Tokenization
     print(f"\n🌍 Step 3: AIFS Climate Tokenization")
@@ -241,7 +233,11 @@ def test_real_llama_with_zarr(
 def main():
     """Main test function."""
     parser = argparse.ArgumentParser(description="Real Llama + AIFS + Zarr Integration Test")
-    parser.add_argument("--zarr-path", default="test_climate.zarr", help="Path to Zarr dataset")
+    parser.add_argument(
+        "--zarr-path",
+        default="test_aifs_large.zarr",
+        help="Path to Zarr dataset (default: test_aifs_large.zarr)",
+    )
     parser.add_argument("--use-quantization", action="store_true", help="Use 8-bit quantization")
     parser.add_argument(
         "--model-name", default="meta-llama/Meta-Llama-3-8B", help="Llama model name"
@@ -250,10 +246,12 @@ def main():
 
     args = parser.parse_args()
 
+    # Check if zarr dataset exists
     if not Path(args.zarr_path).exists():
         print(f"❌ Zarr dataset not found: {args.zarr_path}")
-        print(f"💡 Run this first to create test data:")
-        print(f'   python -c "import xarray as xr; import numpy as np; ..."')
+        print(f"💡 To create the test dataset, run:")
+        print(f"   cd /path/to/project && python multimodal_aifs/conftest.py")
+        print(f"   # Or use the ensure_test_zarr_dataset fixture")
         return
 
     # Warning about memory requirements

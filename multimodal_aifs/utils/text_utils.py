@@ -6,7 +6,7 @@ including climate-specific text preprocessing, tokenization, and embedding prepa
 """
 
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import torch
@@ -173,7 +173,7 @@ LOCATION_PATTERNS = [
 ]
 
 
-def extract_location_keywords(text: str) -> List[str]:
+def extract_location_keywords(text: str) -> list[str]:
     """
     Extract location-related keywords from text.
 
@@ -181,7 +181,7 @@ def extract_location_keywords(text: str) -> List[str]:
         text: Input text to analyze
 
     Returns:
-        List of extracted location keywords
+        list of extracted location keywords
     """
     locations = []
     text_lower = text.lower()
@@ -230,7 +230,7 @@ def extract_location_keywords(text: str) -> List[str]:
     return unique_locations
 
 
-def parse_climate_query(text: str) -> Dict[str, List[str]]:
+def parse_climate_query(text: str) -> dict[str, list[str]]:
     """
     Parse a climate query to extract key components.
 
@@ -242,7 +242,7 @@ def parse_climate_query(text: str) -> Dict[str, List[str]]:
     """
     text_lower = text.lower()
 
-    result: Dict[str, List[str]] = {
+    result: dict[str, list[str]] = {
         "variables": [],
         "locations": [],
         "temporal": [],
@@ -400,7 +400,7 @@ class ClimateTextProcessor:
 
         return text
 
-    def extract_climate_keywords(self, text: str) -> List[str]:
+    def extract_climate_keywords(self, text: str) -> list[str]:
         """
         Extract climate-related keywords from text.
 
@@ -408,7 +408,7 @@ class ClimateTextProcessor:
             text: Input text
 
         Returns:
-            List of found climate keywords
+            list of found climate keywords
         """
         text = self.preprocess_text(text)
         words = text.split()
@@ -425,7 +425,7 @@ class ClimateTextProcessor:
 
         return list(set(found_keywords))  # Remove duplicates
 
-    def extract_locations(self, text: str) -> List[Dict[str, Any]]:
+    def extract_locations(self, text: str) -> list[dict[str, Any]]:
         """
         Extract location references from text.
 
@@ -478,7 +478,7 @@ class ClimateTextProcessor:
 
         return locations
 
-    def extract_numerical_values(self, text: str) -> List[Dict[str, str | float]]:
+    def extract_numerical_values(self, text: str) -> list[dict[str, str | float]]:
         """
         Extract numerical values and their units from text.
 
@@ -486,7 +486,7 @@ class ClimateTextProcessor:
             text: Input text
 
         Returns:
-            List of numerical value dictionaries
+            list of numerical value dictionaries
         """
         values = []
 
@@ -511,7 +511,7 @@ class ClimateTextProcessor:
 
         return values
 
-    def categorize_text(self, text: str) -> Dict[str, float]:
+    def categorize_text(self, text: str) -> dict[str, float]:
         """
         Categorize text by climate-related themes.
 
@@ -539,7 +539,7 @@ class ClimateTextProcessor:
 
     def create_text_features(
         self, text: str
-    ) -> Dict[str, int | float | List[Any] | Dict[str, float]]:
+    ) -> dict[str, int | float | list[Any] | dict[str, float]]:
         """
         Create comprehensive features from text.
 
@@ -553,7 +553,7 @@ class ClimateTextProcessor:
         processed_text = self.preprocess_text(text)
 
         # Basic features
-        features: Dict[str, int | float | List[Any] | Dict[str, float]] = {
+        features: dict[str, int | float | list[Any] | dict[str, float]] = {
             "original_length": len(original_text),
             "processed_length": len(processed_text),
             "length": len(original_text),  # Alias for compatibility
@@ -602,19 +602,19 @@ class TextEmbeddingUtils:
         """
         self.embedding_dim = embedding_dim
         self.vocab_size = vocab_size
-        self.word_to_idx: Dict[str, int] = {}
-        self.idx_to_word: Dict[int, str] = {}
+        self.word_to_idx: dict[str, int] = {}
+        self.idx_to_word: dict[int, str] = {}
         self.embeddings: torch.Tensor | None = None
         self.is_fitted = False
 
-    def build_vocabulary(self, texts: List[str]) -> None:
+    def build_vocabulary(self, texts: list[str]) -> None:
         """
         Build vocabulary from texts.
 
         Args:
-            texts: List of texts to build vocabulary from
+            texts: list of texts to build vocabulary from
         """
-        word_counts: Dict[str, int] = {}
+        word_counts: dict[str, int] = {}
 
         # Count words
         for text in texts:
@@ -638,7 +638,7 @@ class TextEmbeddingUtils:
         self.embeddings = torch.randn(len(self.word_to_idx), self.embedding_dim)
         self.is_fitted = True
 
-    def text_to_indices(self, text: str, max_length: int | None = None) -> List[int]:
+    def text_to_indices(self, text: str, max_length: int | None = None) -> list[int]:
         """
         Convert text to indices.
 
@@ -647,7 +647,7 @@ class TextEmbeddingUtils:
             max_length: Maximum sequence length
 
         Returns:
-            List of indices
+            list of indices
         """
         if not self.is_fitted:
             raise RuntimeError("Vocabulary not built. Call build_vocabulary first.")
