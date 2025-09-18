@@ -71,6 +71,11 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dat
     print(f"\n🦙 Step 2: Using Fusion Model from Fixture")
     print("-" * 50)
 
+    # Check if model was created successfully
+    if aifs_llama_model is None:
+        print("   ❌ No AIFS model available")
+        pytest.skip("No AIFS model available for testing")
+
     # Use the pre-configured fusion model from fixture
     model = aifs_llama_model
     print(f"   ✅ Using fusion model from fixture")
@@ -82,6 +87,7 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dat
 
     if not is_real_llama:
         print("   ⚠️  Fallback to mock model occurred")
+        print("   💡 Set USE_MOCK_LLM=false to test real Llama")
         pytest.skip("Real Llama model not available, test skipped")
 
     # Step 3: Test AIFS tokenization
@@ -218,14 +224,8 @@ def test_memory_requirements():
 def main():
     """Main function."""
 
-    # Get zarr path from environment or default
-    zarr_path = os.environ.get("ZARR_SIZE", "large").lower()
-    size_to_path = {
-        "tiny": "test_aifs_tiny.zarr",
-        "small": "test_aifs_small.zarr",
-        "large": "test_aifs_large.zarr",
-    }
-    zarr_file = size_to_path.get(zarr_path, "test_aifs_large.zarr")
+    # Get zarr path - use unified test dataset
+    zarr_file = "test_aifs_large.zarr"
 
     # Check prerequisites
     if not Path(zarr_file).exists():
@@ -247,8 +247,77 @@ def main():
         print(f"   Test cancelled")
         return
 
-    # Run the test
-    success = test_real_llama_cpu()
+    # Create fixtures manually for standalone execution
+    print(f"\n🔧 Setting up test fixtures...")
+
+    # Create test device
+    if torch.cuda.is_available():
+        test_device = torch.device("cuda")
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        test_device = torch.device("mps")
+    else:
+        test_device = torch.device("cpu")
+    print(f"   📱 Using device: {test_device}")
+
+    # Create LLM mock status
+    use_mock_llm = os.environ.get("USE_MOCK_LLM", "true").lower() in ("true", "1", "yes")
+    llm_mock_status = {
+        "use_mock_llm": use_mock_llm,
+        "use_quantization": False,
+        "model_name": os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B"),
+        "should_skip_real_llm_tests": use_mock_llm,
+    }
+    print(f"   🤖 Mock LLM: {use_mock_llm}")
+
+    # Create zarr dataset path
+    zarr_dataset_path = zarr_file
+    print(f"   📁 Zarr path: {zarr_dataset_path}")
+
+    # Check if we should skip based on mock status
+    if llm_mock_status["should_skip_real_llm_tests"]:
+        print("   ⚠️  USE_MOCK_LLM is set to true, skipping real Llama test")
+        print("   💡 Set USE_MOCK_LLM=false to run real Llama test")
+        return
+
+    # Create AIFS model fixture manually
+    print(f"\n🏗️ Creating AIFS model...")
+    try:
+        # Import the wrapper from conftest.py
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+        from multimodal_aifs.conftest import AIFSClimateTextFusionWrapper
+
+        # Try to load real AIFS model
+        aifs_model_path = "aifs-single-1.0/aifs-single-mse-1.0.ckpt"
+        if Path(aifs_model_path).exists():
+            print(f"   📦 Loading real AIFS model from {aifs_model_path}")
+            try:
+                # Try to load the actual AIFS model from checkpoint
+                # This is a simplified version - in practice you'd need the full loading logic
+                aifs_llama_model = AIFSClimateTextFusionWrapper(
+                    model=None,  # We'll need to load this properly
+                    device_str=str(test_device),
+                    fusion_dim=512,
+                    use_mock_llama=False,
+                    verbose=True,
+                )
+                print(f"   ⚠️ Note: AIFS model loading not fully implemented in standalone script")
+                print(f"   💡 For full functionality, run as pytest test")
+            except Exception as e:
+                print(f"   ⚠️ Failed to load real AIFS model: {e}")
+                print(f"   🔄 Falling back to mock model")
+                aifs_llama_model = None
+        else:
+            print(f"   ⚠️ AIFS model not found at {aifs_model_path}, using mock")
+            aifs_llama_model = None
+
+    except Exception as e:
+        print(f"   ❌ Failed to create AIFS model: {e}")
+        return
+
+    # Run the test with manually created fixtures
+    success = test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dataset_path)
 
     if success:
         print(f"\n🏆 SUCCESS: Real Llama-3-8B working on CPU!")

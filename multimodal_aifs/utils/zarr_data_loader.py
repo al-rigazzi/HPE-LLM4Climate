@@ -293,7 +293,6 @@ class ZarrClimateLoader:
             Tensor ready for AIFS model input
         """
         print("🔄 Converting to AIFS tensor format...")
-        print("🔄 Converting to AIFS tensor format...")
 
         # Get data variables
         variables = list(data.data_vars.keys())
@@ -452,16 +451,8 @@ def test_zarr_integration():
         return False
 
     try:
-        # Test with the test dataset - use environment variable or default
-        import os
-
-        zarr_size = os.environ.get("ZARR_SIZE", "large").lower()
-        size_to_path = {
-            "tiny": "test_aifs_tiny.zarr",
-            "small": "test_aifs_small.zarr",
-            "large": "test_aifs_large.zarr",
-        }
-        test_path = size_to_path.get(zarr_size, "test_aifs_large.zarr")
+        # Test with the test dataset
+        test_path = "test_aifs_large.zarr"
 
         if not Path(test_path).exists():
             print(f"❌ Test dataset not found: {test_path}")

@@ -235,8 +235,8 @@ def main():
     parser = argparse.ArgumentParser(description="Real Llama + AIFS + Zarr Integration Test")
     parser.add_argument(
         "--zarr-path",
-        default=None,
-        help="Path to Zarr dataset (uses ZARR_SIZE env var if not specified)",
+        default="test_aifs_large.zarr",
+        help="Path to Zarr dataset (default: test_aifs_large.zarr)",
     )
     parser.add_argument("--use-quantization", action="store_true", help="Use 8-bit quantization")
     parser.add_argument(
@@ -246,10 +246,12 @@ def main():
 
     args = parser.parse_args()
 
+    # Check if zarr dataset exists
     if not Path(args.zarr_path).exists():
         print(f"❌ Zarr dataset not found: {args.zarr_path}")
-        print(f"💡 Run this first to create test data:")
-        print(f'   python -c "import xarray as xr; import numpy as np; ..."')
+        print(f"💡 To create the test dataset, run:")
+        print(f"   cd /path/to/project && python multimodal_aifs/conftest.py")
+        print(f"   # Or use the ensure_test_zarr_dataset fixture")
         return
 
     # Warning about memory requirements

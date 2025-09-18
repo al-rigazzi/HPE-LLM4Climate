@@ -153,25 +153,11 @@ def llm_mock_status():
 
 @pytest.fixture(scope="session")
 def zarr_dataset_path():
-    """Get the zarr dataset path based on ZARR_SIZE environment variable."""
-    zarr_size = get_env_str("ZARR_SIZE", "large").lower()
+    """Get the zarr dataset path for testing."""
+    # Use the standard test dataset path
+    zarr_path = "test_aifs_large.zarr"
 
-    # Map size to zarr file path
-    size_to_path = {
-        "tiny": "test_aifs_tiny.zarr",
-        "small": "test_aifs_small.zarr",
-        "large": "test_aifs_large.zarr",
-    }
-
-    if zarr_size not in size_to_path:
-        raise ValueError(
-            f"Invalid ZARR_SIZE '{zarr_size}'. Must be one of: {list(size_to_path.keys())}"
-        )
-
-    zarr_path = size_to_path[zarr_size]
-
-    # Provide compatibility information
-    print(f"📁 Using ZARR_SIZE='{zarr_size}' → {zarr_path}")
+    print(f"📁 Using test Zarr dataset: {zarr_path}")
 
     return zarr_path
 
@@ -201,59 +187,155 @@ def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
             return None
 
         # Create synthetic climate data in AIFS-compatible format
+        # Use real AIFS dimensions as per copilot instructions
         time_steps = 2  # Match AIFS format
-        n_variables = 10  # Reduced for tiny test dataset
-        grid_points = 10000  # Reduced grid points for testing
+        grid_points = 542080  # Real AIFS grid points
+        n_variables = 103  # Full AIFS variables
 
         # Create coordinates matching AIFS format
         times = [datetime(2024, 1, 1) + timedelta(hours=i * 12) for i in range(time_steps)]
         variables = [
-            "temperature_2m",
-            "relative_humidity",
-            "surface_pressure",
-            "wind_speed_u",
-            "wind_speed_v",
-            "precipitation",
-            "cloud_cover",
-            "soil_moisture",
-            "snow_depth",
-            "radiation",
-        ]
+            "10v",
+            "u_850",
+            "u_250",
+            "sp",
+            "v_400",
+            "q_925",
+            "w_400",
+            "t_250",
+            "sin_latitude",
+            "t_850",
+            "z_50",
+            "u_400",
+            "insolation",
+            "v_850",
+            "100v",
+            "w_850",
+            "z_100",
+            "w_925",
+            "w_250",
+            "t_400",
+            "v_250",
+            "q_400",
+            "z_500",
+            "v_925",
+            "t_925",
+            "u_925",
+            "q_850",
+            "t_150",
+            "w_700",
+            "u_300",
+            "q_250",
+            "v_700",
+            "sdor",
+            "u_150",
+            "t_700",
+            "w_150",
+            "w_300",
+            "t_300",
+            "cos_latitude",
+            "v_300",
+            "v_150",
+            "z_200",
+            "t_50",
+            "u_50",
+            "u_700",
+            "mcc",
+            "q_700",
+            "tp",
+            "2t",
+            "q_150",
+            "z",
+            "ro",
+            "q_300",
+            "q_50",
+            "w_600",
+            "lsm",
+            "u_200",
+            "z_600",
+            "v_50",
+            "sin_longitude",
+            "10u",
+            "cos_julian_day",
+            "sf",
+            "v_200",
+            "t_200",
+            "v_600",
+            "t_600",
+            "100u",
+            "tcw",
+            "q_600",
+            "ssrd",
+            "w_200",
+            "msl",
+            "u_600",
+            "sin_julian_day",
+            "skt",
+            "z_150",
+            "hcc",
+            "lcc",
+            "v_500",
+            "z_700",
+            "t_100",
+            "z_300",
+            "q_200",
+            "w_50",
+            "u_100",
+            "sin_local_time",
+            "w_500",
+            "cp",
+            "t_500",
+            "u_500",
+            "z_925",
+            "2d",
+            "slor",
+            "z_850",
+            "v_100",
+            "z_250",
+            "w_100",
+            "cos_local_time",
+            "z_400",
+            "q_500",
+            "q_100",
+            "cos_longitude",
+        ]  # Create synthetic data with AIFS-compatible dimensions [time, grid_point]
+        # AIFS format: time=2, grid_point=10000
+        data_shape = (time_steps, grid_points)
 
-        # Create synthetic data with AIFS-compatible dimensions [batch, time, ensemble, grid, vars]
-        # AIFS format: batch=1, time=2, ensemble=1, grid=542080, vars=10
-        data = np.random.normal(0, 1, (1, time_steps, 1, grid_points, n_variables))
+        # Create individual data variables for each climate variable
+        data_vars = {}
+        for var_name in variables:
+            # Generate synthetic data for this variable
+            var_data = np.random.normal(0, 1, data_shape)
+            data_vars[var_name] = xr.DataArray(
+                var_data,
+                dims=["time", "grid_point"],
+                coords={
+                    "time": times,
+                    "grid_point": range(grid_points),
+                },
+                attrs={"units": "normalized", "description": f"Synthetic {var_name} data"},
+            )
 
-        # Create xarray dataset
-        ds = xr.Dataset(
-            {
-                "data": xr.DataArray(
-                    data,
-                    dims=["batch", "time", "ensemble", "grid_points", "variables"],
-                    coords={
-                        "batch": [0],
-                        "time": times,
-                        "ensemble": [0],
-                        "grid_points": range(grid_points),
-                        "variables": variables,
-                    },
-                    attrs={"units": "normalized", "description": "Synthetic AIFS-compatible data"},
-                )
-            }
-        )
+        # Create xarray dataset with individual variables
+        ds = xr.Dataset(data_vars)
         ds.attrs = {
             "title": "Synthetic AIFS-Compatible Dataset for Testing",
             "created": datetime.now().isoformat(),
-            "description": "Small synthetic dataset in AIFS format "
-            "[batch, time, ensemble, grid, vars]",
+            "description": f"Synthetic dataset with {len(variables)} variables in AIFS format [time, grid_point]",
             "format": "AIFS-compatible",
+            "aifs_grid_points": grid_points,
+            "aifs_variables": len(variables),
+            "aifs_timesteps": time_steps,
+            "standard_aifs_dims": f"{time_steps}x{len(variables)}x{grid_points}",
+            "note": "Data follows AIFS input format: [time, variables, grid_points]",
         }
 
         # Save to zarr
         ds.to_zarr(zarr_path, mode="w")
 
         print(f"✅ Test Zarr dataset created successfully: {zarr_path}")
-        print(f"   Dimensions: [{time_steps}, {n_variables}, {grid_points}] (AIFS format)")
+        print(f"   Dimensions: [{time_steps}, {len(variables)}, {grid_points}] (AIFS format)")
 
         return str(zarr_path)
 

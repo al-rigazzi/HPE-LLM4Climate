@@ -92,7 +92,6 @@ jobs:
         echo "USE_MOCK_LLM=true" >> $GITHUB_ENV
         echo "USE_QUANTIZATION=false" >> $GITHUB_ENV
         echo "PYTHONPATH=." >> $GITHUB_ENV
-        echo "ZARR_SIZE=large" >> $GITHUB_ENV
         # Suppress zarr warnings to clean up test output
         echo "ZARR_V3_EXPERIMENTAL_API=1" >> $GITHUB_ENV
         # Set PyTorch to use CPU for consistent testing
