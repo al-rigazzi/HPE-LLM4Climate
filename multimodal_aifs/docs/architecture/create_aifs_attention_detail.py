@@ -403,22 +403,22 @@ ax.annotate(
 # =================== SPECIFICATIONS PANEL ===================
 specs_text = """AIFS Cross-Attention Specifications:
 
-• Input Dimensions:
+Input Dimensions:
   - Climate: [B, 64, 512] → projected to [B, 64, 4096]
   - Text: [B, 128, 4096] (native Llama dimension)
 
-• Multi-Head Configuration:
+Multi-Head Configuration:
   - Heads: 32 (same as Llama 3-8B)
   - Per-head dimension: 128 (4096 ÷ 32)
   - Total parameters: ~67M for attention layers
 
-• Attention Mechanism:
+Attention Mechanism:
   - Query: from text embeddings
   - Key/Value: from projected climate embeddings
   - Temperature scaling: learnable τ ∈ [0.01, 1.0]
   - Dropout: 0.1 during training
 
-• Performance:
+Performance:
   - FLOPs: ~2.1T per forward pass
   - Memory: ~4.2GB for batch_size=2
   - Latency: ~45ms on A100 GPU"""
@@ -441,12 +441,12 @@ pdf_path = output_dir / "aifs_cross_attention_detail.pdf"
 plt.tight_layout()
 plt.savefig(str(pdf_path), dpi=300, bbox_inches="tight", facecolor="white", edgecolor="none")
 
-print("✅ AIFS Cross-Attention Detail Diagram saved as:")
+print("AIFS Cross-Attention Detail Diagram saved as:")
 print(f"    {pdf_path}")
-print("\n🔍 Diagram shows:")
-print("   • AIFS climate data processing")
-print("   • Dimension alignment (1024 → 4096)")
-print("   • Multi-head attention computation (32 heads)")
-print("   • Mathematical formulation details")
-print("   • Tensor dimension tracking")
-print("   • Performance specifications")
+print("\nDiagram shows:")
+print("   AIFS climate data processing")
+print("   Dimension alignment (1024 → 4096)")
+print("   Multi-head attention computation (32 heads)")
+print("   Mathematical formulation details")
+print("   Tensor dimension tracking")
+print("   Performance specifications")

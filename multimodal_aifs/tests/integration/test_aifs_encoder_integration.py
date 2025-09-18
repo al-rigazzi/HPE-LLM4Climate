@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_imports():
     """Test that all imports work correctly."""
-    print("🧪 Testing AIFS Encoder Utils Imports")
+    print("Testing AIFS Encoder Utils Imports")
     print("=" * 50)
 
     # Test core imports
@@ -28,7 +28,7 @@ def test_imports():
         validate_checkpoint,
     )
 
-    print("✅ Core module imports successful")
+    print("Core module imports successful")
 
     # Test package-level imports
     from multimodal_aifs import AIFSCompleteEncoder as PackageEncoder
@@ -36,23 +36,23 @@ def test_imports():
     from multimodal_aifs import load_aifs_encoder as package_load
     from multimodal_aifs import save_aifs_encoder as package_save
 
-    print("✅ Package-level imports successful")
+    print("Package-level imports successful")
 
     # Test functions
     deps_available = check_aifs_dependencies()
     default_path = get_default_checkpoint_path()
 
-    print(f"📊 AIFS dependencies available: {deps_available}")
-    print(f"📁 Default checkpoint path: {default_path}")
+    print(f"AIFS dependencies available: {deps_available}")
+    print(f"Default checkpoint path: {default_path}")
 
-    print("\n🎯 All imports and basic functions work correctly!")
+    print("\nAll imports and basic functions work correctly!")
     # Assert that imports worked (if we got here, they did)
     assert True
 
 
 def test_class_definition():
     """Test that the AIFSCompleteEncoder class is properly defined."""
-    print("\n🔧 Testing AIFSCompleteEncoder Class Definition")
+    print("\nTesting AIFSCompleteEncoder Class Definition")
     print("=" * 55)
 
     from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder
@@ -61,7 +61,7 @@ def test_class_definition():
     assert hasattr(AIFSCompleteEncoder, "__init__"), "Missing __init__ method"
     assert hasattr(AIFSCompleteEncoder, "forward"), "Missing forward method"
 
-    print("✅ AIFSCompleteEncoder class definition is correct")
+    print("AIFSCompleteEncoder class definition is correct")
     print("📋 Required methods: __init__, forward")
 
 
@@ -89,16 +89,16 @@ def test_utility_functions():
     default_path = get_default_checkpoint_path()
     deps_available = check_aifs_dependencies()
 
-    print("✅ Utility functions work correctly")
-    print(f"📁 Default path: {default_path}")
-    print(f"🔧 Dependencies: {deps_available}")
-    print(f"📐 Expected input shape: {EXPECTED_INPUT_SHAPE}")
-    print(f"📐 Expected output shape: {EXPECTED_OUTPUT_SHAPE}")
+    print("Utility functions work correctly")
+    print(f"Default path: {default_path}")
+    print(f"Dependencies: {deps_available}")
+    print(f"Expected input shape: {EXPECTED_INPUT_SHAPE}")
+    print(f"Expected output shape: {EXPECTED_OUTPUT_SHAPE}")
 
 
 def main():
     """Run all tests."""
-    print("🌍 AIFS Encoder Utils Test Suite")
+    print("AIFS Encoder Utils Test Suite")
     print("=" * 40)
 
     tests = [
@@ -114,28 +114,28 @@ def main():
             success = test_func()
             results.append((test_name, success))
         except Exception as e:
-            print(f"❌ {test_name} crashed: {e}")
+            print(f"{test_name} crashed: {e}")
             results.append((test_name, False))
 
     # Summary
     print("\n" + "=" * 50)
-    print("📊 TEST SUMMARY")
+    print("TEST SUMMARY")
     print("=" * 50)
 
     passed = 0
     for test_name, success in results:
-        status = "✅ PASS" if success else "❌ FAIL"
+        status = "PASS" if success else "FAIL"
         print(f"{status} - {test_name}")
         if success:
             passed += 1
 
-    print(f"\n🎯 Results: {passed}/{len(results)} tests passed")
+    print(f"\nResults: {passed}/{len(results)} tests passed")
 
     if passed == len(results):
-        print("🎉 All tests passed! AIFS Encoder Utils is ready to use.")
+        print("All tests passed! AIFS Encoder Utils is ready to use.")
         return 0
     else:
-        print("⚠️  Some tests failed. Please check the output above.")
+        print("Some tests failed. Please check the output above.")
         return 1
 
 

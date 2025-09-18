@@ -40,7 +40,7 @@ try:
     GEOPY_AVAILABLE = True
 except ImportError:
     GEOPY_AVAILABLE = False
-    print("⚠️  GeoPy not available. Install with: pip install geopy")
+    print("GeoPy not available. Install with: pip install geopy")
 
 # Memory optimization
 torch.set_num_threads(1)
@@ -55,8 +55,8 @@ def check_memory_usage():
     return process.memory_info().rss / 1024**3
 
 
-print("🌍 Spatial Comparative Climate Analysis Demo")
-print("📊 Demonstrating multi-location climate comparison")
+print("Spatial Comparative Climate Analysis Demo")
+print("Demonstrating multi-location climate comparison")
 
 
 class DynamicLocationResolver:
@@ -69,9 +69,9 @@ class DynamicLocationResolver:
 
         if self.use_geopy:
             self.geocoder = Nominatim(user_agent="climate-analysis-demo", timeout=self.timeout)
-            print("🌍 Using GeoPy/Nominatim for dynamic location resolution")
+            print("Using GeoPy/Nominatim for dynamic location resolution")
         else:
-            print("⚠️  Using fallback location resolution (limited coverage)")
+            print("Using fallback location resolution (limited coverage)")
             # Minimal fallback database for demo when GeoPy not available
             self.fallback_db = {
                 "arizona": {
@@ -185,9 +185,9 @@ class DynamicLocationResolver:
                     if location and location.address:
                         address = f"{location.address} ({lat:.2f}°, {lon:.2f}°)"
                         location_type = "resolved_coordinates"
-                        print(f"🎯 Reverse geocoded {coord_string} → {location.address}")
+                        print(f"Reverse geocoded {coord_string} → {location.address}")
                 except Exception as e:
-                    print(f"⚠️  Reverse geocoding failed for {coord_string}: {e}")
+                    print(f"Reverse geocoding failed for {coord_string}: {e}")
 
             result = {
                 "name": coord_string,
@@ -203,22 +203,22 @@ class DynamicLocationResolver:
             cache_key = coord_string.lower().strip()
             self._cache[cache_key] = result
 
-            print(f"✅ Resolved coordinates: {address}")
+            print(f"Resolved coordinates: {address}")
             print(f"   📍 Center: {lat:.2f}°, {lon:.2f}°")
             print(
-                f"   📏 Bounds: {bounds['lat_min']:.1f} to {bounds['lat_max']:.1f}°N, {bounds['lon_min']:.1f} to {bounds['lon_max']:.1f}°E"
+                f"   Bounds: {bounds['lat_min']:.1f} to {bounds['lat_max']:.1f}°N, {bounds['lon_min']:.1f} to {bounds['lon_max']:.1f}°E"
             )
 
             return result
 
         except ValueError:
-            print(f"❌ Invalid coordinate format: {coord_string}")
+            print(f"Invalid coordinate format: {coord_string}")
             return None
 
     def _resolve_with_geopy(self, location_name: str) -> dict | None:
         """Resolve location using GeoPy/Nominatim with multiple candidates"""
         try:
-            print(f"🔍 Resolving '{location_name}' with Nominatim (multiple candidates)...")
+            print(f"Resolving '{location_name}' with Nominatim (multiple candidates)...")
 
             # Query Nominatim for multiple results
             locations = self.geocoder.geocode(
@@ -229,16 +229,16 @@ class DynamicLocationResolver:
             )
 
             if not locations:
-                print(f"❌ Location '{location_name}' not found")
+                print(f"Location '{location_name}' not found")
                 return None
 
-            print(f"🎯 Found {len(locations)} candidates for '{location_name}'")
+            print(f"Found {len(locations)} candidates for '{location_name}'")
 
             # Choose the best candidate
             best_location = self._select_best_candidate(location_name, locations)
 
             if not best_location:
-                print(f"❌ No suitable candidate found for '{location_name}'")
+                print(f"No suitable candidate found for '{location_name}'")
                 return None
 
             # Get bounding box - try to get from location first
@@ -279,20 +279,20 @@ class DynamicLocationResolver:
             cache_key = location_name.lower().strip()
             self._cache[cache_key] = result
 
-            print(f"✅ Selected best match: {best_location.address}")
+            print(f"Selected best match: {best_location.address}")
             print(f"   📍 Center: {best_location.latitude:.2f}°, {best_location.longitude:.2f}°")
             print(
-                f"   📏 Bounds: {bounds['lat_min']:.1f} to {bounds['lat_max']:.1f}°N, {bounds['lon_min']:.1f} to {bounds['lon_max']:.1f}°E"
+                f"   Bounds: {bounds['lat_min']:.1f} to {bounds['lat_max']:.1f}°N, {bounds['lon_min']:.1f} to {bounds['lon_max']:.1f}°E"
             )
-            print(f"   🎯 Selected from {len(locations)} candidates")
+            print(f"   Selected from {len(locations)} candidates")
 
             return result
 
         except (GeocoderTimedOut, GeocoderServiceError) as e:
-            print(f"⚠️  Geocoder error for '{location_name}': {e}")
+            print(f"Geocoder error for '{location_name}': {e}")
             return None
         except Exception as e:
-            print(f"❌ Error resolving '{location_name}': {e}")
+            print(f"Error resolving '{location_name}': {e}")
             return None
 
     def _select_best_candidate(self, query: str, candidates: list) -> Any | None:
@@ -399,10 +399,10 @@ class DynamicLocationResolver:
             result["name"] = location_name
             result["confidence"] = 0.8  # Lower confidence for fallback
             self._cache[cache_key] = result
-            print(f"✅ Resolved '{location_name}' using fallback database")
+            print(f"Resolved '{location_name}' using fallback database")
             return result
         else:
-            print(f"❌ Location '{location_name}' not found in fallback database")
+            print(f"Location '{location_name}' not found in fallback database")
             return None
 
     def _determine_location_type(self, raw_data: dict) -> str:
@@ -540,7 +540,7 @@ class MultiLocationExtractor:
                     if -90 <= lat <= 90 and -180 <= lon <= 180:
                         coord_string = f"{lat:.2f}°,{lon:.2f}°"
                         coordinates.append(coord_string)
-                        print(f"🎯 Extracted coordinates: {coord_string}")
+                        print(f"Extracted coordinates: {coord_string}")
                 except ValueError:
                     continue
 
@@ -576,7 +576,7 @@ class MultiLocationExtractor:
 
                 if loc1 and loc2:
                     pairs.append((loc1, loc2))
-                    print(f"🔍 Extracted comparative pair: '{loc1}' vs '{loc2}'")
+                    print(f"Extracted comparative pair: '{loc1}' vs '{loc2}'")
 
         return pairs
 
@@ -808,8 +808,8 @@ class SpatialComparativeProcessor(torch.nn.Module):
             torch.nn.Linear(text_dim // 2, 3),  # location1_better, location2_better, similar
         )
 
-        print(f"✅ Spatial comparative processor created!")
-        print(f"📊 Grid shape: {grid_shape}")
+        print(f"Spatial comparative processor created!")
+        print(f"Grid shape: {grid_shape}")
         print(f"🗺️  Using dynamic location resolution with GeoPy: {GEOPY_AVAILABLE}")
 
     def process_spatial_query(self, query: str, climate_data: torch.Tensor) -> dict:
@@ -827,16 +827,16 @@ class SpatialComparativeProcessor(torch.nn.Module):
         comparative_pairs = self.location_extractor.extract_comparative_locations(query)
         all_locations = self.location_extractor.extract_locations(query)
 
-        print(f"🔍 Query: '{query}'")
+        print(f"Query: '{query}'")
         print(f"📍 Found locations: {all_locations}")
-        print(f"🔄 Comparative pairs: {comparative_pairs}")
+        print(f"Comparative pairs: {comparative_pairs}")
 
         if not comparative_pairs and len(all_locations) >= 2:
             # Create pair from first two locations found
             comparative_pairs = [(all_locations[0], all_locations[1])]
 
         if not comparative_pairs:
-            print("⚠️  No comparative locations found")
+            print("No comparative locations found")
             return self._process_global_query(query, climate_data)
 
         # Process first comparative pair
@@ -845,7 +845,7 @@ class SpatialComparativeProcessor(torch.nn.Module):
         loc2_info = self.location_extractor.resolve_location(loc2_name)
 
         if not loc1_info or not loc2_info:
-            print(f"❌ Could not resolve locations: {loc1_name}, {loc2_name}")
+            print(f"Could not resolve locations: {loc1_name}, {loc2_name}")
             return self._process_global_query(query, climate_data)
 
         # Add names to location info
@@ -978,16 +978,16 @@ def create_demo_climate_data(batch_size: int = 1) -> torch.Tensor:
 def demonstrate_spatial_queries():
     """Demonstrate various spatial comparative queries"""
 
-    print("\n🚀 Starting Spatial Comparative Analysis Demo...")
-    print(f"💾 Starting memory: {check_memory_usage():.1f}GB")
+    print("\nStarting Spatial Comparative Analysis Demo...")
+    print(f"Starting memory: {check_memory_usage():.1f}GB")
 
     # Create processor
     processor = SpatialComparativeProcessor()
-    print(f"💾 After model: {check_memory_usage():.1f}GB")
+    print(f"After model: {check_memory_usage():.1f}GB")
 
     # Create demo climate data
     climate_data = create_demo_climate_data(batch_size=1)
-    print(f"📊 Climate data shape: {climate_data.shape}")
+    print(f"Climate data shape: {climate_data.shape}")
 
     # Test queries
     test_queries = [
@@ -999,7 +999,7 @@ def demonstrate_spatial_queries():
         "will Malmo be hotter than 47.29°, -120.21°",
     ]
 
-    print(f"\n🧪 Testing {len(test_queries)} spatial queries...\n")
+    print(f"\nTesting {len(test_queries)} spatial queries...\n")
 
     for i, query in enumerate(test_queries, 1):
         print(f"{'='*60}")
@@ -1011,7 +1011,7 @@ def demonstrate_spatial_queries():
         elapsed = time.time() - start_time
 
         if results.get("type") == "global":
-            print(f"⚠️  {results['message']}")
+            print(f"{results['message']}")
         else:
             # Display comparative analysis results
             loc1 = results["location1"]
@@ -1019,7 +1019,7 @@ def demonstrate_spatial_queries():
             probs = results["comparison_probs"][0]
 
             print(f"📍 Comparing: {loc1.title()} vs {loc2.title()}")
-            print(f"🎯 Analysis Results:")
+            print(f"Analysis Results:")
             print(f"   {loc1.title()} better: {probs[0]:.3f} ({probs[0]*100:.1f}%)")
             print(f"   {loc2.title()} better: {probs[1]:.3f} ({probs[1]*100:.1f}%)")
             print(f"   Similar:           {probs[2]:.3f} ({probs[2]*100:.1f}%)")
@@ -1048,24 +1048,24 @@ def demonstrate_spatial_queries():
         print(f"⏱️  Processing time: {elapsed:.3f}s")
         print()
 
-    print(f"💾 Final memory usage: {check_memory_usage():.1f}GB")
+    print(f"Final memory usage: {check_memory_usage():.1f}GB")
 
-    print(f"\n🎉 Spatial Comparative Analysis Demo Completed!")
+    print(f"\nSpatial Comparative Analysis Demo Completed!")
 
     print(f"\n📋 Key Capabilities Demonstrated:")
-    print(f"   ✅ Multi-location extraction from natural language")
-    print(f"   ✅ Spatial mask generation for individual locations")
-    print(f"   ✅ Union mask creation for comparative analysis")
-    print(f"   ✅ Location-aware climate feature extraction")
-    print(f"   ✅ Comparative analysis between regions")
-    print(f"   ✅ Handling of missing/unknown locations")
+    print(f"   Multi-location extraction from natural language")
+    print(f"   Spatial mask generation for individual locations")
+    print(f"   Union mask creation for comparative analysis")
+    print(f"   Location-aware climate feature extraction")
+    print(f"   Comparative analysis between regions")
+    print(f"   Handling of missing/unknown locations")
 
-    print(f"\n🔧 Technical Implementation:")
-    print(f"   • Extended geographic database with Alaska")
-    print(f"   • Multi-location query parsing")
-    print(f"   • Spatial mask union operations")
-    print(f"   • Location-aware attention mechanisms")
-    print(f"   • Comparative classification head")
+    print(f"\nTechnical Implementation:")
+    print(f"   Extended geographic database with Alaska")
+    print(f"   Multi-location query parsing")
+    print(f"   Spatial mask union operations")
+    print(f"   Location-aware attention mechanisms")
+    print(f"   Comparative classification head")
 
 
 if __name__ == "__main__":

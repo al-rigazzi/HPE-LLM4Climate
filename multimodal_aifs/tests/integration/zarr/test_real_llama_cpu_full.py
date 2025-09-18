@@ -36,18 +36,18 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dat
         from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
         from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
-        print("✅ Modules imported")
+        print("Modules imported")
     except ImportError as e:
-        print(f"❌ Import error: {e}")
+        print(f"Import error: {e}")
         pytest.fail(f"Import error: {e}")
 
     # Check if we should skip this test based on mock status
     if llm_mock_status["should_skip_real_llm_tests"]:
-        print("   ⚠️  USE_MOCK_LLM is set to true, skipping real Llama test")
+        print("   USE_MOCK_LLM is set to true, skipping real Llama test")
         pytest.skip("USE_MOCK_LLM is enabled, skipping real Llama test")
 
     # Step 1: Load minimal climate data
-    print(f"\n📊 Step 1: Loading Climate Data")
+    print(f"\nStep 1: Loading Climate Data")
     print("-" * 30)
 
     try:
@@ -61,10 +61,10 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dat
         # Convert to very small tensor
         climate_tensor = loader.to_aifs_tensor(climate_data, batch_size=1, normalize=True)
 
-        print(f"✅ Climate tensor: {climate_tensor.shape}")
+        print(f"Climate tensor: {climate_tensor.shape}")
 
     except Exception as e:
-        print(f"❌ Failed to load climate data: {e}")
+        print(f"Failed to load climate data: {e}")
         pytest.fail(f"Failed to load climate data: {e}")
 
     # Step 2: Use the pre-configured fusion model
@@ -73,37 +73,37 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dat
 
     # Check if model was created successfully
     if aifs_llama_model is None:
-        print("   ❌ No AIFS model available")
+        print("   No AIFS model available")
         pytest.skip("No AIFS model available for testing")
 
     # Use the pre-configured fusion model from fixture
     model = aifs_llama_model
-    print(f"   ✅ Using fusion model from fixture")
-    print(f"   📏 Hidden size: {model.llama_hidden_size}")
+    print(f"   Using fusion model from fixture")
+    print(f"   Hidden size: {model.llama_hidden_size}")
 
     # Check if we actually got real Llama
     is_real_llama = hasattr(model.llama_model, "config") and model.llama_tokenizer is not None
-    print(f"   🔍 Real Llama status: {is_real_llama}")
+    print(f"   Real Llama status: {is_real_llama}")
 
     if not is_real_llama:
-        print("   ⚠️  Fallback to mock model occurred")
-        print("   💡 Set USE_MOCK_LLM=false to test real Llama")
+        print("   Fallback to mock model occurred")
+        print("   Set USE_MOCK_LLM=false to test real Llama")
         pytest.skip("Real Llama model not available, test skipped")
 
     # Step 3: Test AIFS tokenization
-    print(f"\n🌍 Step 3: AIFS Climate Tokenization")
+    print(f"\nStep 3: AIFS Climate Tokenization")
     print("-" * 30)
 
     try:
         climate_tokens = model.tokenize_climate_data(climate_tensor)
-        print(f"✅ Climate tokens: {climate_tokens.shape}")
+        print(f"Climate tokens: {climate_tokens.shape}")
 
     except Exception as e:
-        print(f"❌ Climate tokenization failed: {e}")
+        print(f"Climate tokenization failed: {e}")
         pytest.fail(f"Climate tokenization failed: {e}")
 
     # Step 4: Test real Llama text processing
-    print(f"\n💬 Step 4: Real Llama Text Processing")
+    print(f"\nStep 4: Real Llama Text Processing")
     print("-" * 30)
 
     try:
@@ -113,15 +113,15 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dat
         print("   ⏳ Tokenizing text with real Llama tokenizer...")
         text_tokens = model.tokenize_text(text_inputs)
 
-        print(f"✅ Text tokenized: {text_tokens['input_ids'].shape}")
+        print(f"Text tokenized: {text_tokens['input_ids'].shape}")
 
         # Decode to verify real tokenizer
         sample_ids = text_tokens["input_ids"][0][:5].tolist()
         decoded = model.llama_tokenizer.decode(sample_ids)
-        print(f"   🔍 Sample tokens: '{decoded}'")
+        print(f"   Sample tokens: '{decoded}'")
 
     except Exception as e:
-        print(f"❌ Text processing failed: {e}")
+        print(f"Text processing failed: {e}")
         pytest.fail(f"Text processing failed: {e}")
 
     # Step 5: Test real multimodal processing (lightweight)
@@ -140,21 +140,21 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dat
             )
 
         elapsed = time.time() - start_time
-        print(f"✅ Real Llama processing complete in {elapsed:.1f}s")
-        print(f"   🎯 Output shape: {result['fused_output'].shape}")
-        print(f"   💬 Generated text: {result['generated_text']}")
+        print(f"Real Llama processing complete in {elapsed:.1f}s")
+        print(f"   Output shape: {result['fused_output'].shape}")
+        print(f"   Generated text: {result['generated_text']}")
 
         # Verify we're using real embeddings
         output_range = result["fused_output"].abs().max().item()
-        print(f"   🔍 Output range: {output_range:.3f}")
+        print(f"   Output range: {output_range:.3f}")
 
     except Exception as e:
-        print(f"❌ Multimodal processing failed: {e}")
+        print(f"Multimodal processing failed: {e}")
         print(f"   This is expected on systems with limited RAM")
         pytest.fail(f"Multimodal processing failed: {e}")
 
     # Step 6: Memory usage analysis
-    print(f"\n📊 Step 6: Memory Analysis")
+    print(f"\nStep 6: Memory Analysis")
     print("-" * 30)
 
     try:
@@ -164,17 +164,17 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dat
         llama_params = total_params - aifs_params
 
         print(f"   🔢 Total parameters: {total_params:,}")
-        print(f"   🌍 AIFS parameters: {aifs_params:,}")
+        print(f"   AIFS parameters: {aifs_params:,}")
         print(f"   🦙 Llama parameters: {llama_params:,}")
-        print(f"   💾 Estimated memory: {total_params * 4 / 1e9:.1f} GB")
+        print(f"   Estimated memory: {total_params * 4 / 1e9:.1f} GB")
 
         # Check model precision
         sample_param = next(model.llama_model.parameters())
-        print(f"   🎯 Model dtype: {sample_param.dtype}")
+        print(f"   Model dtype: {sample_param.dtype}")
         print(f"   🖥️  Device: {sample_param.device}")
 
     except Exception as e:
-        print(f"⚠️  Memory analysis incomplete: {e}")
+        print(f"Memory analysis incomplete: {e}")
 
     # Cleanup
     print(f"\n🧹 Cleanup")
@@ -182,43 +182,43 @@ def test_real_llama_cpu(llm_mock_status, aifs_llama_model, test_device, zarr_dat
     try:
         del model
         gc.collect()
-        print("✅ Memory cleaned up")
+        print("Memory cleaned up")
     except:
         pass
 
-    print(f"\n🎉 Real Llama CPU Test Complete!")
-    print(f"✅ Successfully demonstrated:")
-    print(f"   📊 Zarr → AIFS tokenization")
+    print(f"\nReal Llama CPU Test Complete!")
+    print(f"Successfully demonstrated:")
+    print(f"   Zarr → AIFS tokenization")
     print(f"   🦙 Real Meta-Llama-3-8B loading")
-    print(f"   💬 Real Llama text processing")
+    print(f"   Real Llama text processing")
     print(f"   🔗 Multimodal fusion")
-    print(f"   💾 CPU execution (full precision)")
+    print(f"   CPU execution (full precision)")
     # Test passes by reaching this point without failures
 
 
 def test_memory_requirements():
     """Test what happens with memory constraints."""
-    print(f"\n🧪 Memory Requirements Test")
+    print(f"\nMemory Requirements Test")
     print("-" * 30)
 
     try:
         import psutil
 
         mem = psutil.virtual_memory()
-        print(f"   💾 Total RAM: {mem.total / 1e9:.1f} GB")
-        print(f"   📊 Available: {mem.available / 1e9:.1f} GB")
-        print(f"   📈 Used: {mem.percent:.1f}%")
+        print(f"   Total RAM: {mem.total / 1e9:.1f} GB")
+        print(f"   Available: {mem.available / 1e9:.1f} GB")
+        print(f"   Used: {mem.percent:.1f}%")
 
         # Estimate if Llama will fit
         estimated_need = 16  # GB
         if mem.available / 1e9 >= estimated_need:
-            print(f"   ✅ Should be able to load Llama-3-8B")
+            print(f"   Should be able to load Llama-3-8B")
         else:
-            print(f"   ⚠️  May struggle to load Llama-3-8B")
-            print(f"   💡 Recommended: Close other applications")
+            print(f"   May struggle to load Llama-3-8B")
+            print(f"   Recommended: Close other applications")
 
     except ImportError:
-        print(f"   ⚠️  Cannot check memory (psutil not installed)")
+        print(f"   Cannot check memory (psutil not installed)")
 
 
 def main():
@@ -229,18 +229,18 @@ def main():
 
     # Check prerequisites
     if not Path(zarr_file).exists():
-        print(f"❌ Test dataset not found: {zarr_file}")
+        print(f"Test dataset not found: {zarr_file}")
         return
 
     # Memory check
     test_memory_requirements()
 
     # Warning about loading time
-    print(f"\n⚠️  Important Notes:")
-    print(f"   • First run will download ~16GB model")
-    print(f"   • Loading may take 2-5 minutes")
-    print(f"   • Processing will be slow on CPU")
-    print(f"   • Requires 16+ GB RAM")
+    print(f"\nImportant Notes:")
+    print(f"   First run will download ~16GB model")
+    print(f"   Loading may take 2-5 minutes")
+    print(f"   Processing will be slow on CPU")
+    print(f"   Requires 16+ GB RAM")
 
     response = input(f"\n   Continue with real Llama test? (y/N): ")
     if response.lower() != "y":
@@ -248,7 +248,7 @@ def main():
         return
 
     # Create fixtures manually for standalone execution
-    print(f"\n🔧 Setting up test fixtures...")
+    print(f"\nSetting up test fixtures...")
 
     # Create test device
     if torch.cuda.is_available():
@@ -271,12 +271,12 @@ def main():
 
     # Create zarr dataset path
     zarr_dataset_path = zarr_file
-    print(f"   📁 Zarr path: {zarr_dataset_path}")
+    print(f"   Zarr path: {zarr_dataset_path}")
 
     # Check if we should skip based on mock status
     if llm_mock_status["should_skip_real_llm_tests"]:
-        print("   ⚠️  USE_MOCK_LLM is set to true, skipping real Llama test")
-        print("   💡 Set USE_MOCK_LLM=false to run real Llama test")
+        print("   USE_MOCK_LLM is set to true, skipping real Llama test")
+        print("   Set USE_MOCK_LLM=false to run real Llama test")
         return
 
     # Create AIFS model fixture manually
@@ -302,18 +302,18 @@ def main():
                     use_mock_llama=False,
                     verbose=True,
                 )
-                print(f"   ⚠️ Note: AIFS model loading not fully implemented in standalone script")
-                print(f"   💡 For full functionality, run as pytest test")
+                print(f"   Note: AIFS model loading not fully implemented in standalone script")
+                print(f"   For full functionality, run as pytest test")
             except Exception as e:
-                print(f"   ⚠️ Failed to load real AIFS model: {e}")
-                print(f"   🔄 Falling back to mock model")
+                print(f"   Failed to load real AIFS model: {e}")
+                print(f"   Falling back to mock model")
                 aifs_llama_model = None
         else:
-            print(f"   ⚠️ AIFS model not found at {aifs_model_path}, using mock")
+            print(f"   AIFS model not found at {aifs_model_path}, using mock")
             aifs_llama_model = None
 
     except Exception as e:
-        print(f"   ❌ Failed to create AIFS model: {e}")
+        print(f"   Failed to create AIFS model: {e}")
         return
 
     # Run the test with manually created fixtures
@@ -321,10 +321,10 @@ def main():
 
     if success:
         print(f"\n🏆 SUCCESS: Real Llama-3-8B working on CPU!")
-        print(f"🎯 Your system can run the full AIFS + Llama pipeline")
+        print(f"Your system can run the full AIFS + Llama pipeline")
     else:
         print(f"\n💥 FAILED: Real Llama couldn't run on this system")
-        print(f"💡 Consider using the mock version for development")
+        print(f"Consider using the mock version for development")
 
 
 if __name__ == "__main__":

@@ -31,7 +31,7 @@ def clear_memory():
 
 
 print("🦙 FINAL LLAMA-3-8B CLIMATE FUSION - SUCCESS VERSION")
-print("🎯 Using proven architecture from our successful large model tests")
+print("Using proven architecture from our successful large model tests")
 
 
 class FinalLlama3Fusion(torch.nn.Module):
@@ -90,10 +90,10 @@ class FinalLlama3Fusion(torch.nn.Module):
         total_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
 
-        print(f"✅ Llama-3-8B fusion created!")
-        print(f"📊 Total: {total_params:,} params")
-        print(f"📊 Trainable: {trainable_params:,} params")
-        print(f"📊 Frozen: {((total_params-trainable_params)/total_params*100):.1f}%")
+        print(f"Llama-3-8B fusion created!")
+        print(f"Total: {total_params:,} params")
+        print(f"Trainable: {trainable_params:,} params")
+        print(f"Frozen: {((total_params-trainable_params)/total_params*100):.1f}%")
 
     def forward(self, climate_data, input_ids):
         batch_size, seq_len = input_ids.shape
@@ -126,16 +126,16 @@ class FinalLlama3Fusion(torch.nn.Module):
 
 
 def main():
-    print(f"\n🚀 Starting FINAL Llama-3-8B training...")
+    print(f"\nStarting FINAL Llama-3-8B training...")
 
     memory_start = check_memory_usage()
-    print(f"💾 Start: {memory_start:.1f}GB")
+    print(f"Start: {memory_start:.1f}GB")
 
     # Create model
     model = FinalLlama3Fusion()
 
     memory_model = check_memory_usage()
-    print(f"💾 After model: {memory_model:.1f}GB (+{memory_model-memory_start:.1f}GB)")
+    print(f"After model: {memory_model:.1f}GB (+{memory_model-memory_start:.1f}GB)")
 
     # Test data
     climate_data = torch.randn(1, 4, 20, 16, 16)  # [batch, time, channels, H, W]
@@ -150,21 +150,21 @@ def main():
     input_ids = encoding["input_ids"]
     labels = input_ids.clone()
 
-    print(f"📊 Data shapes:")
+    print(f"Data shapes:")
     print(f"  Climate: {climate_data.shape}")
     print(f"  Text: {input_ids.shape}")
 
     # Test forward pass
-    print(f"\n🧪 Testing forward pass...")
+    print(f"\nTesting forward pass...")
     model.eval()
 
     with torch.no_grad():
         outputs = model(climate_data, input_ids)
-        print(f"✅ Forward pass successful!")
-        print(f"📊 Output shape: {outputs.logits.shape}")
+        print(f"Forward pass successful!")
+        print(f"Output shape: {outputs.logits.shape}")
 
     memory_forward = check_memory_usage()
-    print(f"💾 After forward: {memory_forward:.1f}GB (+{memory_forward-memory_model:.1f}GB)")
+    print(f"After forward: {memory_forward:.1f}GB (+{memory_forward-memory_model:.1f}GB)")
 
     # Test training
     print(f"\n🏋️ Testing training step...")
@@ -181,21 +181,21 @@ def main():
         outputs.logits.view(-1, outputs.logits.size(-1)), labels.view(-1)
     )
 
-    print(f"📊 Loss: {loss.item():.4f}")
+    print(f"Loss: {loss.item():.4f}")
 
     loss.backward()
 
     grad_norm = torch.nn.utils.clip_grad_norm_(trainable_params, max_norm=1.0)
-    print(f"📊 Grad norm: {grad_norm:.4f}")
+    print(f"Grad norm: {grad_norm:.4f}")
 
     optimizer.step()
     optimizer.zero_grad()
 
     memory_train = check_memory_usage()
-    print(f"💾 After training: {memory_train:.1f}GB (+{memory_train-memory_forward:.1f}GB)")
+    print(f"After training: {memory_train:.1f}GB (+{memory_train-memory_forward:.1f}GB)")
 
     # Multiple training steps
-    print(f"\n🔥 Running multiple training steps...")
+    print(f"\nRunning multiple training steps...")
 
     for step in range(5):
         step_start = time.time()
@@ -225,16 +225,16 @@ def main():
     final_memory = check_memory_usage()
     memory_efficiency = (final_memory / 36.0) * 100
 
-    print(f"\n🎉 LLAMA-3-8B TRAINING SUCCESS!")
-    print(f"💾 Final memory: {final_memory:.1f}GB / 36.0GB")
-    print(f"📊 Memory efficiency: {memory_efficiency:.1f}% of system RAM")
+    print(f"\nLLAMA-3-8B TRAINING SUCCESS!")
+    print(f"Final memory: {final_memory:.1f}GB / 36.0GB")
+    print(f"Memory efficiency: {memory_efficiency:.1f}% of system RAM")
     print(f"🏆 Successfully trained 8B parameter language model with climate fusion!")
 
     # Verify memory usage is reasonable
     if final_memory < 32:  # Keep 4GB buffer
-        print(f"✅ Memory usage is SAFE - plenty of room for larger batches!")
+        print(f"Memory usage is SAFE - plenty of room for larger batches!")
     else:
-        print(f"⚠️ Memory usage is high but manageable")
+        print(f"Memory usage is high but manageable")
 
     # Save the model
     save_path = "LLAMA3_8B_CLIMATE_FUSION_SUCCESS.pt"
@@ -255,7 +255,7 @@ def main():
         save_path,
     )
 
-    print(f"💾 SUCCESS MODEL SAVED: {save_path}")
+    print(f"SUCCESS MODEL SAVED: {save_path}")
 
     return True
 
@@ -263,8 +263,8 @@ def main():
 if __name__ == "__main__":
     SUCCESS = main()
     if SUCCESS:
-        print(f"\n🚀 MISSION ACCOMPLISHED!")
+        print(f"\nMISSION ACCOMPLISHED!")
         print(f"🦙 Llama-3-8B + Climate fusion working perfectly!")
-        print(f"📊 Ready for production deployment!")
+        print(f"Ready for production deployment!")
     else:
-        print(f"\n❌ Something went wrong")
+        print(f"\nSomething went wrong")

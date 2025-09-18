@@ -19,10 +19,12 @@ import torch
 from torch import nn
 
 try:
+    # AIFS dependencies check - these imports verify AIFS availability
     import einops
     from anemoi.models.distributed.shapes import get_shape_shards
 
-    AIFS_AVAILABLE = True
+    # Verify dependencies are available
+    AIFS_AVAILABLE = bool(einops and get_shape_shards)
 except ImportError:
     AIFS_AVAILABLE = False
 
@@ -57,14 +59,10 @@ class AIFSCompleteEncoder(nn.Module):
         self.output_projection = nn.Linear(115, 218)
 
         if self.verbose:
-            print(f"✅ Using complete AIFS model: {type(self.aifs_interface)}")
-            print(
-                f"📊 Total parameters: {sum(p.numel() for p in self.aifs_interface.parameters()):,}"
-            )
-            print(f"🔧 Inner model type: {type(self.aifs_model)}")
-            print(f"🔍 Has encoder: {hasattr(self.aifs_model, 'encoder')}")
-            print(f"🔍 Has trainable_data: {hasattr(self.aifs_model, 'trainable_data')}")
-            print(f"🔧 Added projection layer: 115 -> 218 features")
+            print(f"Inner model type: {type(self.aifs_model)}")
+            print(f"Has encoder: {hasattr(self.aifs_model, 'encoder')}")
+            print(f"Has trainable_data: {hasattr(self.aifs_model, 'trainable_data')}")
+            print("Added projection layer: 115 -> 218 features")
 
     def forward(self, x):
         """
@@ -77,7 +75,7 @@ class AIFSCompleteEncoder(nn.Module):
             Encoder embeddings from the AIFS model (NOT final predictions)
         """
         if self.verbose:
-            print(f"🔄 AIFS Encoder input shape: {x.shape}")
+            print(f"AIFS Encoder input shape: {x.shape}")
 
         if not AIFS_AVAILABLE:
             raise RuntimeError(
@@ -85,7 +83,7 @@ class AIFSCompleteEncoder(nn.Module):
             )
 
         # Check input dimensions
-        batch_size, _, _, grid_size, _ = x.shape
+        _, _, _, grid_size, _ = x.shape
         expected_grid_size = self.aifs_model.latlons_data.shape[0]  # 542080 for AIFS-Single-1.0
 
         if grid_size != expected_grid_size:
@@ -105,11 +103,7 @@ class AIFSCompleteEncoder(nn.Module):
                 else:
                     data_embeddings = full_output
             except Exception as e:
-                if self.verbose:
-                    print(f"⚠️ Direct call failed: {e}, trying alternative approach")
-                # Fallback: create mock embeddings with expected shape
-                batch_size = x.shape[0]
-                data_embeddings = torch.randn(542080, 115, device=x.device)
+                raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
 
             # Apply projection to transform to expected 218 features
             if data_embeddings.shape[-1] != 218:
@@ -118,17 +112,20 @@ class AIFSCompleteEncoder(nn.Module):
                 projected_data_embeddings = data_embeddings
 
         if self.verbose:
-            print("✅ AIFS encoder forward completed")
-            print(f"📐 Raw encoder output shape: {data_embeddings.shape}")
-            print(f"📐 Projected output shape: {projected_data_embeddings.shape}")
+            print("AIFS encoder forward completed")
+            print(f"Raw encoder output shape: {data_embeddings.shape}")
+            print(f"Projected output shape: {projected_data_embeddings.shape}")
             print(
-                f"📊 Raw data embeddings range: [{data_embeddings.min():.4f}, {data_embeddings.max():.4f}]"
+                f"Raw data embeddings range: "
+                f"[{data_embeddings.min():.4f}, {data_embeddings.max():.4f}]"
             )
             print(
-                f"📊 Projected data embeddings range: [{projected_data_embeddings.min():.4f}, {projected_data_embeddings.max():.4f}]"
+                f"Projected data embeddings range: "
+                f"[{projected_data_embeddings.min():.4f}, {projected_data_embeddings.max():.4f}]"
             )
 
-        # Return the projected encoder embeddings (data embeddings represent the main climate features)
+        # Return the projected encoder embeddings
+        # (data embeddings represent the main climate features)
         return projected_data_embeddings
 
 
@@ -153,7 +150,7 @@ def save_aifs_encoder(
         Path to the saved checkpoint file
     """
     if verbose:
-        print("💾 SAVING AIFSCompleteEncoder CHECKPOINT")
+        print("SAVING AIFSCompleteEncoder CHECKPOINT")
         print("=" * 50)
 
     # Create directory for encoder checkpoints
@@ -177,16 +174,16 @@ def save_aifs_encoder(
         torch.save(checkpoint, checkpoint_path)
 
         if verbose:
-            print("✅ AIFSCompleteEncoder checkpoint saved!")
-            print(f"📁 Path: {checkpoint_path}")
-            print(f"📊 Size: {os.path.getsize(checkpoint_path) / 1024 / 1024:.2f} MB")
-            print(f"🔧 Parameters: {checkpoint['total_parameters']:,}")
-            print(f"📐 Expected output shape: {checkpoint['output_shape_example']}")
+            print("AIFSCompleteEncoder checkpoint saved!")
+            print(f"Path: {checkpoint_path}")
+            print(f"Size: {os.path.getsize(checkpoint_path) / 1024 / 1024:.2f} MB")
+            print(f"Parameters: {checkpoint['total_parameters']:,}")
+            print(f"Expected output shape: {checkpoint['output_shape_example']}")
 
         return checkpoint_path
 
     except Exception as e:
-        print(f"❌ Failed to save checkpoint: {e}")
+        print(f"Failed to save checkpoint: {e}")
         raise
 
 
@@ -205,7 +202,7 @@ def load_aifs_encoder(
         Loaded AIFSCompleteEncoder instance
     """
     if verbose:
-        print(f"🔄 Loading AIFSCompleteEncoder from: {checkpoint_path}")
+        print(f"Loading AIFSCompleteEncoder from: {checkpoint_path}")
 
     # Load checkpoint
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
@@ -217,9 +214,9 @@ def load_aifs_encoder(
     encoder.load_state_dict(checkpoint["model_state_dict"])
 
     if verbose:
-        print("✅ AIFSCompleteEncoder loaded successfully!")
-        print(f"📊 Parameters: {checkpoint['total_parameters']:,}")
-        print(f"📐 Expected output: {checkpoint['output_shape_example']}")
+        print("AIFSCompleteEncoder loaded successfully!")
+        print(f"Parameters: {checkpoint['total_parameters']:,}")
+        print(f"Expected output: {checkpoint['output_shape_example']}")
 
     return encoder
 
@@ -236,12 +233,12 @@ def create_aifs_encoder(aifs_model, verbose: bool = True) -> AIFSCompleteEncoder
         New AIFSCompleteEncoder instance
     """
     if verbose:
-        print("🔧 Creating AIFSCompleteEncoder...")
+        print("Creating AIFSCompleteEncoder...")
 
     encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
 
     if verbose:
-        print("✅ AIFSCompleteEncoder created successfully")
+        print("AIFSCompleteEncoder created successfully")
 
     return encoder
 
@@ -282,7 +279,7 @@ def validate_checkpoint(checkpoint_path: str, aifs_model, verbose: bool = True) 
     """
     try:
         if verbose:
-            print(f"🧪 Validating checkpoint: {checkpoint_path}")
+            print(f"Validating checkpoint: {checkpoint_path}")
 
         # Try to load the encoder
         encoder = load_aifs_encoder(checkpoint_path, aifs_model, verbose=False)
@@ -296,14 +293,14 @@ def validate_checkpoint(checkpoint_path: str, aifs_model, verbose: bool = True) 
         assert param_count > 0, "No parameters found"
 
         if verbose:
-            print("✅ Checkpoint validation passed!")
-            print(f"📊 Parameters: {param_count:,}")
+            print("Checkpoint validation passed!")
+            print(f"Parameters: {param_count:,}")
 
         return True
 
     except Exception as e:
         if verbose:
-            print(f"❌ Checkpoint validation failed: {e}")
+            print(f"Checkpoint validation failed: {e}")
         return False
 
 
@@ -327,7 +324,7 @@ def check_aifs_dependencies() -> bool:
 
 
 if __name__ == "__main__":
-    print("🌍 AIFS Encoder Utils")
+    print("AIFS Encoder Utils")
     print("=" * 30)
     print(f"AIFS dependencies available: {AIFS_AVAILABLE}")
     print(f"Default checkpoint path: {get_default_checkpoint_path()}")

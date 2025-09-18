@@ -31,7 +31,7 @@ try:
     ZARR_LOADER_AVAILABLE = True
 except ImportError as e:
     ZARR_LOADER_AVAILABLE = False
-    print(f"⚠️  Zarr loader not available: {e}")
+    print(f"Zarr loader not available: {e}")
 
 # Try to import Llama integration
 try:
@@ -41,7 +41,7 @@ try:
     LLAMA_AVAILABLE = True
 except ImportError:
     LLAMA_AVAILABLE = False
-    print("⚠️  Llama integration not available")
+    print("Llama integration not available")
 
 
 def demonstrate_zarr_to_aifs(
@@ -52,55 +52,55 @@ def demonstrate_zarr_to_aifs(
 ):
     """Demonstrate loading Zarr data and processing with AIFS."""
 
-    print("🌍 AIFS Multimodal with Zarr Data Demo")
+    print("AIFS Multimodal with Zarr Data Demo")
     print("=" * 45)
 
     if not ZARR_LOADER_AVAILABLE:
-        print("❌ Zarr loader not available. Please install: pip install zarr xarray")
+        print("Zarr loader not available. Please install: pip install zarr xarray")
         return
 
     # Step 1: Load Zarr Dataset
-    print("\n📁 Step 1: Loading Zarr Climate Dataset")
+    print("\nStep 1: Loading Zarr Climate Dataset")
     try:
         loader = ZarrClimateLoader(zarr_path, variables=variables)
         dataset_info = loader.get_info()
 
-        print("✅ Dataset loaded successfully!")
-        print(f"   📊 Variables: {len(dataset_info['variables'])}")
-        print(f"   🌍 Spatial: {dataset_info['spatial_shape']}")
+        print("Dataset loaded successfully!")
+        print(f"   Variables: {len(dataset_info['variables'])}")
+        print(f"   Spatial: {dataset_info['spatial_shape']}")
         print(
             f"   📅 Time range: {dataset_info['time_range'][0]} to {dataset_info['time_range'][1]}"
         )
-        print(f"   💾 Size: {dataset_info['total_size_gb']:.2f} GB")
+        print(f"   Size: {dataset_info['total_size_gb']:.2f} GB")
 
     except Exception as e:
-        print(f"❌ Failed to load Zarr dataset: {e}")
+        print(f"Failed to load Zarr dataset: {e}")
         return
 
     # Step 2: Load Specific Time Range
     print(f"\n⏰ Step 2: Loading Time Range ({start_time} to {end_time})")
     try:
         data = loader.load_time_range(start_time, end_time, variables)
-        print(f"✅ Time range loaded: {dict(data.dims)}")
+        print(f"Time range loaded: {dict(data.dims)}")
 
     except Exception as e:
-        print(f"❌ Failed to load time range: {e}")
+        print(f"Failed to load time range: {e}")
         return
 
     # Step 3: Convert to AIFS Tensor Format
-    print("\n🔄 Step 3: Converting to AIFS 5D Tensor Format")
+    print("\nStep 3: Converting to AIFS 5D Tensor Format")
     try:
         # Convert to [B, T, V, H, W] format
         aifs_tensor = loader.to_aifs_tensor(data, batch_size=2, normalize=True)
-        print(f"✅ AIFS tensor created: {aifs_tensor.shape}")
+        print(f"AIFS tensor created: {aifs_tensor.shape}")
         print(
-            f"   📊 Format: [batch={aifs_tensor.shape[0]}, time={aifs_tensor.shape[1]}, "
+            f"   Format: [batch={aifs_tensor.shape[0]}, time={aifs_tensor.shape[1]}, "
             f"vars={aifs_tensor.shape[2]}, height={aifs_tensor.shape[3]}, width={aifs_tensor.shape[4]}]"
         )
-        print(f"   💾 Memory: {aifs_tensor.element_size() * aifs_tensor.nelement() / 1e6:.1f} MB")
+        print(f"   Memory: {aifs_tensor.element_size() * aifs_tensor.nelement() / 1e6:.1f} MB")
 
     except Exception as e:
-        print(f"❌ Failed to convert to AIFS tensor: {e}")
+        print(f"Failed to convert to AIFS tensor: {e}")
         return
 
     # Step 4: AIFS TimeSeries Tokenization
@@ -113,14 +113,14 @@ def demonstrate_zarr_to_aifs(
 
         # Tokenize the climate data
         climate_tokens = tokenizer(aifs_tensor)
-        print(f"✅ Climate tokenization successful!")
-        print(f"   🎯 Token shape: {climate_tokens.shape}")
+        print(f"Climate tokenization successful!")
+        print(f"   Token shape: {climate_tokens.shape}")
         print(
-            f"   📊 Format: [batch={climate_tokens.shape[0]}, seq_len={climate_tokens.shape[1]}, hidden={climate_tokens.shape[2]}]"
+            f"   Format: [batch={climate_tokens.shape[0]}, seq_len={climate_tokens.shape[1]}, hidden={climate_tokens.shape[2]}]"
         )
 
     except Exception as e:
-        print(f"❌ Failed AIFS tokenization: {e}")
+        print(f"Failed AIFS tokenization: {e}")
         climate_tokens = None
 
     # Step 5: Multimodal Integration (if available)
@@ -145,24 +145,24 @@ def demonstrate_zarr_to_aifs(
             # Process multimodal input
             result = model.process_climate_text(climate_tokens, sample_text)
 
-            print(f"✅ Multimodal processing successful!")
-            print(f"   🎯 Output shape: {result['fused_output'].shape}")
-            print(f"   📝 Sample analysis: {result.get('generated_text', 'Analysis complete')}")
+            print(f"Multimodal processing successful!")
+            print(f"   Output shape: {result['fused_output'].shape}")
+            print(f"   Sample analysis: {result.get('generated_text', 'Analysis complete')}")
 
         except Exception as e:
-            print(f"❌ Multimodal integration failed: {e}")
+            print(f"Multimodal integration failed: {e}")
     else:
-        print(f"\n⚠️  Skipping multimodal integration (Llama not available)")
+        print(f"\nSkipping multimodal integration (Llama not available)")
 
     # Summary
     print(f"\n📋 Demo Summary")
     print("=" * 20)
-    print("✅ Zarr data successfully loaded and processed!")
-    print("✅ AIFS tensor format conversion complete")
+    print("Zarr data successfully loaded and processed!")
+    print("AIFS tensor format conversion complete")
     if climate_tokens is not None:
-        print("✅ AIFS TimeSeries tokenization successful")
+        print("AIFS TimeSeries tokenization successful")
     if LLAMA_AVAILABLE:
-        print("✅ Multimodal AIFS-Llama integration ready")
+        print("Multimodal AIFS-Llama integration ready")
 
     return {
         "zarr_path": zarr_path,
@@ -178,11 +178,11 @@ def demonstrate_zarr_spatial_region(
 ):
     """Demonstrate loading a specific spatial region from Zarr."""
 
-    print("\n🌍 Spatial Region Loading Demo")
+    print("\nSpatial Region Loading Demo")
     print("=" * 35)
 
     if not ZARR_LOADER_AVAILABLE:
-        print("❌ Zarr loader not available")
+        print("Zarr loader not available")
         return
 
     try:
@@ -200,14 +200,14 @@ def demonstrate_zarr_spatial_region(
         # Convert to AIFS format
         regional_tensor = loader.to_aifs_tensor(regional_data, batch_size=1)
 
-        print(f"✅ Regional data loaded!")
-        print(f"   📊 Tensor shape: {regional_tensor.shape}")
-        print(f"   🌍 Spatial resolution: {regional_tensor.shape[3]}×{regional_tensor.shape[4]}")
+        print(f"Regional data loaded!")
+        print(f"   Tensor shape: {regional_tensor.shape}")
+        print(f"   Spatial resolution: {regional_tensor.shape[3]}×{regional_tensor.shape[4]}")
 
         return regional_tensor
 
     except Exception as e:
-        print(f"❌ Regional loading failed: {e}")
+        print(f"Regional loading failed: {e}")
         return None
 
 
@@ -222,9 +222,9 @@ def main():
 
     args = parser.parse_args()
 
-    print("🚀 AIFS Multimodal Zarr Integration Demo")
+    print("AIFS Multimodal Zarr Integration Demo")
     print("=" * 50)
-    print(f"📁 Zarr path: {args.zarr_path}")
+    print(f"Zarr path: {args.zarr_path}")
     print(f"⏰ Time range: {args.start_time} to {args.end_time}")
     if args.variables:
         print(f"🔢 Variables: {args.variables}")
@@ -242,7 +242,7 @@ def main():
         demonstrate_zarr_spatial_region(args.zarr_path)
 
     if result:
-        print(f"\n🎉 Demo completed successfully!")
+        print(f"\nDemo completed successfully!")
         print(f"   Ready for AIFS multimodal processing with Zarr data!")
 
 

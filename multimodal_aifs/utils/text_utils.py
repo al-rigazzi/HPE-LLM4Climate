@@ -726,7 +726,7 @@ class TextEmbeddingUtils:
 
 def test_text_processing():
     """Test text processing utilities."""
-    print("📝 Testing Text Processing Utilities")
+    print("Testing Text Processing Utilities")
     print("=" * 40)
 
     # Test text processor
@@ -782,7 +782,7 @@ def test_text_processing():
     embedding = embedder.embed_text(sample_text, max_length=64)
     print(f"Text embedding shape: {embedding.shape}")
 
-    print("✅ All text processing tests passed!")
+    print("All text processing tests passed!")
 
 
 if __name__ == "__main__":

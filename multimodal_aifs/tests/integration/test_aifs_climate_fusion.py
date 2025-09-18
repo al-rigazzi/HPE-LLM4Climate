@@ -44,21 +44,21 @@ def test_batch_processing(aifs_model, test_device):
 
         # Check if encoder was loaded successfully
         if fusion_module.aifs_encoder is None:
-            print("   ⚠️  Skipping batch test (AIFS encoder not available)")
+            print("   Skipping batch test (AIFS encoder not available)")
             pytest.skip("AIFS encoder not available")
             return
 
-        print("   ✅ AIFS encoder loaded successfully")
+        print("   AIFS encoder loaded successfully")
 
     except Exception as e:
-        print(f"   ⚠️  Skipping batch test (initialization failed: {e})")
+        print(f"   Skipping batch test (initialization failed: {e})")
         pytest.skip(f"Initialization failed: {e}")
 
 
 @pytest.mark.large_memory
 def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
     """Test climate data encoding with AIFS."""
-    print("\n🌡️ Testing Climate Data Encoding")
+    print("\nTesting Climate Data Encoding")
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
@@ -76,16 +76,16 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
 
         # Check if encoder was loaded successfully
         if fusion_module.aifs_encoder is None:
-            print("   ⚠️  Skipping encoding test (AIFS encoder not available)")
+            print("   Skipping encoding test (AIFS encoder not available)")
             pytest.skip("AIFS encoder not available")
             return
     except Exception as e:
-        print(f"   ⚠️  Skipping encoding test (initialization failed: {e})")
+        print(f"   Skipping encoding test (initialization failed: {e})")
         pytest.skip(f"Initialization failed: {e}")
 
     # Use proper 5D climate data from fixture: [batch, time, ensemble, grid, vars]
     climate_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103]
-    print(f"   📊 Using 5D climate data: {climate_data_5d.shape}")
+    print(f"   Using 5D climate data: {climate_data_5d.shape}")
 
     # Test encoding - suppress MPS fallback warning from PyTorch
     start_time = time.time()
@@ -105,17 +105,17 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
         assert climate_features.shape[1] == 512  # fusion_dim
         assert climate_features.device.type == device
 
-        print(f"   ✅ Climate encoding: {climate_data_5d.shape} -> {climate_features.shape}")
-        print(f"   ✅ Encoding time: {encoding_time:.4f}s")
+        print(f"   Climate encoding: {climate_data_5d.shape} -> {climate_features.shape}")
+        print(f"   Encoding time: {encoding_time:.4f}s")
     except Exception as e:
-        print(f"   ⚠️  Encoding failed: {e}")
+        print(f"   Encoding failed: {e}")
         pytest.fail(f"Encoding failed: {e}")
 
 
 @pytest.mark.large_memory
 def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
     """Test AIFSClimateEmbedding module."""
-    print("\n🎯 Testing Climate Embedding Module")
+    print("\nTesting Climate Embedding Module")
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
@@ -130,16 +130,16 @@ def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
 
         # Check if encoder was loaded successfully
         if embedding_module.aifs_encoder is None:
-            print("   ⚠️  Skipping embedding test (AIFS encoder not available)")
+            print("   Skipping embedding test (AIFS encoder not available)")
             pytest.skip("AIFS encoder not available")
             return
     except Exception as e:
-        print(f"   ⚠️  Skipping embedding test (initialization failed: {e})")
+        print(f"   Skipping embedding test (initialization failed: {e})")
         pytest.skip(f"Initialization failed: {e}")
 
     # Use the 5D tensor (raw climate data) for embedding module test since it calls AIFS encoder internally
     sample_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103] - raw climate data
-    print(f"   📊 Using 5D climate data: {sample_data_5d.shape}")
+    print(f"   Using 5D climate data: {sample_data_5d.shape}")
 
     try:
         embeddings = embedding_module(sample_data_5d)
@@ -149,16 +149,16 @@ def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
         assert embeddings.shape[1] == 256  # embedding_dim
         assert embeddings.device.type == device
 
-        print(f"   ✅ Embedding: {sample_data_5d.shape} -> {embeddings.shape}")
-        print(f"   ✅ Embedding module test passed")
+        print(f"   Embedding: {sample_data_5d.shape} -> {embeddings.shape}")
+        print(f"   Embedding module test passed")
     except Exception as e:
-        print(f"   ⚠️  Embedding test failed: {e}")
+        print(f"   Embedding test failed: {e}")
         pytest.fail(f"Embedding test failed: {e}")
 
 
 def test_error_handling(aifs_model, test_device):
     """Test error handling for invalid inputs."""
-    print("\n❌ Testing Error Handling")
+    print("\nTesting Error Handling")
 
     device = str(test_device)
 
@@ -171,20 +171,20 @@ def test_error_handling(aifs_model, test_device):
             fusion_dim=512,
             device=device,
         )
-        print("   ✅ Invalid path handled gracefully (encoder=None)")
+        print("   Invalid path handled gracefully (encoder=None)")
         assert fusion_module.aifs_encoder is None, "Expected None encoder for invalid path"
     except (ValueError, RuntimeError) as e:
-        print(f"   ✅ Invalid path handling")
+        print(f"   Invalid path handling")
         # Expected behavior for invalid path
         pass
     except TypeError as e:
         print(
-            f"   ⚠️  Error handling test skipped: {e!r} is not an instance of {(ValueError, RuntimeError)}"
+            f"   Error handling test skipped: {e!r} is not an instance of {(ValueError, RuntimeError)}"
         )
         # Different error type, but still handled
 
     # Test with valid checkpoint path but no AIFS model loaded
-    print("\n   🔍 Testing valid checkpoint path handling...")
+    print("\n   Testing valid checkpoint path handling...")
     try:
         # Use a real checkpoint path
         valid_checkpoint = "/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate/multimodal_aifs/models/extracted_models/aifs_encoder_full.pth"
@@ -203,16 +203,16 @@ def test_error_handling(aifs_model, test_device):
             fusion_module.aifs_encoder is None
         ), "Encoder should be None until AIFS model is provided"
         assert hasattr(fusion_module, "checkpoint_path"), "Should store checkpoint path"
-        print("   ✅ Valid checkpoint path handled correctly")
+        print("   Valid checkpoint path handled correctly")
 
     except Exception as e:
-        print(f"   ⚠️  Valid checkpoint test failed: {e}")
+        print(f"   Valid checkpoint test failed: {e}")
         # This might fail if the checkpoint format is incompatible, which is also acceptable
 
 
 def test_fusion_module_initialization(aifs_model, test_device):
     """Test AIFSClimateTextFusion initialization."""
-    print("\n🔧 Testing Fusion Module Initialization")
+    print("\nTesting Fusion Module Initialization")
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
@@ -235,9 +235,9 @@ def test_fusion_module_initialization(aifs_model, test_device):
 
     if aifs_model_instance is not None:
         assert fusion_module.aifs_encoder is not None
-        print("   ✅ Real model initialization successful")
+        print("   Real model initialization successful")
     else:
-        print("   ✅ Mock model initialization successful")
+        print("   Mock model initialization successful")
 
 
 @pytest.mark.large_memory
@@ -260,17 +260,17 @@ def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
 
         # Check if encoder was loaded successfully
         if fusion_module.aifs_encoder is None:
-            print("   ⚠️  Skipping fusion test (AIFS encoder not available)")
+            print("   Skipping fusion test (AIFS encoder not available)")
             pytest.skip("AIFS encoder not available")
             return
     except Exception as e:
-        print(f"   ⚠️  Skipping fusion test (initialization failed: {e})")
+        print(f"   Skipping fusion test (initialization failed: {e})")
         pytest.skip(f"Initialization failed: {e}")
 
     # Use 5D climate data and let fusion module handle encoding
     climate_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103]
     texts = ["High temperature patterns", "Precipitation forecast"]
-    print(f"   📊 Climate data: {climate_data_5d.shape}, Texts: {len(texts)}")
+    print(f"   Climate data: {climate_data_5d.shape}, Texts: {len(texts)}")
 
     try:
         # Test fusion using the forward method that handles encoding internally
@@ -283,11 +283,11 @@ def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
         assert fused_features.shape[1] == 512  # fusion_dim
 
         print(
-            f"   ✅ Fusion: Climate {climate_data_5d.shape} + {len(texts)} texts -> {fused_features.shape}"
+            f"   Fusion: Climate {climate_data_5d.shape} + {len(texts)} texts -> {fused_features.shape}"
         )
-        print("   ✅ Multimodal fusion test passed")
+        print("   Multimodal fusion test passed")
     except Exception as e:
-        print(f"   ⚠️  Fusion test failed: {e}")
+        print(f"   Fusion test failed: {e}")
         pytest.fail(f"Fusion test failed: {e}")
 
 
@@ -311,17 +311,17 @@ def test_similarity_and_alignment(aifs_model, test_device, test_climate_data):
 
         # Check if encoder was loaded successfully
         if fusion_module.aifs_encoder is None:
-            print("   ⚠️  Skipping similarity test (AIFS encoder not available)")
+            print("   Skipping similarity test (AIFS encoder not available)")
             pytest.skip("AIFS encoder not available")
             return
     except Exception as e:
-        print(f"   ⚠️  Skipping similarity test (initialization failed: {e})")
+        print(f"   Skipping similarity test (initialization failed: {e})")
         pytest.skip(f"Initialization failed: {e}")
 
     # Create test data for climate similarity test
     climate_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103]
     climate_data_batch = climate_data_5d.repeat(2, 1, 1, 1, 1)  # [2, 2, 1, 542080, 103]
-    print(f"   📊 Climate data for similarity: {climate_data_batch.shape}")
+    print(f"   Climate data for similarity: {climate_data_batch.shape}")
 
     try:
         # Test climate similarity computation using the correct method
@@ -332,16 +332,16 @@ def test_similarity_and_alignment(aifs_model, test_device, test_climate_data):
         # Validate output
         assert similarities.numel() == 1  # Single similarity score
 
-        print(f"   ✅ Climate similarity: {similarities.item():.4f}")
-        print("   ✅ Similarity computation test passed")
+        print(f"   Climate similarity: {similarities.item():.4f}")
+        print("   Similarity computation test passed")
     except Exception as e:
-        print(f"   ⚠️  Similarity test failed: {e}")
+        print(f"   Similarity test failed: {e}")
         pytest.fail(f"Similarity test failed: {e}")
 
 
 def test_text_encoding(aifs_model, test_device):
     """Test text encoding functionality."""
-    print("\n📝 Testing Text Encoding")
+    print("\nTesting Text Encoding")
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
@@ -379,10 +379,10 @@ def test_text_encoding(aifs_model, test_device):
         assert projected_text.shape[0] == len(texts)
         assert projected_text.shape[1] == 512  # fusion_dim
 
-        print(f"   ✅ Text encoding: 4 texts -> torch.Size([4, 512])")
-        print("   ✅ Pre-computed embeddings")
+        print(f"   Text encoding: 4 texts -> torch.Size([4, 512])")
+        print("   Pre-computed embeddings")
     except Exception as e:
-        print(f"   ⚠️  Text encoding failed: {e}")
+        print(f"   Text encoding failed: {e}")
         pytest.fail(f"Text encoding failed: {e}")
 
 

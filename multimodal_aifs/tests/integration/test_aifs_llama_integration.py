@@ -42,7 +42,7 @@ def has_aifs_encoder(model) -> bool:
 @pytest.mark.integration
 def test_fusion_model_initialization(aifs_llama_model):
     """Test AIFS-LLaMA fusion model initialization using conftest fixture."""
-    print("\n🔧 Testing Fusion Model Initialization")
+    print("\nTesting Fusion Model Initialization")
 
     model = aifs_llama_model
 
@@ -51,22 +51,22 @@ def test_fusion_model_initialization(aifs_llama_model):
 
     # Check if AIFS encoder is available, if not, just note it
     if not has_aifs_encoder(model):
-        print(f"   ⚠️  Model initialized but AIFS encoder not available")
+        print(f"   Model initialized but AIFS encoder not available")
     else:
-        print(f"   ✅ Model initialized successfully with AIFS encoder")
+        print(f"   Model initialized successfully with AIFS encoder")
 
 
 @pytest.mark.large_memory
 @pytest.mark.integration
 def test_time_series_tokenization(aifs_llama_model, test_climate_data):
     """Test time series tokenization."""
-    print("\n🌡️ Testing Time Series Tokenization")
+    print("\nTesting Time Series Tokenization")
 
     model = aifs_llama_model
     climate_data = test_climate_data["tensor_5d"]  # [batch, time, vars, height, width]
 
     if not has_aifs_encoder(model):
-        print("   ⚠️  Skipping tokenization test (AIFS encoder not available)")
+        print("   Skipping tokenization test (AIFS encoder not available)")
         pytest.skip("AIFS encoder not available")
 
     ts_tokens = model.tokenize_climate_data(climate_data)
@@ -77,13 +77,13 @@ def test_time_series_tokenization(aifs_llama_model, test_climate_data):
     assert ts_tokens.shape[1] == expected_time
     assert ts_tokens.shape[2] == model.time_series_dim
 
-    print(f"   ✅ Time series tokenization: {climate_data.shape} -> {ts_tokens.shape}")
+    print(f"   Time series tokenization: {climate_data.shape} -> {ts_tokens.shape}")
 
 
 @pytest.mark.integration
 def test_text_tokenization(aifs_llama_model):
     """Test text tokenization for LLaMA using conftest fixture."""
-    print("\n📝 Testing Text Tokenization")
+    print("\nTesting Text Tokenization")
 
     model = aifs_llama_model
     text_inputs = create_test_text_inputs()
@@ -94,14 +94,14 @@ def test_text_tokenization(aifs_llama_model):
     assert "attention_mask" in text_tokens
     assert text_tokens["input_ids"].shape[0] == len(text_inputs)
 
-    print(f"   ✅ Text tokenization: {len(text_inputs)} texts -> {text_tokens['input_ids'].shape}")
+    print(f"   Text tokenization: {len(text_inputs)} texts -> {text_tokens['input_ids'].shape}")
 
 
 @pytest.mark.large_memory
 @pytest.mark.integration
 def test_climate_language_generation(aifs_llama_model, test_climate_data):
     """Test climate-conditioned language generation."""
-    print("\n💬 Testing Climate-Language Generation")
+    print("\nTesting Climate-Language Generation")
 
     model = aifs_llama_model
     climate_data = test_climate_data["tensor_5d"]
@@ -118,14 +118,14 @@ def test_climate_language_generation(aifs_llama_model, test_climate_data):
     assert logits.shape[0] == batch_size
     assert logits.shape[2] == model.llama_model.vocab_size or logits.shape[2] == 32000
 
-    print(f"   ✅ Generation logits: {logits.shape}")
+    print(f"   Generation logits: {logits.shape}")
 
 
 @pytest.mark.large_memory
 @pytest.mark.integration
 def test_climate_classification(aifs_llama_model, test_climate_data):
     """Test climate data classification with language context."""
-    print("\n📊 Testing Climate Classification")
+    print("\nTesting Climate Classification")
 
     model = aifs_llama_model
     climate_data = test_climate_data["tensor_5d"]
@@ -142,7 +142,7 @@ def test_climate_classification(aifs_llama_model, test_climate_data):
     assert logits.shape[0] == batch_size
     assert logits.shape[1] == 10  # 10 classes
 
-    print(f"   ✅ Classification logits: {logits.shape}")
+    print(f"   Classification logits: {logits.shape}")
 
 
 @pytest.mark.large_memory
@@ -170,8 +170,8 @@ def test_process_climate_text_interface(aifs_llama_model, test_climate_data):
     assert "fused_output" in result
     assert "generated_text" in result
 
-    print(f"   ✅ process_climate_text interface working")
-    print(f"   📝 Generated text: {result['generated_text'][:50]}...")
+    print(f"   process_climate_text interface working")
+    print(f"   Generated text: {result['generated_text'][:50]}...")
 
 
 if __name__ == "__main__":

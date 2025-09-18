@@ -330,7 +330,7 @@ def create_synthetic_climate_data(
 
 def test_climate_processor():
     """Test climate data processor functionality."""
-    print("🧪 Testing Climate Data Processor")
+    print("Testing Climate Data Processor")
     print("=" * 40)
 
     # Create synthetic data
@@ -362,7 +362,7 @@ def test_climate_processor():
     stats = processor.get_stats()
     print(f"Processor stats: {stats}")
 
-    print("✅ All tests passed!")
+    print("All tests passed!")
 
 
 if __name__ == "__main__":

@@ -160,12 +160,12 @@ def check_requirements():
             missing.append(f"{package}: {description}")
 
     if missing:
-        print("⚠️  Missing optional dependencies:")
+        print("Missing optional dependencies:")
         for item in missing:
             print(f"   - {item}")
         print("\nInstall with: pip install torch transformers numpy anemoi-inference")
     else:
-        print("✅ All requirements satisfied")
+        print("All requirements satisfied")
 
     return len(missing) == 0
 

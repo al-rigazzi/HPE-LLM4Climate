@@ -95,7 +95,7 @@ class ZarrClimateLoader:
     def _load_dataset(self):
         """Load the Zarr dataset using Xarray."""
         try:
-            print(f"📁 Loading Zarr dataset: {self.zarr_path}")
+            print(f"Loading Zarr dataset: {self.zarr_path}")
 
             # Load with Xarray for easy metadata handling
             self.ds = xr.open_zarr(self.zarr_path, chunks=self.chunk_size)
@@ -103,8 +103,8 @@ class ZarrClimateLoader:
             # Get dataset info
             self._analyze_dataset()
 
-            print("✅ Dataset loaded successfully")
-            print(f"   📊 Shape: {dict(self.ds.sizes)}")
+            print("Dataset loaded successfully")
+            print(f"   Shape: {dict(self.ds.sizes)}")
             print(f"   🔢 Variables: {len(self.available_variables)}")
             print(f"   📅 Time range: {self.time_range[0]} to {self.time_range[1]}")
 
@@ -176,7 +176,7 @@ class ZarrClimateLoader:
             print("💭 Computing data (loading into memory)...")
             subset = subset.compute()
 
-        print(f"✅ Loaded data shape: {dict(subset.sizes)}")
+        print(f"Loaded data shape: {dict(subset.sizes)}")
         return subset
 
     def load_spatial_region(
@@ -205,7 +205,7 @@ class ZarrClimateLoader:
         if not vars_to_load:
             raise ValueError(f"No valid variables found. Available: {self.available_variables}")
 
-        print("🌍 Loading spatial region:")
+        print("Loading spatial region:")
         print(f"   📍 Latitude: {lat_range[0]}° to {lat_range[1]}°")
         print(f"   📍 Longitude: {lon_range[0]}° to {lon_range[1]}°")
         print(f"   🔢 Variables: {vars_to_load} ({len(vars_to_load)} total)")
@@ -264,7 +264,7 @@ class ZarrClimateLoader:
             print("💭 Computing regional data (loading into memory)...")
             subset = subset.compute()
 
-        print(f"✅ Regional data loaded: {dict(subset.dims)}")
+        print(f"Regional data loaded: {dict(subset.dims)}")
 
         # Get actual coordinate ranges after selection
         actual_lat_range = (subset[lat_dim].min().item(), subset[lat_dim].max().item())
@@ -292,7 +292,7 @@ class ZarrClimateLoader:
         Returns:
             Tensor ready for AIFS model input
         """
-        print("🔄 Converting to AIFS tensor format...")
+        print("Converting to AIFS tensor format...")
 
         # Get data variables
         variables = list(data.data_vars.keys())
@@ -300,9 +300,9 @@ class ZarrClimateLoader:
         # Check if data is already in AIFS format
         if "data" in variables and len(data.data.dims) == 5:
             # Data is already in AIFS format [batch, time, ensemble, grid_points, variables]
-            print("✅ Data already in AIFS format, using directly")
+            print("Data already in AIFS format, using directly")
             tensor = torch.from_numpy(data["data"].values).float()
-            print(f"   📊 AIFS tensor shape: {tensor.shape}")
+            print(f"   AIFS tensor shape: {tensor.shape}")
             return tensor
 
         # Stack variables into single array
@@ -385,18 +385,17 @@ class ZarrClimateLoader:
 
         if self.is_aifs_format:
             print(
-                f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
+                f"   Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
                 f"ensemble={tensor.shape[2]}, grid_points={tensor.shape[3]}, "
                 f"vars={tensor.shape[4]}"
             )
         else:
             print(
-                f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
+                f"   Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
                 f"vars={tensor.shape[2]}, height={tensor.shape[3]}, width={tensor.shape[4]}]"
             )
 
         tensor = tensor.to(device)
-        return tensor
         return tensor
 
     def get_info(self) -> dict[str, Any]:
@@ -443,11 +442,11 @@ def load_zarr_for_aifs(
 
 def test_zarr_integration():
     """Test function for Zarr integration."""
-    print("🧪 Testing Zarr Integration with AIFS")
+    print("Testing Zarr Integration with AIFS")
     print("=" * 40)
 
     if not ZARR_AVAILABLE:
-        print("❌ Zarr not available. Install with: pip install zarr xarray")
+        print("Zarr not available. Install with: pip install zarr xarray")
         return False
 
     try:
@@ -455,17 +454,17 @@ def test_zarr_integration():
         test_path = "test_aifs_large.zarr"
 
         if not Path(test_path).exists():
-            print(f"❌ Test dataset not found: {test_path}")
+            print(f"Test dataset not found: {test_path}")
             return False
 
-        print(f"📁 Testing with: {test_path}")
+        print(f"Testing with: {test_path}")
 
         # Load dataset
         loader = ZarrClimateLoader(test_path)
 
         # Get info
         info = loader.get_info()
-        print(f"📊 Dataset info: {info}")
+        print(f"Dataset info: {info}")
 
         # Load time range
         data = loader.load_time_range("2024-01-01", "2024-01-01T12:00:00")
@@ -473,14 +472,14 @@ def test_zarr_integration():
         # Convert to AIFS tensor
         tensor = loader.to_aifs_tensor(data, batch_size=2, normalize=True)
 
-        print("✅ Test successful!")
-        print(f"   🎯 Final tensor shape: {tensor.shape}")
-        print("   📊 Expected format: [batch, time, vars, height, width]")
+        print("Test successful!")
+        print(f"   Final tensor shape: {tensor.shape}")
+        print("   Expected format: [batch, time, vars, height, width]")
 
         return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
+        print(f"Test failed: {e}")
         import traceback
 
         traceback.print_exc()

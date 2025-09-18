@@ -70,12 +70,12 @@ class AIFSClimateTextFusion(nn.Module):
             # Create new AIFSCompleteEncoder from AIFS model
             self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
             if verbose:
-                print("✅ Using AIFSCompleteEncoder with provided AIFS model")
+                print("Using AIFSCompleteEncoder with provided AIFS model")
         elif aifs_checkpoint_path is not None:
             # Load from checkpoint (requires AIFS model to be loaded separately)
             if verbose:
                 print(
-                    "⚠️ Loading from checkpoint requires AIFS model. "
+                    "Loading from checkpoint requires AIFS model. "
                     "Consider providing aifs_model parameter."
                 )
             self.aifs_encoder = None  # Will be set when aifs_model is provided
@@ -386,12 +386,12 @@ class AIFSClimateEmbedding(nn.Module):
             # Create new AIFSCompleteEncoder from AIFS model
             self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose).to(device)
             if verbose:
-                print("✅ Using AIFSCompleteEncoder with provided AIFS model")
+                print("Using AIFSCompleteEncoder with provided AIFS model")
         elif aifs_checkpoint_path is not None:
             # Load from checkpoint (requires AIFS model to be loaded separately)
             if verbose:
                 print(
-                    "⚠️ Loading from checkpoint requires AIFS model. "
+                    "Loading from checkpoint requires AIFS model. "
                     "Consider providing aifs_model parameter."
                 )
             self.aifs_encoder = None  # Will be set when aifs_model is provided

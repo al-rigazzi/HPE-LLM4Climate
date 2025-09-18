@@ -62,7 +62,7 @@ def get_utils_info():
 
 def test_all_utils():
     """Run tests for all utility modules."""
-    print("🔧 Testing All AIFS Multimodal Utilities")
+    print("Testing All AIFS Multimodal Utilities")
     print("=" * 50)
 
     try:
@@ -85,10 +85,10 @@ def test_all_utils():
         test_text_processing()
 
         print("\n" + "=" * 50)
-        print("✅ All utility tests completed successfully!")
+        print("All utility tests completed successfully!")
 
     except Exception as e:
-        print(f"\n❌ Test failed: {e}")
+        print(f"\nTest failed: {e}")
         raise
 
 
