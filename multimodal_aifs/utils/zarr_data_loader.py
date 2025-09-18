@@ -276,7 +276,7 @@ class ZarrClimateLoader:
         return subset
 
     def to_aifs_tensor(
-        self, data, batch_size: int = 1, normalize: bool = True  # xr.Dataset
+        self, data, batch_size: int = 1, normalize: bool = True, device: str = "cpu"
     ) -> torch.Tensor:
         """
         Convert Xarray dataset to AIFS tensor format.
@@ -287,10 +287,12 @@ class ZarrClimateLoader:
             data: Xarray dataset
             batch_size: Batch size (for creating batches from time series)
             normalize: Whether to normalize the data
+            device: Device to move tensor to ("cpu", "cuda", "mps", etc.)
 
         Returns:
             Tensor ready for AIFS model input
         """
+        print("🔄 Converting to AIFS tensor format...")
         print("🔄 Converting to AIFS tensor format...")
 
         # Get data variables
@@ -334,7 +336,7 @@ class ZarrClimateLoader:
             stacked = np.stack(arrays, axis=1)
 
         # Convert to tensor
-        tensor = torch.from_numpy(stacked).float()
+        tensor = torch.from_numpy(stacked).float().to(device)
 
         # Add batch dimension or create batches
         if batch_size == 1:
@@ -382,7 +384,6 @@ class ZarrClimateLoader:
                 else:
                     tensor[:, :, i, :, :] = (var_data - mean) / std
 
-        print(f"✅ AIFS tensor shape: {tensor.shape}")
         if self.is_aifs_format:
             print(
                 f"   📊 Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
@@ -395,6 +396,8 @@ class ZarrClimateLoader:
                 f"vars={tensor.shape[2]}, height={tensor.shape[3]}, width={tensor.shape[4]}]"
             )
 
+        tensor = tensor.to(device)
+        return tensor
         return tensor
 
     def get_info(self) -> dict[str, Any]:

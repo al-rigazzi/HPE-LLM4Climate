@@ -12,6 +12,7 @@ This script tests with a smaller, CPU-friendly setup using conftest infrastructu
 import os
 import sys
 import time
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -61,9 +62,11 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
         )
 
         # Convert to small tensor
-        climate_tensor = loader.to_aifs_tensor(climate_data, batch_size=1, normalize=True)
+        climate_tensor = loader.to_aifs_tensor(
+            climate_data, batch_size=1, normalize=True, device=device
+        )
 
-        print(f"✅ Climate tensor: {climate_tensor.shape}")
+        print(f"✅ Climate tensor: {climate_tensor.shape} on {climate_tensor.device}")
         print(f"   💾 Memory: {climate_tensor.numel() * 4 / 1e6:.1f} MB")
 
     except Exception as e:
@@ -85,8 +88,14 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
     print("-" * 40)
 
     try:
-        # Tokenize climate data
-        climate_tokens = model.tokenize_climate_data(climate_tensor)
+        # Tokenize climate data - suppress MPS fallback warning
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=".*The operator 'aten::scatter_reduce.two_out' is not currently supported on the MPS backend.*",
+                category=UserWarning,
+            )
+            climate_tokens = model.tokenize_climate_data(climate_tensor)
         print(f"✅ Climate tokens: {climate_tokens.shape}")
 
         # Simple text for CPU efficiency
@@ -94,11 +103,17 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
 
         start_time = time.time()
 
-        # Process with timeout protection
+        # Process with timeout protection - suppress MPS fallback warning
         with torch.no_grad():  # Disable gradients for inference
-            result = model.process_climate_text(
-                climate_tokens, text_inputs, task="embedding"  # Simpler task
-            )
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=".*The operator 'aten::scatter_reduce.two_out' is not currently supported on the MPS backend.*",
+                    category=UserWarning,
+                )
+                result = model.process_climate_text(
+                    climate_tokens, text_inputs, task="embedding"  # Simpler task
+                )
 
         elapsed = time.time() - start_time
         print(f"✅ Processing complete in {elapsed:.1f}s")
@@ -142,6 +157,7 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
     # Test passes by reaching this point without failures
 
 
+@pytest.mark.large_memory
 @pytest.mark.integration
 def test_compare_with_mock(aifs_llama_model, zarr_dataset_path):
     """Compare real vs mock LLM performance with same climate data."""
