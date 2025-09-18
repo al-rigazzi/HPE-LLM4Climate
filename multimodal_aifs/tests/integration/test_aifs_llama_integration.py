@@ -121,6 +121,7 @@ def test_climate_language_generation(aifs_llama_model, test_climate_data):
     print(f"   ✅ Generation logits: {logits.shape}")
 
 
+@pytest.mark.large_memory
 @pytest.mark.integration
 def test_climate_classification(aifs_llama_model, test_climate_data):
     """Test climate data classification with language context."""
@@ -144,6 +145,7 @@ def test_climate_classification(aifs_llama_model, test_climate_data):
     print(f"   ✅ Classification logits: {logits.shape}")
 
 
+@pytest.mark.large_memory
 @pytest.mark.integration
 def test_process_climate_text_interface(aifs_llama_model, test_climate_data):
     """Test the process_climate_text interface."""
