@@ -435,8 +435,8 @@ AIFS Dimensions:
         "--size",
         "-s",
         choices=["tiny", "small", "medium", "large"],
-        default="small",
-        help="Dataset size with AIFS-compatible dimensions (default: small)",
+        default="large",
+        help="Dataset size with AIFS-compatible dimensions (default: large)",
     )
 
     parser.add_argument(
