@@ -17,7 +17,7 @@ LLM models on numerical dataset. Some questions we would like to answer are
 
 Downstream tasks will be identified in the future.
 
-# Implementation style
+# Implementation style and tone
 The code in this repository is thought to be *production ready*. This means that
 it should *only* use, process, and analyze real data, and every class should be a
 real implementation, not a Mock of a missing piece. If something is missing, it
@@ -34,6 +34,7 @@ Exceptions should be raised by functions when something does not work, errors sh
 All syntetic datasets and data samples should have the real dimensions, shapes, and
 sizes as real samples (i.e. as those used to train AIFS).
 
+The tone of natural language must always be professional, even in comments, docstrings
 
 # Coding guidelines
 
@@ -52,6 +53,11 @@ sizes as real samples (i.e. as those used to train AIFS).
 - The code should always pass `pylint`, `isort`, and `mypy` checks.
 - `pylint`, `isort`, and `mypy` issues should only be silenced if it is
   deemed *impossible* to fix them (e.g. if they are the result of a library bug)
+- In all cases, the checks must pass flawlessly, i.e. 10/10 for `pylint` and
+  no errors or warnings for `isort` and `mypy`.
+- Options (like disabled warnings or errors) for the checks above are listed
+  in `pyproject.toml`, no other options should be passed through command line
+  arguments.
 - Tests should only test real code features, not implement higher order ones
 - Coverage should be above 90% for `multimodal_aifs.core` files
 - The project must run on
@@ -62,3 +68,6 @@ sizes as real samples (i.e. as those used to train AIFS).
     * A flash attention mock is implemented, but it should *only* be used on
       MacOS systems
     * On GPU-based systems, the real Flash Attention libraries should be used
+- File parsimony. Files for demos, examples, and descriptions (e.g. in markdown)
+  should be kept to a minimum. Copilot should always ask before generating them,
+  stating clearly what their purpose would be.

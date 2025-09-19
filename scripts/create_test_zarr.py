@@ -26,9 +26,9 @@ sys.path.insert(0, str(project_root))
 try:
     import zarr
 
-    print(f"✅ Using zarr version: {zarr.__version__}")
+    print(f"Using zarr version: {zarr.__version__}")
 except ImportError:
-    print("❌ zarr not available. Install with: pip install zarr")
+    print("zarr not available. Install with: pip install zarr")
     sys.exit(1)
 
 
@@ -84,11 +84,11 @@ def create_synthetic_zarr_dataset(
         raise ValueError(f"Size must be one of: {list(size_configs.keys())}")
 
     config = size_configs[size]
-    print(f"\n🌍 Creating {size} AIFS-compatible climate dataset")
-    print(f"   📊 Configuration: {config['description']}")
+    print(f"\nCreating {size} AIFS-compatible climate dataset")
+    print(f"   Configuration: {config['description']}")
     print(f"   ⏰ Time steps: {config['time_steps']} (AIFS standard)")
     print(f"   🌐 Grid points: {config['grid_points']:,} (AIFS grid)")
-    print(f"   📈 Variables: {config['n_variables']} (AIFS variables)")
+    print(f"   Variables: {config['n_variables']} (AIFS variables)")
 
     # Create time coordinates (AIFS expects exactly 2 timesteps)
     times = [
@@ -220,7 +220,7 @@ def create_synthetic_zarr_dataset(
     data_vars = {}
 
     for var_name in selected_vars:
-        print(f"   📊 Generating {var_name}...")
+        print(f"   Generating {var_name}...")
 
         assert isinstance(config["time_steps"], int), "Must indicate time steps as int"
         assert isinstance(config["grid_points"], int), "Must indicate grid points as int"
@@ -267,7 +267,7 @@ def create_synthetic_zarr_dataset(
         },
     )
 
-    print(f"\n💾 Saving to Zarr format: {output_path}")
+    print(f"\nSaving to Zarr format: {output_path}")
 
     # Save to Zarr with simple chunking for AIFS compatibility
     encoding = {}
@@ -280,18 +280,18 @@ def create_synthetic_zarr_dataset(
     ds.to_zarr(output_path, mode="w", encoding=encoding)
 
     # Verify the saved dataset
-    print("✅ Dataset saved successfully!")
+    print("Dataset saved successfully!")
 
     # Load and verify
     ds_verify = xr.open_zarr(output_path)
 
-    print("\n📊 Dataset Summary:")
-    print(f"   📁 Path: {output_path}")
-    print(f"   📏 Shape: {dict(ds_verify.dims)}")
+    print("\nDataset Summary:")
+    print(f"   Path: {output_path}")
+    print(f"   Shape: {dict(ds_verify.dims)}")
     print(f"   🔢 Variables: {list(ds_verify.data_vars.keys())}")
     print(f"   📅 Time range: {ds_verify.time.values[0]} to {ds_verify.time.values[-1]}")
     print(f"   🌐 Grid points: {ds_verify.grid_point.size:,}")
-    print(f"   📊 AIFS dimensions: [{config['time_steps']}, {num_vars}, {config['grid_points']}]")
+    print(f"   AIFS dimensions: [{config['time_steps']}, {num_vars}, {config['grid_points']}]")
 
     # Calculate file size
     zarr_path = Path(output_path)
@@ -299,7 +299,7 @@ def create_synthetic_zarr_dataset(
         total_size = sum(f.stat().st_size for f in zarr_path.rglob("*") if f.is_file())
         print(f"   💽 File size: {total_size / 1024**2:.2f} MB")
 
-    print("\n🎉 AIFS-compatible test dataset ready for use!")
+    print("\nAIFS-compatible test dataset ready for use!")
     return output_path
 
 
@@ -389,18 +389,18 @@ def download_real_climate_data(output_path: str):
     Download a small real climate dataset for testing.
     Uses publicly available ERA5 sample data.
     """
-    # print("🌍 Downloading real climate data...")
+    # print("Downloading real climate data...")
     # print("📡 This requires internet connection and may take a few minutes")
 
     try:
-        print("⚠️  Real data download not implemented yet.")
-        print("💡 For now, creating realistic synthetic data...")
+        print("Real data download not implemented yet.")
+        print("For now, creating realistic synthetic data...")
 
         return create_synthetic_zarr_dataset(output_path, size="small", real_patterns=True)
 
     except ImportError:
-        print("❌ requests not available for downloading")
-        print("💡 Creating synthetic data instead...")
+        print("requests not available for downloading")
+        print("Creating synthetic data instead...")
         return create_synthetic_zarr_dataset(output_path, size="small", real_patterns=True)
 
 
@@ -456,8 +456,8 @@ AIFS Dimensions:
 
     # Check if output already exists
     if Path(args.output).exists() and not args.force:
-        print(f"❌ Output file already exists: {args.output}")
-        print("💡 Use --force to overwrite or choose a different output path")
+        print(f"Output file already exists: {args.output}")
+        print("Use --force to overwrite or choose a different output path")
         return 1
 
     try:
@@ -466,8 +466,8 @@ AIFS Dimensions:
         else:
             result_path = create_synthetic_zarr_dataset(args.output, args.size, args.real_data)
 
-        print(f"\n✅ Success! AIFS-compatible test dataset created at: {result_path}")
-        print("\n🧪 To use in tests:")
+        print(f"\nSuccess! AIFS-compatible test dataset created at: {result_path}")
+        print("\nTo use in tests:")
         print(
             f"   ZARR_PATH={result_path} python -m pytest multimodal_aifs/tests/integration/zarr/"
         )
@@ -477,7 +477,7 @@ AIFS Dimensions:
         return 0
 
     except Exception as e:
-        print(f"❌ Error creating test dataset: {e}")
+        print(f"Error creating test dataset: {e}")
         import traceback
 
         traceback.print_exc()

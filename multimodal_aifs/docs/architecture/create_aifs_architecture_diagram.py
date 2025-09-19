@@ -178,7 +178,7 @@ create_box(
     (0.5, 8),
     7.5,
     1.2,
-    "AIFS Complete Encoder (Pre-trained ECMWF)\n• GraphTransformerForwardMapper\n• 19.9M parameters (encoder only)\n• Input: 103 variables → Output: 1024 embeddings\n• Spatial processing: 542,080 grid points",
+    "AIFS Complete Encoder (Pre-trained ECMWF)\nGraphTransformerForwardMapper\n19.9M parameters (encoder only)\nInput: 103 variables → Output: 1024 embeddings\nSpatial processing: 542,080 grid points",
     colors["aifs"],
     fontsize=9,
 )
@@ -201,7 +201,7 @@ create_box(
     (10, 8),
     7.5,
     1.2,
-    "Meta-Llama-3-8B Language Model\n• 8.03B parameters (frozen)\n• 32 transformer layers\n• 4096 hidden dimensions\n• 32 attention heads",
+    "Meta-Llama-3-8B Language Model\n8.03B parameters (frozen)\n32 transformer layers\n4096 hidden dimensions\n32 attention heads",
     colors["llama"],
     fontsize=9,
 )
@@ -224,7 +224,7 @@ create_box(
     (2, 5.5),
     4.5,
     1.3,
-    "Climate Projection\n• AIFS features: 1024 → 4096\n• Linear projection layer\n• Layer normalization\n• Broadcast to sequence length",
+    "Climate Projection\nAIFS features: 1024 → 4096\nLinear projection layer\nLayer normalization\nBroadcast to sequence length",
     colors["fusion"],
     fontsize=9,
 )
@@ -235,7 +235,7 @@ create_box(
     (7.5, 5.5),
     4,
     1.3,
-    "Fusion Mechanisms\n• Element-wise addition\n• Gated fusion\n• Cross-attention (optional)\n• Residual connections",
+    "Fusion Mechanisms\nElement-wise addition\nGated fusion\nCross-attention (optional)\nResidual connections",
     colors["fusion"],
     fontsize=9,
 )
@@ -246,7 +246,7 @@ create_box(
     (12.5, 5.5),
     4.5,
     1.3,
-    "Location-Aware Features\n• Spatial attention\n• Geographic cropping\n• Regional climate analysis\n• Coordinate embeddings",
+    "Location-Aware Features\nSpatial attention\nGeographic cropping\nRegional climate analysis\nCoordinate embeddings",
     colors["encoder"],
     fontsize=9,
 )
@@ -269,7 +269,7 @@ create_box(
     (1, 3),
     5,
     1.2,
-    "Climate Encoder (Trainable)\n• CNN layers + projection\n• 768 → 4096 dimensions\n• Only 2.1M parameters trained\n• Frozen Llama-3-8B backbone",
+    "Climate Encoder (Trainable)\nCNN layers + projection\n768 → 4096 dimensions\nOnly 2.1M parameters trained\nFrozen Llama-3-8B backbone",
     colors["aifs"],
     fontsize=9,
 )
@@ -280,7 +280,7 @@ create_box(
     (7, 3),
     5,
     1.2,
-    "Integrated Model Output\n• Joint climate-text embeddings\n• Climate-aware text generation\n• Multi-task capabilities\n• Real-time inference",
+    "Integrated Model Output\nJoint climate-text embeddings\nClimate-aware text generation\nMulti-task capabilities\nReal-time inference",
     colors["fusion"],
     fontsize=9,
 )
@@ -291,7 +291,7 @@ create_box(
     (13, 3),
     4,
     1.2,
-    "Performance Metrics\n• Memory: 8.5-10.6GB\n• Training: CPU/GPU ready\n• Throughput: 32 samples/s\n• AIFS: 19.9M encoder params",
+    "Performance Metrics\nMemory: 8.5-10.6GB\nTraining: CPU/GPU ready\nThroughput: 32 samples/s\nAIFS: 19.9M encoder params",
     "#D3D3D3",  # Light Gray - provides good contrast for black text
     fontsize=9,
 )
@@ -314,7 +314,7 @@ create_box(
     (6, 0.5),
     6,
     1.2,
-    "Climate-Text Analysis Outputs\n• Climate-aware text generation\n• Weather pattern explanations\n• Scientific insights & predictions\n• Location-specific analysis\n• Real-time climate responses",
+    "Climate-Text Analysis Outputs\nClimate-aware text generation\nWeather pattern explanations\nScientific insights & predictions\nLocation-specific analysis\nReal-time climate responses",
     colors["output"],
     fontsize=10,
 )
@@ -342,14 +342,14 @@ create_arrow(ax, (15, 3), (10.5, 1.7), colors["background"])
 # Add technical specs box in bottom right corner
 specs_text = """AIFS Multimodal Specifications (2025):
 
-• AIFS Model: ECMWF AIFS-Single-1.0
-• Language Model: Meta-Llama-3-8B (8.03B params)
-• AIFS Encoder: 19.9M parameters (extracted)
-• Climate Variables: 103 variables
-• Grid Points: 542,080 spatial points
-• Memory Usage: 8.5-10.6GB training
-• Framework: PyTorch 2.4+, Python 3.12+
-• Training: CPU optimized, GPU compatible"""
+AIFS Model: ECMWF AIFS-Single-1.0
+Language Model: Meta-Llama-3-8B (8.03B params)
+AIFS Encoder: 19.9M parameters (extracted)
+Climate Variables: 103 variables
+Grid Points: 542,080 spatial points
+Memory Usage: 8.5-10.6GB training
+Framework: PyTorch 2.4+, Python 3.12+
+Training: CPU optimized, GPU compatible"""
 
 ax.text(
     0.98,
@@ -411,5 +411,5 @@ pdf_path = output_dir / "aifs_multimodal_architecture_diagram.pdf"
 plt.tight_layout()
 plt.savefig(str(pdf_path), dpi=300, bbox_inches="tight", facecolor="white", edgecolor="none")
 
-print("✅ AIFS Multimodal Architecture Diagram saved as:")
+print("AIFS Multimodal Architecture Diagram saved as:")
 print(f"   📄 {pdf_path}")

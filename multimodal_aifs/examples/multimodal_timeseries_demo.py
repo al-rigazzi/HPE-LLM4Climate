@@ -109,7 +109,7 @@ class MultimodalTimeSeriesDemo:
 
     def setup_tokenizers(self):
         """Initialize tokenizers with different temporal modeling approaches."""
-        print("🔧 Setting up AIFSTimeSeriesTokenizers...")
+        print("Setting up AIFSTimeSeriesTokenizers...")
 
         temporal_models = ["transformer", "lstm", "none"]
 
@@ -119,20 +119,20 @@ class MultimodalTimeSeriesDemo:
                 self.tokenizers[model_type] = AIFSTimeSeriesTokenizer(
                     temporal_modeling=model_type, hidden_dim=512, device=self.device
                 )
-                print(f"   ✅ {model_type.capitalize()} tokenizer ready")
+                print(f"   {model_type.capitalize()} tokenizer ready")
             except Exception as e:
-                print(f"   ❌ Failed to initialize {model_type} tokenizer: {e}")
+                print(f"   Failed to initialize {model_type} tokenizer: {e}")
 
-        print(f"   📊 Loaded {len(self.tokenizers)} tokenizers")
+        print(f"   Loaded {len(self.tokenizers)} tokenizers")
         print()
 
     def demonstrate_tokenization(self):
         """Demonstrate time series tokenization with different approaches."""
-        print("🎯 Time Series Tokenization Demonstration")
+        print("Time Series Tokenization Demonstration")
         print("=" * 60)
 
         # Create sample 5-D time series data
-        print("📊 Creating sample time series data...")
+        print("Creating sample time series data...")
 
         # Different scales for testing
         test_cases = [
@@ -142,7 +142,7 @@ class MultimodalTimeSeriesDemo:
         ]
 
         for case_name, batch_size, time_steps, n_vars, spatial_shape in test_cases:
-            print(f"\\n🔍 Test Case: {case_name}")
+            print(f"\\nTest Case: {case_name}")
             print(
                 f"   Shape: [batch={batch_size}, time={time_steps}, vars={n_vars}, spatial={spatial_shape}]"
             )
@@ -155,8 +155,8 @@ class MultimodalTimeSeriesDemo:
                 spatial_shape=spatial_shape,
             )
 
-            print(f"   ✅ Generated data: {data_5d.shape}")
-            print(f"   📈 Data range: [{data_5d.min():.3f}, {data_5d.max():.3f}]")
+            print(f"   Generated data: {data_5d.shape}")
+            print(f"   Data range: [{data_5d.min():.3f}, {data_5d.max():.3f}]")
 
             # Test each tokenizer
             for model_type, tokenizer in self.tokenizers.items():
@@ -166,7 +166,7 @@ class MultimodalTimeSeriesDemo:
                     tokenization_time = time.time() - start_time
 
                     print(
-                        f"   🔄 {model_type.upper():11s}: {data_5d.shape} -> {tokens.shape} ({tokenization_time:.4f}s)"
+                        f"   {model_type.upper():11s}: {data_5d.shape} -> {tokens.shape} ({tokenization_time:.4f}s)"
                     )
 
                     # Memory usage estimation
@@ -175,11 +175,11 @@ class MultimodalTimeSeriesDemo:
                     compression_ratio = input_size / output_size
 
                     print(
-                        f"      💾 Compression: {compression_ratio:.1f}x ({input_size/1024:.1f}KB -> {output_size/1024:.1f}KB)"
+                        f"      Compression: {compression_ratio:.1f}x ({input_size/1024:.1f}KB -> {output_size/1024:.1f}KB)"
                     )
 
                 except Exception as e:
-                    print(f"   ❌ {model_type.upper():11s}: Failed - {e}")
+                    print(f"   {model_type.upper():11s}: Failed - {e}")
 
         print()
 
@@ -197,25 +197,25 @@ class MultimodalTimeSeriesDemo:
 
         descriptions = create_climate_descriptions()[:batch_size]
 
-        print(f"📊 Sample data: {data_5d.shape}")
-        print(f"📝 Text descriptions:")
+        print(f"Sample data: {data_5d.shape}")
+        print(f"Text descriptions:")
         for i, desc in enumerate(descriptions):
             print(f"   {i+1}. {desc}")
         print()
 
         # Test with transformer tokenizer (default)
         if "transformer" in self.tokenizers:
-            print("🚀 Using Transformer Tokenizer for Fusion...")
+            print("Using Transformer Tokenizer for Fusion...")
 
             tokenizer = self.tokenizers["transformer"]
 
             # Tokenize time series
             climate_tokens = tokenizer.tokenize_time_series(data_5d)
-            print(f"   🌍 Climate tokens: {climate_tokens.shape}")
+            print(f"   Climate tokens: {climate_tokens.shape}")
 
             # Create simple text embeddings (mock)
             text_tokens = torch.randn(batch_size, 768)  # Typical text embedding size
-            print(f"   📝 Text tokens: {text_tokens.shape}")
+            print(f"   Text tokens: {text_tokens.shape}")
 
             # Demonstrate attention-based fusion
             print("   🔗 Computing cross-attention between climate and text...")
@@ -234,7 +234,7 @@ class MultimodalTimeSeriesDemo:
             # Calculate similarity between projected climate and text features
             similarity = torch.cosine_similarity(climate_projected, text_tokens, dim=1)
 
-            print(f"   📊 Climate-Text Similarity Vector: {similarity.shape}")
+            print(f"   Climate-Text Similarity Vector: {similarity.shape}")
             print(f"      Sample similarities: {similarity.tolist()}")
             print(f"      Average similarity: {similarity.mean():.4f}")
             print(f"      Max similarity: {similarity.max():.4f}")
@@ -244,7 +244,7 @@ class MultimodalTimeSeriesDemo:
 
     def demonstrate_real_world_applications(self):
         """Show real-world application scenarios."""
-        print("🌍 Real-World Application Scenarios")
+        print("Real-World Application Scenarios")
         print("=" * 60)
 
         applications = [
@@ -279,31 +279,31 @@ class MultimodalTimeSeriesDemo:
         ]
 
         for i, app in enumerate(applications, 1):
-            print(f"\\n{i}. 🎯 {app['name']}")
-            print(f"   📝 {app['description']}")
-            print(f"   📊 Data shape: {app['data_shape']}")
-            print(f"   🔧 Recommended temporal model: {app['temporal_model']}")
-            print(f"   💡 Use case: {app['use_case']}")
+            print(f"\\n{i}. {app['name']}")
+            print(f"   {app['description']}")
+            print(f"   Data shape: {app['data_shape']}")
+            print(f"   Recommended temporal model: {app['temporal_model']}")
+            print(f"   Use case: {app['use_case']}")
 
             if app["temporal_model"] in self.tokenizers:
-                print(f"   ✅ Tokenizer available and ready")
+                print(f"   Tokenizer available and ready")
             else:
-                print(f"   ❌ Tokenizer not available")
+                print(f"   Tokenizer not available")
 
         print()
 
         # Performance recommendations
-        print("⚡ Performance Recommendations:")
-        print("   • Transformer: Best for attention-based temporal relationships")
-        print("   • LSTM: Good for sequential dependencies, memory efficient")
-        print("   • None: Fastest for spatial-only analysis")
-        print("   • Use chunking for very long sequences (>100 timesteps)")
-        print("   • Consider downsampling high-resolution spatial data if needed")
+        print("Performance Recommendations:")
+        print("   Transformer: Best for attention-based temporal relationships")
+        print("   LSTM: Good for sequential dependencies, memory efficient")
+        print("   None: Fastest for spatial-only analysis")
+        print("   Use chunking for very long sequences (>100 timesteps)")
+        print("   Consider downsampling high-resolution spatial data if needed")
         print()
 
     def run_performance_benchmark(self):
         """Benchmark different tokenizer configurations."""
-        print("⚡ Performance Benchmark")
+        print("Performance Benchmark")
         print("=" * 60)
 
         # Test configurations
@@ -352,7 +352,7 @@ class MultimodalTimeSeriesDemo:
 
     def run_demo(self):
         """Run the complete demonstration."""
-        print("🌍 AIFS Multimodal Time Series Demonstration")
+        print("AIFS Multimodal Time Series Demonstration")
         print("=" * 80)
         print("This demo showcases the AIFSTimeSeriesTokenizer for climate data analysis")
         print()
@@ -361,7 +361,7 @@ class MultimodalTimeSeriesDemo:
         self.setup_tokenizers()
 
         if not self.tokenizers:
-            print("❌ No tokenizers available. Cannot continue demo.")
+            print("No tokenizers available. Cannot continue demo.")
             return
 
         # Run demonstrations
@@ -371,20 +371,20 @@ class MultimodalTimeSeriesDemo:
         self.run_performance_benchmark()
 
         # Summary
-        print("🎯 Demo Summary")
+        print("Demo Summary")
         print("=" * 40)
-        print(f"✅ Tokenizers tested: {list(self.tokenizers.keys())}")
-        print(f"✅ 5-D tensor processing demonstrated")
-        print(f"✅ Multimodal fusion showcased")
-        print(f"✅ Real-world applications outlined")
-        print(f"✅ Performance benchmarks completed")
+        print(f"Tokenizers tested: {list(self.tokenizers.keys())}")
+        print(f"5-D tensor processing demonstrated")
+        print(f"Multimodal fusion showcased")
+        print(f"Real-world applications outlined")
+        print(f"Performance benchmarks completed")
         print()
-        print("🚀 Next Steps:")
-        print("   • Integrate with your climate datasets")
-        print("   • Experiment with different temporal modeling approaches")
-        print("   • Scale to larger spatial and temporal resolutions")
-        print("   • Combine with  text embedding models")
-        print("   • Deploy for real-time climate analysis")
+        print("Next Steps:")
+        print("   Integrate with your climate datasets")
+        print("   Experiment with different temporal modeling approaches")
+        print("   Scale to larger spatial and temporal resolutions")
+        print("   Combine with  text embedding models")
+        print("   Deploy for real-time climate analysis")
         print()
         print("✨ Ready for production climate AI applications!")
 
@@ -395,9 +395,9 @@ def main():
         demo = MultimodalTimeSeriesDemo(device="cpu")
         demo.run_demo()
     except KeyboardInterrupt:
-        print("\\n⚠️  Demo interrupted by user")
+        print("\\nDemo interrupted by user")
     except Exception as e:
-        print(f"\\n❌ Demo failed: {e}")
+        print(f"\\nDemo failed: {e}")
         import traceback
 
         traceback.print_exc()

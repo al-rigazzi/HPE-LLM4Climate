@@ -453,7 +453,7 @@ class SpatialEncoder:
 
 def test_location_utilities():
     """Test location utility functions."""
-    print("🌍 Testing Location Utilities")
+    print("Testing Location Utilities")
     print("=" * 40)
 
     # Test basic distance calculation
@@ -492,7 +492,7 @@ def test_location_utilities():
     region = grid.extract_region(synthetic_data, london_lat, london_lon, 500)  # 500km region
     print(f"Extracted region shape: {region.shape}")
 
-    print("✅ All location tests passed!")
+    print("All location tests passed!")
 
 
 if __name__ == "__main__":

@@ -43,12 +43,12 @@ def clear_memory():
 
 
 print("🦙 Llama-3-8B Climate-Text Fusion Training")
-print("🎯 Target: Full 8B parameter language model with climate fusion")
+print("Target: Full 8B parameter language model with climate fusion")
 
 # Check if we have the required memory
 TOTAL_RAM = 36.0  # Your system
 current_memory = check_memory_usage()
-print(f"💾 System RAM: {TOTAL_RAM}GB, Current usage: {current_memory:.1f}GB")
+print(f"System RAM: {TOTAL_RAM}GB, Current usage: {current_memory:.1f}GB")
 
 
 class Llama3ClimateTextFusion(torch.nn.Module):
@@ -81,12 +81,12 @@ class Llama3ClimateTextFusion(torch.nn.Module):
             )
 
             model_params = sum(p.numel() for p in self.text_model.parameters())
-            print(f"✅ Loaded Llama-3-8B: {model_params:,} parameters")
+            print(f"Loaded Llama-3-8B: {model_params:,} parameters")
 
         except Exception as e:
-            print(f"❌ Failed to load Llama-3-8B: {e}")
-            print(f"💡 Note: Llama-3 requires HuggingFace approval")
-            print(f"💡 Alternative: We can use a similar sized model for testing")
+            print(f"Failed to load Llama-3-8B: {e}")
+            print(f"Note: Llama-3 requires HuggingFace approval")
+            print(f"Alternative: We can use a similar sized model for testing")
             raise
 
         # Climate encoder (same as our proven architecture)
@@ -134,10 +134,10 @@ class Llama3ClimateTextFusion(torch.nn.Module):
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         total_params = sum(p.numel() for p in self.parameters())
 
-        print(f"📊 Fusion model created:")
-        print(f"  • Total parameters: {total_params:,}")
-        print(f"  • Trainable parameters: {trainable_params:,}")
-        print(f"  • Frozen: {((total_params - trainable_params) / total_params * 100):.1f}%")
+        print(f"Fusion model created:")
+        print(f"  Total parameters: {total_params:,}")
+        print(f"  Trainable parameters: {trainable_params:,}")
+        print(f"  Frozen: {((total_params - trainable_params) / total_params * 100):.1f}%")
 
     def forward(self, climate_data, input_ids):
         # Fix tensor dimensions for conv2d
@@ -222,19 +222,19 @@ class ClimateTextDataset:
 def train_llama3_fusion():
     """Main training function"""
 
-    print(f"\n🚀 Starting Llama-3-8B fusion training...")
+    print(f"\nStarting Llama-3-8B fusion training...")
 
     # Check memory before model creation
     memory_before = check_memory_usage()
-    print(f"💾 Memory before model: {memory_before:.1f}GB")
+    print(f"Memory before model: {memory_before:.1f}GB")
 
     try:
         # Create model
         model = Llama3ClimateTextFusion()
 
         memory_after_model = check_memory_usage()
-        print(f"💾 Memory after model: {memory_after_model:.1f}GB")
-        print(f"📈 Model memory usage: {memory_after_model - memory_before:.1f}GB")
+        print(f"Memory after model: {memory_after_model:.1f}GB")
+        print(f"Model memory usage: {memory_after_model - memory_before:.1f}GB")
 
         # Create dataset
         dataset = ClimateTextDataset(model.tokenizer, num_samples=100)
@@ -253,11 +253,11 @@ def train_llama3_fusion():
         trainable_params = [p for p in model.parameters() if p.requires_grad]
         optimizer = torch.optim.AdamW(trainable_params, lr=1e-4, weight_decay=0.01)
 
-        print(f"\n🎯 Training configuration:")
-        print(f"  • Batch size: 1")
-        print(f"  • Learning rate: 1e-4")
-        print(f"  • Optimizer: AdamW")
-        print(f"  • Training samples: {len(dataset)}")
+        print(f"\nTraining configuration:")
+        print(f"  Batch size: 1")
+        print(f"  Learning rate: 1e-4")
+        print(f"  Optimizer: AdamW")
+        print(f"  Training samples: {len(dataset)}")
 
         # Training loop
         model.train()
@@ -314,15 +314,13 @@ def train_llama3_fusion():
             avg_loss = epoch_loss / min(10, len(dataloader))
 
             print(
-                f"✅ Epoch {epoch+1} completed: "
-                f"AvgLoss={avg_loss:.4f}, "
-                f"Time={epoch_time:.1f}s"
+                f"Epoch {epoch+1} completed: " f"AvgLoss={avg_loss:.4f}, " f"Time={epoch_time:.1f}s"
             )
 
         final_memory = check_memory_usage()
-        print(f"\n🎉 Training completed successfully!")
-        print(f"💾 Final memory usage: {final_memory:.1f}GB / 36.0GB")
-        print(f"📊 Memory efficiency: {(final_memory/36.0)*100:.1f}% of system RAM")
+        print(f"\nTraining completed successfully!")
+        print(f"Final memory usage: {final_memory:.1f}GB / 36.0GB")
+        print(f"Memory efficiency: {(final_memory/36.0)*100:.1f}% of system RAM")
 
         # Save model if successful
         save_path = Path(__file__).parent / "llama3_climate_fusion.pt"
@@ -334,10 +332,10 @@ def train_llama3_fusion():
             save_path,
         )
 
-        print(f"💾 Model saved to: {save_path}")
+        print(f"Model saved to: {save_path}")
 
     except Exception as e:
-        print(f"❌ Training failed: {e}")
+        print(f"Training failed: {e}")
         import traceback
 
         traceback.print_exc()
@@ -345,8 +343,8 @@ def train_llama3_fusion():
 
 if __name__ == "__main__":
     # NOTE: This requires HuggingFace approval for Llama-3
-    print(f"⚠️  IMPORTANT: This script requires HuggingFace approval for Llama-3-8B")
-    print(f"💡 To get access:")
+    print(f"IMPORTANT: This script requires HuggingFace approval for Llama-3-8B")
+    print(f"To get access:")
     print(f"   1. Go to: https://huggingface.co/meta-llama/Meta-Llama-3-8B")
     print(f"   2. Request access from Meta")
     print(f"   3. Login with: huggingface-cli login")
@@ -355,5 +353,5 @@ if __name__ == "__main__":
     # YOU HAVE LLAMA-3 ACCESS - LET'S GO!
     train_llama3_fusion()
 
-    print(f"\n🎯 Based on our scaling tests, this WILL work with your 36GB RAM!")
-    print(f"📊 Estimated memory usage: ~29GB (19% buffer remaining)")
+    print(f"\nBased on our scaling tests, this WILL work with your 36GB RAM!")
+    print(f"Estimated memory usage: ~29GB (19% buffer remaining)")

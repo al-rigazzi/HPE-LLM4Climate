@@ -17,7 +17,7 @@ from load_aifs_encoder import load_aifs_encoder
 
 def analyze_encoder_signature():
     """Analyze the encoder's forward method signature."""
-    print("🔍 Analyzing AIFS Encoder Signature")
+    print("Analyzing AIFS Encoder Signature")
     print("=" * 50)
 
     # Load encoder
@@ -27,7 +27,7 @@ def analyze_encoder_signature():
     forward_method = encoder.forward
     signature = inspect.signature(forward_method)
 
-    print(f"📝 Encoder Type: {type(encoder).__name__}")
+    print(f"Encoder Type: {type(encoder).__name__}")
     print("📋 Forward Method Signature:")
     print(f"   {signature}")
 
@@ -46,10 +46,10 @@ def analyze_encoder_signature():
 
     # Check the module
     print(f"\n🏗️ Module: {encoder.__class__.__module__}")
-    print(f"📁 File: {inspect.getfile(encoder.__class__)}")
+    print(f"File: {inspect.getfile(encoder.__class__)}")
 
     # Look for example usage in the encoder
-    print("\n🔍 Available Methods:")
+    print("\nAvailable Methods:")
     for method_name in dir(encoder):
         if not method_name.startswith("_") and callable(getattr(encoder, method_name)):
             method = getattr(encoder, method_name)

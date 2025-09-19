@@ -1,7 +1,20 @@
 """
 AIFS Climate Fusion Module
 
-This module provides climate-text fusion capabilities specifically designed for AIFS,
+This mo    def __init__(
+        self,
+        aifs_model,
+        aifs_checkpoint_path: str | None = None,
+        # Updated to match actual AIFS encoder output
+        climate_dim: int = AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+        text_dim: int = TEXT_DEFAULT_DIM,
+        fusion_dim: int = FUSION_DEFAULT_DIM,
+        num_attention_heads: int = DEFAULT_NUM_HEADS,
+        dropout: float = 0.1,
+        device: str = "cpu",
+        dtype: torch.dtype = torch.float32,
+        verbose: bool = False,
+    ): climate-text fusion capabilities specifically designed for AIFS,
 combining climate data encoded through the  AIFSCompleteEncoder with textual
 descriptions for enhanced multimodal climate analysis.
 """
@@ -10,6 +23,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from ..constants import (
+    AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+    DEFAULT_NUM_HEADS,
+    FUSION_DEFAULT_DIM,
+    TEXT_DEFAULT_DIM,
+)
 from ..utils.text_utils import ClimateTextProcessor
 
 # Import the  AIFS encoder utilities
@@ -24,7 +43,8 @@ class AIFSClimateTextFusion(nn.Module):
     with textual descriptions to create rich multimodal representations for climate analysis.
 
      Features:
-    - Uses AIFSCompleteEncoder that returns actual encoder embeddings [542080, 218]
+    - Uses AIFSCompleteEncoder that returns actual encoder embeddings
+      [AIFS_GRID_POINTS, AIFS_PROJECTED_ENCODER_OUTPUT_DIM]
     - No more workaround encoders - uses the complete AIFS model from inputs to encoder output
     - Handles full 5D climate tensors: [batch, time, ensemble, grid_points, variables]
     """
@@ -33,12 +53,14 @@ class AIFSClimateTextFusion(nn.Module):
         self,
         aifs_model=None,
         aifs_checkpoint_path: str | None = None,
-        climate_dim: int = 218,  # Updated to match actual AIFS encoder output
-        text_dim: int = 768,
-        fusion_dim: int = 512,
-        num_attention_heads: int = 8,
+        # Updated to match actual AIFS encoder output
+        climate_dim: int = AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+        text_dim: int = TEXT_DEFAULT_DIM,
+        fusion_dim: int = FUSION_DEFAULT_DIM,
+        num_attention_heads: int = DEFAULT_NUM_HEADS,
         dropout: float = 0.1,
         device: str = "cpu",
+        dtype: torch.dtype = torch.float32,
         verbose: bool = True,
     ):
         """
@@ -47,12 +69,14 @@ class AIFSClimateTextFusion(nn.Module):
         Args:
             aifs_model: The complete AIFS model instance (preferred)
             aifs_checkpoint_path: Path to saved AIFSCompleteEncoder checkpoint (alternative)
-            climate_dim: Dimension of AIFS climate encodings (218 for complete encoder)
+            climate_dim: Dimension of AIFS climate encodings
+                        (AIFS_PROJECTED_ENCODER_OUTPUT_DIM for complete encoder)
             text_dim: Dimension of text embeddings
             fusion_dim: Dimension of fused representations
             num_attention_heads: Number of attention heads
             dropout: Dropout rate
             device: Device to run on
+            dtype: Data type for model parameters
             verbose: Whether to print initialization messages
         """
         super().__init__()
@@ -62,20 +86,21 @@ class AIFSClimateTextFusion(nn.Module):
         self.fusion_dim = fusion_dim
         self.num_attention_heads = num_attention_heads
         self.device = device
+        self.dtype = dtype
         self.verbose = verbose
 
         # Initialize the  AIFS Complete Encoder
         self.aifs_encoder: AIFSCompleteEncoder | None = None
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
-            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
+            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose, device=device)
             if verbose:
-                print("✅ Using AIFSCompleteEncoder with provided AIFS model")
+                print("Using AIFSCompleteEncoder with provided AIFS model")
         elif aifs_checkpoint_path is not None:
             # Load from checkpoint (requires AIFS model to be loaded separately)
             if verbose:
                 print(
-                    "⚠️ Loading from checkpoint requires AIFS model. "
+                    "Loading from checkpoint requires AIFS model. "
                     "Consider providing aifs_model parameter."
                 )
             self.aifs_encoder = None  # Will be set when aifs_model is provided
@@ -85,49 +110,61 @@ class AIFSClimateTextFusion(nn.Module):
 
         # Climate data projection (updated for new encoder output dimension)
         self.climate_projection = nn.Sequential(
-            nn.Linear(climate_dim, fusion_dim),
-            nn.LayerNorm(fusion_dim),
+            nn.Linear(climate_dim, fusion_dim, dtype=dtype),
+            nn.LayerNorm(fusion_dim, dtype=dtype),
             nn.ReLU(),
             nn.Dropout(dropout),
         ).to(device)
 
         # Text projection
         self.text_projection = nn.Sequential(
-            nn.Linear(text_dim, fusion_dim),
-            nn.LayerNorm(fusion_dim),
+            nn.Linear(text_dim, fusion_dim, dtype=dtype),
+            nn.LayerNorm(fusion_dim, dtype=dtype),
             nn.ReLU(),
             nn.Dropout(dropout),
         ).to(device)
 
         # Cross-attention for climate-text fusion
         self.cross_attention = nn.MultiheadAttention(
-            embed_dim=fusion_dim, num_heads=num_attention_heads, dropout=dropout, batch_first=True
+            embed_dim=fusion_dim,
+            num_heads=num_attention_heads,
+            dropout=dropout,
+            batch_first=True,
+            dtype=dtype,
         ).to(device)
 
         # Self-attention for final fusion
         self.self_attention = nn.MultiheadAttention(
-            embed_dim=fusion_dim, num_heads=num_attention_heads, dropout=dropout, batch_first=True
+            embed_dim=fusion_dim,
+            num_heads=num_attention_heads,
+            dropout=dropout,
+            batch_first=True,
+            dtype=dtype,
         ).to(device)
 
         # Feed-forward network
         self.feedforward = nn.Sequential(
-            nn.Linear(fusion_dim, fusion_dim * 4),
+            nn.Linear(fusion_dim, fusion_dim * 4, dtype=dtype),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(fusion_dim * 4, fusion_dim),
+            nn.Linear(fusion_dim * 4, fusion_dim, dtype=dtype),
             nn.Dropout(dropout),
         ).to(device)
 
         # Layer normalization
-        self.norm1 = nn.LayerNorm(fusion_dim).to(device)
-        self.norm2 = nn.LayerNorm(fusion_dim).to(device)
-        self.norm3 = nn.LayerNorm(fusion_dim).to(device)
+        self.norm1 = nn.LayerNorm(fusion_dim, dtype=dtype).to(device)
+        self.norm2 = nn.LayerNorm(fusion_dim, dtype=dtype).to(device)
+        self.norm3 = nn.LayerNorm(fusion_dim, dtype=dtype).to(device)
 
         # Output projection
-        self.output_projection = nn.Linear(fusion_dim, fusion_dim).to(device)
+        self.output_projection = nn.Linear(fusion_dim, fusion_dim, dtype=dtype).to(device)
 
         # Initialize text processor
         self.text_processor = ClimateTextProcessor()
+
+        # Convert entire module to appropriate dtype for device
+        if device in ["cuda", "mps"] and dtype == torch.float16:
+            self.half()  # Convert all module parameters to FP16
 
     def encode_climate_data(self, climate_data: torch.Tensor) -> torch.Tensor:
         """
@@ -146,22 +183,43 @@ class AIFSClimateTextFusion(nn.Module):
 
         with torch.no_grad():
             # Use the complete encoder that returns actual AIFS embeddings
-            # [grid_points, embedding_dim]
-            encoded = self.aifs_encoder(climate_data)  # [542080, 218]
+            # Returns [batch, time, grid_points, embedding_dim] or
+            # [batch, grid_points, embedding_dim]
+            encoded = self.aifs_encoder(climate_data)  # e.g. [1, 1, 542080, 218]
 
-            # Aggregate grid point embeddings to create global climate representation
-            # Use mean pooling across grid points to get global features
-            if encoded.dim() == 2:  # [grid_points, embedding_dim]
+            # Handle different output shapes from AIFS encoder
+            if encoded.dim() == 4:  # [batch, time, grid_points, embedding_dim]
+                # Aggregate over time and grid points to get global representation
+                batch_size = encoded.shape[0]
+                # Mean across time and grid dimensions
+                global_encoded = encoded.mean(dim=(1, 2))  # [batch, embedding_dim]
+            elif encoded.dim() == 3:  # [batch, grid_points, embedding_dim]
+                # Aggregate grid point embeddings to create global climate representation
+                global_encoded = encoded.mean(dim=1)  # [batch, embedding_dim]
+            elif encoded.dim() == 2:  # [grid_points, embedding_dim]
                 # Take mean across grid points to get global representation
-                global_encoded = encoded.mean(dim=0, keepdim=True)  # [1, 218]
+                global_encoded = encoded.mean(dim=0, keepdim=True).to(dtype=self.dtype)  # [1, 218]
                 # Expand to match original batch size if needed
                 batch_size = climate_data.shape[0]
                 global_encoded = global_encoded.expand(batch_size, -1)  # [batch, 218]
             else:
-                global_encoded = encoded  # Already in correct format
+                global_encoded = encoded.to(
+                    dtype=self.dtype
+                )  # Already in correct format        # Project to fusion dimension
+        # Ensure input tensor matches layer dtype
+        if hasattr(self.climate_projection[0], "weight"):
+            target_dtype = self.climate_projection[0].weight.dtype
+            global_encoded = global_encoded.to(target_dtype)
 
-        # Project to fusion dimension
         projected = self.climate_projection(global_encoded)
+
+        # Ensure output matches module dtype
+        if (
+            hasattr(self.climate_projection[0], "weight")
+            and projected.dtype != self.climate_projection[0].weight.dtype
+        ):
+            projected = projected.to(self.climate_projection[0].weight.dtype)
+
         return torch.as_tensor(projected)
 
     def encode_text(
@@ -181,7 +239,9 @@ class AIFSClimateTextFusion(nn.Module):
             # Simple embedding for now - in practice, use a proper text encoder
             # Create embeddings for each text but average them to get single representation
             num_texts = len(texts)
-            text_embeddings = torch.randn(num_texts, self.text_dim, device=self.device)
+            text_embeddings = torch.randn(
+                num_texts, self.text_dim, device=self.device, dtype=self.dtype
+            )
             # Average across texts to get single text representation
             text_embeddings = text_embeddings.mean(dim=0, keepdim=True)  # [1, text_dim]
 
@@ -380,18 +440,21 @@ class AIFSClimateEmbedding(nn.Module):
         self.device = device
         self.verbose = verbose
 
+        # Device-adaptive dtype selection for FP16 support
+        self.dtype = torch.float16 if device.startswith(("cuda", "mps")) else torch.float32
+
         # Initialize the  AIFS Complete Encoder
         self.aifs_encoder: AIFSCompleteEncoder | None = None
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
-            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose).to(device)
+            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose, device=device)
             if verbose:
-                print("✅ Using AIFSCompleteEncoder with provided AIFS model")
+                print("Using AIFSCompleteEncoder with provided AIFS model")
         elif aifs_checkpoint_path is not None:
             # Load from checkpoint (requires AIFS model to be loaded separately)
             if verbose:
                 print(
-                    "⚠️ Loading from checkpoint requires AIFS model. "
+                    "Loading from checkpoint requires AIFS model. "
                     "Consider providing aifs_model parameter."
                 )
             self.aifs_encoder = None  # Will be set when aifs_model is provided
@@ -405,6 +468,10 @@ class AIFSClimateEmbedding(nn.Module):
             nn.LayerNorm(embedding_dim),
             nn.ReLU(),
         ).to(device)
+
+        # Apply FP16 conversion for MPS/CUDA devices
+        if self.dtype == torch.float16:
+            self.projection = self.projection.half()
 
     def forward(self, climate_data: torch.Tensor) -> torch.Tensor:
         """
@@ -423,18 +490,25 @@ class AIFSClimateEmbedding(nn.Module):
 
         # Encode with AIFS complete encoder
         with torch.no_grad():
-            aifs_features = self.aifs_encoder(climate_data)  # [542080, 218]
+            aifs_features = self.aifs_encoder(climate_data)  # [1, 1, 542080, 218] or [542080, 218]
 
             # Aggregate grid point embeddings to create global climate representation
             # Use mean pooling across grid points to get global features
-            if aifs_features.dim() == 2:  # [grid_points, embedding_dim]
+            if aifs_features.dim() == 4:  # [batch, time, grid_points, features]
+                # Aggregate across time and grid point dimensions
+                global_features = aifs_features.mean(dim=(1, 2))  # [batch, features]
+            elif aifs_features.dim() == 2:  # [grid_points, features]
                 # Take mean across grid points to get global representation
-                global_features = aifs_features.mean(dim=0, keepdim=True)  # [1, 218]
+                global_features = aifs_features.mean(dim=0, keepdim=True)  # [1, features]
                 # Expand to match original batch size if needed
                 batch_size = climate_data.shape[0]
-                global_features = global_features.expand(batch_size, -1)  # [batch, 218]
+                global_features = global_features.expand(batch_size, -1)  # [batch, features]
             else:
                 global_features = aifs_features  # Already in correct format
+
+        # Ensure dtype consistency for MPS/CUDA FP16 operations
+        if global_features.dtype != self.dtype:
+            global_features = global_features.to(dtype=self.dtype)
 
         # Project to embedding space
         embeddings = self.projection(global_features)

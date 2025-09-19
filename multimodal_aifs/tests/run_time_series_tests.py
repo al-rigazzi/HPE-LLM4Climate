@@ -25,7 +25,7 @@ sys.path.insert(0, str(project_root))
 
 def run_unit_tests(verbosity=2):
     """Run unit tests for time series tokenizer."""
-    print("🧪 Running Unit Tests")
+    print("Running Unit Tests")
     print("=" * 50)
 
     try:
@@ -44,7 +44,7 @@ def run_unit_tests(verbosity=2):
         return result.wasSuccessful()
 
     except ImportError as e:
-        print(f"❌ Could not import unit tests: {e}")
+        print(f"Could not import unit tests: {e}")
         return False
 
 
@@ -69,13 +69,13 @@ def run_integration_tests(verbosity=2):
         return result.wasSuccessful()
 
     except ImportError as e:
-        print(f"❌ Could not import integration tests: {e}")
+        print(f"Could not import integration tests: {e}")
         return False
 
 
 def run_performance_benchmarks(verbosity=2):
     """Run performance benchmarks for time series tokenizer."""
-    print("\\n⚡ Running Performance Benchmarks")
+    print("\\nRunning Performance Benchmarks")
     print("=" * 50)
 
     try:
@@ -94,13 +94,13 @@ def run_performance_benchmarks(verbosity=2):
         return result.wasSuccessful()
 
     except ImportError as e:
-        print(f"❌ Could not import performance benchmarks: {e}")
+        print(f"Could not import performance benchmarks: {e}")
         return False
 
 
 def check_dependencies():
     """Check if required dependencies are available."""
-    print("🔍 Checking Dependencies")
+    print("Checking Dependencies")
     print("=" * 50)
 
     required_packages = [
@@ -118,26 +118,26 @@ def check_dependencies():
     for package in required_packages:
         try:
             __import__(package)
-            print(f"   ✅ {package}")
+            print(f"   {package}")
         except ImportError:
             missing_required.append(package)
-            print(f"   ❌ {package} (required)")
+            print(f"   {package} (required)")
 
     for package in optional_packages:
         try:
             __import__(package)
-            print(f"   ✅ {package}")
+            print(f"   {package}")
         except ImportError:
             missing_optional.append(package)
-            print(f"   ⚠️  {package} (optional)")
+            print(f"   {package} (optional)")
 
     if missing_required:
-        print(f"\\n❌ Missing required packages: {missing_required}")
+        print(f"\\nMissing required packages: {missing_required}")
         print("Install with: pip install " + " ".join(missing_required))
         return False
 
     if missing_optional:
-        print(f"\\n⚠️  Missing optional packages: {missing_optional}")
+        print(f"\\nMissing optional packages: {missing_optional}")
         print("Install with: pip install " + " ".join(missing_optional))
 
     return True
@@ -145,7 +145,7 @@ def check_dependencies():
 
 def check_tokenizer_availability():
     """Check if the time series tokenizer is available."""
-    print("\\n🔧 Checking Tokenizer Availability")
+    print("\\nChecking Tokenizer Availability")
     print("=" * 50)
 
     try:
@@ -153,22 +153,22 @@ def check_tokenizer_availability():
 
         # Try to create a tokenizer
         tokenizer = AIFSTimeSeriesTokenizer(device="cpu")
-        print("   ✅ AIFSTimeSeriesTokenizer imported successfully")
+        print("   AIFSTimeSeriesTokenizer imported successfully")
 
         # Try to get info
         info = tokenizer.get_tokenizer_info()
-        print(f"   ✅ Tokenizer info: {info['temporal_modeling']} mode")
+        print(f"   Tokenizer info: {info['temporal_modeling']} mode")
 
         return True
 
     except Exception as e:
-        print(f"   ❌ Tokenizer not available: {e}")
+        print(f"   Tokenizer not available: {e}")
         return False
 
 
 def generate_test_report(unit_success, integration_success, benchmark_success, total_time):
     """Generate a comprehensive test report."""
-    print("\\n📊 Test Report")
+    print("\\nTest Report")
     print("=" * 60)
 
     # Summary
@@ -187,28 +187,28 @@ def generate_test_report(unit_success, integration_success, benchmark_success, t
     ]
 
     for test_name, success in test_results:
-        status = "✅ PASSED" if success else "❌ FAILED"
+        status = "PASSED" if success else "FAILED"
         print(f"  {test_name}: {status}")
 
     print()
 
     # Recommendations
     if not unit_success:
-        print("⚠️  Unit test failures indicate issues with core functionality.")
+        print("Unit test failures indicate issues with core functionality.")
         print("   Check tokenizer implementation and basic operations.")
 
     if not integration_success:
-        print("⚠️  Integration test failures indicate issues with multimodal workflows.")
+        print("Integration test failures indicate issues with multimodal workflows.")
         print("   Check fusion patterns and end-to-end pipelines.")
 
     if not benchmark_success:
-        print("⚠️  Benchmark failures indicate performance issues.")
+        print("Benchmark failures indicate performance issues.")
         print("   Check system resources and optimization settings.")
 
     if passed_tests == total_tests:
-        print("🎉 All tests passed! Time series tokenizer is ready for production.")
+        print("All tests passed! Time series tokenizer is ready for production.")
     else:
-        print("🔧 Some tests failed. Review the output above for details.")
+        print("Some tests failed. Review the output above for details.")
 
     print("=" * 60)
 
@@ -242,7 +242,7 @@ def main():
         warnings.filterwarnings("ignore", category=UserWarning)
         warnings.filterwarnings("ignore", category=FutureWarning)
 
-    print("🚀 AIFS Time Series Tokenizer Test Suite")
+    print("AIFS Time Series Tokenizer Test Suite")
     print("=" * 60)
     print(f"Project root: {project_root}")
     print(f"Python version: {sys.version}")
@@ -252,12 +252,12 @@ def main():
 
     # Check dependencies
     if not check_dependencies():
-        print("❌ Dependency check failed. Exiting.")
+        print("Dependency check failed. Exiting.")
         return 1
 
     # Check tokenizer availability
     if not check_tokenizer_availability():
-        print("❌ Tokenizer availability check failed. Exiting.")
+        print("Tokenizer availability check failed. Exiting.")
         return 1
 
     # Determine which tests to run

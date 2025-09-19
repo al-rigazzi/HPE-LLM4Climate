@@ -40,19 +40,22 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             / "aifs_encoder_full.pth"
         )
         cls.device = "cpu"  # Use CPU for testing
+        cls.dtype = torch.float32  # Default dtype for testing
         cls.has_real_model = cls.aifs_model_path.exists()
 
-        print(f"🧪 AIFS Time Series Tokenizer Test Setup")
+        print(f"AIFS Time Series Tokenizer Test Setup")
         print(f"   Project root: {cls.project_root}")
         print(f"   AIFS model path: {cls.aifs_model_path}")
         print(f"   Has real model: {cls.has_real_model}")
         print(f"   Device: {cls.device}")
+        print(f"   Dtype: {cls.dtype}")
 
     def create_test_tokenizer(self, **kwargs):
         """Create a test tokenizer with checkpoint mode for testing."""
         defaults = {
             "aifs_checkpoint_path": "/path/to/checkpoint.pt",
             "device": self.device,
+            "dtype": self.dtype,
             "verbose": False,
         }
         defaults.update(kwargs)
@@ -64,54 +67,98 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         time_steps: int = 4,
         n_variables: int = 3,
         spatial_shape: tuple = (16, 16),
+        dtype: torch.dtype | None = None,
     ) -> torch.Tensor:
         """Create test 5-D climate time series data."""
         height, width = spatial_shape
-        return torch.randn(batch_size, time_steps, n_variables, height, width)
+        if dtype is None:
+            dtype = self.dtype
+        return torch.randn(batch_size, time_steps, n_variables, height, width, dtype=dtype)
 
     def test_tokenizer_initialization(self):
         """Test AIFSTimeSeriesTokenizer initialization with different configurations."""
-        print("\\n🔧 Testing Tokenizer Initialization")
+        print("\\nTesting Tokenizer Initialization")
 
         # Test default initialization (transformer) - use checkpoint mode for testing
         tokenizer_default = self.create_test_tokenizer()
         self.assertEqual(tokenizer_default.temporal_modeling, "transformer")
         self.assertEqual(tokenizer_default.hidden_dim, 512)
         self.assertEqual(tokenizer_default.device, self.device)
-        print("   ✅ Transformer tokenizer initialized (default)")
+        self.assertEqual(tokenizer_default.dtype, self.dtype)
+        print("   Transformer tokenizer initialized (default)")
 
-        # Test LSTM initialization
-        tokenizer_lstm = self.create_test_tokenizer(temporal_modeling="lstm", hidden_dim=256)
+        # Test LSTM initialization with different dtype
+        tokenizer_lstm = self.create_test_tokenizer(
+            temporal_modeling="lstm", hidden_dim=256, dtype=torch.float16
+        )
         self.assertEqual(tokenizer_lstm.temporal_modeling, "lstm")
         self.assertEqual(tokenizer_lstm.hidden_dim, 256)
-        print("   ✅ LSTM tokenizer initialized")
+        self.assertEqual(tokenizer_lstm.dtype, torch.float16)
+        print("   LSTM tokenizer initialized with float16")
 
         # Test None initialization (spatial only)
         tokenizer_none = self.create_test_tokenizer(temporal_modeling="none")
         self.assertEqual(tokenizer_none.temporal_modeling, "none")
+        self.assertEqual(tokenizer_none.dtype, self.dtype)
         self.assertIsNone(tokenizer_none.temporal_model)
-        print("   ✅ Spatial-only tokenizer initialized")
+        print("   Spatial-only tokenizer initialized")
 
         # Test invalid temporal modeling
         with self.assertRaises(ValueError):
             self.create_test_tokenizer(temporal_modeling="invalid")
-        print("   ✅ Invalid temporal modeling properly rejected")
+        print("   Invalid temporal modeling properly rejected")
+
+    def test_dtype_consistency(self):
+        """Test dtype consistency across tokenizer operations."""
+        print("\\nTesting Dtype Consistency")
+
+        dtypes_to_test = [torch.float16, torch.float32, torch.float64]
+
+        for dtype in dtypes_to_test:
+            # Skip float64 on MPS since it's not supported
+            if (
+                dtype == torch.float64
+                and torch.backends.mps.is_available()
+                and torch.backends.mps.is_built()
+            ):
+                print(f"   Skipping {dtype} test on MPS (not supported)")
+                continue
+
+            tokenizer = self.create_test_tokenizer(dtype=dtype)
+
+            # Test tokenizer configuration
+            info = tokenizer.get_tokenizer_info()
+            self.assertEqual(info["dtype"], dtype)
+
+            # Test that tokenizer maintains dtype
+            self.assertEqual(tokenizer.dtype, dtype)
+
+            print(f"   Tokenizer with {dtype} initialized and validated")
 
     def test_tensor_shapes_validation(self):
         """Test validation of input tensor shapes."""
-        print("\\n📊 Testing Tensor Shape Validation")
+        print("\nTesting Tensor Shape Validation")
 
         tokenizer = self.create_test_tokenizer()
 
-        # Test various 5-D tensor shapes
-        test_shapes = [
-            (1, 2, 3, 8, 8),  # Minimal case
-            (2, 4, 5, 16, 16),  # Small case
-            (4, 8, 7, 32, 32),  # Medium case
+        # Test various 5-D tensor shapes with different dtypes
+        test_configs = [
+            (1, 2, 3, 8, 8, torch.float32),
+            (2, 4, 5, 16, 16, torch.float16),
+            (4, 8, 7, 32, 32, torch.float64),
         ]
 
-        for batch, time, vars, h, w in test_shapes:
-            data = self.create_test_data(batch, time, vars, (h, w))
+        for batch, time, vars, h, w, dtype in test_configs:
+            # Skip float64 on MPS since it's not supported
+            if (
+                dtype == torch.float64
+                and torch.backends.mps.is_available()
+                and torch.backends.mps.is_built()
+            ):
+                print(f"   Skipping {dtype} test on MPS (not supported)")
+                continue
+
+            data = self.create_test_data(batch, time, vars, (h, w), dtype)
 
             # Test tokenizer configuration without actual tokenization
             # (since we don't have a real AIFS model in tests)
@@ -127,22 +174,22 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
                     else tokenizer.spatial_dim
                 ),
             )
-            print(f"   ✅ Shape {data.shape} -> {expected_output_shape} (expected)")
+            print(f"   Shape {data.shape} ({dtype}) -> {expected_output_shape} (expected)")
 
-        print("   ✅ Tokenizer configuration validated for all shapes")
+        print("   Tokenizer configuration validated for all shapes and dtypes")
 
         # Test invalid tensor dimensions
         invalid_tensors = [
-            torch.randn(2, 3),  # 2-D
-            torch.randn(2, 3, 4),  # 3-D
-            torch.randn(2, 3, 4, 5),  # 4-D
-            torch.randn(2, 3, 4, 5, 6, 7),  # 6-D
+            torch.randn(2, 3, dtype=self.dtype),  # 2-D
+            torch.randn(2, 3, 4, dtype=self.dtype),  # 3-D
+            torch.randn(2, 3, 4, 5, dtype=self.dtype),  # 4-D
+            torch.randn(2, 3, 4, 5, 6, 7, dtype=self.dtype),  # 6-D
         ]
 
         for invalid_tensor in invalid_tensors:
             with self.assertRaises(Exception):
                 tokenizer.tokenize_time_series(invalid_tensor)
-            print(f"   ✅ Invalid shape {invalid_tensor.shape} properly rejected")
+            print(f"   Invalid shape {invalid_tensor.shape} properly rejected")
 
     def test_temporal_modeling_outputs(self):
         """Test that different temporal modeling approaches produce expected outputs."""
@@ -159,6 +206,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             info = tokenizer.get_tokenizer_info()
             self.assertEqual(info["temporal_modeling"], model_type)
             self.assertEqual(info["spatial_dim"], 218)  #  AIFS dimension
+            self.assertEqual(info["dtype"], self.dtype)
 
             if model_type == "none":
                 # Spatial-only should preserve AIFS output dimension
@@ -169,11 +217,11 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
             # Test expected output shape (without actual computation)
             expected_shape = (batch_size, time_steps, expected_output_dim)
-            print(f"   ✅ {model_type.upper()}: Expected output shape {expected_shape}")
+            print(f"   {model_type.upper()}: Expected output shape {expected_shape}")
 
     def test_sequential_vs_parallel_processing(self):
         """Test that sequential and parallel processing configurations are valid."""
-        print("\\n🔄 Testing Sequential vs Parallel Processing")
+        print("\\nTesting Sequential vs Parallel Processing")
 
         # Test with spatial-only configuration
         tokenizer = self.create_test_tokenizer(temporal_modeling="none")
@@ -182,6 +230,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         info = tokenizer.get_tokenizer_info()
         self.assertEqual(info["temporal_modeling"], "none")
         self.assertEqual(info["spatial_dim"], 218)
+        self.assertEqual(info["dtype"], self.dtype)
 
         # Test expected behavior for different data sizes
         test_data_shapes = [(2, 4, 3, 16, 16), (1, 8, 5, 32, 32)]
@@ -189,13 +238,13 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         for shape in test_data_shapes:
             batch_size, time_steps = shape[0], shape[1]
             expected_shape = (batch_size, time_steps, tokenizer.spatial_dim)
-            print(f"   ✅ Data shape {shape} -> Expected output {expected_shape}")
+            print(f"   Data shape {shape} -> Expected output {expected_shape}")
 
-        print(f"   ✅ Sequential and parallel processing configurations validated")
+        print(f"   Sequential and parallel processing configurations validated")
 
     def test_memory_efficiency(self):
         """Test memory usage configurations for different data sizes."""
-        print("\\n💾 Testing Memory Efficiency")
+        print("\\nTesting Memory Efficiency")
 
         test_configs = [
             ("Small", 1, 4, 3, (16, 16)),
@@ -212,17 +261,19 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             input_elements = batch * time * vars * height * width
             output_elements = batch * time * tokenizer.hidden_dim  # 512 by default
 
-            input_size = input_elements * 4  # float32 bytes
-            output_size = output_elements * 4  # float32 bytes
+            dtype_size = torch.finfo(self.dtype).bits // 8 if self.dtype.is_floating_point else 4
+            input_size = input_elements * dtype_size
+            output_size = output_elements * dtype_size
             compression_ratio = input_size / output_size if output_size > 0 else 1.0
 
             print(
-                f"   ✅ {config_name}: Expected {compression_ratio:.1f}x compression ({input_size//1024}KB -> {output_size//1024}KB)"
+                f"   {config_name}: Expected {compression_ratio:.1f}x compression ({input_size//1024}KB -> {output_size//1024}KB)"
             )
 
             # Validate configuration is correct
             info = tokenizer.get_tokenizer_info()
             self.assertEqual(info["temporal_modeling"], "transformer")
+            self.assertEqual(info["dtype"], self.dtype)
 
     def test_batch_encoding(self):
         """Test batch encoding functionality."""
@@ -242,11 +293,12 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             expected_shape = (batch_size, time_steps, tokenizer.hidden_dim)
 
             self.assertEqual(info["temporal_modeling"], "transformer")
-            print(f"   ✅ Batch size {batch_size}: Expected output shape {expected_shape}")
+            self.assertEqual(info["dtype"], self.dtype)
+            print(f"   Batch size {batch_size}: Expected output shape {expected_shape}")
 
     def test_performance_benchmarks(self):
         """Test performance configurations across different models."""
-        print("\\n⚡ Testing Performance Benchmarks")
+        print("\\nTesting Performance Benchmarks")
 
         test_cases = [
             ("transformer", 2, 4, 3, (16, 16)),
@@ -260,6 +312,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             # Test configuration without actual processing
             info = tokenizer.get_tokenizer_info()
             self.assertEqual(info["temporal_modeling"], model_type)
+            self.assertEqual(info["dtype"], self.dtype)
 
             # Calculate expected computational complexity
             height, width = spatial
@@ -274,7 +327,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             complexity_ratio = input_elements / output_elements if output_elements > 0 else 1.0
 
             print(
-                f"   ✅ {model_type.upper()}: Complexity ratio {complexity_ratio:.1f}x, Output dim {expected_output_dim}"
+                f"   {model_type.upper()}: Complexity ratio {complexity_ratio:.1f}x, Output dim {expected_output_dim}"
             )
 
     def test_tokenizer_info(self):
@@ -291,6 +344,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             "hidden_dim",
             "spatial_dim",
             "device",
+            "dtype",
             "output_shape_pattern",
         ]
 
@@ -299,16 +353,18 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
         self.assertEqual(info["temporal_modeling"], "transformer")  # Default
         self.assertEqual(info["device"], self.device)
+        self.assertEqual(info["dtype"], self.dtype)
         self.assertIsInstance(info["aifs_encoder"], dict)
 
-        print("   ✅ Tokenizer info structure validated")
+        print("   Tokenizer info structure validated")
         print(f"      Temporal modeling: {info['temporal_modeling']}")
         print(f"      Hidden dim: {info['hidden_dim']}")
         print(f"      Spatial dim: {info['spatial_dim']}")
+        print(f"      Dtype: {info['dtype']}")
 
     def test_edge_cases(self):
         """Test edge cases and error handling."""
-        print("\\n🔍 Testing Edge Cases")
+        print("\\nTesting Edge Cases")
 
         tokenizer = self.create_test_tokenizer()
 
@@ -317,23 +373,24 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
         # Test single timestep configuration
         expected_single_step_shape = (2, 1, tokenizer.hidden_dim)
-        print(f"   ✅ Single timestep: Expected shape {expected_single_step_shape}")
+        print(f"   Single timestep: Expected shape {expected_single_step_shape}")
 
         # Test single variable configuration
         expected_single_var_shape = (2, 4, tokenizer.hidden_dim)
-        print(f"   ✅ Single variable: Expected shape {expected_single_var_shape}")
+        print(f"   Single variable: Expected shape {expected_single_var_shape}")
 
         # Test minimal spatial dimensions configuration
         expected_minimal_shape = (1, 2, tokenizer.hidden_dim)
-        print(f"   ✅ Minimal spatial: Expected shape {expected_minimal_shape}")
+        print(f"   Minimal spatial: Expected shape {expected_minimal_shape}")
 
         # Validate configuration consistency
         self.assertEqual(info["temporal_modeling"], "transformer")
         self.assertEqual(info["spatial_dim"], 218)
+        self.assertEqual(info["dtype"], self.dtype)
 
     def test_device_consistency(self):
         """Test device consistency across operations."""
-        print("\\n💻 Testing Device Consistency")
+        print("\\nTesting Device Consistency")
 
         device = self.device
         tokenizer = self.create_test_tokenizer()
@@ -341,14 +398,16 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         # Test device configuration
         info = tokenizer.get_tokenizer_info()
         self.assertEqual(info["device"], device)
+        self.assertEqual(info["dtype"], self.dtype)
 
         # Test expected device behavior
-        print(f"   ✅ Device consistency configured: {device}")
-        print(f"   ✅ Tokenizer device: {info['device']}")
+        print(f"   Device consistency configured: {device}")
+        print(f"   Tokenizer device: {info['device']}")
+        print(f"   Tokenizer dtype: {info['dtype']}")
 
     def test_gradient_flow(self):
         """Test gradient flow configuration."""
-        print("\\n🔄 Testing Gradient Flow")
+        print("\\nTesting Gradient Flow")
 
         tokenizer = self.create_test_tokenizer(temporal_modeling="transformer")
 
@@ -357,21 +416,22 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
         # Validate model components support gradients
         self.assertEqual(info["temporal_modeling"], "transformer")
+        self.assertEqual(info["dtype"], self.dtype)
 
         # Test that tokenizer is in training mode for gradient flow
         if hasattr(tokenizer, "training"):
-            print(f"   ✅ Training mode: {tokenizer.training}")
+            print(f"   Training mode: {tokenizer.training}")
 
-        print(f"   ✅ Gradient flow configuration validated")
+        print(f"   Gradient flow configuration validated")
 
         # Test temporal model parameter existence
         if hasattr(tokenizer, "temporal_model") and tokenizer.temporal_model is not None:
             param_count = sum(
                 p.numel() for p in tokenizer.temporal_model.parameters() if p.requires_grad
             )
-            print(f"   ✅ Learnable parameters: {param_count}")
+            print(f"   Learnable parameters: {param_count}")
         else:
-            print("   ✅ No temporal model (spatial-only configuration)")
+            print("   No temporal model (spatial-only configuration)")
 
 
 def run_tests():

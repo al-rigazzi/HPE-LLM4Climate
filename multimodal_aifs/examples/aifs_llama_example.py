@@ -27,7 +27,7 @@ from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesToken
 
 def create_sample_climate_data():
     """Create sample climate time series data."""
-    print("🌡️ Creating sample climate data...")
+    print("Creating sample climate data...")
 
     # Simulate 5-day weather data for 2 locations
     batch_size = 2  # 2 locations
@@ -62,16 +62,16 @@ def create_sample_climate_data():
             # Wind speed (variable 3): random with some spatial correlation
             climate_data[location, day, 3] = 5 + torch.randn(height, width) * 3
 
-    print(f"   📊 Climate data shape: {climate_data.shape}")
+    print(f"   Climate data shape: {climate_data.shape}")
     print(
-        f"   🌡️  Temperature range: {climate_data[:, :, 0].min():.1f}°C "
+        f"   Temperature range: {climate_data[:, :, 0].min():.1f}°C "
         "to {climate_data[:, :, 0].max():.1f}°C"
     )
     print(
-        f"   💧 Humidity range: {climate_data[:, :, 1].min():.1f}% "
+        f"   Humidity range: {climate_data[:, :, 1].min():.1f}% "
         "to {climate_data[:, :, 1].max():.1f}%"
     )
-    print("   ⚠️  Note: Using demo grid size (1024) instead of full AIFS grid (542080)")
+    print("   Note: Using demo grid size (1024) instead of full AIFS grid (542080)")
 
     return climate_data
 
@@ -85,46 +85,51 @@ def create_climate_analysis_prompts():
         " tell me about the atmospheric conditions in this region?",
     ]
 
-    print(f"📝 Created {len(prompts)} climate analysis prompts")
+    print(f"Created {len(prompts)} climate analysis prompts")
     return prompts
 
 
 def demonstrate_aifs_llama_fusion():
     """Demonstrate AIFS-LLaMA fusion for climate analysis."""
-    print("\n🚀 AIFS-LLaMA Climate Analysis Demo")
+    print("\nAIFS-LLaMA Climate Analysis Demo")
     print("=" * 60)
 
     # Create sample data
     climate_data = create_sample_climate_data()
     text_prompts = create_climate_analysis_prompts()
 
-    print("\n🔧 Initializing AIFS-LLaMA Fusion Model...")
+    print("\nInitializing AIFS-LLaMA Fusion Model...")
 
     # First, try to load AIFS model
-    print("   🌪️ Loading AIFS model...")
+    print("   Loading AIFS model...")
     aifs_model = None
     try:
-        # Setup flash attention mocking
+        # Setup flash attention mocking (MacOS only)
+        import platform
         import types
 
-        flash_attn_mock = types.ModuleType("flash_attn")
-        flash_attn_interface_mock = types.ModuleType("flash_attn_interface")
-        flash_attn_interface_mock.flash_attn_func = lambda *args, **kwargs: None
-        flash_attn_interface_mock.flash_attn_varlen_func = lambda *args, **kwargs: None
-        flash_attn_mock.flash_attn_interface = flash_attn_interface_mock
+        if platform.system() == "Darwin":
+            flash_attn_mock = types.ModuleType("flash_attn")
+            flash_attn_interface_mock = types.ModuleType("flash_attn_interface")
+            flash_attn_interface_mock.flash_attn_func = lambda *args, **kwargs: None
+            flash_attn_interface_mock.flash_attn_varlen_func = lambda *args, **kwargs: None
+            flash_attn_mock.flash_attn_interface = flash_attn_interface_mock
 
-        sys.modules["flash_attn"] = flash_attn_mock
-        sys.modules["flash_attn.flash_attn_interface"] = flash_attn_interface_mock
-        os.environ["USE_FLASH_ATTENTION"] = "false"
+            sys.modules["flash_attn"] = flash_attn_mock
+            sys.modules["flash_attn.flash_attn_interface"] = flash_attn_interface_mock
+            os.environ["USE_FLASH_ATTENTION"] = "false"
+            print("   Flash attention mock enabled for MacOS")
+        else:
+            print("   Using real flash attention (non-MacOS system)")
 
         from anemoi.inference.runners.simple import SimpleRunner
 
         checkpoint = {"huggingface": "ecmwf/aifs-single-1.0"}
         runner = SimpleRunner(checkpoint, device="cpu")
         aifs_model = runner.model
-        print("   ✅ Real AIFS model loaded")
+        print("   Real AIFS model loaded")
     except Exception as e:
-        print(f"   ⚠️ AIFS model not available ({e}), using mock")
+        print(f"   AIFS model not available ({e}), using mock")
         aifs_model = None
 
     # Initialize fusion model using our production wrapper
@@ -136,105 +141,80 @@ def demonstrate_aifs_llama_fusion():
         verbose=True,
     )
 
-    print("✅ Model initialized successfully!")
+    print("Model initialized successfully!")
 
     # Test different tasks
     tasks = [
-        ("embedding", "🧠 Multimodal Embedding Extraction"),
-        ("generation", "💬 Climate-Conditioned Text Generation"),
-        ("classification", "📊 Climate Pattern Classification"),
+        ("embedding", "Multimodal Embedding Extraction"),
+        ("generation", "Climate-Conditioned Text Generation"),
+        ("classification", "Climate Pattern Classification"),
     ]
 
-    print("\n🧪 Testing Different Tasks:")
+    print("\nTesting Different Tasks:")
     print("-" * 40)
 
     for task_name, task_description in tasks:
         print(f"\n{task_description}")
 
         try:
-            # For demo purposes, create mock results when AIFS grid size doesn't match
-            if aifs_model is None:
-                # Mock results for when AIFS is not available
-                if task_name == "embedding":
-                    print(f"   ✅ Generated mock embeddings: {climate_data.shape[0]} samples")
-                    print("   📏 Mock embedding dimension: 512")
-                    print("   📊 Mock embedding stats: mean=0.000, std=1.000")
-                elif task_name == "generation":
-                    print(f"   ✅ Generated mock logits: {climate_data.shape[0]} samples")
-                    print("   📝 Mock vocabulary size: 32000")
-                    print("   🎯 Mock next token probabilities generated")
-                elif task_name == "classification":
-                    print(
-                        "   ✅ Generated mock classification logits: "
-                        f"{climate_data.shape[0]} samples"
-                    )
-                    print("   🏷️  Mock predicted classes: [0, 1]")
-                    print("   📊 Mock confidence scores: [0.6, 0.7]")
-            else:
-                # Try real processing
-                outputs = model(climate_data=climate_data, text_inputs=text_prompts, task=task_name)
+            # Process with real model when available
+            outputs = model(climate_data=climate_data, text_inputs=text_prompts, task=task_name)
 
-                # Display results
-                if task_name == "embedding":
-                    embeddings = outputs["embeddings"]
-                    print(f"   ✅ Generated embeddings: {embeddings.shape}")
-                    print(f"   📏 Embedding dimension: {embeddings.shape[-1]}")
-                    print(
-                        f"   📊 Embedding stats: mean={embeddings.mean():.4f}, "
-                        f"std={embeddings.std():.4f}"
-                    )
+            # Display results
+            if task_name == "embedding":
+                embeddings = outputs["embeddings"]
+                print(f"   Generated embeddings: {embeddings.shape}")
+                print(f"   Embedding dimension: {embeddings.shape[-1]}")
+                print(
+                    f"   Embedding stats: mean={embeddings.mean():.4f}, "
+                    f"std={embeddings.std():.4f}"
+                )
 
-                elif task_name == "generation":
-                    logits = outputs["logits"]
-                    print(f"   ✅ Generated logits: {logits.shape}")
-                    print(f"   📝 Vocabulary size: {logits.shape[-1]}")
-                    print(
-                        "   🎯 Sample next token probabilities: "
-                        f"{torch.softmax(logits[0, 0, :10], dim=0)}"
-                    )
+            elif task_name == "generation":
+                logits = outputs["logits"]
+                print(f"   Generated logits: {logits.shape}")
+                print(f"   Vocabulary size: {logits.shape[-1]}")
+                print(
+                    "   Sample next token probabilities: "
+                    f"{torch.softmax(logits[0, 0, :10], dim=0)}"
+                )
 
-                elif task_name == "classification":
-                    class_logits = outputs["classification_logits"]
-                    predictions = torch.softmax(class_logits, dim=1)
-                    print(f"   ✅ Classification logits: {class_logits.shape}")
-                    print(f"   🏷️  Predicted classes: {torch.argmax(predictions, dim=1)}")
-                    print(f"   📊 Confidence scores: {torch.max(predictions, dim=1)[0]}")
+            elif task_name == "classification":
+                class_logits = outputs["classification_logits"]
+                predictions = torch.softmax(class_logits, dim=1)
+                print(f"   Classification logits: {class_logits.shape}")
+                print(f"   Predicted classes: {torch.argmax(predictions, dim=1)}")
+                print(f"   Confidence scores: {torch.max(predictions, dim=1)[0]}")
 
         except Exception as e:
-            print(f"   ❌ Task failed: {e}")
-            # Provide fallback mock results
-            if task_name == "embedding":
-                print(f"   ✅ Generated fallback embeddings: {climate_data.shape[0]} samples")
-            elif task_name == "generation":
-                print(f"   ✅ Generated fallback logits: {climate_data.shape[0]} samples")
-            elif task_name == "classification":
-                print(f"   ✅ Generated fallback classification: {climate_data.shape[0]} samples")
+            print(f"   Task failed: {e}")
+            raise RuntimeError(f"Real model processing failed for task '{task_name}': {e}") from e
 
-    print("\n🔍 Model Architecture Analysis:")
+    print("\nModel Architecture Analysis:")
     print("-" * 40)
 
     # Analyze the model components
-    print("📊 AIFS Time Series Tokenizer:")
-    print(f"   • Temporal modeling: {model.time_series_tokenizer.temporal_modeling}")
-    print(f"   • Hidden dimension: {model.time_series_tokenizer.hidden_dim}")
-    print(f"   • Spatial dimension: {model.time_series_tokenizer.spatial_dim}")
+    print("AIFS Time Series Tokenizer:")
+    print(f"   Temporal modeling: {model.time_series_tokenizer.temporal_modeling}")
+    print(f"   Hidden dimension: {model.time_series_tokenizer.hidden_dim}")
+    print(f"   Spatial dimension: {model.time_series_tokenizer.spatial_dim}")
 
-    print("\n🤖 LLaMA Integration:")
-    print(f"   • Hidden size: {model.llama_hidden_size}")
-    print(f"   • Fusion strategy: {model.fusion_strategy}")
-    print(f"   • Device: {model.device}")
+    print("\nLLaMA Integration:")
+    print(f"   Hidden size: {model.llama_hidden_size}")
+    print(f"   Fusion strategy: {model.fusion_strategy}")
+    print(f"   Device: {model.device}")
 
-    print("\n✨ Integration Benefits:")
-    print("   • 🌡️  Rich climate representation via AIFS spatial encoding")
-    print("   • ⏰ Temporal dynamics captured by transformer")
-    print("   • 💬 Natural language understanding via LLaMA")
-    print("   • 🔗 Cross-modal attention for climate-text fusion")
-    print("   • 🚀 End-to-end trainable for climate-language tasks")
+    print("\nIntegration Benefits:")
+    print("   Rich climate representation via AIFS spatial encoding")
+    print("   Temporal dynamics captured by transformer")
+    print("   Natural language understanding via LLaMA")
+    print("   Cross-modal attention for climate-text fusion")
+    print("   End-to-end trainable for climate-language tasks")
 
 
 def demonstrate_compression_analysis(aifs_model=None):
     """Demonstrate compression analysis of AIFS tokenization."""
-    print("\n📊 AIFS Tokenization Compression Analysis")
+    print("\nAIFS Tokenization Compression Analysis")
     print("=" * 60)
 
     # Test different data sizes
@@ -246,8 +226,8 @@ def demonstrate_compression_analysis(aifs_model=None):
     ]
 
     if aifs_model is None:
-        print("⚠️ No AIFS model available for compression analysis")
-        print("💡 Skipping compression analysis - requires AIFS model")
+        print("No AIFS model available for compression analysis")
+        print("Skipping compression analysis - requires AIFS model")
         return
 
     try:
@@ -255,8 +235,8 @@ def demonstrate_compression_analysis(aifs_model=None):
             aifs_model=aifs_model, temporal_modeling="transformer", device="cpu"
         )
     except Exception as e:
-        print(f"⚠️ Could not create tokenizer: {e}")
-        print("💡 Skipping compression analysis")
+        print(f"Could not create tokenizer: {e}")
+        print("Skipping compression analysis")
         return
 
     print("\nCompression Analysis:")
@@ -279,17 +259,17 @@ def demonstrate_compression_analysis(aifs_model=None):
             output_mb = output_size / (1024 * 1024)
 
             print(f"{config_name}:")
-            print(f"   📥 Input:  {data.shape} ({input_mb:.2f} MB)")
-            print(f"   📤 Output: {tokens.shape} ({output_mb:.2f} MB)")
-            print(f"   📊 Compression: {compression_ratio:.1f}x")
+            print(f"   Input:  {data.shape} ({input_mb:.2f} MB)")
+            print(f"   Output: {tokens.shape} ({output_mb:.2f} MB)")
+            print(f"   Compression: {compression_ratio:.1f}x")
             print()
         except Exception as e:
-            print(f"{config_name}: ❌ Failed - {e}")
+            print(f"{config_name}: Failed - {e}")
 
 
 def main():
     """Main demonstration function."""
-    print("🌍 AIFS Time Series + LLaMA Integration Demo")
+    print("AIFS Time Series + LLaMA Integration Demo")
     print("=" * 60)
     print("This demo shows how to integrate AIFS spatial-temporal")
     print("climate tokenization with LLaMA language models for")
@@ -299,39 +279,44 @@ def main():
     # Load AIFS model for use in multiple functions
     aifs_model = None
     try:
-        # Setup flash attention mocking
+        # Setup flash attention mocking (MacOS only)
+        import platform
         import types
 
-        flash_attn_mock = types.ModuleType("flash_attn")
-        flash_attn_interface_mock = types.ModuleType("flash_attn_interface")
-        flash_attn_interface_mock.flash_attn_func = lambda *args, **kwargs: None
-        flash_attn_interface_mock.flash_attn_varlen_func = lambda *args, **kwargs: None
-        flash_attn_mock.flash_attn_interface = flash_attn_interface_mock
+        if platform.system() == "Darwin":
+            flash_attn_mock = types.ModuleType("flash_attn")
+            flash_attn_interface_mock = types.ModuleType("flash_attn_interface")
+            flash_attn_interface_mock.flash_attn_func = lambda *args, **kwargs: None
+            flash_attn_interface_mock.flash_attn_varlen_func = lambda *args, **kwargs: None
+            flash_attn_mock.flash_attn_interface = flash_attn_interface_mock
 
-        sys.modules["flash_attn"] = flash_attn_mock
-        sys.modules["flash_attn.flash_attn_interface"] = flash_attn_interface_mock
-        os.environ["USE_FLASH_ATTENTION"] = "false"
+            sys.modules["flash_attn"] = flash_attn_mock
+            sys.modules["flash_attn.flash_attn_interface"] = flash_attn_interface_mock
+            os.environ["USE_FLASH_ATTENTION"] = "false"
+            print("Flash attention mock enabled for MacOS")
+        else:
+            print("Using real flash attention (non-MacOS system)")
 
         from anemoi.inference.runners.simple import SimpleRunner
 
         checkpoint = {"huggingface": "ecmwf/aifs-single-1.0"}
         runner = SimpleRunner(checkpoint, device="cpu")
         aifs_model = runner.model
-        print("✅ AIFS model loaded for demo")
+        print("AIFS model loaded for demo")
     except Exception as e:
-        print(f"⚠️ AIFS model not available for demo: {e}")
+        print(f"AIFS model not available for demo: {e}")
 
     # Run demonstrations
     demonstrate_aifs_llama_fusion()
     demonstrate_compression_analysis(aifs_model)
 
-    print("\n🎉 Demo completed successfully!")
-    print("\n💡 Next Steps:")
-    print("   • Install transformers package for real LLaMA integration")
-    print("   • Train on real climate-text paired datasets")
-    print("   • Fine-tune for specific climate analysis tasks")
-    print("   • Scale to larger spatial-temporal resolutions")
-    print("   • Integrate with real-time weather data APIs")
+    print("\nDemo completed successfully!")
+    print("\nNext Steps:")
+    print("   Install transformers package for real LLaMA integration")
+    print("   Train on real climate-text paired datasets")
+    print("   Fine-tune for specific climate analysis tasks")
+    print("   Scale to larger spatial-temporal resolutions")
+    print("   Integrate with real-time weather data APIs")
 
 
 if __name__ == "__main__":

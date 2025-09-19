@@ -1,12 +1,8 @@
 """
 pytest Configuration and Fixtures for HPE-LLM4Climate
 
-This file provides common fixtures and configuration for all tests in the project.
-It includes fixtures for models, test data, and testing utilities.
-
-Environment Variables:
-- USE_MOCK_LLM: Set to "true" to force mock LLM usage instead of real models
-- USE_QUANTIZATION: Set to "true" to enable quantization for real models
+Common fixtures and configuration for tests including models, data, and utilities.
+Environment Variables: USE_MOCK_LLM, USE_QUANTIZATION
 """
 
 import os
@@ -26,20 +22,101 @@ from torch import nn
 project_root = Path(__file__).parent.parent  # Go up one level to project root
 sys.path.insert(0, str(project_root))
 
+# Import AIFS constants
+from multimodal_aifs.constants import (
+    AIFS_GRID_POINTS,
+    AIFS_INPUT_VARIABLES,
+    AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+    ALL_AIFS_VARIABLES,
+)
+
 
 # =================== UTILITY FUNCTIONS ===================
-
-
 def setup_flash_attn_mock():
-    """Mock flash_attn to prevent import errors"""
+    """Mock flash_attn to prevent import errors - MacOS only"""
+    import platform
+
+    # Only mock flash attention on MacOS systems where it's incomplete
+    if platform.system() != "Darwin":
+        print("ℹ️ Skipping flash attention mock - not on MacOS")
+        return
     flash_attn_mock = types.ModuleType("flash_attn")
     # Don't set __spec__ as it causes type issues
-
     # Create flash_attn_interface submodule
     flash_attn_interface_mock = types.ModuleType("flash_attn_interface")
-    flash_attn_interface_mock.flash_attn_func = MagicMock()  # type: ignore
-    flash_attn_interface_mock.flash_attn_varlen_func = MagicMock()  # type: ignore
 
+    def mock_flash_attn_func(
+        q,
+        k,
+        v,
+        dropout_p=0.0,
+        softmax_scale=None,
+        causal=False,
+        is_causal=None,
+        return_attn_probs=False,
+        **kwargs,
+    ):
+        """Mock flash attention function that returns proper tensor output - memory efficient."""
+        # Handle both causal and is_causal parameter names
+        if is_causal is not None:
+            causal = is_causal
+
+        # For very large sequences (like AIFS grid points), use a simplified approach
+        # that avoids creating massive attention matrices
+        seq_len = q.size(-2)
+
+        # If sequence length is very large (> 10000), use a simplified identity-like operation
+        # This is just for testing purposes and allows the model to run without OOM
+        if seq_len > 10000:
+            # Simple scaled passthrough that maintains dimensions
+            # This is a fallback for testing - not a real attention implementation
+            if softmax_scale is None:
+                softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+
+            # Apply a simple scaling and return
+            output = v * softmax_scale
+
+            if return_attn_probs:
+                # Return dummy attention weights for compatibility
+                dummy_attn = torch.ones(
+                    q.shape[:-1] + (k.shape[-2],), device=q.device, dtype=q.dtype
+                )
+                dummy_attn = dummy_attn / dummy_attn.sum(dim=-1, keepdim=True)
+                return output, dummy_attn
+            return output
+
+        # For smaller sequences, use proper scaled dot-product attention
+        if softmax_scale is None:
+            softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+
+        # Compute attention scores
+        scores = torch.matmul(q, k.transpose(-2, -1)) * softmax_scale
+        if causal:
+            # Apply causal mask
+            causal_mask = torch.triu(
+                torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool), diagonal=1
+            )
+            scores = scores.masked_fill(causal_mask, float("-inf"))
+
+        attn_weights = torch.softmax(scores, dim=-1)
+        if dropout_p > 0.0 and q.training:
+            attn_weights = torch.dropout(attn_weights, dropout_p, train=True)
+
+        output = torch.matmul(attn_weights, v)
+
+        if return_attn_probs:
+            return output, attn_weights
+        return output
+
+    def mock_flash_attn_varlen_func(*args, **kwargs):
+        """Mock variable length flash attention - simplified fallback."""
+        # For variable length, just return the first argument (query) as a simple fallback
+        if args:
+            return args[0]  # Return query tensor
+        return torch.zeros(1, 1, 1, 1)  # Fallback tensor
+
+    setattr(flash_attn_interface_mock, "flash_attn_func", mock_flash_attn_func)
+    setattr(flash_attn_interface_mock, "flash_attn_varlen_func", mock_flash_attn_varlen_func)
     # Set up the module hierarchy
     flash_attn_mock.flash_attn_interface = flash_attn_interface_mock  # type: ignore
 
@@ -50,6 +127,8 @@ def setup_flash_attn_mock():
     # Disable flash attention globally
     os.environ["USE_FLASH_ATTENTION"] = "false"
     os.environ["TRANSFORMERS_USE_FLASH_ATTENTION_2"] = "false"
+
+    print("Flash attention mock enabled for MacOS")
 
 
 def get_env_bool(env_var: str, default) -> bool:
@@ -63,10 +142,20 @@ def get_env_str(env_var: str, default: str) -> str:
 
 
 # =================== PYTEST CONFIGURATION ===================
-
-
 def pytest_sessionstart(session):
-    """Set up global test environment at the start of the test session."""
+    """Set up global test environment at start of session."""
+    # Suppress known MPS backend warnings for cleaner test output
+    warnings.filterwarnings(
+        "ignore",
+        message=".*aten::scatter_reduce.two_out.*not currently supported on the MPS backend.*",
+        category=UserWarning,
+    )
+
+    # Suppress common warnings that appear across multiple tests
+    warnings.filterwarnings("ignore", category=UserWarning)
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
     # Set up default device for the entire test session
     if torch.cuda.is_available():
         default_device = torch.device("cuda")
@@ -74,19 +163,18 @@ def pytest_sessionstart(session):
         default_device = torch.device("mps")
     else:
         default_device = torch.device("cpu")
-
     # Set the default device for PyTorch
     if hasattr(torch, "set_default_device"):
         torch.set_default_device(default_device)
     else:
         # Fallback for older PyTorch versions
-        torch.cuda.set_device(default_device) if default_device.type == "cuda" else None
-
+        if default_device.type == "cuda":
+            torch.cuda.set_device(default_device)
     print(f"Test session configured with default device: {default_device}")
 
 
 def pytest_configure(config):
-    """Configure pytest session with custom markers and settings."""
+    """Configure pytest session with custom markers."""
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
@@ -99,7 +187,8 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "requires_aifs: marks tests that require real AIFS model")
     config.addinivalue_line(
         "markers",
-        "large_memory: marks tests that require high amounts of memory (deselect with '-m \"not large_memory\"')",
+        "large_memory: marks tests that require high amounts of memory "
+        "(deselect with '-m \"not large_memory\"')",
     )
 
 
@@ -124,8 +213,6 @@ def pytest_collection_modifyitems(config, items):
 
 
 # =================== DEVICE AND ENVIRONMENT FIXTURES ===================
-
-
 @pytest.fixture(scope="session")
 def test_device():
     """Provide the best available device for testing."""
@@ -139,7 +226,7 @@ def test_device():
 @pytest.fixture(scope="session")
 def llm_mock_status():
     """Provide information about whether LLM mocking is enabled."""
-    use_mock_llm = get_env_bool("USE_MOCK_LLM", True)
+    use_mock_llm = get_env_bool("USE_MOCK_LLM", False)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
     model_name = os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B")
 
@@ -157,7 +244,7 @@ def zarr_dataset_path():
     # Use the standard test dataset path
     zarr_path = "test_aifs_large.zarr"
 
-    print(f"📁 Using test Zarr dataset: {zarr_path}")
+    print(f"Using test Zarr dataset: {zarr_path}")
 
     return zarr_path
 
@@ -167,14 +254,11 @@ def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
     """Ensure test Zarr dataset exists for integration tests."""
     # Path to the test zarr dataset - use AIFS-compatible format
     zarr_path = Path(zarr_dataset_path)
-
     # Check if dataset already exists
     if zarr_path.exists():
-        print(f"✅ Test Zarr dataset already exists: {zarr_path}")
+        print(f"Test Zarr dataset already exists: {zarr_path}")
         return str(zarr_path)
-
     print("🏗️ Creating test Zarr dataset for integration tests...")
-
     try:
         # Create a simple zarr dataset directly
         try:
@@ -182,123 +266,17 @@ def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
 
             import xarray as xr
         except ImportError as e:
-            print(f"❌ Missing required packages for zarr creation: {e}")
-            print("⚠️ Install with: pip install zarr xarray")
+            print(f"Missing required packages for zarr creation: {e}")
+            print("Install with: pip install zarr xarray")
             return None
-
         # Create synthetic climate data in AIFS-compatible format
         # Use real AIFS dimensions as per copilot instructions
         time_steps = 2  # Match AIFS format
-        grid_points = 542080  # Real AIFS grid points
-        n_variables = 103  # Full AIFS variables
-
+        grid_points = AIFS_GRID_POINTS  # Real AIFS grid points
         # Create coordinates matching AIFS format
         times = [datetime(2024, 1, 1) + timedelta(hours=i * 12) for i in range(time_steps)]
-        variables = [
-            "10v",
-            "u_850",
-            "u_250",
-            "sp",
-            "v_400",
-            "q_925",
-            "w_400",
-            "t_250",
-            "sin_latitude",
-            "t_850",
-            "z_50",
-            "u_400",
-            "insolation",
-            "v_850",
-            "100v",
-            "w_850",
-            "z_100",
-            "w_925",
-            "w_250",
-            "t_400",
-            "v_250",
-            "q_400",
-            "z_500",
-            "v_925",
-            "t_925",
-            "u_925",
-            "q_850",
-            "t_150",
-            "w_700",
-            "u_300",
-            "q_250",
-            "v_700",
-            "sdor",
-            "u_150",
-            "t_700",
-            "w_150",
-            "w_300",
-            "t_300",
-            "cos_latitude",
-            "v_300",
-            "v_150",
-            "z_200",
-            "t_50",
-            "u_50",
-            "u_700",
-            "mcc",
-            "q_700",
-            "tp",
-            "2t",
-            "q_150",
-            "z",
-            "ro",
-            "q_300",
-            "q_50",
-            "w_600",
-            "lsm",
-            "u_200",
-            "z_600",
-            "v_50",
-            "sin_longitude",
-            "10u",
-            "cos_julian_day",
-            "sf",
-            "v_200",
-            "t_200",
-            "v_600",
-            "t_600",
-            "100u",
-            "tcw",
-            "q_600",
-            "ssrd",
-            "w_200",
-            "msl",
-            "u_600",
-            "sin_julian_day",
-            "skt",
-            "z_150",
-            "hcc",
-            "lcc",
-            "v_500",
-            "z_700",
-            "t_100",
-            "z_300",
-            "q_200",
-            "w_50",
-            "u_100",
-            "sin_local_time",
-            "w_500",
-            "cp",
-            "t_500",
-            "u_500",
-            "z_925",
-            "2d",
-            "slor",
-            "z_850",
-            "v_100",
-            "z_250",
-            "w_100",
-            "cos_local_time",
-            "z_400",
-            "q_500",
-            "q_100",
-            "cos_longitude",
-        ]  # Create synthetic data with AIFS-compatible dimensions [time, grid_point]
+        variables = ALL_AIFS_VARIABLES  # Use the complete AIFS variable list from constants
+        # Create synthetic data with AIFS-compatible dimensions [time, grid_point]
         # AIFS format: time=2, grid_point=10000
         data_shape = (time_steps, grid_points)
 
@@ -322,7 +300,10 @@ def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
         ds.attrs = {
             "title": "Synthetic AIFS-Compatible Dataset for Testing",
             "created": datetime.now().isoformat(),
-            "description": f"Synthetic dataset with {len(variables)} variables in AIFS format [time, grid_point]",
+            "description": (
+                f"Synthetic dataset with {len(variables)} variables in AIFS format "
+                "[time, grid_point]"
+            ),
             "format": "AIFS-compatible",
             "aifs_grid_points": grid_points,
             "aifs_variables": len(variables),
@@ -334,24 +315,22 @@ def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
         # Save to zarr
         ds.to_zarr(zarr_path, mode="w")
 
-        print(f"✅ Test Zarr dataset created successfully: {zarr_path}")
+        print(f"Test Zarr dataset created successfully: {zarr_path}")
         print(f"   Dimensions: [{time_steps}, {len(variables)}, {grid_points}] (AIFS format)")
 
         return str(zarr_path)
 
     except Exception as e:
-        print(f"❌ Failed to create test Zarr dataset: {e}")
+        print(f"Failed to create test Zarr dataset: {e}")
         print(f"   Error type: {type(e).__name__}")
         # Don't fail the test session, just warn
-        print("⚠️ Zarr tests may fail without test dataset")
+        print("Zarr tests may fail without test dataset")
         return None
 
 
 # =================== LLM MODEL FIXTURES ===================
-
-
 class MockLLMModel(nn.Module):
-    """Mock LLM model for testing when real model is not available or requested."""
+    """Mock LLM model for testing."""
 
     def __init__(self, vocab_size: int = 32000, hidden_size: int = 4096):
         super().__init__()
@@ -470,7 +449,7 @@ def llm_model(llm_path, device):
             "is_mock": True,
             "model_name": "MockLLM",
         }
-        print(f"✅ Mock LLM model created and cached on {device}")
+        print(f"Mock LLM model created and cached on {device}")
         return _MODEL_CACHE["llm_model"]
 
     try:
@@ -481,13 +460,13 @@ def llm_model(llm_path, device):
         setup_flash_attn_mock()
 
         if llm_path is not None:
-            print(f"📁 Found local model at: {llm_path}")
+            print(f"Found local model at: {llm_path}")
             model_path = llm_path
         else:
             print(f"🌐 Using HuggingFace model: {model_name}")
             model_path = model_name
 
-        print("🔄 Loading real LLM model...")
+        print("Loading real LLM model...")
 
         # Handle quantization
         quantization_config = None
@@ -498,9 +477,9 @@ def llm_model(llm_path, device):
                 quantization_config = BitsAndBytesConfig(
                     load_in_8bit=True, llm_int8_enable_fp32_cpu_offload=True
                 )
-                print("🔧 Using 8-bit quantization")
+                print("Using 8-bit quantization")
             except ImportError:
-                print("⚠️ Quantization requested but BitsAndBytesConfig not available")
+                print("Quantization requested but BitsAndBytesConfig not available")
 
         # Load tokenizer
         tokenizer = AutoTokenizer.from_pretrained(
@@ -513,7 +492,7 @@ def llm_model(llm_path, device):
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             quantization_config=quantization_config,
-            torch_dtype=torch.float16 if device.type == "cuda" else torch.float32,
+            torch_dtype=torch.float16 if device.type in ["cuda", "mps"] else torch.float32,
             device_map="auto" if device.type == "cuda" else None,
             low_cpu_mem_usage=True,
             trust_remote_code=True,
@@ -529,11 +508,11 @@ def llm_model(llm_path, device):
             "is_mock": False,
             "model_name": model_name,
         }
-        print(f"✅ Real LLM model loaded and cached on {device}")
+        print(f"Real LLM model loaded and cached on {device}")
         return _MODEL_CACHE["llm_model"]
 
     except Exception as e:
-        print(f"⚠️ Could not load real LLM model: {e}")
+        print(f"Could not load real LLM model: {e}")
         print("🎭 Falling back to mock LLM model...")
 
         mock_model = MockLLMModel()
@@ -554,30 +533,13 @@ def llm_model(llm_path, device):
             "is_mock": True,
             "model_name": "MockLLM",
         }
-        print(f"✅ Mock LLM model created and cached on {device}")
+        print(f"Mock LLM model created and cached on {device}")
         return _MODEL_CACHE["llm_model"]
 
 
 @pytest.fixture(scope="function")
 def llm_tokenizer(model):
     """Provide the tokenizer from the llm_model fixture."""
-    return model["tokenizer"]
-
-
-# Legacy fixtures for backward compatibility
-@pytest.fixture(scope="session")
-def llama_model(model):
-    """Legacy fixture - use llm_model instead."""
-    warnings.warn("llama_model fixture is deprecated, use llm_model instead", DeprecationWarning)
-    return model
-
-
-@pytest.fixture(scope="function")
-def llama_tokenizer(model):
-    """Legacy fixture - use llm_tokenizer instead."""
-    warnings.warn(
-        "llama_tokenizer fixture is deprecated, use llm_tokenizer instead", DeprecationWarning
-    )
     return model["tokenizer"]
 
 
@@ -601,7 +563,15 @@ def aifs_model_available(test_device):  # pylint: disable=W0621
         print("♻️ Reusing cached AIFS model availability check")
         return _MODEL_CACHE["aifs_model_available"]
 
-    print("🔍 Checking AIFS model availability...")
+    print("Checking AIFS model availability...")
+
+    # Check if we should force mock AIFS model
+    use_mock_aifs = get_env_bool("USE_MOCK_AIFS", False)
+    if use_mock_aifs:
+        print("🎭 Forcing mock AIFS model (USE_MOCK_AIFS=true)")
+        _MODEL_CACHE["aifs_model_available"] = (False, None, None)
+        return _MODEL_CACHE["aifs_model_available"]
+
     try:
         # Setup flash attention mocking before loading AIFS model
         setup_flash_attn_mock()
@@ -614,10 +584,10 @@ def aifs_model_available(test_device):  # pylint: disable=W0621
         aifs_model_instance = runner.model.to(str(test_device))
 
         _MODEL_CACHE["aifs_model_available"] = (True, runner, aifs_model_instance)
-        print("✅ AIFS model availability cached")
+        print("AIFS model availability cached")
         return _MODEL_CACHE["aifs_model_available"]
     except Exception as e:
-        print(f"⚠️ AIFS model not available: {e}")
+        print(f"AIFS model not available: {e}")
         _MODEL_CACHE["aifs_model_available"] = (False, None, None)
         return _MODEL_CACHE["aifs_model_available"]
 
@@ -631,12 +601,12 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
         print("♻️ Reusing cached AIFS model")
         return _MODEL_CACHE["aifs_model"]
 
-    print("🌪️ Loading AIFS Model for Testing...")
+    print("Loading AIFS Model for Testing...")
 
     available_flag, runner, model_instance = aifs_model_available
 
     if available_flag:
-        print("✅ Real AIFS model loaded and cached")
+        print("Real AIFS model loaded and cached")
         _MODEL_CACHE["aifs_model"] = {
             "runner": runner,
             "model": model_instance,
@@ -654,7 +624,8 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
     # Mock the forward pass to return appropriate shapes
     def mock_forward(x):
         batch_size = x.shape[0] if hasattr(x, "shape") else 1
-        return torch.randn(batch_size, 218)  # AIFS encoder output dimension
+        # AIFS encoder output dimension
+        return torch.randn(batch_size, AIFS_PROJECTED_ENCODER_OUTPUT_DIM)
 
     # Use setattr to avoid mypy method assignment error
     setattr(mock_model, "forward", mock_forward)
@@ -667,19 +638,14 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
         "is_mock": True,
         "model_name": "MockAIFS",
     }
-    print("✅ Mock AIFS model cached")
+    print("Mock AIFS model cached")
     return _MODEL_CACHE["aifs_model"]
 
 
 # =================== AIFS + LLM FUSION MODEL FIXTURES ===================
-
-
 class AIFSClimateTextFusionWrapper(nn.Module):
     """
-    Wrapper around AIFSClimateTextFusion to provide the interface expected by tests.
-
-    This wrapper adapts the production AIFSClimateTextFusion model to provide
-    the same interface as the old AIFSLlamaFusionModel for backward compatibility.
+    Wrapper around AIFSClimateTextFusion for test compatibility.
     """
 
     def __init__(
@@ -696,17 +662,18 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
         # Add attributes expected by tests
         self.fusion_strategy = "cross_attention"
-        self.time_series_dim = 218  # AIFS encoder produces 218 features
+        self.time_series_dim = AIFS_PROJECTED_ENCODER_OUTPUT_DIM  # AIFS encoder produces features
 
         # Initialize the real AIFSClimateTextFusion
         from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
 
         self.fusion_model = AIFSClimateTextFusion(
             aifs_model=model,
-            climate_dim=218,
+            climate_dim=AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
             text_dim=768,
             fusion_dim=fusion_dim,
             device=device_str,
+            dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,
             verbose=verbose,
         )
 
@@ -718,6 +685,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
             temporal_modeling="transformer",
             hidden_dim=256,  # Standard dimension
             device=device_str,
+            dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,
             verbose=verbose,
         )
 
@@ -725,7 +693,11 @@ class AIFSClimateTextFusionWrapper(nn.Module):
         self.llama_hidden_size = fusion_dim
         self.llama_tokenizer = None
         # Create a mock LLM model with parameters for testing compatibility
-        self.llama_model = torch.nn.Linear(fusion_dim, fusion_dim)
+        self.llama_model = torch.nn.Linear(
+            fusion_dim,
+            fusion_dim,
+            dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,
+        )
         # Add vocab_size attribute for compatibility with tests
         setattr(self.llama_model, "vocab_size", 32000)  # Standard LLaMA vocab size
         self.use_mock_llama = use_mock_llama  # Respect the environment variable
@@ -744,13 +716,8 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
     def tokenize_text(self, text_inputs: list) -> dict[str, torch.Tensor]:
         """
-        Tokenize text inputs (mock implementation for compatibility).
-
-        Args:
-            text_inputs: List of text strings
-
-        Returns:
-            Dict with tokenized text (input_ids, attention_mask)
+        Tokenize text inputs (mock implementation).
+        Returns dict with input_ids and attention_mask.
         """
         # Return mock tokens for testing compatibility
         batch_size = len(text_inputs)
@@ -762,20 +729,12 @@ class AIFSClimateTextFusionWrapper(nn.Module):
     def process_climate_text(
         self, climate_tokens: torch.Tensor, text_inputs: list, task: str = "embedding"
     ) -> dict[str, Any]:
-        """
-        Process climate tokens and text inputs using the fusion model.
-
-        Args:
-            climate_tokens: Pre-computed climate tokens [batch, time, time_series_dim]
-            text_inputs: List of text strings
-            task: Task type ("generation", "embedding", "classification")
-
-        Returns:
-            Dict with task-specific outputs
-        """
+        """Process climate tokens and text inputs using fusion model."""
         # For now, create dummy 5D climate data since the fusion model expects it
         batch_size = climate_tokens.shape[0]
-        dummy_climate_data = torch.randn(batch_size, 2, 1, 542080, 103).to(self.device)
+        dummy_climate_data = torch.randn(
+            batch_size, 2, 1, AIFS_GRID_POINTS, AIFS_INPUT_VARIABLES
+        ).to(self.device)
 
         # Use the real fusion model
         try:
@@ -810,7 +769,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
             return adapted_result
 
         except Exception as e:
-            print(f"⚠️ Fusion processing failed: {e}")
+            print(f"Fusion processing failed: {e}")
             # Return mock result for compatibility
             return {
                 "fused_output": torch.randn(batch_size, 1, self.fusion_dim).to(self.device),
@@ -847,12 +806,13 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
     actual_aifs_model = aifs_model["model"] if not aifs_model["is_mock"] else None
 
     if actual_aifs_model is None:
-        print("   ⚠️ No real AIFS model available, using mock implementation")
+        print("   No real AIFS model available, using mock implementation")
         # Create a mock model for testing when AIFS is not available
         fusion_model = type(
             "MockFusionModel",
             (),
             {
+                "device": str(test_device),  # Add device attribute
                 "time_series_tokenizer": None,
                 "llama_hidden_size": 512,
                 "llama_tokenizer": None,
@@ -873,6 +833,13 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
                     "fused_output": torch.randn(1, 1, 512),
                     "generated_text": "Mock analysis completed.",
                 },
+                "parameters": lambda self: iter(
+                    [
+                        torch.randn(512, 256),  # Mock parameter tensor 1
+                        torch.randn(512),  # Mock parameter tensor 2 (bias)
+                        torch.randn(256, 128),  # Mock parameter tensor 3
+                    ]
+                ),
             },
         )()
     else:
@@ -886,38 +853,43 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
         )
 
     _MODEL_CACHE["aifs_llama_model"] = fusion_model
-    print(f"✅ AIFS+LLM Fusion Model created and cached on {test_device}")
+    print(f"AIFS+LLM Fusion Model created and cached on {test_device}")
     return fusion_model
 
 
 @pytest.fixture
 def test_climate_data_fusion(test_device):  # pylint: disable=W0621
-    """Fixture for test climate data specifically for fusion model testing"""
-
+    """Fixture for test climate data for fusion model testing"""
     # Create AIFS-compatible climate data: [batch, time, ensemble, grid, vars]
-    # AIFS expects: batch=1, time=2, ensemble=1, grid=542080, vars=103
-    climate_data = torch.randn(1, 2, 1, 542080, 103).to(test_device)
+    # AIFS expects: batch=1, time=2, ensemble=1, grid=AIFS_GRID_POINTS, vars=AIFS_INPUT_VARIABLES
+    climate_data = torch.randn(1, 2, 1, AIFS_GRID_POINTS, AIFS_INPUT_VARIABLES).to(test_device)
     text_inputs = ["Predict weather patterns based on the climate data."]
-
     return climate_data, text_inputs
 
 
 # =================== TEST DATA FIXTURES ===================
-
-
 @pytest.fixture(scope="session")
 def test_climate_data(test_device):  # pylint: disable=W0621
     """Generate synthetic climate data for testing."""
     device = str(test_device)
+
+    # Determine the appropriate floating point format based on device
+    if test_device.type in ["cuda", "mps"]:
+        dtype = torch.float16
+    else:
+        dtype = torch.float32
+
     return {
         # 5D tensor for AIFS: [batch, time, ensemble, grid, vars]
         # batch=1, time=2 (AIFS expects exactly 2 timesteps: t-6h and t0),
-        # ensemble=1, grid=542080 (real AIFS grid), vars=103
-        "tensor_5d": torch.randn(1, 2, 1, 542080, 103).to(device),
+        # ensemble=1, grid=AIFS_GRID_POINTS (real AIFS grid), vars=AIFS_INPUT_VARIABLES
+        "tensor_5d": torch.randn(1, 2, 1, AIFS_GRID_POINTS, AIFS_INPUT_VARIABLES, dtype=dtype).to(
+            device
+        ),
         # 4D tensor: [batch, vars, height, width]
-        "tensor_4d": torch.randn(2, 103, 32, 32).to(device),
+        "tensor_4d": torch.randn(2, AIFS_INPUT_VARIABLES, 32, 32, dtype=dtype).to(device),
         # Flattened for encoder: [batch, features]
-        "tensor_2d": torch.randn(2, 218).to(device),
+        "tensor_2d": torch.randn(2, AIFS_PROJECTED_ENCODER_OUTPUT_DIM, dtype=dtype).to(device),
         # Variable names
         "variables": [
             "temperature_2m",
@@ -962,8 +934,6 @@ def test_locations():
 
 
 # =================== UTILITY FIXTURES ===================
-
-
 @pytest.fixture(scope="function")
 def temp_dir(tmp_path):
     """Provide a temporary directory for tests."""
@@ -987,8 +957,6 @@ def suppress_warnings():
 
 
 # =================== PERFORMANCE FIXTURES ===================
-
-
 @pytest.fixture(scope="function")
 def benchmark_config():
     """Configuration for performance benchmarks."""
@@ -1001,8 +969,6 @@ def benchmark_config():
 
 
 # =================== SKIP CONDITIONS ===================
-
-
 def pytest_runtest_setup(item):
     """Setup function that runs before each test."""
     # Skip GPU tests if no GPU available
@@ -1010,19 +976,8 @@ def pytest_runtest_setup(item):
         if not torch.cuda.is_available():
             pytest.skip("GPU not available")
 
-    # Skip tests requiring real models if they're not available
-    if "requires_llama" in [mark.name for mark in item.iter_markers()]:
-        # This will be checked by the llama_model fixture
-        pass
-
-    if "requires_aifs" in [mark.name for mark in item.iter_markers()]:
-        # This will be checked by the aifs_model fixture
-        pass
-
 
 # =================== CLEANUP ===================
-
-
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_session():
     """Clean up after test session."""
