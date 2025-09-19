@@ -18,6 +18,15 @@ from typing import Any
 import torch
 from torch import nn
 
+from ..constants import (
+    AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+    AIFS_RAW_ENCODER_OUTPUT_DIM,
+    DEFAULT_CHECKPOINT_DIR,
+    DEFAULT_CHECKPOINT_NAME,
+    EXPECTED_INPUT_SHAPE,
+    EXPECTED_OUTPUT_SHAPE,
+)
+
 try:
     # AIFS dependencies check - these imports verify AIFS availability
     import einops
@@ -62,7 +71,9 @@ class AIFSCompleteEncoder(nn.Module):
 
         # Projection layer to transform AIFS encoder output to expected dimension
         # AIFS encoder produces 102 features, but downstream code expects 218
-        self.output_projection = nn.Linear(102, 218, dtype=self.dtype)
+        self.output_projection = nn.Linear(
+            AIFS_RAW_ENCODER_OUTPUT_DIM, AIFS_PROJECTED_ENCODER_OUTPUT_DIM, dtype=self.dtype
+        )
 
         # Move to device and set dtype
         self.to(device)
@@ -76,7 +87,10 @@ class AIFSCompleteEncoder(nn.Module):
             print(f"Inner model type: {type(self.aifs_model)}")
             print(f"Has encoder: {hasattr(self.aifs_model, 'encoder')}")
             print(f"Has trainable_data: {hasattr(self.aifs_model, 'trainable_data')}")
-            print(f"Added projection layer: 102 -> 218 features")
+            print(
+                f"Added projection layer: {AIFS_RAW_ENCODER_OUTPUT_DIM} -> "
+                f"{AIFS_PROJECTED_ENCODER_OUTPUT_DIM} features"
+            )
 
     def forward(self, x):
         """
@@ -101,7 +115,8 @@ class AIFSCompleteEncoder(nn.Module):
 
         # Check input dimensions
         _, _, _, grid_size, _ = x.shape
-        expected_grid_size = self.aifs_model.latlons_data.shape[0]  # 542080 for AIFS-Single-1.0
+        # AIFS_GRID_POINTS for AIFS-Single-1.0
+        expected_grid_size = self.aifs_model.latlons_data.shape[0]
 
         if grid_size != expected_grid_size:
             raise ValueError(
@@ -111,10 +126,10 @@ class AIFSCompleteEncoder(nn.Module):
         # Follow the EXACT same steps as AnemoiModelEncProcDec.forward() but stop at encoder
         with torch.no_grad():
             # Clear GPU memory cache before processing if on GPU/MPS
-            if x.device.type in ["cuda", "mps"]:
-                torch.cuda.empty_cache() if x.device.type == "cuda" else None
-                if hasattr(torch.backends, "mps") and x.device.type == "mps":
-                    torch.mps.empty_cache()
+            if x.device.type == "cuda":
+                torch.cuda.empty_cache()
+            elif x.device.type == "mps" and hasattr(torch.backends, "mps"):
+                torch.mps.empty_cache()
 
             # Call the AIFS model directly with the 5D input tensor
             # This should return encoder embeddings in the expected format
@@ -134,20 +149,22 @@ class AIFSCompleteEncoder(nn.Module):
                     elif x.device.type == "mps":
                         torch.mps.empty_cache()
                     raise RuntimeError(
-                        f"AIFS model out of memory on {x.device}. Consider using CPU or smaller batch size: {e}"
+                        f"AIFS model out of memory on {x.device}. "
+                        f"Consider using CPU or smaller batch size: {e}"
                     ) from e
                 # Handle unsupported operations
-                elif "not currently implemented" in str(e) or "not currently supported" in str(e):
+                if "not currently implemented" in str(e) or "not currently supported" in str(e):
                     raise RuntimeError(
-                        f"AIFS model operation not supported on {x.device}. Set PYTORCH_ENABLE_MPS_FALLBACK=1 for CPU fallback: {e}"
+                        f"AIFS model operation not supported on {x.device}. "
+                        f"Set PYTORCH_ENABLE_MPS_FALLBACK=1 for CPU fallback: {e}"
                     ) from e
-                else:
-                    raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
+                raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
             except Exception as e:
                 raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
 
-            # Apply projection to transform to expected 218 features
-            # AIFS outputs 102 features, we need to project to 218
+            # Apply projection to transform to expected AIFS_PROJECTED_ENCODER_OUTPUT_DIM features
+            # AIFS outputs AIFS_RAW_ENCODER_OUTPUT_DIM features, we need to project to
+            # AIFS_PROJECTED_ENCODER_OUTPUT_DIM
             if data_embeddings.shape[-1] == 102:
                 projected_data_embeddings = self.output_projection(data_embeddings)
             else:
@@ -353,13 +370,7 @@ def validate_checkpoint(checkpoint_path: str, aifs_model, verbose: bool = True) 
         return False
 
 
-# Configuration and constants
-DEFAULT_CHECKPOINT_DIR = "multimodal_aifs/models/extracted_models"
-DEFAULT_CHECKPOINT_NAME = "aifs_complete_encoder.pth"
-
-# Expected input/output shapes for validation
-EXPECTED_INPUT_SHAPE = [1, 2, 1, 542080, 103]  # [batch, time, ensemble, grid, vars]
-EXPECTED_OUTPUT_SHAPE = [542080, 218]  # [grid_points, embedding_dim]
+# Configuration and constants - imported from constants.py module
 
 
 def get_default_checkpoint_path() -> str:

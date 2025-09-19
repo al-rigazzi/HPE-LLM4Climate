@@ -26,7 +26,6 @@ import time
 from pathlib import Path
 
 import pytest
-import torch
 
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
@@ -48,7 +47,7 @@ def test_aifs_llm_fusion_model(aifs_llama_model, test_climate_data_fusion, llm_m
     device = model.device
 
     print(f"Device: {device}")
-    print(f"Model Components:")
+    print("Model Components:")
     print(f"   AIFS: {type(model.time_series_tokenizer).__name__}")
     print(f"   🦙 LLM: {type(model.llama_model).__name__}")
     print(f"   Fusion: {model.fusion_strategy}")
@@ -77,12 +76,12 @@ def test_aifs_llm_fusion_model(aifs_llama_model, test_climate_data_fusion, llm_m
         assert len(outputs) > 0, f"{task} should return non-empty output"
 
     # Test model parameters
-    print(f"\nModel Analysis:")
+    print("\nModel Analysis:")
     try:
         aifs_params = sum(p.numel() for p in model.time_series_tokenizer.aifs_encoder.parameters())
         print(f"   AIFS Encoder: {aifs_params:,} parameters")
-    except:
-        print(f"   AIFS Encoder: ~19.9M parameters (estimated)")
+    except Exception:  # pylint: disable=broad-except
+        print("   AIFS Encoder: ~19.9M parameters (estimated)")
 
     llm_params = sum(p.numel() for p in model.llama_model.parameters())
     print(f"   🦙 LLM parameters: {llm_params:,}")
@@ -93,7 +92,7 @@ def test_aifs_llm_fusion_model(aifs_llama_model, test_climate_data_fusion, llm_m
 
     print(f'   🦙 Real LLM: {"YES" if real_llm else "NO (mock)"}')
 
-    print(f"\nAIFS + LLM fusion test completed successfully!")
+    print("\nAIFS + LLM fusion test completed successfully!")
 
 
 @pytest.mark.integration
@@ -117,7 +116,7 @@ def test_fusion_performance(aifs_llama_model, test_climate_data_fusion, llm_mock
     num_runs = 3
     total_time = 0
 
-    for i in range(num_runs):
+    for _ in range(num_runs):
         start_time = time.time()
         _ = model.forward(climate_data, text_inputs, task="embedding")
         total_time += time.time() - start_time

@@ -1,7 +1,20 @@
 """
 AIFS Climate Fusion Module
 
-This module provides climate-text fusion capabilities specifically designed for AIFS,
+This mo    def __init__(
+        self,
+        aifs_model,
+        aifs_checkpoint_path: str | None = None,
+        # Updated to match actual AIFS encoder output
+        climate_dim: int = AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+        text_dim: int = TEXT_DEFAULT_DIM,
+        fusion_dim: int = FUSION_DEFAULT_DIM,
+        num_attention_heads: int = DEFAULT_NUM_HEADS,
+        dropout: float = 0.1,
+        device: str = "cpu",
+        dtype: torch.dtype = torch.float32,
+        verbose: bool = False,
+    ): climate-text fusion capabilities specifically designed for AIFS,
 combining climate data encoded through the  AIFSCompleteEncoder with textual
 descriptions for enhanced multimodal climate analysis.
 """
@@ -10,6 +23,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from ..constants import (
+    AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+    DEFAULT_NUM_HEADS,
+    FUSION_DEFAULT_DIM,
+    TEXT_DEFAULT_DIM,
+)
 from ..utils.text_utils import ClimateTextProcessor
 
 # Import the  AIFS encoder utilities
@@ -24,7 +43,8 @@ class AIFSClimateTextFusion(nn.Module):
     with textual descriptions to create rich multimodal representations for climate analysis.
 
      Features:
-    - Uses AIFSCompleteEncoder that returns actual encoder embeddings [542080, 218]
+    - Uses AIFSCompleteEncoder that returns actual encoder embeddings
+      [AIFS_GRID_POINTS, AIFS_PROJECTED_ENCODER_OUTPUT_DIM]
     - No more workaround encoders - uses the complete AIFS model from inputs to encoder output
     - Handles full 5D climate tensors: [batch, time, ensemble, grid_points, variables]
     """
@@ -33,10 +53,11 @@ class AIFSClimateTextFusion(nn.Module):
         self,
         aifs_model=None,
         aifs_checkpoint_path: str | None = None,
-        climate_dim: int = 218,  # Updated to match actual AIFS encoder output
-        text_dim: int = 768,
-        fusion_dim: int = 512,
-        num_attention_heads: int = 8,
+        # Updated to match actual AIFS encoder output
+        climate_dim: int = AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+        text_dim: int = TEXT_DEFAULT_DIM,
+        fusion_dim: int = FUSION_DEFAULT_DIM,
+        num_attention_heads: int = DEFAULT_NUM_HEADS,
         dropout: float = 0.1,
         device: str = "cpu",
         dtype: torch.dtype = torch.float32,
@@ -48,7 +69,8 @@ class AIFSClimateTextFusion(nn.Module):
         Args:
             aifs_model: The complete AIFS model instance (preferred)
             aifs_checkpoint_path: Path to saved AIFSCompleteEncoder checkpoint (alternative)
-            climate_dim: Dimension of AIFS climate encodings (218 for complete encoder)
+            climate_dim: Dimension of AIFS climate encodings
+                        (AIFS_PROJECTED_ENCODER_OUTPUT_DIM for complete encoder)
             text_dim: Dimension of text embeddings
             fusion_dim: Dimension of fused representations
             num_attention_heads: Number of attention heads
@@ -161,13 +183,14 @@ class AIFSClimateTextFusion(nn.Module):
 
         with torch.no_grad():
             # Use the complete encoder that returns actual AIFS embeddings
-            # Returns [batch, time, grid_points, embedding_dim] or [batch, grid_points, embedding_dim]
+            # Returns [batch, time, grid_points, embedding_dim] or
+            # [batch, grid_points, embedding_dim]
             encoded = self.aifs_encoder(climate_data)  # e.g. [1, 1, 542080, 218]
 
             # Handle different output shapes from AIFS encoder
             if encoded.dim() == 4:  # [batch, time, grid_points, embedding_dim]
                 # Aggregate over time and grid points to get global representation
-                batch_size, time_steps, grid_points, embed_dim = encoded.shape
+                batch_size = encoded.shape[0]
                 # Mean across time and grid dimensions
                 global_encoded = encoded.mean(dim=(1, 2))  # [batch, embedding_dim]
             elif encoded.dim() == 3:  # [batch, grid_points, embedding_dim]

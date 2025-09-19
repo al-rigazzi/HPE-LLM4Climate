@@ -22,6 +22,14 @@ from torch import nn
 project_root = Path(__file__).parent.parent  # Go up one level to project root
 sys.path.insert(0, str(project_root))
 
+# Import AIFS constants
+from multimodal_aifs.constants import (
+    AIFS_GRID_POINTS,
+    AIFS_INPUT_VARIABLES,
+    AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+    ALL_AIFS_VARIABLES,
+)
+
 
 # =================== UTILITY FUNCTIONS ===================
 def setup_flash_attn_mock():
@@ -49,8 +57,6 @@ def setup_flash_attn_mock():
         **kwargs,
     ):
         """Mock flash attention function that returns proper tensor output - memory efficient."""
-        import torch
-
         # Handle both causal and is_causal parameter names
         if is_causal is not None:
             causal = is_causal
@@ -109,8 +115,8 @@ def setup_flash_attn_mock():
             return args[0]  # Return query tensor
         return torch.zeros(1, 1, 1, 1)  # Fallback tensor
 
-    flash_attn_interface_mock.flash_attn_func = mock_flash_attn_func
-    flash_attn_interface_mock.flash_attn_varlen_func = mock_flash_attn_varlen_func
+    setattr(flash_attn_interface_mock, "flash_attn_func", mock_flash_attn_func)
+    setattr(flash_attn_interface_mock, "flash_attn_varlen_func", mock_flash_attn_varlen_func)
     # Set up the module hierarchy
     flash_attn_mock.flash_attn_interface = flash_attn_interface_mock  # type: ignore
 
@@ -266,115 +272,11 @@ def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
         # Create synthetic climate data in AIFS-compatible format
         # Use real AIFS dimensions as per copilot instructions
         time_steps = 2  # Match AIFS format
-        grid_points = 542080  # Real AIFS grid points
-        # Full AIFS variables count: 103
+        grid_points = AIFS_GRID_POINTS  # Real AIFS grid points
         # Create coordinates matching AIFS format
         times = [datetime(2024, 1, 1) + timedelta(hours=i * 12) for i in range(time_steps)]
-        variables = [
-            "10v",
-            "u_850",
-            "u_250",
-            "sp",
-            "v_400",
-            "q_925",
-            "w_400",
-            "t_250",
-            "sin_latitude",
-            "t_850",
-            "z_50",
-            "u_400",
-            "insolation",
-            "v_850",
-            "100v",
-            "w_850",
-            "z_100",
-            "w_925",
-            "w_250",
-            "t_400",
-            "v_250",
-            "q_400",
-            "z_500",
-            "v_925",
-            "t_925",
-            "u_925",
-            "q_850",
-            "t_150",
-            "w_700",
-            "u_300",
-            "q_250",
-            "v_700",
-            "sdor",
-            "u_150",
-            "t_700",
-            "w_150",
-            "w_300",
-            "t_300",
-            "cos_latitude",
-            "v_300",
-            "v_150",
-            "z_200",
-            "t_50",
-            "u_50",
-            "u_700",
-            "mcc",
-            "q_700",
-            "tp",
-            "2t",
-            "q_150",
-            "z",
-            "ro",
-            "q_300",
-            "q_50",
-            "w_600",
-            "lsm",
-            "u_200",
-            "z_600",
-            "v_50",
-            "sin_longitude",
-            "10u",
-            "cos_julian_day",
-            "sf",
-            "v_200",
-            "t_200",
-            "v_600",
-            "t_600",
-            "100u",
-            "tcw",
-            "q_600",
-            "ssrd",
-            "w_200",
-            "msl",
-            "u_600",
-            "sin_julian_day",
-            "skt",
-            "z_150",
-            "hcc",
-            "lcc",
-            "v_500",
-            "z_700",
-            "t_100",
-            "z_300",
-            "q_200",
-            "w_50",
-            "u_100",
-            "sin_local_time",
-            "w_500",
-            "cp",
-            "t_500",
-            "u_500",
-            "z_925",
-            "2d",
-            "slor",
-            "z_850",
-            "v_100",
-            "z_250",
-            "w_100",
-            "cos_local_time",
-            "z_400",
-            "q_500",
-            "q_100",
-            "cos_longitude",
-        ]  # Create synthetic data with AIFS-compatible dimensions [time, grid_point]
+        variables = ALL_AIFS_VARIABLES  # Use the complete AIFS variable list from constants
+        # Create synthetic data with AIFS-compatible dimensions [time, grid_point]
         # AIFS format: time=2, grid_point=10000
         data_shape = (time_steps, grid_points)
 
@@ -714,7 +616,8 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
     # Mock the forward pass to return appropriate shapes
     def mock_forward(x):
         batch_size = x.shape[0] if hasattr(x, "shape") else 1
-        return torch.randn(batch_size, 218)  # AIFS encoder output dimension
+        # AIFS encoder output dimension
+        return torch.randn(batch_size, AIFS_PROJECTED_ENCODER_OUTPUT_DIM)
 
     # Use setattr to avoid mypy method assignment error
     setattr(mock_model, "forward", mock_forward)
@@ -751,14 +654,14 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
         # Add attributes expected by tests
         self.fusion_strategy = "cross_attention"
-        self.time_series_dim = 218  # AIFS encoder produces 218 features
+        self.time_series_dim = AIFS_PROJECTED_ENCODER_OUTPUT_DIM  # AIFS encoder produces features
 
         # Initialize the real AIFSClimateTextFusion
         from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
 
         self.fusion_model = AIFSClimateTextFusion(
             aifs_model=model,
-            climate_dim=218,
+            climate_dim=AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
             text_dim=768,
             fusion_dim=fusion_dim,
             device=device_str,
@@ -821,7 +724,9 @@ class AIFSClimateTextFusionWrapper(nn.Module):
         """Process climate tokens and text inputs using fusion model."""
         # For now, create dummy 5D climate data since the fusion model expects it
         batch_size = climate_tokens.shape[0]
-        dummy_climate_data = torch.randn(batch_size, 2, 1, 542080, 103).to(self.device)
+        dummy_climate_data = torch.randn(
+            batch_size, 2, 1, AIFS_GRID_POINTS, AIFS_INPUT_VARIABLES
+        ).to(self.device)
 
         # Use the real fusion model
         try:
@@ -940,8 +845,8 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
 def test_climate_data_fusion(test_device):  # pylint: disable=W0621
     """Fixture for test climate data for fusion model testing"""
     # Create AIFS-compatible climate data: [batch, time, ensemble, grid, vars]
-    # AIFS expects: batch=1, time=2, ensemble=1, grid=542080, vars=103
-    climate_data = torch.randn(1, 2, 1, 542080, 103).to(test_device)
+    # AIFS expects: batch=1, time=2, ensemble=1, grid=AIFS_GRID_POINTS, vars=AIFS_INPUT_VARIABLES
+    climate_data = torch.randn(1, 2, 1, AIFS_GRID_POINTS, AIFS_INPUT_VARIABLES).to(test_device)
     text_inputs = ["Predict weather patterns based on the climate data."]
     return climate_data, text_inputs
 
@@ -961,12 +866,14 @@ def test_climate_data(test_device):  # pylint: disable=W0621
     return {
         # 5D tensor for AIFS: [batch, time, ensemble, grid, vars]
         # batch=1, time=2 (AIFS expects exactly 2 timesteps: t-6h and t0),
-        # ensemble=1, grid=542080 (real AIFS grid), vars=103
-        "tensor_5d": torch.randn(1, 2, 1, 542080, 103, dtype=dtype).to(device),
+        # ensemble=1, grid=AIFS_GRID_POINTS (real AIFS grid), vars=AIFS_INPUT_VARIABLES
+        "tensor_5d": torch.randn(1, 2, 1, AIFS_GRID_POINTS, AIFS_INPUT_VARIABLES, dtype=dtype).to(
+            device
+        ),
         # 4D tensor: [batch, vars, height, width]
-        "tensor_4d": torch.randn(2, 103, 32, 32, dtype=dtype).to(device),
+        "tensor_4d": torch.randn(2, AIFS_INPUT_VARIABLES, 32, 32, dtype=dtype).to(device),
         # Flattened for encoder: [batch, features]
-        "tensor_2d": torch.randn(2, 218, dtype=dtype).to(device),
+        "tensor_2d": torch.randn(2, AIFS_PROJECTED_ENCODER_OUTPUT_DIM, dtype=dtype).to(device),
         # Variable names
         "variables": [
             "temperature_2m",
