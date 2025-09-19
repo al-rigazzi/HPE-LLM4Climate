@@ -36,8 +36,81 @@ def setup_flash_attn_mock():
     # Don't set __spec__ as it causes type issues
     # Create flash_attn_interface submodule
     flash_attn_interface_mock = types.ModuleType("flash_attn_interface")
-    flash_attn_interface_mock.flash_attn_func = MagicMock()  # type: ignore
-    flash_attn_interface_mock.flash_attn_varlen_func = MagicMock()  # type: ignore
+
+    def mock_flash_attn_func(
+        q,
+        k,
+        v,
+        dropout_p=0.0,
+        softmax_scale=None,
+        causal=False,
+        is_causal=None,
+        return_attn_probs=False,
+        **kwargs,
+    ):
+        """Mock flash attention function that returns proper tensor output - memory efficient."""
+        import torch
+
+        # Handle both causal and is_causal parameter names
+        if is_causal is not None:
+            causal = is_causal
+
+        # For very large sequences (like AIFS grid points), use a simplified approach
+        # that avoids creating massive attention matrices
+        seq_len = q.size(-2)
+
+        # If sequence length is very large (> 10000), use a simplified identity-like operation
+        # This is just for testing purposes and allows the model to run without OOM
+        if seq_len > 10000:
+            # Simple scaled passthrough that maintains dimensions
+            # This is a fallback for testing - not a real attention implementation
+            if softmax_scale is None:
+                softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+
+            # Apply a simple scaling and return
+            output = v * softmax_scale
+
+            if return_attn_probs:
+                # Return dummy attention weights for compatibility
+                dummy_attn = torch.ones(
+                    q.shape[:-1] + (k.shape[-2],), device=q.device, dtype=q.dtype
+                )
+                dummy_attn = dummy_attn / dummy_attn.sum(dim=-1, keepdim=True)
+                return output, dummy_attn
+            return output
+
+        # For smaller sequences, use proper scaled dot-product attention
+        if softmax_scale is None:
+            softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+
+        # Compute attention scores
+        scores = torch.matmul(q, k.transpose(-2, -1)) * softmax_scale
+        if causal:
+            # Apply causal mask
+            causal_mask = torch.triu(
+                torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool), diagonal=1
+            )
+            scores = scores.masked_fill(causal_mask, float("-inf"))
+
+        attn_weights = torch.softmax(scores, dim=-1)
+        if dropout_p > 0.0 and q.training:
+            attn_weights = torch.dropout(attn_weights, dropout_p, train=True)
+
+        output = torch.matmul(attn_weights, v)
+
+        if return_attn_probs:
+            return output, attn_weights
+        return output
+
+    def mock_flash_attn_varlen_func(*args, **kwargs):
+        """Mock variable length flash attention - simplified fallback."""
+        # For variable length, just return the first argument (query) as a simple fallback
+        if args:
+            return args[0]  # Return query tensor
+        return torch.zeros(1, 1, 1, 1)  # Fallback tensor
+
+    flash_attn_interface_mock.flash_attn_func = mock_flash_attn_func
+    flash_attn_interface_mock.flash_attn_varlen_func = mock_flash_attn_varlen_func
     # Set up the module hierarchy
     flash_attn_mock.flash_attn_interface = flash_attn_interface_mock  # type: ignore
 
@@ -65,6 +138,18 @@ def get_env_str(env_var: str, default: str) -> str:
 # =================== PYTEST CONFIGURATION ===================
 def pytest_sessionstart(session):
     """Set up global test environment at start of session."""
+    # Suppress known MPS backend warnings for cleaner test output
+    warnings.filterwarnings(
+        "ignore",
+        message=".*aten::scatter_reduce.two_out.*not currently supported on the MPS backend.*",
+        category=UserWarning,
+    )
+
+    # Suppress common warnings that appear across multiple tests
+    warnings.filterwarnings("ignore", category=UserWarning)
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
     # Set up default device for the entire test session
     if torch.cuda.is_available():
         default_device = torch.device("cuda")
@@ -135,7 +220,7 @@ def test_device():
 @pytest.fixture(scope="session")
 def llm_mock_status():
     """Provide information about whether LLM mocking is enabled."""
-    use_mock_llm = get_env_bool("USE_MOCK_LLM", True)
+    use_mock_llm = get_env_bool("USE_MOCK_LLM", False)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
     model_name = os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B")
 
@@ -505,7 +590,7 @@ def llm_model(llm_path, device):
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             quantization_config=quantization_config,
-            torch_dtype=torch.float16 if device.type == "cuda" else torch.float32,
+            torch_dtype=torch.float16 if device.type in ["cuda", "mps"] else torch.float32,
             device_map="auto" if device.type == "cuda" else None,
             low_cpu_mem_usage=True,
             trust_remote_code=True,
@@ -553,23 +638,6 @@ def llm_model(llm_path, device):
 @pytest.fixture(scope="function")
 def llm_tokenizer(model):
     """Provide the tokenizer from the llm_model fixture."""
-    return model["tokenizer"]
-
-
-# Legacy fixtures for backward compatibility
-@pytest.fixture(scope="session")
-def llama_model(model):
-    """Legacy fixture - use llm_model instead."""
-    warnings.warn("llama_model fixture is deprecated, use llm_model instead", DeprecationWarning)
-    return model
-
-
-@pytest.fixture(scope="function")
-def llama_tokenizer(model):
-    """Legacy fixture - use llm_tokenizer instead."""
-    warnings.warn(
-        "llama_tokenizer fixture is deprecated, use llm_tokenizer instead", DeprecationWarning
-    )
     return model["tokenizer"]
 
 
@@ -694,6 +762,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
             text_dim=768,
             fusion_dim=fusion_dim,
             device=device_str,
+            dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,
             verbose=verbose,
         )
 
@@ -705,6 +774,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
             temporal_modeling="transformer",
             hidden_dim=256,  # Standard dimension
             device=device_str,
+            dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,
             verbose=verbose,
         )
 
@@ -712,7 +782,11 @@ class AIFSClimateTextFusionWrapper(nn.Module):
         self.llama_hidden_size = fusion_dim
         self.llama_tokenizer = None
         # Create a mock LLM model with parameters for testing compatibility
-        self.llama_model = torch.nn.Linear(fusion_dim, fusion_dim)
+        self.llama_model = torch.nn.Linear(
+            fusion_dim,
+            fusion_dim,
+            dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,
+        )
         # Add vocab_size attribute for compatibility with tests
         setattr(self.llama_model, "vocab_size", 32000)  # Standard LLaMA vocab size
         self.use_mock_llama = use_mock_llama  # Respect the environment variable
@@ -877,15 +951,22 @@ def test_climate_data_fusion(test_device):  # pylint: disable=W0621
 def test_climate_data(test_device):  # pylint: disable=W0621
     """Generate synthetic climate data for testing."""
     device = str(test_device)
+
+    # Determine the appropriate floating point format based on device
+    if test_device.type in ["cuda", "mps"]:
+        dtype = torch.float16
+    else:
+        dtype = torch.float32
+
     return {
         # 5D tensor for AIFS: [batch, time, ensemble, grid, vars]
         # batch=1, time=2 (AIFS expects exactly 2 timesteps: t-6h and t0),
         # ensemble=1, grid=542080 (real AIFS grid), vars=103
-        "tensor_5d": torch.randn(1, 2, 1, 542080, 103).to(device),
+        "tensor_5d": torch.randn(1, 2, 1, 542080, 103, dtype=dtype).to(device),
         # 4D tensor: [batch, vars, height, width]
-        "tensor_4d": torch.randn(2, 103, 32, 32).to(device),
+        "tensor_4d": torch.randn(2, 103, 32, 32, dtype=dtype).to(device),
         # Flattened for encoder: [batch, features]
-        "tensor_2d": torch.randn(2, 218).to(device),
+        "tensor_2d": torch.randn(2, 218, dtype=dtype).to(device),
         # Variable names
         "variables": [
             "temperature_2m",

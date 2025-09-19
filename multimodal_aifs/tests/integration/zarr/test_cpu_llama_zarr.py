@@ -88,14 +88,8 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
     print("-" * 40)
 
     try:
-        # Tokenize climate data - suppress MPS fallback warning
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message=".*The operator 'aten::scatter_reduce.two_out' is not currently supported on the MPS backend.*",
-                category=UserWarning,
-            )
-            climate_tokens = model.tokenize_climate_data(climate_tensor)
+        # Tokenize climate data
+        climate_tokens = model.tokenize_climate_data(climate_tensor)
         print(f"Climate tokens: {climate_tokens.shape}")
 
         # Simple text for CPU efficiency
@@ -103,17 +97,11 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
 
         start_time = time.time()
 
-        # Process with timeout protection - suppress MPS fallback warning
+        # Process with timeout protection
         with torch.no_grad():  # Disable gradients for inference
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore",
-                    message=".*The operator 'aten::scatter_reduce.two_out' is not currently supported on the MPS backend.*",
-                    category=UserWarning,
-                )
-                result = model.process_climate_text(
-                    climate_tokens, text_inputs, task="embedding"  # Simpler task
-                )
+            result = model.process_climate_text(
+                climate_tokens, text_inputs, task="embedding"  # Simpler task
+            )
 
         elapsed = time.time() - start_time
         print(f"Processing complete in {elapsed:.1f}s")

@@ -39,13 +39,14 @@ class AIFSCompleteEncoder(nn.Module):
     4. Returns ENCODER EMBEDDINGS (not final predictions)
     """
 
-    def __init__(self, aifs_model, verbose: bool = True):
+    def __init__(self, aifs_model, verbose: bool = True, device: str = "cpu"):
         """
         Initialize the complete AIFS encoder.
 
         Args:
             aifs_model: The full AIFS model instance (AnemoiModelInterface)
             verbose: Whether to print initialization messages
+            device: Device to run on ("cpu", "cuda", "mps")
         """
         super().__init__()
 
@@ -53,16 +54,29 @@ class AIFSCompleteEncoder(nn.Module):
         self.aifs_interface = aifs_model
         self.aifs_model = aifs_model.model  # Access the actual AnemoiModelEncProcDec
         self.verbose = verbose
+        self.device = device
+
+        # Determine dtype based on device
+        self.use_fp16 = device in ["cuda", "mps"]
+        self.dtype = torch.float16 if self.use_fp16 else torch.float32
 
         # Projection layer to transform AIFS encoder output to expected dimension
-        # AIFS encoder produces 115 features, but downstream code expects 218
-        self.output_projection = nn.Linear(115, 218)
+        # AIFS encoder produces 102 features, but downstream code expects 218
+        self.output_projection = nn.Linear(102, 218, dtype=self.dtype)
+
+        # Move to device and set dtype
+        self.to(device)
+        if self.use_fp16:
+            self.output_projection = self.output_projection.half()
+            # Convert the AIFS model itself to FP16
+            self.aifs_interface = self.aifs_interface.half()
+            self.aifs_model = self.aifs_interface.model  # Update reference after conversion
 
         if self.verbose:
             print(f"Inner model type: {type(self.aifs_model)}")
             print(f"Has encoder: {hasattr(self.aifs_model, 'encoder')}")
             print(f"Has trainable_data: {hasattr(self.aifs_model, 'trainable_data')}")
-            print("Added projection layer: 115 -> 218 features")
+            print(f"Added projection layer: 102 -> 218 features")
 
     def forward(self, x):
         """
@@ -74,13 +88,16 @@ class AIFSCompleteEncoder(nn.Module):
         Returns:
             Encoder embeddings from the AIFS model (NOT final predictions)
         """
-        if self.verbose:
-            print(f"AIFS Encoder input shape: {x.shape}")
-
         if not AIFS_AVAILABLE:
             raise RuntimeError(
                 "AIFS dependencies not available. Please install anemoi-models and einops."
             )
+
+        # Convert input to appropriate dtype
+        if self.use_fp16 and x.dtype != torch.float16:
+            x = x.half()
+        elif not self.use_fp16 and x.dtype != torch.float32:
+            x = x.float()
 
         # Check input dimensions
         _, _, _, grid_size, _ = x.shape
@@ -93,6 +110,12 @@ class AIFSCompleteEncoder(nn.Module):
 
         # Follow the EXACT same steps as AnemoiModelEncProcDec.forward() but stop at encoder
         with torch.no_grad():
+            # Clear GPU memory cache before processing if on GPU/MPS
+            if x.device.type in ["cuda", "mps"]:
+                torch.cuda.empty_cache() if x.device.type == "cuda" else None
+                if hasattr(torch.backends, "mps") and x.device.type == "mps":
+                    torch.mps.empty_cache()
+
             # Call the AIFS model directly with the 5D input tensor
             # This should return encoder embeddings in the expected format
             try:
@@ -102,19 +125,41 @@ class AIFSCompleteEncoder(nn.Module):
                     data_embeddings = full_output[0]
                 else:
                     data_embeddings = full_output
+            except RuntimeError as e:
+                # Handle memory issues gracefully
+                if "out of memory" in str(e).lower():
+                    # Clear cache and suggest fallback to CPU
+                    if x.device.type == "cuda":
+                        torch.cuda.empty_cache()
+                    elif x.device.type == "mps":
+                        torch.mps.empty_cache()
+                    raise RuntimeError(
+                        f"AIFS model out of memory on {x.device}. Consider using CPU or smaller batch size: {e}"
+                    ) from e
+                # Handle unsupported operations
+                elif "not currently implemented" in str(e) or "not currently supported" in str(e):
+                    raise RuntimeError(
+                        f"AIFS model operation not supported on {x.device}. Set PYTORCH_ENABLE_MPS_FALLBACK=1 for CPU fallback: {e}"
+                    ) from e
+                else:
+                    raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
             except Exception as e:
                 raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
 
             # Apply projection to transform to expected 218 features
-            if data_embeddings.shape[-1] != 218:
+            # AIFS outputs 102 features, we need to project to 218
+            if data_embeddings.shape[-1] == 102:
                 projected_data_embeddings = self.output_projection(data_embeddings)
             else:
                 projected_data_embeddings = data_embeddings
 
         if self.verbose:
             print("AIFS encoder forward completed")
-            print(f"Raw encoder output shape: {data_embeddings.shape}")
-            print(f"Projected output shape: {projected_data_embeddings.shape}")
+            print(f"Raw encoder output shape: {data_embeddings.shape} ({data_embeddings.dtype})")
+            print(
+                "Projected output shape: "
+                f"{projected_data_embeddings.shape} ({projected_data_embeddings.dtype})"
+            )
             print(
                 f"Raw data embeddings range: "
                 f"[{data_embeddings.min():.4f}, {data_embeddings.max():.4f}]"
@@ -188,7 +233,7 @@ def save_aifs_encoder(
 
 
 def load_aifs_encoder(
-    checkpoint_path: str, aifs_model, verbose: bool = True
+    checkpoint_path: str, aifs_model, verbose: bool = True, device: str = "cpu"
 ) -> AIFSCompleteEncoder:
     """
     Load AIFSCompleteEncoder from checkpoint
@@ -197,6 +242,7 @@ def load_aifs_encoder(
         checkpoint_path: Path to the saved checkpoint
         aifs_model: The AIFS model instance to wrap
         verbose: Whether to print progress messages
+        device: Device to run on ("cpu", "cuda", "mps")
 
     Returns:
         Loaded AIFSCompleteEncoder instance
@@ -208,7 +254,7 @@ def load_aifs_encoder(
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
 
     # Create new encoder instance
-    encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
+    encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose, device=device)
 
     # Load the saved state
     encoder.load_state_dict(checkpoint["model_state_dict"])
@@ -221,13 +267,16 @@ def load_aifs_encoder(
     return encoder
 
 
-def create_aifs_encoder(aifs_model, verbose: bool = True) -> AIFSCompleteEncoder:
+def create_aifs_encoder(
+    aifs_model, verbose: bool = True, device: str = "cpu"
+) -> AIFSCompleteEncoder:
     """
     Create a new AIFSCompleteEncoder instance.
 
     Args:
         aifs_model: The AIFS model instance to wrap
         verbose: Whether to print progress messages
+        device: Device to run on ("cpu", "cuda", "mps")
 
     Returns:
         New AIFSCompleteEncoder instance
@@ -235,7 +284,7 @@ def create_aifs_encoder(aifs_model, verbose: bool = True) -> AIFSCompleteEncoder
     if verbose:
         print("Creating AIFSCompleteEncoder...")
 
-    encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
+    encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose, device=device)
 
     if verbose:
         print("AIFSCompleteEncoder created successfully")

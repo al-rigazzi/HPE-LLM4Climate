@@ -85,19 +85,12 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
 
     # Use proper 5D climate data from fixture: [batch, time, ensemble, grid, vars]
     climate_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103]
-    print(f"   Using 5D climate data: {climate_data_5d.shape}")
+    print(f"   Using 5D climate data: {climate_data_5d.shape} ({climate_data_5d.dtype})")
 
-    # Test encoding - suppress MPS fallback warning from PyTorch
+    # Test encoding
     start_time = time.time()
     try:
-        with warnings.catch_warnings():
-            # Suppress the MPS fallback warning from PyTorch
-            warnings.filterwarnings(
-                "ignore",
-                message=".*The operator 'aten::scatter_reduce.two_out' is not currently supported on the MPS backend.*",
-                category=UserWarning,
-            )
-            climate_features = fusion_module.encode_climate_data(climate_data_5d)
+        climate_features = fusion_module.encode_climate_data(climate_data_5d)
         encoding_time = time.time() - start_time
 
         # Validate output
@@ -105,7 +98,10 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
         assert climate_features.shape[1] == 512  # fusion_dim
         assert climate_features.device.type == device
 
-        print(f"   Climate encoding: {climate_data_5d.shape} -> {climate_features.shape}")
+        print(
+            f"   Climate encoding: {climate_data_5d.shape} ({climate_data_5d.dtype}) "
+            f"-> {climate_features.shape} ({climate_features.dtype})"
+        )
         print(f"   Encoding time: {encoding_time:.4f}s")
     except Exception as e:
         print(f"   Encoding failed: {e}")

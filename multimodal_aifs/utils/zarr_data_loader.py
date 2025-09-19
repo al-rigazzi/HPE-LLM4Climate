@@ -87,7 +87,7 @@ class ZarrClimateLoader:
         self.time_dim: str = ""
         self.time_range: tuple[str, str] = ("", "")
         self.available_variables: list[str] = []
-        self.ds: Any = None
+        self.ds: xr.Dataset | None = None
 
         # Load dataset
         self._load_dataset()
@@ -114,6 +114,7 @@ class ZarrClimateLoader:
     def _analyze_dataset(self):
         """Analyze the loaded dataset structure."""
         # Get available variables (exclude coordinates)
+        assert self.ds is not None, "Dataset is not loaded"
         coords = set(self.ds.coords.keys())
         self.available_variables = [v for v in self.ds.data_vars.keys() if v not in coords]
 
@@ -146,7 +147,9 @@ class ZarrClimateLoader:
         if self.variables:
             self.available_variables = [v for v in self.available_variables if v in self.variables]
 
-    def load_time_range(self, start_time: str, end_time: str, variables: list[str] | None = None):
+    def load_time_range(
+        self, start_time: str, end_time: str, variables: list[str] | None = None
+    ) -> xr.Dataset:
         """
         Load data for a specific time range.
 
@@ -167,6 +170,8 @@ class ZarrClimateLoader:
 
         print(f"⏰ Loading time range: {start_time} to {end_time}")
         print(f"🔢 Variables: {vars_to_load} ({len(vars_to_load)} total)")
+
+        assert self.ds is not None, "Dataset is not loaded"
 
         # Select time range and variables
         subset = self.ds[vars_to_load].sel(time=slice(start_time, end_time))
@@ -210,6 +215,7 @@ class ZarrClimateLoader:
         print(f"   📍 Longitude: {lon_range[0]}° to {lon_range[1]}°")
         print(f"   🔢 Variables: {vars_to_load} ({len(vars_to_load)} total)")
 
+        assert self.ds is not None, "Dataset is not loaded"
         # Start with variable selection
         subset = self.ds[vars_to_load]
 
@@ -276,7 +282,12 @@ class ZarrClimateLoader:
         return subset
 
     def to_aifs_tensor(
-        self, data, batch_size: int = 1, normalize: bool = True, device: str = "cpu"
+        self,
+        data,
+        batch_size: int = 1,
+        normalize: bool = True,
+        device: str = "cpu",
+        use_fp16: bool = False,
     ) -> torch.Tensor:
         """
         Convert Xarray dataset to AIFS tensor format.
@@ -288,6 +299,7 @@ class ZarrClimateLoader:
             batch_size: Batch size (for creating batches from time series)
             normalize: Whether to normalize the data
             device: Device to move tensor to ("cpu", "cuda", "mps", etc.)
+            use_fp16: Whether to use FP16 (torch.float16) instead of FP32 (torch.float32)
 
         Returns:
             Tensor ready for AIFS model input
@@ -301,7 +313,10 @@ class ZarrClimateLoader:
         if "data" in variables and len(data.data.dims) == 5:
             # Data is already in AIFS format [batch, time, ensemble, grid_points, variables]
             print("Data already in AIFS format, using directly")
-            tensor = torch.from_numpy(data["data"].values).float()
+            if use_fp16:
+                tensor = torch.from_numpy(data["data"].values).half()
+            else:
+                tensor = torch.from_numpy(data["data"].values).float()
             print(f"   AIFS tensor shape: {tensor.shape}")
             return tensor
 
@@ -335,7 +350,10 @@ class ZarrClimateLoader:
             stacked = np.stack(arrays, axis=1)
 
         # Convert to tensor
-        tensor = torch.from_numpy(stacked).float().to(device)
+        if use_fp16:
+            tensor = torch.from_numpy(stacked).half().to(device)
+        else:
+            tensor = torch.from_numpy(stacked).float().to(device)
 
         # Add batch dimension or create batches
         if batch_size == 1:
@@ -400,6 +418,7 @@ class ZarrClimateLoader:
 
     def get_info(self) -> dict[str, Any]:
         """Get dataset information."""
+        assert self.ds is not None, "Dataset is not loaded"
         return {
             "zarr_path": self.zarr_path,
             "dimensions": dict(self.ds.dims),

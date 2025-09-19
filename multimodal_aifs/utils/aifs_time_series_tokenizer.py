@@ -49,8 +49,87 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         hidden_dim: int = 512,
         num_layers: int = 2,
         device: str = "cpu",
+        dtype: torch.dtype = torch.float32,
         verbose: bool = True,
     ):
+        """
+        Initialize AIFS time series tokenizer with  encoder.
+
+        Args:
+            aifs_model: The complete AIFS model instance (preferred)
+            aifs_checkpoint_path: Path to saved AIFSCompleteEncoder checkpoint (alternative)
+            temporal_modeling: Type of temporal modeling ("lstm", "transformer", "none")
+            hidden_dim: Hidden dimension for temporal model
+            num_layers: Number of layers in temporal model
+            device: Device to run on
+            dtype: Data type for model weights
+            verbose: Whether to print initialization messages
+        """
+        super().__init__()
+
+        self.device = device
+        self.dtype = dtype
+        self.temporal_modeling = temporal_modeling
+        self.hidden_dim = hidden_dim
+        self.verbose = verbose
+
+        # Initialize the  AIFS Complete Encoder
+        self.aifs_encoder: AIFSCompleteEncoder | None = None
+        if aifs_model is not None:
+            # Create new AIFSCompleteEncoder from AIFS model
+            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose, device=device)
+            if verbose:
+                print("Time series tokenizer using AIFSCompleteEncoder with provided AIFS model")
+        elif aifs_checkpoint_path is not None:
+            # Load from checkpoint (requires AIFS model to be loaded separately)
+            if verbose:
+                print(
+                    "Loading from checkpoint requires AIFS model. "
+                    "Consider providing aifs_model parameter."
+                )
+            self.aifs_encoder = None  # Will be set when aifs_model is provided
+            self.checkpoint_path = aifs_checkpoint_path
+        else:
+            raise ValueError("Either aifs_model or aifs_checkpoint_path must be provided")
+
+        # Get AIFS encoder output dimension (218 for  encoder)
+        self.spatial_dim = 218  # Updated for AIFSCompleteEncoder
+
+        # Initialize temporal modeling component - can be LSTM, TransformerEncoder, or None
+        self.temporal_model: nn.LSTM | nn.TransformerEncoder | None = None
+
+        if temporal_modeling == "lstm":
+            self.temporal_model = nn.LSTM(
+                input_size=self.spatial_dim,
+                hidden_size=hidden_dim,
+                num_layers=num_layers,
+                batch_first=True,
+                dropout=0.1 if num_layers > 1 else 0.0,
+                dtype=dtype,
+            )
+        elif temporal_modeling == "transformer":
+            # 218 is not divisible by 8, so we'll use 6 heads (218 / 6 = 36.33...)
+            # Let's use a projection to make it divisible
+            self.spatial_to_transformer = nn.Linear(
+                self.spatial_dim, 216, dtype=dtype
+            )  # 216 is divisible by 6, 8, 12
+        elif temporal_modeling == "none":
+            self.temporal_model = None
+        else:
+            raise ValueError(f"Unsupported temporal modeling: {temporal_modeling}")
+
+        # Output projection if using temporal modeling
+        self.output_projection: nn.Linear | nn.Identity
+        if self.temporal_model is not None:
+            if temporal_modeling == "lstm":
+                output_dim = hidden_dim
+            elif temporal_modeling == "transformer":
+                output_dim = 216  # Projected transformer dimension
+            else:
+                output_dim = self.spatial_dim
+            self.output_projection = nn.Linear(output_dim, hidden_dim, dtype=dtype)
+        else:
+            self.output_projection = nn.Identity()
         """
         Initialize AIFS time series tokenizer with  encoder.
 
@@ -74,7 +153,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         self.aifs_encoder: AIFSCompleteEncoder | None = None
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
-            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose)
+            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose, device=device)
             if verbose:
                 print("Time series tokenizer using AIFSCompleteEncoder with provided AIFS model")
         elif aifs_checkpoint_path is not None:
@@ -183,11 +262,9 @@ class AIFSTimeSeriesTokenizer(nn.Module):
                 if self.verbose:
                     print(f"AIFS encoder output shape: {spatial_encoding.shape}")
 
-                # AIFS returns [grid_points, features] = [542080, 218]
-                # We need to aggregate this to [batch, time, features] format
+                # AIFS returns various output shapes, need to handle them consistently
+                # Expected output: [batch, features] for time series tokenization
 
-                # Aggregate grid point embeddings to get a single representation per batch
-                # Use mean pooling across grid points to create a global climate representation
                 if len(spatial_encoding.shape) == 2:  # [grid_points, features]
                     # Mean pool across grid points to get [features]
                     aggregated_encoding = torch.mean(spatial_encoding, dim=0)  # [218]
@@ -199,8 +276,30 @@ class AIFSTimeSeriesTokenizer(nn.Module):
 
                     if self.verbose:
                         print(f"Aggregated encoding shape: {batch_encoding.shape}")
+                elif len(spatial_encoding.shape) == 4:  # [batch, time, grid_points, features]
+                    # Aggregate across time and grid point dimensions to get [batch, features]
+                    batch_encoding = spatial_encoding.mean(dim=(1, 2))  # [batch, features]
+
+                    if self.verbose:
+                        print(f"Aggregated 4D encoding shape: {batch_encoding.shape}")
                 else:
-                    batch_encoding = spatial_encoding
+                    # For other shapes, try to flatten to [batch, features]
+                    if spatial_encoding.dim() > 2:
+                        # Flatten all non-batch dimensions and aggregate
+                        batch_encoding = spatial_encoding.flatten(start_dim=1).mean(
+                            dim=1, keepdim=True
+                        )
+                        # Ensure we have the right number of features
+                        if batch_encoding.shape[-1] != self.spatial_dim:
+                            # Project to correct dimension if needed
+                            batch_encoding = batch_encoding.expand(-1, self.spatial_dim)
+                    else:
+                        batch_encoding = spatial_encoding
+
+                    if self.verbose:
+                        print(f"Fallback encoding shape: {batch_encoding.shape}")
+
+                # Ensure batch_encoding is 2D [batch, features] before proceeding
 
                 # Create time series tokens by repeating for each timestep
                 time_series_tokens = batch_encoding.unsqueeze(1).repeat(
@@ -428,6 +527,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
             "hidden_dim": self.hidden_dim,
             "spatial_dim": self.spatial_dim,
             "device": self.device,
+            "dtype": self.dtype,
             "output_shape_pattern": "batch x time x features",
         }
 

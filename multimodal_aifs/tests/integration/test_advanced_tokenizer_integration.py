@@ -17,7 +17,7 @@ sys.path.insert(0, str(project_root))
 from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 
 
-def test__tokenizer():
+def test_tokenizer():
     """Test the  AIFS time series tokenizer with new interface."""
     print("Testing  AIFS Time Series Tokenizer")
     print("=" * 60)
@@ -126,5 +126,5 @@ def test__tokenizer():
 
 
 if __name__ == "__main__":
-    test__tokenizer()
+    test_tokenizer()
     print("All tests completed successfully!")
