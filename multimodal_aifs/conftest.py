@@ -833,6 +833,13 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
                     "fused_output": torch.randn(1, 1, 512),
                     "generated_text": "Mock analysis completed.",
                 },
+                "parameters": lambda self: iter(
+                    [
+                        torch.randn(512, 256),  # Mock parameter tensor 1
+                        torch.randn(512),  # Mock parameter tensor 2 (bias)
+                        torch.randn(256, 128),  # Mock parameter tensor 3
+                    ]
+                ),
             },
         )()
     else:

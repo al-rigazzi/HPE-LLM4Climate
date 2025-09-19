@@ -9,16 +9,12 @@ This script tests with a smaller, CPU-friendly setup using conftest infrastructu
 - Uses shorter sequences
 """
 
-import os
 import sys
 import time
-import warnings
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
-import torch.nn.functional as F
 
 # Add project root to path
 project_root = Path(__file__).parent
@@ -28,13 +24,12 @@ print("🖥️  CPU-Optimized Llama + AIFS + Zarr Test")
 print("=" * 50)
 
 
-@pytest.mark.large_mem
+@pytest.mark.large_memory
 @pytest.mark.integration
-def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
+def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path, llm_mock_status):
     """Test with lightweight configuration for CPU."""
 
     try:
-        from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
         from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
         print("Modules imported")
@@ -46,12 +41,12 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
     model = aifs_llama_model
     device = model.device
     print(f"🖥️  Device: {device}")
-    print(f"Using model from conftest fixture")
+    print("Using model from conftest fixture")
     print(f"   AIFS: {type(model.time_series_tokenizer).__name__}")
     print(f"   🦙 LLM: {type(model.llama_model).__name__}")
 
     # Step 1: Load minimal climate data
-    print(f"\nStep 1: Loading Minimal Climate Data")
+    print("\nStep 1: Loading Minimal Climate Data")
     print("-" * 40)
 
     try:
@@ -73,17 +68,17 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
         pytest.fail(f"Failed to load climate data: {e}")
 
     # Step 2: Initialize lightweight Llama with heavy quantization
-    print(f"\n🦙 Step 2: Initializing Quantized Llama")
+    print("\n🦙 Step 2: Initializing Quantized Llama")
     print("-" * 40)
 
     # Model already available from conftest fixture (respects environment variables)
     print("   Using model from conftest fixture (environment-controlled)")
     print(f"   Device: {device}")
-    print(f"   Quantization: {os.environ.get('USE_QUANTIZATION', 'false')}")
-    print(f"   🦙 Mock LLM: {os.environ.get('USE_MOCK_LLM', 'false')}")
+    print(f"   Quantization: {llm_mock_status['use_quantization']}")
+    print(f"   🦙 Mock LLM: {llm_mock_status['use_mock_llm']}")
 
     # Step 3: Process with optimized settings
-    print(f"\nStep 3: CPU-Optimized Processing")
+    print("\nStep 3: CPU-Optimized Processing")
     print("-" * 40)
 
     try:
@@ -114,7 +109,7 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
         pytest.fail(f"Processing failed: {e}")
 
     # Step 4: Memory efficiency check
-    print(f"\nStep 4: Memory Efficiency")
+    print("\nStep 4: Memory Efficiency")
     print("-" * 40)
 
     try:
@@ -140,21 +135,21 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
     except Exception as e:
         print(f"Memory check incomplete: {e}")
 
-    print(f"\nCPU Test Complete!")
+    print("\nCPU Test Complete!")
     # Test passes by reaching this point without failures
 
 
 @pytest.mark.large_memory
 @pytest.mark.integration
-def test_compare_with_mock(aifs_llama_model, zarr_dataset_path):
+def test_compare_with_mock(aifs_llama_model, zarr_dataset_path, llm_mock_status):
     """Compare real vs mock LLM performance with same climate data."""
-    print(f"\n⚖️  Comparison: Real vs Mock Llama (conftest)")
+    print("\n⚖️  Comparison: Real vs Mock Llama (conftest)")
     print("-" * 40)
 
     model = aifs_llama_model
-    use_mock_env = os.environ.get("USE_MOCK_LLM", "").lower() in ("true", "1", "yes")
+    use_mock_env = llm_mock_status["use_mock_llm"]
 
-    print(f"   Testing current configuration:")
+    print("   Testing current configuration:")
     print(f"   Using mock: {use_mock_env}")
     print(f"   Device: {model.device}")
 
@@ -175,7 +170,7 @@ def test_compare_with_mock(aifs_llama_model, zarr_dataset_path):
 
         with torch.no_grad():
             test_start = time.time()
-            result = model.forward(dummy_data, dummy_text, task="embedding")
+            _ = model.forward(dummy_data, dummy_text, task="embedding")
             test_time = time.time() - test_start
 
         print(f"      Inference time: {test_time:.3f}s")
