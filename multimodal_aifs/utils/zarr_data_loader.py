@@ -148,14 +148,14 @@ class ZarrClimateLoader:
             self.available_variables = [v for v in self.available_variables if v in self.variables]
 
     def load_time_range(
-        self, start_time: str, end_time: str, variables: list[str] | None = None
+        self, start_time: str | None, end_time: str | None, variables: list[str] | None = None
     ) -> xr.Dataset:
         """
         Load data for a specific time range.
 
         Args:
-            start_time: Start time (e.g., "2024-01-01")
-            end_time: End time (e.g., "2024-01-07")
+            start_time: Start time (e.g., "2024-01-01") or None for all from beginning
+            end_time: End time (e.g., "2024-01-07") or None for all to end
             variables: Variables to load (default: all available)
 
         Returns:
@@ -168,13 +168,34 @@ class ZarrClimateLoader:
         if not vars_to_load:
             raise ValueError(f"No valid variables found. Available: {self.available_variables}")
 
-        print(f"⏰ Loading time range: {start_time} to {end_time}")
+        # Format time range message
+        if start_time is None and end_time is None:
+            time_msg = "all time steps"
+        elif start_time is None:
+            time_msg = f"all time steps to {end_time}"
+        elif end_time is None:
+            time_msg = f"all time steps from {start_time}"
+        else:
+            time_msg = f"{start_time} to {end_time}"
+
+        print(f"⏰ Loading time range: {time_msg}")
         print(f"🔢 Variables: {vars_to_load} ({len(vars_to_load)} total)")
 
         assert self.ds is not None, "Dataset is not loaded"
 
         # Select time range and variables
-        subset = self.ds[vars_to_load].sel(time=slice(start_time, end_time))
+        if start_time is None and end_time is None:
+            # Load all time steps
+            subset = self.ds[vars_to_load]
+        elif start_time is None:
+            # Load from beginning to end_time
+            subset = self.ds[vars_to_load].sel(time=slice(None, end_time))
+        elif end_time is None:
+            # Load from start_time to end
+            subset = self.ds[vars_to_load].sel(time=slice(start_time, None))
+        else:
+            # Load specific range
+            subset = self.ds[vars_to_load].sel(time=slice(start_time, end_time))
 
         # Load into memory (if needed)
         if hasattr(subset, "compute"):

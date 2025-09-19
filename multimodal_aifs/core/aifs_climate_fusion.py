@@ -203,9 +203,9 @@ class AIFSClimateTextFusion(nn.Module):
                 batch_size = climate_data.shape[0]
                 global_encoded = global_encoded.expand(batch_size, -1)  # [batch, 218]
             else:
-                global_encoded = encoded.to(dtype=self.dtype)  # Already in correct format
-
-        # Project to fusion dimension
+                global_encoded = encoded.to(
+                    dtype=self.dtype
+                )  # Already in correct format        # Project to fusion dimension
         # Ensure input tensor matches layer dtype
         if hasattr(self.climate_projection[0], "weight"):
             target_dtype = self.climate_projection[0].weight.dtype

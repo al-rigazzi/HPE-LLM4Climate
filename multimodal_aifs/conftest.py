@@ -564,6 +564,14 @@ def aifs_model_available(test_device):  # pylint: disable=W0621
         return _MODEL_CACHE["aifs_model_available"]
 
     print("Checking AIFS model availability...")
+
+    # Check if we should force mock AIFS model
+    use_mock_aifs = get_env_bool("USE_MOCK_AIFS", False)
+    if use_mock_aifs:
+        print("🎭 Forcing mock AIFS model (USE_MOCK_AIFS=true)")
+        _MODEL_CACHE["aifs_model_available"] = (False, None, None)
+        return _MODEL_CACHE["aifs_model_available"]
+
     try:
         # Setup flash attention mocking before loading AIFS model
         setup_flash_attn_mock()
@@ -804,6 +812,7 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
             "MockFusionModel",
             (),
             {
+                "device": str(test_device),  # Add device attribute
                 "time_series_tokenizer": None,
                 "llama_hidden_size": 512,
                 "llama_tokenizer": None,

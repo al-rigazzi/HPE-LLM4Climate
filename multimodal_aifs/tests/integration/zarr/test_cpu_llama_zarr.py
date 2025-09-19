@@ -56,10 +56,8 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
     try:
         loader = ZarrClimateLoader(zarr_dataset_path)
 
-        # Load just 2 timesteps for CPU efficiency
-        climate_data = loader.load_time_range(
-            "2024-01-01T00:00:00", "2024-01-01T06:00:00"  # Just 2 timesteps
-        )
+        # Load all available timesteps (synthetic test data has exactly 2 timesteps)
+        climate_data = loader.load_time_range(None, None)  # Load all timesteps
 
         # Convert to small tensor
         climate_tensor = loader.to_aifs_tensor(
