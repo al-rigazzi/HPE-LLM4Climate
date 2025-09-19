@@ -28,6 +28,7 @@ print("🖥️  CPU-Optimized Llama + AIFS + Zarr Test")
 print("=" * 50)
 
 
+@pytest.mark.large_mem
 @pytest.mark.integration
 def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path):
     """Test with lightweight configuration for CPU."""
