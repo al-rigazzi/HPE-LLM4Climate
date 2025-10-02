@@ -157,7 +157,7 @@ create_box(
     (0.5, 10.5),
     4,
     1.2,
-    "ECMWF Climate Data\n(GRIB/Cached Arrays)\n5D Format: [B, T, E, G, V]\nExample: [2, 1, 1, 542080, 103]\nSurface + Pressure levels",
+    "ECMWF Climate Data\n(Zarr/GRIB Format)\n5D Format: [batch, time, ensemble, grid, vars]\nExample: [1, 2, 1, 542080, 103]\nSurface + 13 Pressure levels",
     colors["data"],
     fontsize=9,
 )
@@ -191,7 +191,7 @@ create_box(
     (0.5, 8),
     7.5,
     1.2,
-    "AIFS Complete Encoder (Pre-trained ECMWF)\nGraphTransformerForwardMapper\n19.9M parameters (encoder only)\nInput: 103 variables → Output: 1024 embeddings\nSpatial processing: 542,080 grid points",
+    "AIFS Complete Encoder (Pre-trained ECMWF)\nGraphTransformerForwardMapper\n19.9M parameters (encoder only)\nInput: 103 variables → Raw output: 102 dims\nProjection: 102 → 218 embeddings\nSpatial processing: 542,080 grid points",
     colors["aifs"],
     fontsize=9,
 )
@@ -237,7 +237,7 @@ create_box(
     (2, 5.5),
     4.5,
     1.3,
-    "Climate Projection\nAIFS features: 1024 → 4096\nLinear projection layer\nLayer normalization\nBroadcast to sequence length",
+    "Climate Projection\nAIFS features: 218 → 768/4096\nLinear projection layer\nLayer normalization\nAdapted for LLM dimension",
     colors["fusion"],
     fontsize=9,
 )
@@ -282,7 +282,7 @@ create_box(
     (1, 3),
     5,
     1.2,
-    "Climate Encoder (Trainable)\nCNN layers + projection\n768 → 4096 dimensions\nOnly 2.1M parameters trained\nFrozen Llama-3-8B backbone",
+    "Climate Encoder (Configurable)\nAIFS encoder output: 218 dims\nProjection to LLM space: 218 → 768/4096\nTrainable fusion layers\nFrozen Llama-3-8B backbone",
     colors["aifs"],
     fontsize=9,
 )
@@ -295,17 +295,6 @@ create_box(
     1.2,
     "Integrated Model Output\nJoint climate-text embeddings\nClimate-aware text generation\nMulti-task capabilities\nReal-time inference",
     colors["fusion"],
-    fontsize=9,
-)
-
-# Performance Metrics
-create_box(
-    ax,
-    (13, 3),
-    4,
-    1.2,
-    "Performance Metrics\nMemory: 8.5-10.6GB\nTraining: CPU/GPU ready\nThroughput: 32 samples/s\nAIFS: 19.9M encoder params",
-    "#D3D3D3",  # Light Gray - provides good contrast for black text
     fontsize=9,
 )
 
@@ -360,7 +349,6 @@ Language Model: Meta-Llama-3-8B (8.03B params)
 AIFS Encoder: 19.9M parameters (extracted)
 Climate Variables: 103 variables
 Grid Points: 542,080 spatial points
-Memory Usage: 8.5-10.6GB training
 Framework: PyTorch 2.4+, Python 3.12+
 Training: CPU optimized, GPU compatible"""
 
