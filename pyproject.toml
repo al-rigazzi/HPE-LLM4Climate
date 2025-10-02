@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Comprehensive Multimodal Climate-Text Fusion System"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "MIT"}
+license = {text = "Apache-2.0"}
 authors = [
     {name = "HPE LLM4Climate Team"}
 ]
@@ -16,7 +16,7 @@ keywords = ["climate", "machine learning", "multimodal", "fusion", "weather"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
