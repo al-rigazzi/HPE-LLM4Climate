@@ -46,10 +46,22 @@ from multimodal_aifs.constants import (
 
 # =================== UTILITY FUNCTIONS ===================
 def setup_flash_attn_mock():
-    """Mock flash_attn to prevent import errors - MacOS only"""
+    """
+    Mock flash_attn to prevent import errors on MacOS.
+
+    Uses PyTorch's native F.scaled_dot_product_attention which provides optimized
+    flash-attention-like performance on Apple Metal (MPS) devices. This is more
+    efficient than the Dao-AILab flash-attention package which lacks complete MPS support.
+
+    Benefits:
+    - Native PyTorch 2.0+ MPS optimization
+    - Memory efficient attention for sequences up to ~10k tokens
+    - Automatic fallback for very large sequences (AIFS grid points)
+    - No external dependencies required
+    """
     import platform
 
-    # Only mock flash attention on MacOS systems where it's incomplete
+    # Only mock flash attention on MacOS systems where the CUDA-based flash_attn is unavailable
     if platform.system() != "Darwin":
         print("ℹ️ Skipping flash attention mock - not on MacOS")
         return
@@ -69,7 +81,9 @@ def setup_flash_attn_mock():
         return_attn_probs=False,
         **kwargs,
     ):
-        """Mock flash attention function that returns proper tensor output - memory efficient."""
+        """Mock flash attention using PyTorch's native scaled_dot_product_attention on MPS."""
+        import torch.nn.functional as F
+
         # Handle both causal and is_causal parameter names
         if is_causal is not None:
             causal = is_causal
@@ -98,28 +112,63 @@ def setup_flash_attn_mock():
                 return output, dummy_attn
             return output
 
-        # For smaller sequences, use proper scaled dot-product attention
-        if softmax_scale is None:
-            softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+        # For smaller sequences, use PyTorch's native scaled_dot_product_attention
+        # This uses optimized MPS kernels when available
+        try:
+            # scaled_dot_product_attention is available in PyTorch 2.0+
+            # Determine if we're in training mode (dropout only applies during training)
+            is_training = dropout_p > 0.0
+            actual_dropout = dropout_p if is_training else 0.0
 
-        # Compute attention scores
-        scores = torch.matmul(q, k.transpose(-2, -1)) * softmax_scale
-        if causal:
-            # Apply causal mask
-            causal_mask = torch.triu(
-                torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool), diagonal=1
+            output = F.scaled_dot_product_attention(
+                q,
+                k,
+                v,
+                attn_mask=None,
+                dropout_p=actual_dropout,
+                is_causal=causal,
+                scale=softmax_scale,
             )
-            scores = scores.masked_fill(causal_mask, float("-inf"))
 
-        attn_weights = torch.softmax(scores, dim=-1)
-        if dropout_p > 0.0 and q.training:
-            attn_weights = torch.dropout(attn_weights, dropout_p, train=True)
+            if return_attn_probs:
+                # PyTorch's function doesn't return attention weights by default
+                # Compute them separately if needed (slower but compatible)
+                if softmax_scale is None:
+                    softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+                scores = torch.matmul(q, k.transpose(-2, -1)) * softmax_scale
+                if causal:
+                    causal_mask = torch.triu(
+                        torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool),
+                        diagonal=1,
+                    )
+                    scores = scores.masked_fill(causal_mask, float("-inf"))
+                attn_weights = torch.softmax(scores, dim=-1)
+                return output, attn_weights
 
-        output = torch.matmul(attn_weights, v)
+            return output
 
-        if return_attn_probs:
-            return output, attn_weights
-        return output
+        except (AttributeError, RuntimeError) as e:
+            # Fallback to manual implementation if scaled_dot_product_attention is not available
+            print(f"⚠️ Falling back to manual attention: {e}")
+            if softmax_scale is None:
+                softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+
+            scores = torch.matmul(q, k.transpose(-2, -1)) * softmax_scale
+            if causal:
+                causal_mask = torch.triu(
+                    torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool), diagonal=1
+                )
+                scores = scores.masked_fill(causal_mask, float("-inf"))
+
+            attn_weights = torch.softmax(scores, dim=-1)
+            if dropout_p > 0.0:
+                attn_weights = torch.nn.functional.dropout(attn_weights, p=dropout_p, training=True)
+
+            output = torch.matmul(attn_weights, v)
+
+            if return_attn_probs:
+                return output, attn_weights
+            return output
 
     def mock_flash_attn_varlen_func(*args, **kwargs):
         """Mock variable length flash attention - simplified fallback."""
