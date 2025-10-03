@@ -333,7 +333,7 @@ create_arrow(ax, (13.2, 8), (9.5, 6.8), colors["llama"])
 # Fusion to integration
 create_arrow(ax, (4.2, 5.5), (3.5, 4.2), colors["fusion"])
 create_arrow(ax, (9.5, 5.5), (9, 4.2), colors["fusion"])
-create_arrow(ax, (14.7, 5.5), (14.5, 4.2), colors["encoder"])
+create_arrow(ax, (14.7, 5.5), (10.5, 4.2), colors["encoder"])
 
 # Integration to output
 create_arrow(ax, (3.5, 3), (7.5, 1.7), colors["aifs"])
