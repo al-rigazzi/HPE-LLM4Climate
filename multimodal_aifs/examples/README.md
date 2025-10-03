@@ -11,7 +11,7 @@ Basic usage examples:
 ### Root Examples
 Complete integration examples:
 - **`aifs_integration_example.py`** - AIFS integration with time series tokenization
-- **`aifs_llama_example.py`** - AIFS + LLaMA multimodal fusion example
+- **`aifs_mistral_example.py`** - AIFS + Mistral multimodal fusion example
 - **`multimodal_timeseries_demo.py`** - Time series multimodal demonstration
 - **`zarr_aifs_multimodal_example.py`** - Zarr format integration with AIFS
 

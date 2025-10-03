@@ -16,7 +16,7 @@
 AIFS Multimodal Architecture Diagram Generator (Updated 2025)
 
 This script generates professional architecture diagrams for the AIFS multimodal climate AI system
-that combines ECMWF AIFS encoder with Meta-Llama-3-8B language models.
+that combines ECMWF AIFS encoder with Mistral-7B-Instruct-v0.3 language models.
 
 Key Updates:
 - Real AIFS encoder integration (not TimeSeries tokenizer)
@@ -31,7 +31,7 @@ Features:
 - Color-coded components by functionality
 - Support for PDF output format (PNG removed per request)
 - Actual AIFS encoder architecture
-- Meta-Llama-3-8B multimodal fusion architecture
+- Mistral-7B-Instruct-v0.3 multimodal fusion architecture
 
 Usage:
     python create_aifs_architecture_diagram.py
@@ -60,7 +60,7 @@ ax.axis("off")
 # Color scheme for AIFS multimodal system (Updated 2025)
 colors = {
     "aifs": "#2E8B57",  # Sea Green for AIFS components
-    "llama": "#4169E1",  # Royal Blue for Llama components
+    "mistral": "#4169E1",  # Royal Blue for Mistral components
     "fusion": "#FF6347",  # Tomato for fusion mechanisms
     "encoder": "#9370DB",  # Medium Purple for encoder
     "data": "#FFD700",  # Gold for data sources
@@ -138,7 +138,7 @@ ax.text(
 ax.text(
     9,
     12.7,
-    "ECMWF AIFS Encoder + Meta-Llama-3-8B Integration",
+    "ECMWF AIFS Encoder + Mistral-7B-Instruct-v0.3 Integration",
     ha="center",
     va="center",
     fontsize=14,
@@ -196,11 +196,11 @@ create_box(
     fontsize=9,
 )
 
-# =================== LLAMA PROCESSING LAYER ===================
+# =================== MISTRAL PROCESSING LAYER ===================
 ax.text(
     13.5,
     9.5,
-    "Llama Processing Pipeline",
+    "Mistral Processing Pipeline",
     ha="center",
     va="center",
     fontsize=16,
@@ -208,14 +208,14 @@ ax.text(
     color="black",
 )
 
-# Llama 3-8B Model
+# Mistral-7B-Instruct Model
 create_box(
     ax,
     (10, 8),
     7.5,
     1.2,
-    "Meta-Llama-3-8B Language Model\n8.03B parameters (frozen)\n32 transformer layers\n4096 hidden dimensions\n32 attention heads",
-    colors["llama"],
+    "Mistral-7B-Instruct-v0.3 Language Model\n7.25B parameters (frozen)\n32 transformer layers\n4096 hidden dimensions\n32 attention heads",
+    colors["mistral"],
     fontsize=9,
 )
 
@@ -282,7 +282,7 @@ create_box(
     (1, 3),
     5,
     1.2,
-    "Climate Encoder (Configurable)\nAIFS encoder output: 218 dims\nProjection to LLM space: 218 → 768/4096\nTrainable fusion layers\nFrozen Llama-3-8B backbone",
+    "Climate Encoder (Configurable)\nAIFS encoder output: 218 dims\nProjection to LLM space: 218 → 768/4096\nTrainable fusion layers\nFrozen Mistral-7B-Instruct backbone",
     colors["aifs"],
     fontsize=9,
 )
@@ -324,11 +324,11 @@ create_box(
 # =================== ARROWS ===================
 # Data flow arrows from inputs to processing
 create_arrow(ax, (2.5, 10.5), (4, 9.2), colors["aifs"])
-create_arrow(ax, (15.5, 10.5), (13.2, 9.2), colors["llama"])
+create_arrow(ax, (15.5, 10.5), (13.2, 9.2), colors["mistral"])
 
 # Processing to fusion
 create_arrow(ax, (4, 8), (4.2, 6.8), colors["aifs"])
-create_arrow(ax, (13.2, 8), (9.5, 6.8), colors["llama"])
+create_arrow(ax, (13.2, 8), (9.5, 6.8), colors["mistral"])
 
 # Fusion to integration
 create_arrow(ax, (4.2, 5.5), (3.5, 4.2), colors["fusion"])
@@ -345,7 +345,7 @@ create_arrow(ax, (15, 3), (10.5, 1.7), colors["background"])
 specs_text = """AIFS Multimodal Specifications (2025):
 
 AIFS Model: ECMWF AIFS-Single-1.0
-Language Model: Meta-Llama-3-8B (8.03B params)
+Language Model: Mistral-7B-Instruct-v0.3 (7.25B params)
 AIFS Encoder: 19.9M parameters (extracted)
 Climate Variables: 103 variables
 Grid Points: 542,080 spatial points
@@ -368,7 +368,7 @@ ax.text(
 # =================== LEGEND ===================
 legend_elements = [
     patches.Patch(color=colors["aifs"], label="AIFS Components"),
-    patches.Patch(color=colors["llama"], label="Llama Components"),
+    patches.Patch(color=colors["mistral"], label="Mistral Components"),
     patches.Patch(color=colors["encoder"], label="Encoder/Processing"),
     patches.Patch(color=colors["fusion"], label="Fusion Mechanisms"),
     patches.Patch(color=colors["data"], label="Data Sources"),

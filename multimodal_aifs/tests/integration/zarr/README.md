@@ -9,9 +9,9 @@ This directory contains comprehensive tests for Zarr format integration with the
 - **`test_5d_aifs_capability.py`** - AIFS 5D tensor processing capability verification
 
 ### Real Llama Integration Tests
-- **`test_real_llama_zarr.py`** - Full pipeline with real Meta-Llama-3-8B model
-- **`test_cpu_llama_zarr.py`** - CPU-optimized test with quantization
-- **`test_real_llama_cpu_full.py`** - CPU full-precision real Llama test
+- **`test_real_mistral_zarr.py`** - Full pipeline with real Mistral-7B-Instruct-v0.3 model
+- **`test_cpu_mistral_zarr.py`** - CPU-optimized test with quantization
+- **`test_real_mistral_cpu_full.py`** - CPU full-precision real Llama test
 
 ## What These Tests Validate
 
@@ -28,7 +28,7 @@ This directory contains comprehensive tests for Zarr format integration with the
 - Spatial pattern recognition
 
 ### ✅ Multimodal Integration
-- Real Meta-Llama-3-8B integration (8B parameters)
+- Real Mistral-7B-Instruct-v0.3 integration (7.25B parameters)
 - Cross-attention fusion mechanisms
 - Climate-text multimodal processing
 - CPU and GPU execution paths
@@ -50,13 +50,13 @@ python test_zarr_integration.py
 ### Real Llama Pipeline Test
 ```bash
 cd multimodal_aifs/tests/integration/zarr
-python test_real_llama_cpu_full.py
+python test_real_mistral_cpu_full.py
 ```
 
 ### CPU-Optimized Test
 ```bash
 cd multimodal_aifs/tests/integration/zarr
-python test_cpu_llama_zarr.py
+python test_cpu_mistral_zarr.py
 ```
 
 ## System Requirements
@@ -85,12 +85,12 @@ pip install zarr xarray transformers torch psutil accelerate bitsandbytes
 All tests have been validated on:
 - **macOS ARM64** (M1/M2 chips)
 - **CPU-only execution** (no CUDA required)
-- **Real Meta-Llama-3-8B model** loading and inference
+- **Real Mistral-7B-Instruct-v0.3 model** loading and inference
 - **Full zarr → AIFS → Llama pipeline** functionality
 
 ## Performance Benchmarks
 
-### Real Llama-3-8B CPU Performance
+### Real Mistral-7B-Instruct CPU Performance
 - **Model Loading**: ~33 seconds
 - **Processing Time**: ~114 seconds per batch
 - **Memory Usage**: ~32 GB peak
@@ -104,6 +104,6 @@ All tests have been validated on:
 
 ## Integration Success
 
-✅ **Complete pipeline verified**: Zarr climate data → AIFS tokenization → Real Llama-3-8B processing → Multimodal fusion → Climate analysis outputs
+✅ **Complete pipeline verified**: Zarr climate data → AIFS tokenization → Real Mistral-7B-Instruct processing → Multimodal fusion → Climate analysis outputs
 
 This represents a fully functional climate AI system capable of processing real-world meteorological data through state-of-the-art language models.

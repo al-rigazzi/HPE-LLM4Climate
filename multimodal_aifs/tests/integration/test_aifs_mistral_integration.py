@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-AIFS Time Series + LLaMA Integration Test
+AIFS Time Series + Mistral Integration Test
 
-This test validates the integration of AIFSTimeSeriesTokenizer with LLaMA 8B
+This test validates the integration of AIFSTimeSeriesTokenizer with Mistral 8B
 for multimodal climate-language understanding and generation.
 
 Usage:
-    pytest multimodal_aifs/tests/integration/test_aifs_llama_integration.py -v
+    pytest multimodal_aifs/tests/integration/test_aifs_mistral_integration.py -v
 """
 
 import os
@@ -53,14 +53,14 @@ def has_aifs_encoder(model) -> bool:
 
 
 @pytest.mark.integration
-def test_fusion_model_initialization(aifs_llama_model):
-    """Test AIFS-LLaMA fusion model initialization using conftest fixture."""
+def test_fusion_model_initialization(aifs_mistral_model):
+    """Test AIFS-Mistral fusion model initialization using conftest fixture."""
     print("\nTesting Fusion Model Initialization")
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
 
     assert model.time_series_tokenizer is not None
-    assert model.llama_model is not None
+    assert model.mistral_model is not None
 
     # Check if AIFS encoder is available, if not, just note it
     if not has_aifs_encoder(model):
@@ -71,11 +71,11 @@ def test_fusion_model_initialization(aifs_llama_model):
 
 @pytest.mark.large_memory
 @pytest.mark.integration
-def test_time_series_tokenization(aifs_llama_model, test_climate_data):
+def test_time_series_tokenization(aifs_mistral_model, test_climate_data):
     """Test time series tokenization."""
     print("\nTesting Time Series Tokenization")
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
     climate_data = test_climate_data["tensor_5d"]  # [batch, time, vars, height, width]
 
     if not has_aifs_encoder(model):
@@ -94,11 +94,11 @@ def test_time_series_tokenization(aifs_llama_model, test_climate_data):
 
 
 @pytest.mark.integration
-def test_text_tokenization(aifs_llama_model):
-    """Test text tokenization for LLaMA using conftest fixture."""
+def test_text_tokenization(aifs_mistral_model):
+    """Test text tokenization for Mistral using conftest fixture."""
     print("\nTesting Text Tokenization")
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
     text_inputs = create_test_text_inputs()
     text_tokens = model.tokenize_text(text_inputs)
 
@@ -112,11 +112,11 @@ def test_text_tokenization(aifs_llama_model):
 
 @pytest.mark.large_memory
 @pytest.mark.integration
-def test_climate_language_generation(aifs_llama_model, test_climate_data):
+def test_climate_language_generation(aifs_mistral_model, test_climate_data):
     """Test climate-conditioned language generation."""
     print("\nTesting Climate-Language Generation")
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
     climate_data = test_climate_data["tensor_5d"]
     text_inputs = create_test_text_inputs()
 
@@ -129,18 +129,18 @@ def test_climate_language_generation(aifs_llama_model, test_climate_data):
 
     # Validate generation output
     assert logits.shape[0] == batch_size
-    assert logits.shape[2] == model.llama_model.vocab_size or logits.shape[2] == 32000
+    assert logits.shape[2] == model.mistral_model.vocab_size or logits.shape[2] == 32000
 
     print(f"   Generation logits: {logits.shape}")
 
 
 @pytest.mark.large_memory
 @pytest.mark.integration
-def test_climate_classification(aifs_llama_model, test_climate_data):
+def test_climate_classification(aifs_mistral_model, test_climate_data):
     """Test climate data classification with language context."""
     print("\nTesting Climate Classification")
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
     climate_data = test_climate_data["tensor_5d"]
     text_inputs = create_test_text_inputs()
 
@@ -160,11 +160,11 @@ def test_climate_classification(aifs_llama_model, test_climate_data):
 
 @pytest.mark.large_memory
 @pytest.mark.integration
-def test_process_climate_text_interface(aifs_llama_model, test_climate_data):
+def test_process_climate_text_interface(aifs_mistral_model, test_climate_data):
     """Test the process_climate_text interface."""
     print("\n🔗 Testing process_climate_text Interface")
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
     climate_data = test_climate_data["tensor_5d"]
 
     # First tokenize the climate data

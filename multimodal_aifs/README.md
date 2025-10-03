@@ -55,7 +55,7 @@ multimodal_aifs/
 ├── examples/                   # Example usage and demonstrations
 │   ├── README.md              # Example documentation
 │   ├── aifs_integration_example.py # Integration example
-│   ├── aifs_llama_example.py  # AIFS + LLaMA example
+│   ├── aifs_mistral_example.py  # AIFS + Mistral example
 │   ├── multimodal_timeseries_demo.py # Time series demo
 │   ├── zarr_aifs_multimodal_example.py # Zarr integration example
 │   └── basic/                 # Basic examples
@@ -75,9 +75,9 @@ multimodal_aifs/
 │   │   ├── test_aifs_encoder_integration.py # Moved from root
 │   │   ├── test_aifs_climate_fusion.py
 │   │   ├── test_time_series_integration.py
-│   │   ├── test_aifs_llama_integration.py
-│   │   ├── test_real_llama_integration.py
-│   │   ├── test_aifs_llama3_real_fusion.py
+│   │   ├── test_aifs_mistral_integration.py
+│   │   ├── test_real_mistral_integration.py
+│   │   ├── test_aifs_mistral7b_real_fusion.py
 │   │   └── zarr/              # Zarr-specific tests
 │   └── benchmarks/            # Performance benchmarks
 │       └── test_time_series_performance.py
@@ -92,9 +92,9 @@ multimodal_aifs/
 │   ├── train_multimodal.py   # Main training script
 │   └── examples/              # Training examples
 │       ├── README.md
-│       ├── llama3_final_success.py # Simple AIFS+LLaMA fusion
+│       ├── mistral7b_final_success.py # Simple AIFS+Mistral fusion
 │       ├── spatial_comparative_analysis.py # Spatial analysis
-│       └── train_llama3_8b.py # LLaMA-3-8B training
+│       └── train_mistral7b_8b.py # Mistral-3-8B training
 │
 └── docs/                      # Documentation
     ├── README.md
@@ -170,7 +170,7 @@ python multimodal_aifs/examples/zarr_aifs_multimodal_example.py
 **Output Format:**
 - 5D tensors: `[batch, time, variables, height, width]`
 - Compatible with AIFS TimeSeries tokenizer
-- Ready for multimodal fusion with Llama 3-8B
+- Ready for multimodal fusion with Mistral-7B-Instruct
 
 ### Basic Usage
 ```python

@@ -196,7 +196,9 @@ def pytest_configure(config):
     )
     config.addinivalue_line("markers", "integration: marks tests as integration tests")
     config.addinivalue_line("markers", "unit: marks tests as unit tests")
-    config.addinivalue_line("markers", "requires_llama: marks tests that require real Llama model")
+    config.addinivalue_line(
+        "markers", "requires_mistral: marks tests that require real Mistral model"
+    )
     config.addinivalue_line("markers", "requires_aifs: marks tests that require real AIFS model")
     config.addinivalue_line(
         "markers",
@@ -241,7 +243,7 @@ def llm_mock_status():
     """Provide information about whether LLM mocking is enabled."""
     use_mock_llm = get_env_bool("USE_MOCK_LLM", False)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
-    model_name = os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B")
+    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3")
 
     return {
         "use_mock_llm": use_mock_llm,
@@ -408,7 +410,7 @@ class MockLLMModel(nn.Module):
 def llm_model_path():
     """Get path to local LLM model if available."""
     # Check for specific model name from environment
-    model_name = os.environ.get("LLM_MODEL_NAME", "Meta-Llama-3-8B")
+    model_name = os.environ.get("LLM_MODEL_NAME", "Mistral-7B-Instruct-v0.3")
 
     possible_paths = [
         f"models/{model_name}",
@@ -435,7 +437,7 @@ def llm_model(llm_path, device):
 
     use_mock = get_env_bool("USE_MOCK_LLM", True)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
-    model_name = os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B")
+    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3")
 
     print("🤖 Loading LLM Model for Testing...")
     print(f"   Model: {model_name}")
@@ -564,7 +566,7 @@ def llm_tokenizer(model):
 _MODEL_CACHE: dict[str, Any] = {
     "aifs_model_available": None,  # Cached AIFS model availability check
     "aifs_model": None,  # Cached AIFS model instance
-    "aifs_llama_model": None,  # Cached AIFS+LLM fusion model
+    "aifs_mistral_model": None,  # Cached AIFS+LLM fusion model
     "llm_model": None,  # Cached LLM model instance
 }
 
@@ -666,7 +668,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
         model,
         device_str: str = "cpu",
         fusion_dim: int = 512,
-        use_mock_llama: bool = True,
+        use_mock_mistral: bool = True,
         verbose: bool = False,
     ):
         super().__init__()
@@ -703,17 +705,17 @@ class AIFSClimateTextFusionWrapper(nn.Module):
         )
 
         # Mock LLM attributes for compatibility
-        self.llama_hidden_size = fusion_dim
-        self.llama_tokenizer = None
+        self.mistral_hidden_size = fusion_dim
+        self.mistral_tokenizer = None
         # Create a mock LLM model with parameters for testing compatibility
-        self.llama_model = torch.nn.Linear(
+        self.mistral_model = torch.nn.Linear(
             fusion_dim,
             fusion_dim,
             dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,
         )
         # Add vocab_size attribute for compatibility with tests
-        setattr(self.llama_model, "vocab_size", 32000)  # Standard LLaMA vocab size
-        self.use_mock_llama = use_mock_llama  # Respect the environment variable
+        setattr(self.mistral_model, "vocab_size", 32000)  # Standard Mistral vocab size
+        self.use_mock_mistral = use_mock_mistral  # Respect the environment variable
 
     def tokenize_climate_data(self, climate_time_series: torch.Tensor) -> torch.Tensor:
         """
@@ -797,19 +799,19 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
 
 @pytest.fixture(scope="module")
-def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
+def aifs_mistral_model(test_device, aifs_model):  # pylint: disable=W0621
     """
     Fixture to create AIFS + LLM fusion model.
     """
-    if _MODEL_CACHE["aifs_llama_model"] is not None:
+    if _MODEL_CACHE["aifs_mistral_model"] is not None:
         print("♻️ Reusing cached AIFS+LLM fusion model")
-        return _MODEL_CACHE["aifs_llama_model"]
+        return _MODEL_CACHE["aifs_mistral_model"]
 
     # Setup flash attention mocking first
     setup_flash_attn_mock()
 
     # Get environment variables
-    use_mock_llama = get_env_bool("USE_MOCK_LLM", True)
+    use_mock_mistral = get_env_bool("USE_MOCK_LLM", True)
     # use_quantization and model_name are not used in this fixture
 
     print("🔗 Creating AIFS+LLM Fusion Model...")
@@ -827,12 +829,12 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
             {
                 "device": str(test_device),  # Add device attribute
                 "time_series_tokenizer": None,
-                "llama_hidden_size": 512,
-                "llama_tokenizer": None,
-                "llama_model": type(
+                "mistral_hidden_size": 512,
+                "mistral_tokenizer": None,
+                "mistral_model": type(
                     "MockLLM", (), {"vocab_size": 32000}
                 )(),  # Mock LLM with vocab_size
-                "use_mock_llama": use_mock_llama,  # Respect the environment variable
+                "use_mock_mistral": use_mock_mistral,  # Respect the environment variable
                 "tokenize_climate_data": lambda self, x: torch.randn(x.shape[0], 8, 256),
                 "tokenize_text": lambda self, x: {
                     "input_ids": torch.randint(1, 1000, (len(x), 32)),
@@ -861,11 +863,11 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
             model=actual_aifs_model,
             device_str=str(test_device),
             fusion_dim=512,
-            use_mock_llama=use_mock_llama,  # Pass the environment variable value
+            use_mock_mistral=use_mock_mistral,  # Pass the environment variable value
             verbose=True,
         )
 
-    _MODEL_CACHE["aifs_llama_model"] = fusion_model
+    _MODEL_CACHE["aifs_mistral_model"] = fusion_model
     print(f"AIFS+LLM Fusion Model created and cached on {test_device}")
     return fusion_model
 

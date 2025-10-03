@@ -1,6 +1,6 @@
 # AIFS Multimodal Architecture Diagrams (Updated 2025)
 
-This directory contains tools for generating professional architecture diagrams for the AIFS multimodal climate AI system that combines ECMWF AIFS encoder with Meta-Llama-3-8B language models.
+This directory contains tools for generating professional architecture diagrams for the AIFS multimodal climate AI system that combines ECMWF AIFS encoder with Mistral-7B-Instruct-v0.3 language models.
 
 ## Available Diagrams
 
@@ -10,7 +10,7 @@ This directory contains tools for generating professional architecture diagrams 
 Generates comprehensive system architecture showing:
 - ECMWF climate data ingestion (5D tensors)
 - AIFS encoder direct integration (19.9M parameters)
-- Meta-Llama-3-8B integration (8.03B parameters frozen)
+- Mistral-7B-Instruct-v0.3 integration (7.25B parameters frozen)
 - Climate-text fusion mechanisms
 - Accurate technical specifications
 
@@ -23,7 +23,7 @@ Generates detailed technical diagram of the attention mechanism:
 - Mathematical formulation of cross-attention
 - Tensor dimension tracking (1024 → 4096 projection)
 - Multi-head attention computation (32 heads)
-- AIFS-Llama fusion details
+- AIFS-Mistral fusion details
 - Performance specifications
 
 **Output**: `aifs_cross_attention_detail.pdf`
@@ -63,7 +63,7 @@ All diagrams are generated in PDF format for professional presentations and docu
 - **Data Source**: ECMWF climate data (GRIB/Cached Arrays)
 - **Model**: AIFS-Single-1.0 (Encoder extracted, 19.9M parameters)
 - **Processing**: Direct encoder integration (no tokenization)
-- **Integration**: Meta-Llama-3-8B language model (8.03B parameters)
+- **Integration**: Mistral-7B-Instruct-v0.3 language model (7.25B parameters)
 - **Fusion**: Element-wise addition, gated fusion, cross-attention
 - **Memory**: 8.5-10.6GB training, CPU optimized
 

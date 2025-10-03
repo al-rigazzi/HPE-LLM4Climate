@@ -15,8 +15,8 @@ training/
 ├── prepare_data.py              # Data preparation utilities
 ├── examples/                    # Training examples and demos
 │   ├── README.md               # Examples documentation
-│   ├── llama3_final_success.py # Production AIFS+Llama-3-8B fusion
-│   ├── train_llama3_8b.py      # Comprehensive training pipeline
+│   ├── mistral7b_final_success.py # Production AIFS+Mistral-7B-Instruct fusion
+│   ├── train_mistral7b_8b.py      # Comprehensive training pipeline
 │   └── spatial_comparative_analysis.py #  spatial analysis
 └── *.pt                        # Saved model checkpoints (generated)
 ```
@@ -30,10 +30,10 @@ cd examples/
 cat README.md
 
 # Start with production-ready AIFS+Llama fusion
-python examples/llama3_final_success.py
+python examples/mistral7b_final_success.py
 
 # Try comprehensive training pipeline
-python examples/train_llama3_8b.py
+python examples/train_mistral7b_8b.py
 ```
 
 ### 2. For Production AIFS Training
@@ -68,8 +68,8 @@ The production AIFS training pipeline supports:
 
 | Model Scale | Memory Usage | Status | Example Script |
 |-------------|-------------|--------|----------------|
-| **AIFS + Llama-3-8B (Simple)** | **8.5GB** | **✅ Production** | `examples/llama3_final_success.py` |
-| **AIFS + Llama-3-8B (Full)** | **10.6GB** | **✅ Production** | `examples/train_llama3_8b.py` |
+| **AIFS + Mistral-7B-Instruct (Simple)** | **8.5GB** | **✅ Production** | `examples/mistral7b_final_success.py` |
+| **AIFS + Mistral-7B-Instruct (Full)** | **10.6GB** | **✅ Production** | `examples/train_mistral7b_8b.py` |
 | **Spatial Analysis** | **Variable** | **✅ Production** | `examples/spatial_comparative_analysis.py` |
 
 ## 📊 System Requirements

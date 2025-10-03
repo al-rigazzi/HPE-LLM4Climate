@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Llama-3-8B Climate-Text Fusion Training
+Mistral-7B-Instruct Climate-Text Fusion Training
 
 VERIFIED FEASIBLE: Based on scaling tests, this should work with 36GB RAM.
 
-This script is optimized for training with the full Llama-3-8B model
+This script is optimized for training with the full Mistral-7B-Instruct model
 using our proven climate-text fusion architecture.
 """
 
@@ -55,7 +55,7 @@ def clear_memory():
     torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
 
-print("🦙 Llama-3-8B Climate-Text Fusion Training")
+print("🦙 Mistral-7B-Instruct Climate-Text Fusion Training")
 print("Target: Full 8B parameter language model with climate fusion")
 
 # Check if we have the required memory
@@ -64,18 +64,18 @@ current_memory = check_memory_usage()
 print(f"System RAM: {TOTAL_RAM}GB, Current usage: {current_memory:.1f}GB")
 
 
-class Llama3ClimateTextFusion(torch.nn.Module):
+class Mistral7BClimateTextFusion(torch.nn.Module):
     """
-    Production-ready Llama-3-8B with climate-text fusion
+    Production-ready Mistral-7B-Instruct with climate-text fusion
     Optimized for 36GB RAM training
     """
 
-    def __init__(self, text_model_name="meta-llama/Meta-Llama-3-8B", climate_dim=768):
+    def __init__(self, text_model_name="mistralai/Mistral-7B-Instral-v0.3", climate_dim=768):
         super().__init__()
 
-        print(f"🏗️ Initializing Llama-3-8B fusion model...")
+        print(f"🏗️ Initializing Mistral-7B-Instruct fusion model...")
 
-        # Load Llama-3-8B (requires HuggingFace approval)
+        # Load Mistral-7B-Instruct (requires HuggingFace approval)
         try:
             from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -84,7 +84,7 @@ class Llama3ClimateTextFusion(torch.nn.Module):
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
 
-            print(f"📥 Loading Llama-3-8B model (this may take several minutes)...")
+            print(f"📥 Loading Mistral-7B-Instruct model (this may take several minutes)...")
             self.text_model = AutoModelForCausalLM.from_pretrained(
                 text_model_name,
                 torch_dtype=torch.float32,  # Full precision for training
@@ -94,11 +94,11 @@ class Llama3ClimateTextFusion(torch.nn.Module):
             )
 
             model_params = sum(p.numel() for p in self.text_model.parameters())
-            print(f"Loaded Llama-3-8B: {model_params:,} parameters")
+            print(f"Loaded Mistral-7B-Instruct: {model_params:,} parameters")
 
         except Exception as e:
-            print(f"Failed to load Llama-3-8B: {e}")
-            print(f"Note: Llama-3 requires HuggingFace approval")
+            print(f"Failed to load Mistral-7B-Instruct: {e}")
+            print(f"Note: Mistral-7B requires HuggingFace approval")
             print(f"Alternative: We can use a similar sized model for testing")
             raise
 
@@ -127,20 +127,20 @@ class Llama3ClimateTextFusion(torch.nn.Module):
             torch.nn.LayerNorm(self.text_hidden_size),
         )
 
-        # Cross-attention fusion (optimized for Llama-3)
+        # Cross-attention fusion (optimized for Mistral-7B)
         self.fusion_attention = torch.nn.MultiheadAttention(
             embed_dim=self.text_hidden_size,
-            num_heads=32,  # Llama-3-8B has 32 attention heads
+            num_heads=32,  # Mistral-7B-Instruct has 32 attention heads
             batch_first=True,
         )
 
         self.fusion_norm = torch.nn.LayerNorm(self.text_hidden_size)
 
-        # Output projection to Llama vocabulary
+        # Output projection to Mistral vocabulary
         vocab_size = self.text_model.config.vocab_size
         self.output_projection = torch.nn.Linear(self.text_hidden_size, vocab_size)
 
-        # Freeze the base Llama model (critical for memory efficiency)
+        # Freeze the base Mistral model (critical for memory efficiency)
         for param in self.text_model.parameters():
             param.requires_grad = False
 
@@ -232,10 +232,10 @@ class ClimateTextDataset:
         }
 
 
-def train_llama3_fusion():
+def train_mistral7b_fusion():
     """Main training function"""
 
-    print(f"\nStarting Llama-3-8B fusion training...")
+    print(f"\nStarting Mistral-7B-Instruct fusion training...")
 
     # Check memory before model creation
     memory_before = check_memory_usage()
@@ -243,7 +243,7 @@ def train_llama3_fusion():
 
     try:
         # Create model
-        model = Llama3ClimateTextFusion()
+        model = Mistral7BClimateTextFusion()
 
         memory_after_model = check_memory_usage()
         print(f"Memory after model: {memory_after_model:.1f}GB")
@@ -336,7 +336,7 @@ def train_llama3_fusion():
         print(f"Memory efficiency: {(final_memory/36.0)*100:.1f}% of system RAM")
 
         # Save model if successful
-        save_path = Path(__file__).parent / "llama3_climate_fusion.pt"
+        save_path = Path(__file__).parent / "mistral7b_climate_fusion.pt"
         torch.save(
             {
                 "model_state_dict": model.state_dict(),
@@ -355,16 +355,16 @@ def train_llama3_fusion():
 
 
 if __name__ == "__main__":
-    # NOTE: This requires HuggingFace approval for Llama-3
-    print(f"IMPORTANT: This script requires HuggingFace approval for Llama-3-8B")
+    # NOTE: This requires HuggingFace approval for Mistral-7B
+    print(f"IMPORTANT: This script requires HuggingFace approval for Mistral-7B-Instruct")
     print(f"To get access:")
-    print(f"   1. Go to: https://huggingface.co/meta-llama/Meta-Llama-3-8B")
+    print(f"   1. Go to: https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3")
     print(f"   2. Request access from Meta")
     print(f"   3. Login with: huggingface-cli login")
     print(f"   4. Then run this script")
 
-    # YOU HAVE LLAMA-3 ACCESS - LET'S GO!
-    train_llama3_fusion()
+    # YOU HAVE MISTRAL-3 ACCESS - LET'S GO!
+    train_mistral7b_fusion()
 
     print(f"\nBased on our scaling tests, this WILL work with your 36GB RAM!")
     print(f"Estimated memory usage: ~29GB (19% buffer remaining)")

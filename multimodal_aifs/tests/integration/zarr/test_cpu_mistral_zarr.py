@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-CPU-Optimized Real Llama Test with Zarr
+CPU-Optimized Real Mistral Test with Zarr
 
 This script tests with a smaller, CPU-friendly setup using conftest infrastructure:
 - Uses conftest fixtures for model management
@@ -33,13 +33,13 @@ import torch
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-print("🖥️  CPU-Optimized Llama + AIFS + Zarr Test")
+print("🖥️  CPU-Optimized Mistral + AIFS + Zarr Test")
 print("=" * 50)
 
 
 @pytest.mark.large_memory
 @pytest.mark.integration
-def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path, llm_mock_status):
+def test_lightweight_mistral_zarr(aifs_mistral_model, zarr_dataset_path, llm_mock_status):
     """Test with lightweight configuration for CPU."""
 
     try:
@@ -51,12 +51,12 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path, llm_mock_st
         pytest.fail(f"Import error: {e}")
 
     # Use model from conftest
-    model = aifs_llama_model
+    model = aifs_mistral_model
     device = model.device
     print(f"🖥️  Device: {device}")
     print("Using model from conftest fixture")
     print(f"   AIFS: {type(model.time_series_tokenizer).__name__}")
-    print(f"   🦙 LLM: {type(model.llama_model).__name__}")
+    print(f"   � LLM: {type(model.mistral_model).__name__}")
 
     # Step 1: Load minimal climate data
     print("\nStep 1: Loading Minimal Climate Data")
@@ -80,8 +80,8 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path, llm_mock_st
         print(f"Failed to load climate data: {e}")
         pytest.fail(f"Failed to load climate data: {e}")
 
-    # Step 2: Initialize lightweight Llama with heavy quantization
-    print("\n🦙 Step 2: Initializing Quantized Llama")
+    # Step 2: Initialize lightweight Mistral with heavy quantization
+    print("\n� Step 2: Initializing Quantized Mistral")
     print("-" * 40)
 
     # Model already available from conftest fixture (respects environment variables)
@@ -154,12 +154,12 @@ def test_lightweight_llama_zarr(aifs_llama_model, zarr_dataset_path, llm_mock_st
 
 @pytest.mark.large_memory
 @pytest.mark.integration
-def test_compare_with_mock(aifs_llama_model, zarr_dataset_path, llm_mock_status):
+def test_compare_with_mock(aifs_mistral_model, zarr_dataset_path, llm_mock_status):
     """Compare real vs mock LLM performance with same climate data."""
-    print("\n⚖️  Comparison: Real vs Mock Llama (conftest)")
+    print("\n⚖️  Comparison: Real vs Mock Mistral (conftest)")
     print("-" * 40)
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
     use_mock_env = llm_mock_status["use_mock_llm"]
 
     print("   Testing current configuration:")

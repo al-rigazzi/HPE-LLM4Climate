@@ -186,7 +186,7 @@ class MultimodalTrainer:
         )
 
         # Initialize tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(config["model"]["llama_model_name"])
+        self.tokenizer = AutoTokenizer.from_pretrained(config["model"]["mistral_model_name"])
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 

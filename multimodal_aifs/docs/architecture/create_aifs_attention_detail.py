@@ -20,7 +20,7 @@ used in the AIFS multimodal climate AI system for climate-text fusion.
 
 Key Updates:
 - Real AIFS encoder dimensions (102 raw → 218 projected embeddings)
-- Accurate Meta-Llama-3-8B specifications
+- Accurate Mistral-7B-Instruct-v0.3 specifications
 - Current fusion mechanisms and projection layers
 - Actual parameter counts
 
@@ -54,7 +54,7 @@ ax.axis("off")
 # Color scheme for AIFS attention mechanism
 colors = {
     "aifs_tokens": "#2E8B57",  # Sea Green for AIFS tokens
-    "llama_tokens": "#4169E1",  # Royal Blue for Llama tokens
+    "mistral_tokens": "#4169E1",  # Royal Blue for Mistral tokens
     "attention": "#FF6347",  # Tomato for attention computation
     "projection": "#9370DB",  # Medium Purple for projections
     "math": "#FFD700",  # Gold for mathematical operations
@@ -131,7 +131,7 @@ ax.text(
 ax.text(
     8,
     11.2,
-    "TimeSeries Tokens ↔ Llama 3-8B Embeddings Fusion",
+    "TimeSeries Tokens ↔ Mistral-7B-Instruct Embeddings Fusion",
     ha="center",
     va="center",
     fontsize=12,
@@ -199,14 +199,14 @@ create_box(
     fontsize=9,
 )
 
-# Llama Tokens
+# Mistral Tokens
 create_box(
     ax,
     (12, 7),
     3.5,
     1,
     "LLM Text Tokens\nX_text = [B, seq_len, d_llm]\nB=1, seq_len variable, d_llm=768/4096\nFrom climate queries",
-    colors["llama_tokens"],
+    colors["mistral_tokens"],
     fontsize=9,
 )
 
@@ -349,7 +349,7 @@ create_box(
     (7.5, 0.1),
     4,
     0.6,
-    "Fused Embeddings\nY = [B, 128, 4096]\nText enhanced with climate context\nReady for Llama decoder",
+    "Fused Embeddings\nY = [B, 128, 4096]\nText enhanced with climate context\nReady for Mistral decoder",
     colors["output"],
     fontsize=9,
 )
@@ -364,7 +364,7 @@ create_arrow(ax, (6.5, 5), (1.6, 3.6), colors["projection"])  # To Q
 create_arrow(ax, (6.5, 5), (4.1, 3.6), colors["projection"])  # To K
 create_arrow(ax, (6.5, 5), (6.6, 3.6), colors["projection"])  # To V
 
-create_arrow(ax, (13.75, 7), (1.6, 3.6), colors["llama_tokens"])  # Text to Q
+create_arrow(ax, (13.75, 7), (1.6, 3.6), colors["mistral_tokens"])  # Text to Q
 
 # Attention computation flow
 create_arrow(ax, (7.8, 2.8), (8.5, 2.8), colors["attention"])  # To Multi-head split
@@ -412,7 +412,7 @@ Input Dimensions:
   - Text: [B, seq_len, d_llm] (native LLM dimension: 768 or 4096)
 
 Multi-Head Configuration:
-  - Heads: 32 (for Llama 3-8B) or 12 (for smaller models)
+  - Heads: 32 (for Mistral-7B-Instruct) or 12 (for smaller models)
   - Per-head dimension: 128 (4096 ÷ 32) or 64 (768 ÷ 12)
   - Total parameters: ~67M for attention layers
 

@@ -8,21 +8,21 @@ This directory contains example scripts demonstrating different aspects of the A
 
 All remaining examples are **production-ready** and demonstrate different aspects of the AIFS multimodal system:
 
-- ✅ **llama3_final_success.py** - Validated simple fusion approach
-- ✅ **train_llama3_8b.py** - Complete training pipeline
+- ✅ **mistral7b_final_success.py** - Validated simple fusion approach
+- ✅ **train_mistral7b_8b.py** - Complete training pipeline
 - ✅ **spatial_comparative_analysis.py** -  analysis capabilities
 
 ## 📋 Example Descriptions
 
-### llama3_final_success.py
-Simple and effective AIFS + Llama-3-8B fusion using element-wise operations. Demonstrates:
+### mistral7b_final_success.py
+Simple and effective AIFS + Mistral-7B-Instruct fusion using element-wise operations. Demonstrates:
 - AIFS encoder initialization and usage
-- Llama-3-8B model integration
+- Mistral-7B-Instruct model integration
 - Basic multimodal fusion strategies
 - Performance validation and benchmarking
 
-### train_llama3_8b.py
-Comprehensive training pipeline for AIFS + Llama-3-8B fusion. Features:
+### train_mistral7b_8b.py
+Comprehensive training pipeline for AIFS + Mistral-7B-Instruct fusion. Features:
 - Complete model architecture setup
 - Training loop implementation
 - Loss computation and optimization
@@ -37,8 +37,8 @@ Comprehensive training pipeline for AIFS + Llama-3-8B fusion. Features:
 
 ## 💡 Best Practices
 
-1. **Start Simple**: Begin with `llama3_final_success.py` to understand the basic fusion approach
-2. **Scale Gradually**: Move to `train_llama3_8b.py` for full training capabilities
+1. **Start Simple**: Begin with `mistral7b_final_success.py` to understand the basic fusion approach
+2. **Scale Gradually**: Move to `train_mistral7b_8b.py` for full training capabilities
 3. **Analyze Results**: Use `spatial_comparative_analysis.py` for detailed analysis
 
 ## 🎯 Integration Notes
@@ -50,14 +50,14 @@ These examples integrate with:
 
 ## 🎯 Recommended Usage
 
-### 1. Start with Simple AIFS + Llama-3-8B Fusion
+### 1. Start with Simple AIFS + Mistral-7B-Instruct Fusion
 ```bash
-python examples/llama3_final_success.py
+python examples/mistral7b_final_success.py
 ```
 
 ### 2. Try Full AIFS Training Pipeline
 ```bash
-python examples/train_llama3_8b.py
+python examples/train_mistral7b_8b.py
 ```
 
 ### 3. Perform  Spatial Analysis
@@ -69,8 +69,8 @@ python examples/spatial_comparative_analysis.py
 
 | Script | Model Size | Memory Usage | Training Time | Status |
 |--------|------------|--------------|---------------|---------|
-| `llama3_final_success.py` | 8.6B | 8.5GB | ~120s | ✅ Production |
-| `train_llama3_8b.py` | 8.8B | 10.6GB | ~180s | ✅ Production |
+| `mistral7b_final_success.py` | 8.6B | 8.5GB | ~120s | ✅ Production |
+| `train_mistral7b_8b.py` | 8.8B | 10.6GB | ~180s | ✅ Production |
 | `spatial_comparative_analysis.py` | Variable | Variable | Variable | ✅ Production |
 
 ## 🔧 Requirements
@@ -82,8 +82,8 @@ All scripts require:
 - NumPy
 - tqdm
 
-For Llama-3 scripts, you need:
-- HuggingFace account with Llama-3 access
+For Mistral-7B scripts, you need:
+- HuggingFace account with Mistral-7B access
 - `huggingface-cli login`
 
 ## 💾 System Requirements
@@ -95,7 +95,7 @@ For Llama-3 scripts, you need:
 ## 🎉 Production Status
 
 All remaining examples are production-ready and validated:
-- ✅ Simple AIFS+Llama-3-8B fusion working reliably
+- ✅ Simple AIFS+Mistral-7B-Instruct fusion working reliably
 - ✅ Full training pipeline with comprehensive features
 - ✅  spatial analysis capabilities
 - ✅ Memory usage optimized and predictable

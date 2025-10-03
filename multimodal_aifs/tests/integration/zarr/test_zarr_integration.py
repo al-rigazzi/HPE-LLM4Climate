@@ -234,7 +234,7 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
     print("\nNext steps:")
     print("Use ZarrClimateLoader class for production workflows")
     print("Integrate with AIFS TimeSeries tokenizer")
-    print("Feed tokenized data to Llama 3-8B model")
+    print("Feed tokenized data to Mistral-7B-Instruct model")
     print("Apply cross-attention fusion for multimodal processing")
     # Test passes by reaching this point without failures
 

@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-AIFS Time Series + LLaMA Integration Example
+AIFS Time Series + Mistral Integration Example
 
 This example demonstrates how to use the AIFSTimeSeriesTokenizer
-with LLaMA for climate-language understanding tasks.
+with Mistral for climate-language understanding tasks.
 
 Usage:
-    python multimodal_aifs/examples/aifs_llama_example.py
+    python multimodal_aifs/examples/aifs_mistral_example.py
 """
 
 import os
@@ -90,7 +90,7 @@ def create_sample_climate_data():
 
 
 def create_climate_analysis_prompts():
-    """Create climate analysis prompts for LLaMA."""
+    """Create climate analysis prompts for Mistral."""
     prompts = [
         "Analyze the temperature patterns in this 5-day climate"
         " data and provide insights about potential weather trends.",
@@ -102,16 +102,16 @@ def create_climate_analysis_prompts():
     return prompts
 
 
-def demonstrate_aifs_llama_fusion():
-    """Demonstrate AIFS-LLaMA fusion for climate analysis."""
-    print("\nAIFS-LLaMA Climate Analysis Demo")
+def demonstrate_aifs_mistral_fusion():
+    """Demonstrate AIFS-Mistral fusion for climate analysis."""
+    print("\nAIFS-Mistral Climate Analysis Demo")
     print("=" * 60)
 
     # Create sample data
     climate_data = create_sample_climate_data()
     text_prompts = create_climate_analysis_prompts()
 
-    print("\nInitializing AIFS-LLaMA Fusion Model...")
+    print("\nInitializing AIFS-Mistral Fusion Model...")
 
     # First, try to load AIFS model
     print("   Loading AIFS model...")
@@ -150,7 +150,7 @@ def demonstrate_aifs_llama_fusion():
         model=aifs_model,
         device_str="cpu",
         fusion_dim=512,
-        use_mock_llama=True,  # Use mock LLaMA for demo
+        use_mock_mistral=True,  # Use mock Mistral for demo
         verbose=True,
     )
 
@@ -212,15 +212,15 @@ def demonstrate_aifs_llama_fusion():
     print(f"   Hidden dimension: {model.time_series_tokenizer.hidden_dim}")
     print(f"   Spatial dimension: {model.time_series_tokenizer.spatial_dim}")
 
-    print("\nLLaMA Integration:")
-    print(f"   Hidden size: {model.llama_hidden_size}")
+    print("\nMistral Integration:")
+    print(f"   Hidden size: {model.mistral_hidden_size}")
     print(f"   Fusion strategy: {model.fusion_strategy}")
     print(f"   Device: {model.device}")
 
     print("\nIntegration Benefits:")
     print("   Rich climate representation via AIFS spatial encoding")
     print("   Temporal dynamics captured by transformer")
-    print("   Natural language understanding via LLaMA")
+    print("   Natural language understanding via Mistral")
     print("   Cross-modal attention for climate-text fusion")
     print("   End-to-end trainable for climate-language tasks")
 
@@ -282,10 +282,10 @@ def demonstrate_compression_analysis(aifs_model=None):
 
 def main():
     """Main demonstration function."""
-    print("AIFS Time Series + LLaMA Integration Demo")
+    print("AIFS Time Series + Mistral Integration Demo")
     print("=" * 60)
     print("This demo shows how to integrate AIFS spatial-temporal")
-    print("climate tokenization with LLaMA language models for")
+    print("climate tokenization with Mistral language models for")
     print(" climate-language understanding tasks.")
     print()
 
@@ -320,12 +320,12 @@ def main():
         print(f"AIFS model not available for demo: {e}")
 
     # Run demonstrations
-    demonstrate_aifs_llama_fusion()
+    demonstrate_aifs_mistral_fusion()
     demonstrate_compression_analysis(aifs_model)
 
     print("\nDemo completed successfully!")
     print("\nNext Steps:")
-    print("   Install transformers package for real LLaMA integration")
+    print("   Install transformers package for real Mistral integration")
     print("   Train on real climate-text paired datasets")
     print("   Fine-tune for specific climate analysis tasks")
     print("   Scale to larger spatial-temporal resolutions")

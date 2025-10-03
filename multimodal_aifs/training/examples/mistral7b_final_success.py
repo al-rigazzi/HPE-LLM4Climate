@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-FINAL LLAMA-3-8B SUCCESS VERSION
+FINAL MISTRAL-3-8B SUCCESS VERSION
 
-Using our PROVEN approach from test_large_simple.py but with Llama-3-8B
+Using our PROVEN approach from test_large_simple.py but with Mistral-7B-Instruct
 This WILL work - we know the pattern!
 """
 
@@ -43,20 +43,20 @@ def clear_memory():
     gc.collect()
 
 
-print("🦙 FINAL LLAMA-3-8B CLIMATE FUSION - SUCCESS VERSION")
+print("� FINAL MISTRAL-7B-INSTRUCT CLIMATE FUSION - SUCCESS VERSION")
 print("Using proven architecture from our successful large model tests")
 
 
-class FinalLlama3Fusion(torch.nn.Module):
+class FinalMistral7BFusion(torch.nn.Module):
     def __init__(self, climate_dim=768):
         super().__init__()
 
-        print("📥 Loading Llama-3-8B...")
+        print("📥 Loading Mistral-7B-Instruct...")
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         # Load model
-        model_name = "meta-llama/Meta-Llama-3-8B"
+        model_name = "mistralai/Mistral-7B-Instruct-v0.3"
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -87,7 +87,7 @@ class FinalLlama3Fusion(torch.nn.Module):
         )
 
         # Get text model config
-        self.hidden_size = self.text_model.config.hidden_size  # 4096 for Llama-3-8B
+        self.hidden_size = self.text_model.config.hidden_size  # 4096 for Mistral-7B-Instruct
         self.vocab_size = self.text_model.config.vocab_size
 
         # Simple projection to text space
@@ -103,7 +103,7 @@ class FinalLlama3Fusion(torch.nn.Module):
         total_params = sum(p.numel() for p in self.parameters())
         trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
 
-        print(f"Llama-3-8B fusion created!")
+        print(f"Mistral-7B-Instruct fusion created!")
         print(f"Total: {total_params:,} params")
         print(f"Trainable: {trainable_params:,} params")
         print(f"Frozen: {((total_params-trainable_params)/total_params*100):.1f}%")
@@ -139,13 +139,13 @@ class FinalLlama3Fusion(torch.nn.Module):
 
 
 def main():
-    print(f"\nStarting FINAL Llama-3-8B training...")
+    print(f"\nStarting FINAL Mistral-7B-Instruct training...")
 
     memory_start = check_memory_usage()
     print(f"Start: {memory_start:.1f}GB")
 
     # Create model
-    model = FinalLlama3Fusion()
+    model = FinalMistral7BFusion()
 
     memory_model = check_memory_usage()
     print(f"After model: {memory_model:.1f}GB (+{memory_model-memory_start:.1f}GB)")
@@ -238,7 +238,7 @@ def main():
     final_memory = check_memory_usage()
     memory_efficiency = (final_memory / 36.0) * 100
 
-    print(f"\nLLAMA-3-8B TRAINING SUCCESS!")
+    print(f"\nMISTRAL-3-8B TRAINING SUCCESS!")
     print(f"Final memory: {final_memory:.1f}GB / 36.0GB")
     print(f"Memory efficiency: {memory_efficiency:.1f}% of system RAM")
     print(f"🏆 Successfully trained 8B parameter language model with climate fusion!")
@@ -250,13 +250,13 @@ def main():
         print(f"Memory usage is high but manageable")
 
     # Save the model
-    save_path = "LLAMA3_8B_CLIMATE_FUSION_SUCCESS.pt"
+    save_path = "MISTRAL3_8B_CLIMATE_FUSION_SUCCESS.pt"
     torch.save(
         {
             "model_state_dict": model.state_dict(),
             "tokenizer": model.tokenizer,
             "config": {
-                "model_name": "Llama-3-8B-Climate-Fusion",
+                "model_name": "Mistral-7B-Instruct-Climate-Fusion",
                 "total_parameters": sum(p.numel() for p in model.parameters()),
                 "trainable_parameters": sum(
                     p.numel() for p in model.parameters() if p.requires_grad
@@ -277,7 +277,7 @@ if __name__ == "__main__":
     SUCCESS = main()
     if SUCCESS:
         print(f"\nMISSION ACCOMPLISHED!")
-        print(f"🦙 Llama-3-8B + Climate fusion working perfectly!")
+        print(f"🦙 Mistral-7B-Instruct + Climate fusion working perfectly!")
         print(f"Ready for production deployment!")
     else:
         print(f"\nSomething went wrong")
