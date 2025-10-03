@@ -29,7 +29,7 @@ training/
 cd examples/
 cat README.md
 
-# Start with production-ready AIFS+Llama fusion
+# Start with production-ready AIFS+Mistral fusion
 python examples/mistral7b_final_success.py
 
 # Try comprehensive training pipeline

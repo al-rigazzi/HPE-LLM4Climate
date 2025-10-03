@@ -8,10 +8,10 @@ This directory contains comprehensive tests for Zarr format integration with the
 - **`test_zarr_integration.py`** - Basic zarr → AIFS tensor conversion pipeline test
 - **`test_5d_aifs_capability.py`** - AIFS 5D tensor processing capability verification
 
-### Real Llama Integration Tests
+### Real Mistral Integration Tests
 - **`test_real_mistral_zarr.py`** - Full pipeline with real Mistral-7B-Instruct-v0.3 model
 - **`test_cpu_mistral_zarr.py`** - CPU-optimized test with quantization
-- **`test_real_mistral_cpu_full.py`** - CPU full-precision real Llama test
+- **`test_real_mistral_cpu_full.py`** - CPU full-precision real Mistral test
 
 ## What These Tests Validate
 
@@ -47,7 +47,7 @@ cd multimodal_aifs/tests/integration/zarr
 python test_zarr_integration.py
 ```
 
-### Real Llama Pipeline Test
+### Real Mistral Pipeline Test
 ```bash
 cd multimodal_aifs/tests/integration/zarr
 python test_real_mistral_cpu_full.py
@@ -62,7 +62,7 @@ python test_cpu_mistral_zarr.py
 ## System Requirements
 
 ### Minimum Requirements
-- **RAM**: 16+ GB (for real Llama tests)
+- **RAM**: 16+ GB (for real Mistral tests)
 - **Storage**: 20+ GB (for model downloads)
 - **Python**: 3.8+
 - **Dependencies**: zarr, xarray, transformers, torch
@@ -86,7 +86,7 @@ All tests have been validated on:
 - **macOS ARM64** (M1/M2 chips)
 - **CPU-only execution** (no CUDA required)
 - **Real Mistral-7B-Instruct-v0.3 model** loading and inference
-- **Full zarr → AIFS → Llama pipeline** functionality
+- **Full zarr → AIFS → Mistral pipeline** functionality
 
 ## Performance Benchmarks
 

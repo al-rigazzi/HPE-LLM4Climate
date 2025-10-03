@@ -14,6 +14,8 @@
 coverage*
 **/.cache
 *.pyc
+*.tar.gz
+*.tgz
 
 # PR description file (local only)
 pr_description.md

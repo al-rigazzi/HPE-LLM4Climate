@@ -2,16 +2,7 @@
 # Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this    try:
-        # Model parameter analysis
-        total_params = sum(p.numel() for p in model.parameters())
-        aifs_params = sum(p.numel() for p in model.time_series_tokenizer.parameters())
-        mistral_params = total_params - aifs_params
-
-        print(f"   🔢 Total parameters: {total_params:,}")
-        print(f"   AIFS parameters: {aifs_params:,}")
-        print(f"   🤖 Mistral parameters: {mistral_params:,}")
-        print(f"   Estimated memory: {total_params * 4 / 1e9:.1f} GB")pt in compliance with the License.
+# you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
@@ -22,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Real Llama on CPU Test (No Quantization)
+Real Mistral on CPU Test (No Quantization)
 
 This script tests with real Mistral-7B-Instruct-v0.3 on CPU without quantization.
 Since quantization requires CUDA, we'll load the model in full precision
@@ -47,12 +38,12 @@ import torch.nn.functional as F
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-print("🦙 Real Mistral-7B-Instruct on CPU (Full Precision)")
+print("🤖 Real Mistral-7B-Instruct on CPU (Full Precision)")
 print("=" * 50)
 
 
 def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr_dataset_path):
-    """Test real Llama model with AIFS on CPU with full integration."""
+    """Test real Mistral model with AIFS on CPU with full integration."""
 
     try:
         from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
@@ -65,8 +56,8 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
 
     # Check if we should skip this test based on mock status
     if llm_mock_status["should_skip_real_llm_tests"]:
-        print("   USE_MOCK_LLM is set to true, skipping real Llama test")
-        pytest.skip("USE_MOCK_LLM is enabled, skipping real Llama test")
+        print("   USE_MOCK_LLM is set to true, skipping real Mistral test")
+        pytest.skip("USE_MOCK_LLM is enabled, skipping real Mistral test")
 
     # Step 1: Load minimal climate data
     print(f"\nStep 1: Loading Climate Data")
@@ -90,7 +81,7 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
         pytest.fail(f"Failed to load climate data: {e}")
 
     # Step 2: Use the pre-configured fusion model
-    print(f"\n🦙 Step 2: Using Fusion Model from Fixture")
+    print(f"\n🤖 Step 2: Using Fusion Model from Fixture")
     print("-" * 50)
 
     # Check if model was created successfully
@@ -151,7 +142,7 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
     print("-" * 30)
 
     try:
-        print("   ⏳ Running real Llama forward pass (may take 30-60s on CPU)...")
+        print("   ⏳ Running real Mistral forward pass (may take 30-60s on CPU)...")
 
         start_time = time.time()
 
@@ -162,7 +153,7 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
             )
 
         elapsed = time.time() - start_time
-        print(f"Real Llama processing complete in {elapsed:.1f}s")
+        print(f"Real Mistral processing complete in {elapsed:.1f}s")
         print(f"   Output shape: {result['fused_output'].shape}")
         print(f"   Generated text: {result['generated_text']}")
 
@@ -183,11 +174,11 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
         # Model parameter analysis
         total_params = sum(p.numel() for p in model.parameters())
         aifs_params = sum(p.numel() for p in model.time_series_tokenizer.parameters())
-        llama_params = total_params - aifs_params
+        mistral_params = total_params - aifs_params
 
         print(f"   🔢 Total parameters: {total_params:,}")
         print(f"   AIFS parameters: {aifs_params:,}")
-        print(f"   � Mistral parameters: {mistral_params:,}")
+        print(f"   🤖 Mistral parameters: {mistral_params:,}")
         print(f"   Estimated memory: {total_params * 4 / 1e9:.1f} GB")
 
         # Check model precision
@@ -208,11 +199,11 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
     except:
         pass
 
-    print(f"\nReal Llama CPU Test Complete!")
+    print(f"\nReal Mistral CPU Test Complete!")
     print(f"Successfully demonstrated:")
     print(f"   Zarr → AIFS tokenization")
-    print(f"   🦙 Real Mistral-7B-Instruct-v0.3 loading")
-    print(f"   Real Llama text processing")
+    print(f"   🤖 Real Mistral-7B-Instruct-v0.3 loading")
+    print(f"   Real Mistral text processing")
     print(f"   🔗 Multimodal fusion")
     print(f"   CPU execution (full precision)")
     # Test passes by reaching this point without failures
@@ -231,7 +222,7 @@ def test_memory_requirements():
         print(f"   Available: {mem.available / 1e9:.1f} GB")
         print(f"   Used: {mem.percent:.1f}%")
 
-        # Estimate if Llama will fit
+        # Estimate if Mistral will fit
         estimated_need = 16  # GB
         if mem.available / 1e9 >= estimated_need:
             print(f"   Should be able to load Mistral-7B-Instruct")
@@ -264,7 +255,7 @@ def main():
     print(f"   Processing will be slow on CPU")
     print(f"   Requires 16+ GB RAM")
 
-    response = input(f"\n   Continue with real Llama test? (y/N): ")
+    response = input(f"\n   Continue with real Mistral test? (y/N): ")
     if response.lower() != "y":
         print(f"   Test cancelled")
         return
@@ -297,8 +288,8 @@ def main():
 
     # Check if we should skip based on mock status
     if llm_mock_status["should_skip_real_llm_tests"]:
-        print("   USE_MOCK_LLM is set to true, skipping real Llama test")
-        print("   Set USE_MOCK_LLM=false to run real Llama test")
+        print("   USE_MOCK_LLM is set to true, skipping real Mistral test")
+        print("   Set USE_MOCK_LLM=false to run real Mistral test")
         return
 
     # Create AIFS model fixture manually
@@ -321,7 +312,7 @@ def main():
                     model=None,  # We'll need to load this properly
                     device_str=str(test_device),
                     fusion_dim=512,
-                    use_mock_llama=False,
+                    use_mock_mistral=False,
                     verbose=True,
                 )
                 print(f"   Note: AIFS model loading not fully implemented in standalone script")
@@ -339,13 +330,15 @@ def main():
         return
 
     # Run the test with manually created fixtures
-    success = test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr_dataset_path)
+    success = test_real_mistral_cpu(
+        llm_mock_status, aifs_mistral_model, test_device, zarr_dataset_path
+    )
 
     if success:
         print(f"\n🏆 SUCCESS: Real Mistral-7B-Instruct working on CPU!")
-        print(f"Your system can run the full AIFS + Llama pipeline")
+        print(f"Your system can run the full AIFS + Mistral pipeline")
     else:
-        print(f"\n💥 FAILED: Real Llama couldn't run on this system")
+        print(f"\n💥 FAILED: Real Mistral couldn't run on this system")
         print(f"Consider using the mock version for development")
 
 

@@ -1,6 +1,6 @@
 # Multimodal climate analysis large language model
 
-This is a multimodal LLM, based on a text LLM (such as Llama, Mistral, and so on)
+This is a multimodal LLM, based on a text LLM (such as Apertus, Mistral, and so on)
 and an encoder extracted from AIFS, a weather prediction model developer by ECMWF.
 The task of this model is that of analyzing IFS-like weather datasets, which can
 also be time series.

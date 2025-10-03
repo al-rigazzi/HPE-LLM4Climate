@@ -3,7 +3,7 @@
 
 model:
   aifs_encoder_path: "aifs-single-1.0/aifs-single-mse-1.0.ckpt"
-  llama_model_name: "meta-llama/Meta-Llama-3-8B"  # or "meta-llama/Meta-Llama-3-8B-Instruct"
+  mistral_model_name: "mistralai/Mistral-7B-Instruct-v0.3"
   freeze_aifs: true  # Set to false for fine-tuning AIFS encoder
   fusion_mode: "cross_attention"  # Options: "cross_attention", "concatenate", "add"
   num_fusion_layers: 4

@@ -55,7 +55,7 @@ def clear_memory():
     torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
 
-print("🦙 Mistral-7B-Instruct Climate-Text Fusion Training")
+print("🤖 Mistral-7B-Instruct Climate-Text Fusion Training")
 print("Target: Full 8B parameter language model with climate fusion")
 
 # Check if we have the required memory
@@ -70,7 +70,7 @@ class Mistral7BClimateTextFusion(torch.nn.Module):
     Optimized for 36GB RAM training
     """
 
-    def __init__(self, text_model_name="mistralai/Mistral-7B-Instral-v0.3", climate_dim=768):
+    def __init__(self, text_model_name="mistralai/Mistral-7B-Instruct-v0.3", climate_dim=768):
         super().__init__()
 
         print(f"🏗️ Initializing Mistral-7B-Instruct fusion model...")
@@ -355,15 +355,13 @@ def train_mistral7b_fusion():
 
 
 if __name__ == "__main__":
-    # NOTE: This requires HuggingFace approval for Mistral-7B
-    print(f"IMPORTANT: This script requires HuggingFace approval for Mistral-7B-Instruct")
-    print(f"To get access:")
+    # NOTE: Mistral models are publicly available on HuggingFace
+    print(f"IMPORTANT: Mistral-7B-Instruct is publicly available on HuggingFace")
+    print(f"To use it:")
     print(f"   1. Go to: https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3")
-    print(f"   2. Request access from Meta")
-    print(f"   3. Login with: huggingface-cli login")
-    print(f"   4. Then run this script")
+    print(f"   2. Login with: huggingface-cli login (if not already logged in)")
+    print(f"   3. Then run this script")
 
-    # YOU HAVE MISTRAL-3 ACCESS - LET'S GO!
     train_mistral7b_fusion()
 
     print(f"\nBased on our scaling tests, this WILL work with your 36GB RAM!")

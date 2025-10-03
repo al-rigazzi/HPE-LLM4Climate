@@ -56,7 +56,7 @@ def test_lightweight_mistral_zarr(aifs_mistral_model, zarr_dataset_path, llm_moc
     print(f"🖥️  Device: {device}")
     print("Using model from conftest fixture")
     print(f"   AIFS: {type(model.time_series_tokenizer).__name__}")
-    print(f"   � LLM: {type(model.mistral_model).__name__}")
+    print(f"   🤖 LLM: {type(model.mistral_model).__name__}")
 
     # Step 1: Load minimal climate data
     print("\nStep 1: Loading Minimal Climate Data")
@@ -81,14 +81,14 @@ def test_lightweight_mistral_zarr(aifs_mistral_model, zarr_dataset_path, llm_moc
         pytest.fail(f"Failed to load climate data: {e}")
 
     # Step 2: Initialize lightweight Mistral with heavy quantization
-    print("\n� Step 2: Initializing Quantized Mistral")
+    print("\n🤖 Step 2: Initializing Quantized Mistral")
     print("-" * 40)
 
     # Model already available from conftest fixture (respects environment variables)
     print("   Using model from conftest fixture (environment-controlled)")
     print(f"   Device: {device}")
     print(f"   Quantization: {llm_mock_status['use_quantization']}")
-    print(f"   🦙 Mock LLM: {llm_mock_status['use_mock_llm']}")
+    print(f"   🤖 Mock LLM: {llm_mock_status['use_mock_llm']}")
 
     # Step 3: Process with optimized settings
     print("\nStep 3: CPU-Optimized Processing")

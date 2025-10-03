@@ -213,7 +213,7 @@ module = [
     "requests.*",
     "aifs_wrapper",
     "load_aifs_encoder",
-    "test_aifs_llama_integration",
+    "test_aifs_mistral_integration",
 ]
 ignore_missing_imports = true
 

@@ -43,7 +43,7 @@ def clear_memory():
     gc.collect()
 
 
-print("� FINAL MISTRAL-7B-INSTRUCT CLIMATE FUSION - SUCCESS VERSION")
+print("🤖 FINAL MISTRAL-7B-INSTRUCT CLIMATE FUSION - SUCCESS VERSION")
 print("Using proven architecture from our successful large model tests")
 
 
@@ -277,7 +277,7 @@ if __name__ == "__main__":
     SUCCESS = main()
     if SUCCESS:
         print(f"\nMISSION ACCOMPLISHED!")
-        print(f"🦙 Mistral-7B-Instruct + Climate fusion working perfectly!")
+        print(f"🤖 Mistral-7B-Instruct + Climate fusion working perfectly!")
         print(f"Ready for production deployment!")
     else:
         print(f"\nSomething went wrong")

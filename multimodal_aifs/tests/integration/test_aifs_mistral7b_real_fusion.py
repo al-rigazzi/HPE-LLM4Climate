@@ -62,7 +62,7 @@ def test_aifs_llm_fusion_model(aifs_mistral_model, test_climate_data_fusion, llm
     print(f"Device: {device}")
     print("Model Components:")
     print(f"   AIFS: {type(model.time_series_tokenizer).__name__}")
-    print(f"   � LLM: {type(model.mistral_model).__name__}")
+    print(f"   🤖 LLM: {type(model.mistral_model).__name__}")
     print(f"   Fusion: {model.fusion_strategy}")
 
     # Test with realistic climate data
@@ -97,13 +97,13 @@ def test_aifs_llm_fusion_model(aifs_mistral_model, test_climate_data_fusion, llm
         print("   AIFS Encoder: ~19.9M parameters (estimated)")
 
     mistral_params = sum(p.numel() for p in model.mistral_model.parameters())
-    print(f"   � Mistral parameters: {mistral_params:,}")
+    print(f"   🤖 Mistral parameters: {mistral_params:,}")
 
     # Determine if using real models
     use_mock_env = os.environ.get("USE_MOCK_LLM", "").lower() in ("true", "1", "yes")
     real_llm = mistral_params > 1_000_000 and not use_mock_env  # 1M+ indicates substantial model
 
-    print(f'   🦙 Real LLM: {"YES" if real_llm else "NO (mock)"}')
+    print(f'   🤖 Real LLM: {"YES" if real_llm else "NO (mock)"}')
 
     print("\nAIFS + LLM fusion test completed successfully!")
 

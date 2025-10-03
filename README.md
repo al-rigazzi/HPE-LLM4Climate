@@ -227,7 +227,7 @@ Key constants defined in `multimodal_aifs/constants.py`:
 multimodal_aifs/tests/
 ├── integration/                    # Integration tests
 │   ├── zarr/                      # Zarr data integration
-│   │   ├── test_cpu_mistral_zarr.py # CPU-optimized Llama + AIFS + Zarr
+│   │   ├── test_cpu_mistral_zarr.py # CPU-optimized Mistral + AIFS + Zarr
 │   │   ├── test_real_mistral_zarr.py # Full model integration
 │   │   └── test_zarr_integration.py # Zarr loader tests
 │   ├── test_aifs_climate_fusion.py # Climate fusion tests
@@ -301,7 +301,7 @@ This matches the license used by ECMWF AIFS for code and scripts.
 - **ECMWF AIFS**: AI Forecasting System integration
   - Paper: [AIFS - ECMWF's data-driven forecasting system](https://arxiv.org/abs/2406.01465)
   - Model: [ecmwf/aifs-single-1.0](https://huggingface.co/ecmwf/aifs-single-1.0)
-- **Meta**: Llama model series and open-source AI contributions
+- **Mistral AI**: Mistral model series and open-source AI contributions
 - **HuggingFace**: Transformers library and model hub infrastructure
 
 ## Contact
