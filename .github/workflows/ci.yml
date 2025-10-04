@@ -111,7 +111,7 @@ jobs:
     - name: Run integration tests
       if: matrix.os == 'macos-latest'
       run: |
-        python -m pytest multimodal_aifs/tests/integration/ -v -s --tb=short --maxfail=5 -m "not large_memory"
+        python -m pytest multimodal_aifs/tests/integration/ -v -s --tb=short --maxfail=5
 
     - name: Run integration tests (Ubuntu - limited subset)
       if: matrix.os == 'ubuntu-latest'
