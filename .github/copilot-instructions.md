@@ -69,5 +69,11 @@ The tone of natural language must always be professional, even in comments, docs
       MacOS systems
     * On GPU-based systems, the real Flash Attention libraries should be used
 - File parsimony. Files for demos, examples, and descriptions (e.g. in markdown)
-  should be kept to a minimum. Copilot should always ask before generating them,
+  should be kept to a minimum. *Always ask* before generating them,
   stating clearly what their purpose would be.
+
+# Execution
+
+- Tests should always be run in terminal and their output should be visibile,
+  this means no `| tail -n XXX` should be added at the end of the line
+- Try to avoid `-x` option, set a max of 5 failed tests to get a broader view
