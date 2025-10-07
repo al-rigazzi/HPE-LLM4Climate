@@ -23,7 +23,7 @@ def test_sample_generation():
         print(f"\nTest Zarr file not found at {zarr_path}")
         raise FileNotFoundError(f"Required test data not found: {zarr_path}")
 
-    print(f"\nInitializing DataLoader with Mistral-7B-Instruct-v0.3...")
+    print(f"\nInitializing DataLoader with Ministral-8B-Instruct-2410...")
     print(f"Zarr path: {zarr_path}")
     print("\nNote: Requires HuggingFace authentication for gated model")
     print("If not authenticated, run: huggingface-cli login")

@@ -206,18 +206,6 @@ def get_env_str(env_var: str, default: str) -> str:
 # =================== PYTEST CONFIGURATION ===================
 def pytest_sessionstart(session):
     """Set up global test environment at start of session."""
-    # Suppress known MPS backend warnings for cleaner test output
-    warnings.filterwarnings(
-        "ignore",
-        message=".*aten::scatter_reduce.two_out.*not currently supported on the MPS backend.*",
-        category=UserWarning,
-    )
-
-    # Suppress common warnings that appear across multiple tests
-    warnings.filterwarnings("ignore", category=UserWarning)
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-
     # Set up default device for the entire test session
     if torch.cuda.is_available():
         default_device = torch.device("cuda")

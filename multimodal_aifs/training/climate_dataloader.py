@@ -88,7 +88,7 @@ class ClimateTextDataLoader(IterableDataset):
     def __init__(
         self,
         zarr_paths: list[str] | str,
-        mistral_model_name: str = "mistralai/Mistral-7B-Instruct-v0.3",
+        mistral_model_name: str = "mistralai/Ministral-8B-Instruct-2410",
         batch_size: int = 1,
         samples_per_epoch: int = 1000,
         cache_mistral_model: bool = True,
@@ -133,9 +133,15 @@ class ClimateTextDataLoader(IterableDataset):
         # Initialize components
         print("Initializing climate-text dataloader components...")
 
-        self.location_generator = LocationMaskGenerator(grid_points=AIFS_GRID_POINTS, seed=seed)
+        # Load Zarr metadata first to determine grid size
+        self._load_zarr_metadata()
+
+        # Detect actual grid size from the first available dataset
+        actual_grid_points = self._detect_grid_size()
+
+        self.location_generator = LocationMaskGenerator(grid_points=actual_grid_points, seed=seed)
         self.statistics_computer = ClimateStatisticsComputer()
-        self.prompt_generator = ClimatePromptGenerator(prompt_style="detailed")
+        self.prompt_generator = ClimatePromptGenerator()  # Uses default templates directory
 
         # Initialize tokenizer and model for Mistral
         print(f"Loading tokenizer: {mistral_model_name}")
@@ -143,11 +149,13 @@ class ClimateTextDataLoader(IterableDataset):
 
         self.mistral_tokenizer = AutoTokenizer.from_pretrained(mistral_model_name)
 
+        # Ensure tokenizer has pad token (required for padding)
+        if self.mistral_tokenizer.pad_token is None:
+            self.mistral_tokenizer.pad_token = self.mistral_tokenizer.eos_token
+            self.mistral_tokenizer.pad_token_id = self.mistral_tokenizer.eos_token_id
+
         print(f"Loading Mistral model: {mistral_model_name}")
         self._initialize_mistral_model(mistral_model_name)
-
-        # Open first Zarr file to get metadata
-        self._load_zarr_metadata()
 
         print(f"DataLoader initialized:")
         print(f"  - Zarr files: {len(self.zarr_paths)}")
@@ -207,6 +215,25 @@ class ClimateTextDataLoader(IterableDataset):
             except Exception as e:
                 raise RuntimeError(f"Failed to load Zarr file {zarr_path}: {e}")
 
+    def _detect_grid_size(self) -> int:
+        """Detect the actual grid size from the loaded datasets."""
+        if not self.zarr_datasets:
+            return AIFS_GRID_POINTS  # Fallback to default
+
+        # Check the first dataset for grid size
+        ds = self.zarr_datasets[0]
+
+        for var_name in ALL_AIFS_VARIABLES:
+            if var_name in ds:
+                var_shape = ds[var_name].shape
+                if len(var_shape) == 1:
+                    return var_shape[0]
+                elif len(var_shape) == 2:
+                    return var_shape[1]  # [time, grid_points]
+
+        # Fallback if no AIFS variables found
+        return AIFS_GRID_POINTS
+
     def _load_climate_timesteps(
         self, zarr_idx: int, t1: int, t2: int
     ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -223,15 +250,34 @@ class ClimateTextDataLoader(IterableDataset):
         """
         ds = self.zarr_datasets[zarr_idx]
 
+        # Detect actual grid size from the first available variable
+        actual_grid_points = None
+        for var_name in ALL_AIFS_VARIABLES:
+            if var_name in ds:
+                var_shape = ds[var_name].shape
+                if len(var_shape) == 1:
+                    actual_grid_points = var_shape[0]
+                elif len(var_shape) == 2:
+                    actual_grid_points = var_shape[1]  # [time, grid_points]
+                break
+
+        # Fallback to AIFS grid points if no variables found
+        if actual_grid_points is None:
+            actual_grid_points = AIFS_GRID_POINTS
+
         # Load all variables for both timesteps
         data_t1 = []
         data_t2 = []
 
         for var_name in ALL_AIFS_VARIABLES:
             if var_name not in ds:
-                # Handle missing variables with zeros
-                data_t1.append(torch.zeros(AIFS_GRID_POINTS))
-                data_t2.append(torch.zeros(AIFS_GRID_POINTS))
+                # Handle missing variables with zeros using actual grid size and correct device
+                data_t1.append(
+                    torch.zeros(actual_grid_points, dtype=torch.float32, device=self.device)
+                )
+                data_t2.append(
+                    torch.zeros(actual_grid_points, dtype=torch.float32, device=self.device)
+                )
                 continue
 
             var_data = ds[var_name]
@@ -239,13 +285,13 @@ class ClimateTextDataLoader(IterableDataset):
             # Handle different array shapes
             if len(var_data.shape) == 1:
                 # Static field (no time dimension)
-                field = torch.from_numpy(var_data[:])
+                field = torch.from_numpy(var_data[:]).float().to(self.device)
                 data_t1.append(field)
                 data_t2.append(field)
             else:
                 # Time-varying field
-                field_t1 = torch.from_numpy(var_data[t1, :])
-                field_t2 = torch.from_numpy(var_data[t2, :])
+                field_t1 = torch.from_numpy(var_data[t1, :]).float().to(self.device)
+                field_t2 = torch.from_numpy(var_data[t2, :]).float().to(self.device)
                 data_t1.append(field_t1)
                 data_t2.append(field_t2)
 
@@ -418,21 +464,33 @@ class ClimateTextDataLoader(IterableDataset):
         """Return number of samples per epoch."""
         return self.samples_per_epoch
 
-    def get_sample_preview(self, num_samples: int = 1) -> list[TrainingSample]:
+    def get_sample_preview(
+        self, num_samples: int = 1, max_response_length: int | None = None
+    ) -> list[TrainingSample]:
         """
         Generate preview samples for inspection.
 
         Args:
             num_samples: Number of samples to preview
+            max_response_length: Override max response length for preview (None uses default)
 
         Returns:
             List of training samples
         """
-        samples = []
-        for i in range(num_samples):
-            sample = self._generate_sample(i)
-            samples.append(sample)
-        return samples
+        # Temporarily override max_response_length if specified
+        original_max_response = self.max_response_length
+        if max_response_length is not None:
+            self.max_response_length = max_response_length
+
+        try:
+            samples = []
+            for i in range(num_samples):
+                sample = self._generate_sample(i)
+                samples.append(sample)
+            return samples
+        finally:
+            # Restore original value
+            self.max_response_length = original_max_response
 
     def print_sample_info(self, sample: TrainingSample) -> None:
         """
