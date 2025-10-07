@@ -41,7 +41,7 @@ HPE-LLM4Climate/
 │   ├── constants.py                   # Centralized constants and configurations
 │   ├── examples/                      # Working examples
 │   │   ├── zarr_aifs_multimodal_example.py # Zarr→AIFS→LLM pipeline
-│   │   ├── aifs_llama_example.py      # AIFS-Llama integration
+│   │   ├── aifs_mistral_example.py      # AIFS-Mistral integration
 │   │   └── multimodal_timeseries_demo.py # Time series demonstration
 │   ├── tests/                         # Comprehensive test suite
 │   │   ├── integration/               # Integration tests
@@ -175,8 +175,8 @@ print(f"Fusion output shape: {result['fused_features'].shape}")
 # Zarr data integration example
 python multimodal_aifs/examples/zarr_aifs_multimodal_example.py
 
-# AIFS-Llama integration
-python multimodal_aifs/examples/aifs_llama_example.py
+# AIFS-Mistral integration
+python multimodal_aifs/examples/aifs_mistral_example.py
 
 # Time series demonstration
 python multimodal_aifs/examples/multimodal_timeseries_demo.py
@@ -203,7 +203,7 @@ The system supports several environment variables for configuration:
 - `USE_MOCK_AIFS`: Use mock AIFS model instead of real model (useful for testing)
 - `USE_MOCK_LLM`: Use mock LLM instead of real language model
 - `USE_QUANTIZATION`: Enable model quantization for memory efficiency
-- `LLM_MODEL_NAME`: Specify which language model to use (default: `meta-llama/Meta-Llama-3-8B`)
+- `LLM_MODEL_NAME`: Specify which language model to use (default: `mistralai/Mistral-7B-Instruct-v0.3`)
 
 ```bash
 # Example: Run with mock models for fast testing
@@ -227,8 +227,8 @@ Key constants defined in `multimodal_aifs/constants.py`:
 multimodal_aifs/tests/
 ├── integration/                    # Integration tests
 │   ├── zarr/                      # Zarr data integration
-│   │   ├── test_cpu_llama_zarr.py # CPU-optimized Llama + AIFS + Zarr
-│   │   ├── test_real_llama_zarr.py # Full model integration
+│   │   ├── test_cpu_mistral_zarr.py # CPU-optimized Mistral + AIFS + Zarr
+│   │   ├── test_real_mistral_zarr.py # Full model integration
 │   │   └── test_zarr_integration.py # Zarr loader tests
 │   ├── test_aifs_climate_fusion.py # Climate fusion tests
 │   └── test_aifs_encoder_integration.py # AIFS encoder tests
@@ -246,7 +246,7 @@ pytest multimodal_aifs/tests/ -v
 pytest multimodal_aifs/tests/integration/ -v
 
 # Specific test with verbose output
-pytest multimodal_aifs/tests/integration/zarr/test_cpu_llama_zarr.py -v -s
+pytest multimodal_aifs/tests/integration/zarr/test_cpu_mistral_zarr.py -v -s
 
 # With mock models (faster)
 USE_MOCK_AIFS=true pytest multimodal_aifs/tests/integration/ -v
@@ -301,7 +301,7 @@ This matches the license used by ECMWF AIFS for code and scripts.
 - **ECMWF AIFS**: AI Forecasting System integration
   - Paper: [AIFS - ECMWF's data-driven forecasting system](https://arxiv.org/abs/2406.01465)
   - Model: [ecmwf/aifs-single-1.0](https://huggingface.co/ecmwf/aifs-single-1.0)
-- **Meta**: Llama model series and open-source AI contributions
+- **Mistral AI**: Mistral model series and open-source AI contributions
 - **HuggingFace**: Transformers library and model hub infrastructure
 
 ## Contact

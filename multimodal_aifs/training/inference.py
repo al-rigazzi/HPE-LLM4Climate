@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
+NOTE: This file belongs to an old iteration of the training infrastructure
+and is preserved for reference only. The current implementation uses the
+on-the-fly data loading system in climate_dataloader.py and related modules.
+
 Inference script for trained AIFS multimodal climate-text fusion models.
 
 This script loads a trained AIFS-based model and performs inference on

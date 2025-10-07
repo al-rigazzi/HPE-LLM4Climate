@@ -27,8 +27,8 @@ To run these tests:
 - SET USE_MOCK_LLM=true: Tests will be skipped with informative messages
 
 Use pytest markers to control test execution:
-- pytest -m "requires_llama": Run only real LLM tests
-- pytest -m "not requires_llama": Skip real LLM tests
+- pytest -m "requires_mistral": Run only real LLM tests
+- pytest -m "not requires_mistral": Skip real LLM tests
 """
 
 import os
@@ -44,8 +44,8 @@ project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 
-@pytest.mark.requires_llama
-def test_aifs_llm_fusion_model(aifs_llama_model, test_climate_data_fusion, llm_mock_status):
+@pytest.mark.requires_mistral
+def test_aifs_llm_fusion_model(aifs_mistral_model, test_climate_data_fusion, llm_mock_status):
     """Test AIFS + LLM multimodal fusion"""
 
     # Skip test if mock LLM is being used since this test is specifically for real LLM fusion
@@ -55,14 +55,14 @@ def test_aifs_llm_fusion_model(aifs_llama_model, test_climate_data_fusion, llm_m
     print("AIFS + LLM Multimodal Fusion Test (conftest)")
     print("=" * 60)
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
     climate_data, text_inputs = test_climate_data_fusion
     device = model.device
 
     print(f"Device: {device}")
     print("Model Components:")
     print(f"   AIFS: {type(model.time_series_tokenizer).__name__}")
-    print(f"   🦙 LLM: {type(model.llama_model).__name__}")
+    print(f"   🤖 LLM: {type(model.mistral_model).__name__}")
     print(f"   Fusion: {model.fusion_strategy}")
 
     # Test with realistic climate data
@@ -96,28 +96,28 @@ def test_aifs_llm_fusion_model(aifs_llama_model, test_climate_data_fusion, llm_m
     except Exception:  # pylint: disable=broad-except
         print("   AIFS Encoder: ~19.9M parameters (estimated)")
 
-    llm_params = sum(p.numel() for p in model.llama_model.parameters())
-    print(f"   🦙 LLM parameters: {llm_params:,}")
+    mistral_params = sum(p.numel() for p in model.mistral_model.parameters())
+    print(f"   🤖 Mistral parameters: {mistral_params:,}")
 
     # Determine if using real models
     use_mock_env = os.environ.get("USE_MOCK_LLM", "").lower() in ("true", "1", "yes")
-    real_llm = llm_params > 1_000_000 and not use_mock_env  # 1M+ indicates substantial model
+    real_llm = mistral_params > 1_000_000 and not use_mock_env  # 1M+ indicates substantial model
 
-    print(f'   🦙 Real LLM: {"YES" if real_llm else "NO (mock)"}')
+    print(f'   🤖 Real LLM: {"YES" if real_llm else "NO (mock)"}')
 
     print("\nAIFS + LLM fusion test completed successfully!")
 
 
 @pytest.mark.integration
-@pytest.mark.requires_llama
-def test_fusion_performance(aifs_llama_model, test_climate_data_fusion, llm_mock_status):
+@pytest.mark.requires_mistral
+def test_fusion_performance(aifs_mistral_model, test_climate_data_fusion, llm_mock_status):
     """Test performance of the fusion model"""
 
     # Skip test if mock LLM is being used since this test is specifically for real LLM fusion
     if llm_mock_status["use_mock_llm"]:
         pytest.skip("Skipping real LLM performance test because USE_MOCK_LLM is True")
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
     climate_data, text_inputs = test_climate_data_fusion
 
     print("\nPerformance Testing...")
@@ -143,15 +143,15 @@ def test_fusion_performance(aifs_llama_model, test_climate_data_fusion, llm_mock
     print("Performance test passed")
 
 
-@pytest.mark.requires_llama
-def test_fusion_strategies(aifs_llama_model, llm_mock_status):
+@pytest.mark.requires_mistral
+def test_fusion_strategies(aifs_mistral_model, llm_mock_status):
     """Test that different fusion strategies work"""
 
     # Skip test if mock LLM is being used since this test is specifically for real LLM fusion
     if llm_mock_status["use_mock_llm"]:
         pytest.skip("Skipping real LLM fusion strategies test because USE_MOCK_LLM is True")
 
-    model = aifs_llama_model
+    model = aifs_mistral_model
 
     print(f"\nTesting Fusion Strategy: {model.fusion_strategy}")
 

@@ -288,7 +288,7 @@ def create_synthetic_zarr_dataset(
         # Chunk by time (keep all grid points together for AIFS processing)
         encoding[var] = {"chunks": (config["time_steps"], config["grid_points"])}
 
-    print("   � Using AIFS-compatible chunking")
+    print("   🤖 Using AIFS-compatible chunking")
 
     ds.to_zarr(output_path, mode="w", encoding=encoding)
 

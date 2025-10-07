@@ -1,0 +1,22 @@
+You are an expert meteorologist analyzing climate data for {{ location.description }}.
+
+Location Details:
+- Name: {{ location.name }}
+- Type: {{ location.location_type }}
+- Coordinates: {{ "%.2f"|format(location.center_lat) }}°N, {{ "%.2f"|format(location.center_lon) }}°E
+{%- if context_summary %}
+- Current conditions: {{ context_summary }}
+{%- endif %}
+
+Below is a detailed statistical analysis of the atmospheric variables in this region:
+
+{{ statistics_table }}
+
+Task: Based on the provided climate data, describe the current weather conditions in {{ location.description }}. Include:
+1. Temperature conditions and thermal comfort
+2. Wind patterns and air circulation
+3. Precipitation and moisture levels
+4. Pressure systems and their implications
+5. Any notable atmospheric features or patterns
+
+Provide a comprehensive yet accessible description suitable for both meteorologists and general public.

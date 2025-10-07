@@ -1,6 +1,6 @@
 # Multimodal climate analysis large language model
 
-This is a multimodal LLM, based on a text LLM (such as Llama, Mistral, and so on)
+This is a multimodal LLM, based on a text LLM (such as Apertus, Mistral, and so on)
 and an encoder extracted from AIFS, a weather prediction model developer by ECMWF.
 The task of this model is that of analyzing IFS-like weather datasets, which can
 also be time series.
@@ -38,6 +38,8 @@ The tone of natural language must always be professional, even in comments, docs
 
 # Coding guidelines
 
+- Every file must start with the copyright and license header, if you forget, you can
+  use the header in `scripts/add_license_headers.py`
 - Type hints must follow Python 3.10+ conventions
   * No `Optional[Type]`, use `Type | None`
   * No `Union[TypeA, TypeB]`, use `TypeA | TypeB`
@@ -69,5 +71,11 @@ The tone of natural language must always be professional, even in comments, docs
       MacOS systems
     * On GPU-based systems, the real Flash Attention libraries should be used
 - File parsimony. Files for demos, examples, and descriptions (e.g. in markdown)
-  should be kept to a minimum. Copilot should always ask before generating them,
+  should be kept to a minimum. *Always ask* before generating them,
   stating clearly what their purpose would be.
+
+# Execution
+
+- Tests should always be run in terminal and their output should be visibile,
+  this means no `| tail -n XXX` should be added at the end of the line
+- Try to avoid `-x` option, set a max of 5 failed tests to get a broader view

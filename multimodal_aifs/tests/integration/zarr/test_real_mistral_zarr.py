@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Real Llama Integration Test with Zarr Data
+Real Mistral Integration Test with Zarr Data
 
-This script tests the complete pipeline with actual Meta-Llama-3-8B model:
-Zarr → AIFS Tokenization → Real Llama Processing → Multimodal Fusion
+This script tests the complete pipeline with actual Mistral-7B-Instruct-v0.3 model:
+Zarr → AIFS Tokenization → Real Mistral Processing → Multimodal Fusion
 
 Usage:
-    python test_real_llama_zarr.py --zarr-path test_aifs_small.zarr
-    python test_real_llama_zarr.py --zarr-path test_aifs_small.zarr --use-quantization
+    python test_real_mistral_zarr.py --zarr-path test_aifs_small.zarr
+    python test_real_mistral_zarr.py --zarr-path test_aifs_small.zarr --use-quantization
 """
 
 import argparse
@@ -34,7 +34,7 @@ import torch
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-print("🦙 Real Llama + AIFS + Zarr Integration Test")
+print("🤖 Real Mistral + AIFS + Zarr Integration Test")
 print("=" * 50)
 
 # Check system
@@ -50,7 +50,7 @@ try:
     project_root = Path(__file__).parent.parent.parent.parent
     sys.path.insert(0, str(project_root))
 
-    # Import required modules (AIFSLlamaFusionModel removed - using production model now)
+    # Import required modules (AIFSMistralFusionModel removed - using production model now)
     from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
     from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
@@ -73,18 +73,18 @@ def zarr_path(zarr_dataset_path):
 
 @pytest.mark.integration
 @pytest.mark.skipif(
-    not os.environ.get("RUN_REAL_LLAMA_TESTS", False),
-    reason="Real Llama tests are resource-intensive and require RUN_REAL_LLAMA_TESTS=1",
+    not os.environ.get("RUN_REAL_MISTRAL_TESTS", False),
+    reason="Real Mistral tests are resource-intensive and require RUN_REAL_MISTRAL_TESTS=1",
 )
-def test_real_llama_with_zarr(
-    aifs_llama_model,
+def test_real_mistral_with_zarr(
+    aifs_mistral_model,
     zarr_dataset_path,
     zarr_path: str = None,
     use_quantization: bool = None,
     model_name: str = None,
     max_memory_gb: float = 8.0,
 ):
-    """Test complete pipeline with real Llama model."""
+    """Test complete pipeline with real Mistral model."""
 
     # Use environment variables to control test behavior
     zarr_path = zarr_path or zarr_dataset_path
@@ -93,20 +93,22 @@ def test_real_llama_with_zarr(
         if use_quantization is not None
         else os.environ.get("USE_QUANTIZATION", "false").lower() in ("true", "1", "yes")
     )
-    model_name = model_name or os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B")
+    model_name = model_name or os.environ.get(
+        "LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3"
+    )
 
-    print(f"\nStarting Real Llama Integration Test (conftest)")
+    print(f"\nStarting Real Mistral Integration Test (conftest)")
     print(f"Zarr path: {zarr_path}")
-    print(f"🦙 Model: {model_name}")
+    print(f"🤖 Model: {model_name}")
     print(f"⚗️  Quantization: {use_quantization}")
     print(f"Max memory: {max_memory_gb} GB")
 
     # Use model from conftest fixture
-    model = aifs_llama_model
+    model = aifs_mistral_model
     print(f"Using model from conftest fixture")
     print(f"   AIFS: {type(model.time_series_tokenizer).__name__}")
-    print(f"   🦙 LLM: {type(model.llama_model).__name__}")
-    print(f"   Hidden size: {model.llama_hidden_size}")
+    print(f"   🤖 LLM: {type(model.mistral_model).__name__}")
+    print(f"   Hidden size: {model.mistral_hidden_size}")
     print(f"   Device: {model.device}")
 
     # Step 1: Load Zarr Climate Data
@@ -152,8 +154,8 @@ def test_real_llama_with_zarr(
         print(f"Climate tokenization failed: {e}")
         return False
 
-    # Step 4: Text Processing with Real Llama
-    print(f"\nStep 4: Text Processing with Real Llama")
+    # Step 4: Text Processing with Real Mistral
+    print(f"\nStep 4: Text Processing with Real Mistral")
     print("-" * 40)
 
     try:
@@ -163,24 +165,24 @@ def test_real_llama_with_zarr(
             "What weather trends are visible in the atmospheric data?",
         ]
 
-        # Process text with real Llama tokenizer
+        # Process text with real Mistral tokenizer
         text_tokens = model.tokenize_text(text_inputs)
         print(f"Text tokenization successful")
         print(f"   Input IDs shape: {text_tokens['input_ids'].shape}")
         print(f"   👁️  Attention mask shape: {text_tokens['attention_mask'].shape}")
 
         # Show tokenized text (first few tokens)
-        if model.llama_tokenizer:
+        if model.mistral_tokenizer:
             sample_tokens = text_tokens["input_ids"][0][:10].tolist()
-            decoded = model.llama_tokenizer.decode(sample_tokens)
+            decoded = model.mistral_tokenizer.decode(sample_tokens)
             print(f"   Sample tokens: {decoded}...")
 
     except Exception as e:
         print(f"Text processing failed: {e}")
         return False
 
-    # Step 5: Multimodal Fusion with Real Llama
-    print(f"\n🔗 Step 5: Multimodal Fusion with Real Llama")
+    # Step 5: Multimodal Fusion with Real Mistral
+    print(f"\n🔗 Step 5: Multimodal Fusion with Real Mistral")
     print("-" * 40)
 
     try:
@@ -233,10 +235,10 @@ def test_real_llama_with_zarr(
     except Exception as e:
         print(f"Performance analysis incomplete: {e}")
 
-    print(f"\nReal Llama Integration Test Complete!")
+    print(f"\nReal Mistral Integration Test Complete!")
     print(f"Successfully processed climate data through:")
     print(f"   Zarr → AIFS tokenization")
-    print(f"   🦙 Real Meta-Llama-3-8B processing")
+    print(f"   🤖 Real Mistral-7B-Instruct-v0.3 processing")
     print(f"   🔗 Multimodal fusion")
     print(f"   Text generation")
 
@@ -245,7 +247,7 @@ def test_real_llama_with_zarr(
 
 def main():
     """Main test function."""
-    parser = argparse.ArgumentParser(description="Real Llama + AIFS + Zarr Integration Test")
+    parser = argparse.ArgumentParser(description="Real Mistral + AIFS + Zarr Integration Test")
     parser.add_argument(
         "--zarr-path",
         default="test_aifs_large.zarr",
@@ -253,7 +255,7 @@ def main():
     )
     parser.add_argument("--use-quantization", action="store_true", help="Use 8-bit quantization")
     parser.add_argument(
-        "--model-name", default="meta-llama/Meta-Llama-3-8B", help="Llama model name"
+        "--model-name", default="mistralai/Mistral-7B-Instruct-v0.3", help="Mistral model name"
     )
     parser.add_argument("--max-memory", type=float, default=8.0, help="Max memory in GB")
 
@@ -270,7 +272,7 @@ def main():
     # Warning about memory requirements
     if not torch.cuda.is_available():
         print(f"\nWARNING: Running on CPU")
-        print(f"   Llama-3-8B requires significant memory and will be slow")
+        print(f"   Mistral-7B-Instruct requires significant memory and will be slow")
         print(f"   Consider using --use-quantization to reduce memory usage")
         print(f"   Expected processing time: 5-10 minutes")
 
@@ -280,7 +282,7 @@ def main():
             return
 
     # Run the test
-    success = test_real_llama_with_zarr(
+    success = test_real_mistral_with_zarr(
         zarr_path=args.zarr_path,
         use_quantization=args.use_quantization,
         model_name=args.model_name,
@@ -288,7 +290,7 @@ def main():
     )
 
     if success:
-        print(f"\n🏆 All tests passed! Real Llama integration is working.")
+        print(f"\n🏆 All tests passed! Real Mistral integration is working.")
     else:
         print(f"\n💥 Some tests failed. Check the output above for details.")
 

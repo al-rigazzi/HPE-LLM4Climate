@@ -16,13 +16,13 @@
 AIFS Multimodal with Zarr Data Example
 
 This example demonstrates how to use Zarr format climate data
-with the AIFS multimodal model (AIFS + Llama 3-8B integration).
+with the AIFS multimodal model (AIFS + Mistral-7B-Instruct integration).
 
 Features:
 - Load Zarr climate datasets
 - Convert to AIFS-compatible 5D tensors
 - Process with AIFS TimeSeries tokenizer
-- Integrate with Llama 3-8B for multimodal analysis
+- Integrate with Mistral-7B-Instruct for multimodal analysis
 
 Usage:
     python zarr_aifs_multimodal_example.py --zarr-path /path/to/climate.zarr
@@ -46,15 +46,15 @@ except ImportError as e:
     ZARR_LOADER_AVAILABLE = False
     print(f"Zarr loader not available: {e}")
 
-# Try to import Llama integration
+# Try to import Mistral integration
 try:
     sys.path.append(str(project_root / "multimodal_aifs" / "tests" / "integration"))
-    from test_aifs_llama_integration import AIFSLlamaFusionModel
+    from test_aifs_mistral_integration import AIFSMistralFusionModel
 
-    LLAMA_AVAILABLE = True
+    MISTRAL_AVAILABLE = True
 except ImportError:
-    LLAMA_AVAILABLE = False
-    print("Llama integration not available")
+    MISTRAL_AVAILABLE = False
+    print("Mistral integration not available")
 
 
 def demonstrate_zarr_to_aifs(
@@ -137,16 +137,16 @@ def demonstrate_zarr_to_aifs(
         climate_tokens = None
 
     # Step 5: Multimodal Integration (if available)
-    if LLAMA_AVAILABLE and climate_tokens is not None:
-        print("\n🔗 Step 5: AIFS-Llama Multimodal Integration")
+    if MISTRAL_AVAILABLE and climate_tokens is not None:
+        print("\n🔗 Step 5: AIFS-Mistral Multimodal Integration")
         try:
             # Initialize multimodal fusion model
-            model = AIFSLlamaFusionModel(
-                llm_model_name="meta-llama/Meta-Llama-3-8B",
+            model = AIFSMistralFusionModel(
+                llm_model_name="mistralai/Mistral-7B-Instruct-v0.3",
                 time_series_dim=512,
                 fusion_strategy="cross_attention",
                 device="cpu",
-                use_mock_llama=True,  # Use mock for demo
+                use_mock_mistral=True,  # Use mock for demo
             )
 
             # Create sample text input
@@ -165,7 +165,7 @@ def demonstrate_zarr_to_aifs(
         except Exception as e:
             print(f"Multimodal integration failed: {e}")
     else:
-        print(f"\nSkipping multimodal integration (Llama not available)")
+        print(f"\nSkipping multimodal integration (Mistral not available)")
 
     # Summary
     print(f"\n📋 Demo Summary")
@@ -174,15 +174,15 @@ def demonstrate_zarr_to_aifs(
     print("AIFS tensor format conversion complete")
     if climate_tokens is not None:
         print("AIFS TimeSeries tokenization successful")
-    if LLAMA_AVAILABLE:
-        print("Multimodal AIFS-Llama integration ready")
+    if MISTRAL_AVAILABLE:
+        print("Multimodal AIFS-Mistral integration ready")
 
     return {
         "zarr_path": zarr_path,
         "dataset_info": dataset_info,
         "aifs_tensor_shape": aifs_tensor.shape,
         "climate_tokens_shape": climate_tokens.shape if climate_tokens is not None else None,
-        "multimodal_ready": LLAMA_AVAILABLE,
+        "multimodal_ready": MISTRAL_AVAILABLE,
     }
 
 

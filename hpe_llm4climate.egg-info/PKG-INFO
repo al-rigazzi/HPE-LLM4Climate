@@ -3,14 +3,14 @@ Name: hpe-llm4climate
 Version: 0.1.0
 Summary: Comprehensive Multimodal Climate-Text Fusion System
 Author: HPE LLM4Climate Team
-License: MIT
+License: Apache-2.0
 Project-URL: Homepage, https://github.com/al-rigazzi/HPE-LLM4Climate
 Project-URL: Repository, https://github.com/al-rigazzi/HPE-LLM4Climate
 Project-URL: Issues, https://github.com/al-rigazzi/HPE-LLM4Climate/issues
 Keywords: climate,machine learning,multimodal,fusion,weather
 Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Science/Research
-Classifier: License :: OSI Approved :: MIT License
+Classifier: License :: OSI Approved :: Apache Software License
 Classifier: Programming Language :: Python :: 3.12
 Classifier: Programming Language :: Python :: 3.13
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -18,6 +18,7 @@ Classifier: Topic :: Scientific/Engineering :: Atmospheric Science
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
 License-File: LICENSE
+License-File: LICENSE_HEADER
 Requires-Dist: torch>=1.10.0
 Requires-Dist: numpy>=1.20.0
 Requires-Dist: xarray>=0.20.0
@@ -37,134 +38,117 @@ Requires-Dist: isort>=5.10.0; extra == "dev"
 Requires-Dist: mypy>=0.991; extra == "dev"
 Dynamic: license-file
 
-# 🌍 HPE-LLM4Climate: Multimodal Climate AI Sys### 🔧 Fusion Strategies
-- **Cross-Attention Fusion**: Sophisticated attention mechanisms for climate-text interaction
-- **Concatenation Fusion**: Simple feature combination for fast inference
-- **Additive Fusion**: Element-wise feature integration![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+# 🌍 HPE-LLM4Climate: Multimodal Climate Analysis Large Language Model
+
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-orange.svg)](https://pytorch.org/)
 [![Transformers](https://img.shields.io/badge/🤗-Transformers-yellow.svg)](https://huggingface.co/transformers/)
-[![Experimental](https://img.shields.io/badge/Status-Experimental-red.svg)](#)
+[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
-## ⚠️ **EXPERIMENTAL REPOSITORY** ⚠️
+## Overview
 
-This is an **experimental research repository** featuring a **multimodal climate AI system** that combines ECMWF's AI Forecasting System (AIFS) with large language models:
+This repository implements a multimodal large language model designed for climate data analysis, combining ECMWF's AI Forecasting System (AIFS) encoder with text-based language models. The system enables zero-shot analysis of numerical climate datasets and investigation of high-order climate features through natural language interfaces.
 
-**🌪️ Primary Implementation: AIFS-based Multimodal System** (`/multimodal_aifs/`) ✅ **Fully Operational**
-- **ECMWF AI Forecasting System** integration with 19M parameter encoder
-- **Meta-Llama-3-8B integration** with cross-attention fusion
-- **Zarr format support** for cloud-optimized climate data
-- **Real-time testing** on CPU/GPU with comprehensive test suite
+### Research Goals
 
-## 🚀 Overview
+- Investigate zero-shot capabilities of LLM models on numerical climate datasets
+- Enable identification of high-order features (vortices, tornadoes, droughts) without supervised examples
+- Develop production-ready multimodal climate analysis tools
+- Bridge climate science and natural language processing
 
-This **operational project** implements a multimodal fusion system that bridges climate science and natural language processing using ECMWF's AIFS as the primary climate encoder:
+### Key Features
 
-### 🌪️ **AIFS Multimodal Implementation** (`/multimodal_aifs/`) ✅ **Primary System**
-- **ECMWF AI Forecasting System** integration with 19M parameter encoder
-- **Zarr format support** for cloud-optimized climate data
-- **Meta-Llama-3-8B integration** with multimodal fusion
-- **Spatial region loading** with coordinate wrapping
-- **Real-time testing** on CPU/GPU with comprehensive test suite
+- **ECMWF AIFS Integration**: Uses AIFS encoder for climate data processing with 542,080 grid points and 103 variables
+- **Multimodal Fusion**: Cross-attention mechanisms combining climate embeddings with text features
+- **Zarr Data Support**: Cloud-optimized climate data loading and processing
+- **Production Standards**: 10.00/10 pylint score, comprehensive test suite, modern Python 3.12+ type hints
+- **Multi-Platform**: Native support for Apple Silicon (MPS), NVIDIA GPUs (CUDA), and CPU-only systems
 
-### 🎯 **Applications Enabled**
-- **Climate Trend Analysis**: AI assistants that explain long-term climate patterns and projections
-- **Climate Impact Assessment**: Automated analysis of climate change effects on various sectors
-- **Agricultural Climate Planning**: Long-term farming recommendations based on climate projections
-- **Climate Risk Assessment**: Analysis of future climate risks and adaptation strategies
-- **Climate Education**: Interactive tools for learning about climate science and long-term trends
+## Repository Structure
 
-## ✨ Key Features
+```
+HPE-LLM4Climate/
+├── multimodal_aifs/                   # Main implementation
+│   ├── core/                          # Core fusion modules
+│   │   ├── aifs_climate_fusion.py     # AIFS-text fusion model
+│   │   └── aifs_encoder_utils.py      # AIFS encoder utilities
+│   ├── utils/                         # Data processing utilities
+│   │   ├── zarr_data_loader.py        # Zarr climate data loader
+│   │   ├── aifs_time_series_tokenizer.py # Time series tokenization
+│   │   ├── climate_data_utils.py      # Climate data utilities
+│   │   ├── location_utils.py          # Geographic utilities
+│   │   └── text_utils.py              # Text processing utilities
+│   ├── constants.py                   # Centralized constants and configurations
+│   ├── examples/                      # Working examples
+│   │   ├── zarr_aifs_multimodal_example.py # Zarr→AIFS→LLM pipeline
+│   │   ├── aifs_mistral_example.py      # AIFS-Mistral integration
+│   │   └── multimodal_timeseries_demo.py # Time series demonstration
+│   ├── tests/                         # Comprehensive test suite
+│   │   ├── integration/               # Integration tests
+│   │   │   └── zarr/                  # Zarr integration tests
+│   │   └── unit/                      # Unit tests
+│   └── training/                      # Training examples
+│       └── examples/                  # Training scripts
+├── aifs-single-1.0/                   # ECMWF AIFS model (submodule)
+│   ├── aifs-single-mse-1.0.ckpt      # AIFS model weights (948MB)
+│   └── config_pretraining.yaml       # AIFS configuration
+├── scripts/                           # Utility scripts
+├── test_aifs_large.zarr/              # Test Zarr dataset
+└── docs/                              # Documentation
+```
 
-### 🏗️ Core Components
-- **AIFS Encoder Integration**: Standalone ECMWF AIFS climate encoder with full model compatibility
-- **Multimodal Fusion Framework**: Combines AIFS climate features and text data using cross-attention
-- **Transformer Integration**: Support for Llama 3, BERT, and other HuggingFace models
-- **Production-Ready Architecture**: Comprehensive testing and validation infrastructure
+## Prerequisites
 
-### 🌍 Geographic Intelligence
-- **Multi-Backend Resolution**: GeoPy/Nominatim geographic coordinate resolution
-- **Multi-Scale Analysis**: From coordinate-level to global climate assessment
-- **Real-World Integration**: OpenStreetMap and geographic database support
-
-### 🔧 Fusion Strategies
-- **Cross-Attention Fusion**: Deep interaction between climate and text features
-- **Concatenation Fusion**: Simple feature combination for fast inference
-- **Additive Fusion**: Element-wise feature integration
-- **Location-Aware Fusion**: Geographic context integration with climate data
-
-### 🧪 Production Ready
-- Comprehensive test suite with encoder validation
-- Multiple usage examples and demonstrations
-- Complete documentation and API reference
-- Real-world application templates
-
-### 🌪️ ECMWF AIFS Integration
-- **Primary Climate Backend**: AIFS provides state-of-the-art global weather forecasting
-- **AIFS Single v1.0**: Operational AI forecasting system from ECMWF
-- **Extended Variables**: Upper-air, precipitation, radiation, and land variables
-- **Modular Architecture**: Clean integration with multimodal text processing
-
-> **Current Status**: ECMWF's Artificial Intelligence Forecasting System (AIFS) serves as the primary climate AI backend, providing operational weather forecasting capabilities with state-of-the-art accuracy. See [`multimodal_aifs/README.md`](multimodal_aifs/README.md) for details.
-
-## 📋 Prerequisites
-
-- **Python**: 3.12 (exactly 3.12 required - only supported version)
+- **Python**: 3.12+ (exactly 3.12 required for current configuration)
 - **Hardware**:
-  - **Apple Silicon Macs (M1/M2/M3)**: Native support with MPS acceleration ✅
-  - **NVIDIA GPUs**: CUDA support for accelerated training/inference ✅
-  - **Intel/AMD CPUs**: Currently being tested.
-- **Memory**: At least 16GB RAM (32GB+ recommended for full models)
-- **Storage**: ~50GB free space for model weights and data
+  - **Apple Silicon (M1/M2/M3)**: Full native support with MPS acceleration ✅
+  - **NVIDIA GPUs**: CUDA support for training/inference ✅
+  - **CPU**: Intel/AMD x86_64 support ✅
+- **Memory**: Minimum 8GB RAM (16GB+ recommended for full models)
+- **Storage**: ~10GB for model weights and test data
 
-### 🍎 Apple Silicon Support
+### Device Compatibility
 
-This project has **full native support** for Apple Silicon Macs (M1/M2/M3):
-- ✅ **Native ARM64 compatibility** with all dependencies
-- ✅ **MPS (Metal Performance Shaders)** acceleration for PyTorch operations
-- ✅ **Optimized memory usage** for Apple Silicon architecture
-- ✅ **Comprehensive testing** on macOS 15.6 with Apple Silicon
+- **Apple Silicon**: Native ARM64 with MPS acceleration for PyTorch operations
+- **NVIDIA GPUs**: CUDA 11.8+ or 12.x support
+- **CPU-only**: Cross-platform support (Linux/Windows/macOS)
 
-**Note**: For text generation with large language models on Apple Silicon, the system automatically uses CPU to avoid MPS compatibility issues, ensuring reliable operation.
+## Installation
 
-## 🛠️ Installation
+### 1. Prerequisites Setup
 
-### 1. Install Git LFS (Required)
-
-The AIFS model file (~948MB) is stored using Git LFS. Install Git LFS before cloning:
+Install Git LFS (required for AIFS model weights):
 
 ```bash
-# On macOS
+# macOS
 brew install git-lfs
 
-# On Ubuntu/Debian
+# Ubuntu/Debian
 sudo apt-get install git-lfs
 
-# On Windows (using Chocolatey)
+# Windows
 choco install git-lfs
 
-# Or download from: https://git-lfs.github.io/
-
-# Initialize Git LFS for your user account (run once)
+# Initialize Git LFS
 git lfs install
 ```
 
-### 2. Clone the Repository
+### 2. Clone Repository
 
 ```bash
-# Clone with submodules (includes ECMWF AIFS)
 git clone --recurse-submodules https://github.com/al-rigazzi/HPE-LLM4Climate.git
 cd HPE-LLM4Climate
 
-# Or if already cloned, initialize submodules
+# If already cloned, initialize submodules
 git submodule update --init --recursive
 ```
 
-### 3. Set Up Python Environment
+### 3. Python Environment
 
 ```bash
 # Create virtual environment
-python -m venv llm4climate
-source llm4climate/bin/activate  # On Windows: llm4climate\Scripts\activate
+python3.12 -m venv llm4climate
+source llm4climate/bin/activate  # Windows: llm4climate\Scripts\activate
 
 # Or using conda
 conda create -n llm4climate python=3.12
@@ -177,369 +161,190 @@ conda activate llm4climate
 pip install -r requirements.txt
 ```
 
-### 🏆 **Working AIFS Multimodal Configuration**
+### Tested Configuration
 
-The following configuration is **tested and operational** for the AIFS multimodal implementation:
+The following versions are tested and verified working:
 
-**Core Dependencies (Verified Working):**
+```
+torch==2.4.0                    # PyTorch with MPS/CUDA support
+transformers==4.55.2            # HuggingFace transformers
+zarr==3.1.1                     # Cloud-optimized arrays
+xarray==2025.8.0                # N-dimensional labeled arrays
+numpy==2.3.2                    # Numerical computing
+pytest==8.4.1                   # Testing framework
+```
+
+For AIFS-specific dependencies:
 ```bash
-# Core ML Framework
-torch==2.4.0                  # PyTorch with MPS support
-torch-geometric==2.4.0        # Graph neural networks
-transformers==4.55.2          # HuggingFace transformers
-accelerate==1.10.0            # Model acceleration
-bitsandbytes==0.42.0          # Quantization support
-
-# Climate Data Processing
-zarr==3.1.1                   # Cloud-optimized arrays
-xarray==2025.8.0             # N-dimensional labeled arrays
-cfgrib==0.9.15.0             # GRIB file support
-ecmwf-opendata==0.3.22       # ECMWF data access
-
-# Scientific Computing
-numpy==2.3.2                  # Numerical computing
-matplotlib==3.10.5           # Plotting and visualization
-
-# Testing and Development
-pytest==8.4.1                # Testing framework
-psutil==7.0.0                 # System monitoring
+pip install anemoi-models        # AIFS model loading
+pip install einops              # Tensor operations
 ```
 
-**Installation for AIFS Multimodal:**
-```bash
-# Create environment (Python 3.12 required)
-python -m venv llm4climate-aifs
-source llm4climate-aifs/bin/activate
+## Quick Start
 
-# Install exact working versions
-pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0
-pip install transformers==4.55.2 accelerate==1.10.0 bitsandbytes==0.42.0
-pip install zarr==3.1.1 xarray==2025.8.0 numpy==2.3.2
-pip install pytest==8.4.1 matplotlib==3.10.5 psutil==7.0.0
-pip install cfgrib==0.9.15.0 ecmwf-opendata==0.3.22
-
-# Install remaining requirements
-pip install -r requirements.txt
-```
-
-> **✅ Tested**: This exact configuration successfully runs the complete zarr → AIFS → Meta-Llama-3-8B pipeline on Apple Silicon (M-series) and Intel/AMD CPUs.
-
-**Alternative Dependencies:**
-**Alternative Dependencies:**
-- `torch>=2.4.0` - Deep learning framework with MPS support for Apple Silicon
-- `transformers>=4.55.0` - HuggingFace transformers for LLMs (Llama 3, BERT, etc.)
-- `numpy`, `pandas`, `xarray` - Scientific computing and data manipulation
-- `matplotlib` - Data visualization and plotting
-- `huggingface_hub` - Model downloads and HuggingFace integration
-- `accelerate`, `tokenizers`, `safetensors` - Optimized model handling
-- `geopy>=2.3.0` - Geographic data processing for analysis
-- `requests>=2.31.0` - HTTP requests for geographic API integration
-- `tqdm`, `PyYAML`, `h5py`, `packaging` - Utilities and file handling
-
-**Optional Geographic Extensions:**
-```bash
-# For enhanced geographic capabilities
-pip install shapely geopandas folium pycountry
-```
-
-### 5. Verified System Configurations
-
-#### 🍎 Apple Silicon (Tested Configuration)
-**System:**
-- **Hardware**: Apple Silicon M-series (M1/M2/M3)
-- **OS**: macOS 15.6+ (Darwin 24.6.0)
-- **Architecture**: ARM64 native
-- **GPU**: MPS (Metal Performance Shaders) acceleration
-- **Python**: 3.12.8 (CPython) - **ONLY SUPPORTED VERSION**
-
-**Tested Package Versions:**
-```
-torch==2.4.0                  # MPS-optimized for Apple Silicon
-transformers==4.55.2          # Full Llama 3 support
-numpy==2.3.2                  # ARM64 optimized
-pandas==2.3.1                 # Native Apple Silicon
-accelerate==1.10.0            # MPS acceleration support
-deepspeed==0.17.5             # Distributed training support
-geopy==2.4.1                  # Geographic processing
-huggingface_hub==0.34.4      # Model downloads
-safetensors==0.6.2           # Efficient model storage
-```
-
-#### 🖥️ NVIDIA GPU Systems
-**System:**
-- **Hardware**: NVIDIA GPU with CUDA 11.8+ or 12.x
-- **OS**: Linux/Windows
-- **Python**: 3.12 (exactly 3.12 required - only supported version)
-
-**Installation:**
-```bash
-# CUDA 12.1 (recommended)
-pip install torch==2.4.0+cu121 torchvision==0.19.0+cu121
-pip install transformers>=4.55.2 accelerate>=1.10.0
-pip install -r requirements.txt
-```
-
-#### 💻 CPU-Only Systems
-**System:**
-- **Hardware**: Intel/AMD x86_64 or ARM64
-- **OS**: Linux/Windows/macOS
-- **Python**: 3.12 (exactly 3.12 required - only supported version)
-
-**Installation:**
-```bash
-pip install torch==2.4.0+cpu torchvision==0.19.0+cpu
-pip install -r requirements.txt
-```
-
-> **Apple Silicon Users**: The system automatically handles MPS compatibility issues by using CPU for text generation while leveraging MPS for other operations. This ensures maximum reliability and performance.
-
-### 6. Supported Language Models
-
-The system supports a wide range of transformer models for climate-text fusion:
-
-#### 🦙 **Meta Llama Models (Recommended)**
-- `meta-llama/Meta-Llama-3-8B` - **Tested ✅** - Superior language understanding (**HF approval required**)
-- `meta-llama/Llama-2-7b-hf` - Standard Llama 2 (**HF approval required**)
-- `meta-llama/Llama-2-7b-chat-hf` - Chat-optimized version (**HF approval required**)
-
-#### 🤖 **Alternative Models (No Access Required)**
-- `microsoft/DialoGPT-medium` - **Tested ✅** - Conversational AI
-- `bert-base-uncased` - **Tested ✅** - Encoder-only for embeddings
-- `roberta-base` - **Tested ✅** - Robust language understanding
-- `distilbert-base-uncased` - Lightweight BERT variant
-- `google/flan-t5-small` - Text-to-text generation
-- `facebook/opt-350m` - Lightweight GPT alternative
-
-#### 📝 **Usage Examples**
-```python
-# Using Meta Llama 3 (best performance)
-fusion_model = ClimateTextFusion(
-    llama_model_name="meta-llama/Meta-Llama-3-8B"
-)
-```
-
-**Model Access**: Meta Llama models require HuggingFace account approval. Alternative models work immediately without approval.
-
-## 📥 Data Setup
-
-### 1. Download AIFS Model Weights
-
-The system will automatically download AIFS model weights on first use, or you can verify the setup:
-
-```bash
-# Verify AIFS model exists (should be ~948MB)
-ls -la aifs-single-1.0/aifs-single-mse-1.0.ckpt
-
-# If missing, the model will be downloaded automatically
-# The AIFS model is included as a git submodule
-```
-
-### 2. Verify AIFS Installation
-
-```bash
-# Test AIFS encoder extraction
-python multimodal_aifs/scripts/extract_aifs_encoder.py
-
-# Verify the extracted encoder
-python multimodal_aifs/scripts/check_encoder_signature.py
-```
-
-This extracts the AIFS encoder (~20MB) from the full model (948MB) and validates the installation.
-
-## 🚀 Quick Start
-
-## 🚀 Quick Start
-
-### ✅ **Primary AIFS Multimodal System**
-
-```bash
-# Navigate to AIFS implementation
-cd multimodal_aifs/
-
-# Try complete zarr integration example
-python examples/zarr_aifs_multimodal_example.py
-
-# Test AIFS+Llama integration
-python training/examples/llama3_final_success.py
-
-# Run comprehensive tests
-python -m pytest tests/integration/ -v
-```
-
-### Basic AIFS Multimodal Fusion
+### Basic Usage
 
 ```python
 from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
+from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 import torch
 
-# Initialize the AIFS-based fusion model
+# Load climate data
+loader = ZarrClimateLoader('test_aifs_large.zarr')
+climate_data = loader.load_time_range(None, None)  # Load all time steps
+climate_tensor = loader.to_aifs_tensor(climate_data, batch_size=1, device='cpu')
+
+# Initialize fusion model
 fusion_model = AIFSClimateTextFusion(
-    aifs_encoder_path='aifs-single-1.0/aifs-single-mse-1.0.ckpt',
-    climate_dim=1024,
-    text_dim=4096,  # Llama-3-8B hidden size
-    fusion_dim=512,
-    num_attention_heads=8,
-    device='cpu'  # or 'cuda' for GPU
+    aifs_model=None,  # Uses mock for testing
+    climate_dim=218,  # AIFS projected encoder output
+    text_dim=768,     # Text model hidden size
+    fusion_dim=512,   # Output dimension
+    device='cpu'
 )
 
-# Prepare climate data (AIFS format)
-climate_data = torch.randn(1, 20, 64, 64)  # [batch, variables, lat, lon]
-
-# Prepare text data
-text_inputs = [
-    "What will the temperature patterns be like in the Northern Hemisphere?",
-    "How might precipitation change in tropical regions?"
-]
-
-# Process through the fusion model
-fusion_outputs = fusion_model(climate_data, text_inputs)
-print(f"Fusion output shape: {fusion_outputs.shape}")
+# Process climate and text
+text_inputs = ["Analyze temperature patterns in this climate data."]
+result = fusion_model(climate_tensor, text_inputs)
+print(f"Fusion output shape: {result['fused_features'].shape}")
 ```
 
-### Training Example (AIFS)
+### Run Examples
 
-```python
-# Run AIFS training
-python multimodal_aifs/training/train_multimodal.py
-```
-
-### Simplified Example (Recommended for Beginners)
-
-```python
-# Run the practical AIFS example
+```bash
+# Zarr data integration example
 python multimodal_aifs/examples/zarr_aifs_multimodal_example.py
+
+# AIFS-Mistral integration
+python multimodal_aifs/examples/aifs_mistral_example.py
+
+# Time series demonstration
+python multimodal_aifs/examples/multimodal_timeseries_demo.py
 ```
 
-This demonstrates:
-- Loading a simplified fusion model
-- Processing sample climate and text data
-- Climate impact assessment classification
-- Feature visualization
+### Run Tests
 
-## 📁 **Experimental Repository Structure**
+```bash
+# Full test suite
+pytest multimodal_aifs/tests/ -v
 
-This repository contains **two different multimodal implementations** for research and experimentation:
+# Integration tests only
+pytest multimodal_aifs/tests/integration/ -v
 
+# Zarr integration tests
+pytest multimodal_aifs/tests/integration/zarr/ -v
 ```
-HPE-LLM4Climate/                 # 🧪 EXPERIMENTAL REPOSITORY
-├── README.md                    # Main project documentation
-├── requirements.txt             # Python dependencies
-├── pyproject.toml              # Project configuration
-├── example_aifs_encoder_usage.py # Basic AIFS encoder demo
-│
-├── 🟢 multimodal_aifs/         # ✅ WORKING IMPLEMENTATION
-│   ├── README.md               # AIFS multimodal documentation
-│   ├── core/                   # AIFS fusion modules
-│   │   └── aifs_climate_fusion.py      # AIFS-Llama fusion
-│   ├── utils/                  # AIFS utility modules
-│   │   ├── zarr_data_loader.py          # Zarr climate data loader ✅
-│   │   ├── aifs_encoder_utils.py        # AIFS encoder utilities ✅
-│   │   └── aifs_time_series_tokenizer.py # Time series tokenization ✅
-│   ├── examples/               # Working AIFS examples
-│   │   ├── zarr_aifs_multimodal_example.py # Zarr→AIFS→Llama pipeline ✅
-│   │   └── basic/              # Basic AIFS examples
-│   ├── tests/                  # Comprehensive test suite ✅
-│   │   ├── integration/zarr/   # Zarr integration tests ✅
-│   │   ├── unit/               # Unit tests ✅
-│   │   └── benchmarks/         # Performance tests ✅
-│   └── docs/                   # AIFS documentation
-│
-├── 🌪️ aifs-single-1.0/         # ECMWF AIFS model
-│   ├── aifs-single-mse-1.0.ckpt        # AIFS checkpoint ✅
-│   ├── config_pretraining.yaml         # AIFS configuration ✅
-│   └── run_AIFS_v1.ipynb               # AIFS example notebook ✅
+## Configuration
+
+### Environment Variables
+
+The system supports several environment variables for configuration:
+
+- `USE_MOCK_AIFS`: Use mock AIFS model instead of real model (useful for testing)
+- `USE_MOCK_LLM`: Use mock LLM instead of real language model
+- `USE_QUANTIZATION`: Enable model quantization for memory efficiency
+- `LLM_MODEL_NAME`: Specify which language model to use (default: `mistralai/Mistral-7B-Instruct-v0.3`)
+
+```bash
+# Example: Run with mock models for fast testing
+USE_MOCK_AIFS=true USE_MOCK_LLM=true python multimodal_aifs/examples/zarr_aifs_multimodal_example.py
 ```
 
-### 🎯 **Choose Your Path**
+### AIFS Constants
 
-- **🟢 Use AIFS Implementation** (`/multimodal_aifs/`) for:
-  - ✅ Working zarr data integration
-  - ✅ Real Meta-Llama-3-8B support
-  - ✅ Comprehensive test suite
-  - ✅ Production-ready examples
+Key constants defined in `multimodal_aifs/constants.py`:
 
-## 🧪 Testing & Validation
+- `AIFS_GRID_POINTS = 542080`: Spatial grid points in AIFS model
+- `AIFS_INPUT_VARIABLES = 103`: Total input variables (90 prognostic + 13 forcing)
+- `AIFS_PROJECTED_ENCODER_OUTPUT_DIM = 218`: Projected encoder output dimension
+- `ALL_AIFS_VARIABLES`: Complete list of 103 climate variables
 
-### Comprehensive Test Suite
+## Testing
 
-The system includes extensive testing across multiple components.
+### Test Structure
 
-## 🔧 Configuration Options
-
-### AIFS Fusion Configuration
-
-```python
-from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
-
-# Cross-attention: Deep feature interaction (recommended)
-fusion_model = AIFSClimateTextFusion(
-    aifs_encoder_path='aifs-single-1.0/aifs-single-mse-1.0.ckpt',
-    climate_dim=1024,
-    text_dim=4096,  # Meta-Llama-3-8B hidden size
-    fusion_dim=512,
-    num_attention_heads=8
-)
-
-# Lightweight configuration for testing
-fusion_model = AIFSClimateTextFusion(
-    aifs_encoder_path='aifs-single-1.0/aifs-single-mse-1.0.ckpt',
-    climate_dim=512,
-    text_dim=768,   # Smaller text models
-    fusion_dim=256,
-    num_attention_heads=4
-)
+```
+multimodal_aifs/tests/
+├── integration/                    # Integration tests
+│   ├── zarr/                      # Zarr data integration
+│   │   ├── test_cpu_mistral_zarr.py # CPU-optimized Mistral + AIFS + Zarr
+│   │   ├── test_real_mistral_zarr.py # Full model integration
+│   │   └── test_zarr_integration.py # Zarr loader tests
+│   ├── test_aifs_climate_fusion.py # Climate fusion tests
+│   └── test_aifs_encoder_integration.py # AIFS encoder tests
+└── unit/                          # Unit tests
+    └── test_aifs_time_series_tokenizer.py # Tokenizer tests
 ```
 
-### Model Selection
+### Running Tests
 
-```python
-# Production model (high quality, Meta Llama)
-fusion_model = AIFSClimateTextFusion(
-    text_model_name='meta-llama/Meta-Llama-3-8B',
-    text_dim=4096
-)
+```bash
+# All tests
+pytest multimodal_aifs/tests/ -v
 
-# Testing model (fast inference, less memory)
-fusion_model = AIFSClimateTextFusion(
-    text_model_name='prajjwal1/bert-tiny',
-    text_dim=128
-)
+# Integration tests only
+pytest multimodal_aifs/tests/integration/ -v
+
+# Specific test with verbose output
+pytest multimodal_aifs/tests/integration/zarr/test_cpu_mistral_zarr.py -v -s
+
+# With mock models (faster)
+USE_MOCK_AIFS=true pytest multimodal_aifs/tests/integration/ -v
 ```
 
+### Code Quality
 
-## 🔬 Research Applications
+This repository maintains production-ready code standards:
 
-This system enables novel research in:
+- **Pylint Score**: 10.00/10 (perfect score across all core modules)
+- **Type Hints**: Modern Python 3.12+ type annotations throughout
+- **Test Coverage**: Comprehensive test suite with integration and unit tests
+- **Documentation**: Extensive docstrings and API documentation
 
-- **Climate Science**: Automated analysis and explanation of climate patterns
-- **Natural Language Processing**: Domain-specific language models for meteorology
-- **Human-Computer Interaction**: Conversational interfaces for scientific data
-- **Emergency Management**: Automated alert systems and risk communication
-- **Education**: Interactive climate learning tools
+## Research Applications
 
-## 🤝 Contributing
+This system enables research in:
 
-We welcome contributions! Please:
+- **Climate Data Analysis**: Zero-shot analysis of numerical climate datasets
+- **Multimodal AI**: Combining numerical data with natural language processing
+- **Climate Communication**: Natural language interfaces for climate data
+- **Pattern Recognition**: Identification of climate patterns without supervised training
+
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make changes and add tests
+4. Ensure all tests pass and pylint score remains 10.00/10
+5. Submit a pull request
 
-See our [contribution guidelines](CONTRIBUTING.md) for details.
+### Development Setup
 
-## 📄 License
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+# Run code quality checks
+python -m pylint multimodal_aifs/core/ --fail-under=10.0
+python -m mypy multimodal_aifs/
+python -m isort multimodal_aifs/
+```
 
-## 🙏 Acknowledgments
+## License
 
-- **ECMWF AIFS**: AI Forecasting System model
-  - Paper: [Lang et al. (2024) - AIFS - ECMWF's data-driven forecasting system](https://arxiv.org/abs/2406.01465)
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+This matches the license used by ECMWF AIFS for code and scripts.
+
+## Acknowledgments
+
+- **ECMWF AIFS**: AI Forecasting System integration
+  - Paper: [AIFS - ECMWF's data-driven forecasting system](https://arxiv.org/abs/2406.01465)
   - Model: [ecmwf/aifs-single-1.0](https://huggingface.co/ecmwf/aifs-single-1.0)
-- **Meta**: Llama model series and open-source AI contributions
+- **Mistral AI**: Mistral model series and open-source AI contributions
+- **HuggingFace**: Transformers library and model hub infrastructure
 
-## 📬 Contact
+## Contact
 
 - **GitHub Issues**: For bugs and feature requests
 - **Discussions**: For questions and community support

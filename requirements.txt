@@ -11,6 +11,9 @@ torch_geometric==2.4.0
 # Natural Language Processing and Transformers
 transformers>=4.21.0
 
+# Template engine for prompt management
+jinja2>=3.1.0
+
 # Data visualization
 matplotlib
 

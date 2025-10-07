@@ -1,3 +1,7 @@
+# NOTE: This file belongs to an old iteration of the training infrastructure
+# and is preserved for reference only. The current implementation uses the
+# on-the-fly data loading system in climate_dataloader.py and related modules.
+
 # Training Configuration for AIFS Climate-Text Fusion Model
 # Copy this file and modify the paths and parameters for your specific setup
 

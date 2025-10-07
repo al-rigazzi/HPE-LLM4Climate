@@ -1,4 +1,8 @@
 #!/bin/bash
+# NOTE: This file belongs to an old iteration of the training infrastructure
+# and is preserved for reference only. The current implementation uses the
+# on-the-fly data loading system in climate_dataloader.py and related modules.
+
 # Environment setup script for multimodal climate-text training
 # This script helps set up the training environment with all necessary dependencies.
 

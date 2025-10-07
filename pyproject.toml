@@ -213,7 +213,7 @@ module = [
     "requests.*",
     "aifs_wrapper",
     "load_aifs_encoder",
-    "test_aifs_llama_integration",
+    "test_aifs_mistral_integration",
 ]
 ignore_missing_imports = true
 
@@ -248,4 +248,16 @@ markers = [
     "benchmark: marks tests as benchmark tests",
     "slow: marks tests as slow running",
     "large_memory: marks tests that require high amounts of memory (deselect with '-m \"not large_memory\"')",
+]
+filterwarnings = [
+    # Suppress SWIG-related deprecation warnings from GRIB library
+    "ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
+    # Suppress MPS backend warnings
+    "ignore:.*aten.*scatter_reduce.*not currently supported on the MPS backend.*:UserWarning",
+    # Suppress common warnings that appear across multiple tests
+    "ignore::UserWarning",
+    "ignore::FutureWarning",
+    "ignore::DeprecationWarning",
 ]

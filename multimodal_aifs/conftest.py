@@ -46,10 +46,22 @@ from multimodal_aifs.constants import (
 
 # =================== UTILITY FUNCTIONS ===================
 def setup_flash_attn_mock():
-    """Mock flash_attn to prevent import errors - MacOS only"""
+    """
+    Mock flash_attn to prevent import errors on MacOS.
+
+    Uses PyTorch's native F.scaled_dot_product_attention which provides optimized
+    flash-attention-like performance on Apple Metal (MPS) devices. This is more
+    efficient than the Dao-AILab flash-attention package which lacks complete MPS support.
+
+    Benefits:
+    - Native PyTorch 2.0+ MPS optimization
+    - Memory efficient attention for sequences up to ~10k tokens
+    - Automatic fallback for very large sequences (AIFS grid points)
+    - No external dependencies required
+    """
     import platform
 
-    # Only mock flash attention on MacOS systems where it's incomplete
+    # Only mock flash attention on MacOS systems where the CUDA-based flash_attn is unavailable
     if platform.system() != "Darwin":
         print("ℹ️ Skipping flash attention mock - not on MacOS")
         return
@@ -69,7 +81,9 @@ def setup_flash_attn_mock():
         return_attn_probs=False,
         **kwargs,
     ):
-        """Mock flash attention function that returns proper tensor output - memory efficient."""
+        """Mock flash attention using PyTorch's native scaled_dot_product_attention on MPS."""
+        import torch.nn.functional as F
+
         # Handle both causal and is_causal parameter names
         if is_causal is not None:
             causal = is_causal
@@ -98,28 +112,63 @@ def setup_flash_attn_mock():
                 return output, dummy_attn
             return output
 
-        # For smaller sequences, use proper scaled dot-product attention
-        if softmax_scale is None:
-            softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+        # For smaller sequences, use PyTorch's native scaled_dot_product_attention
+        # This uses optimized MPS kernels when available
+        try:
+            # scaled_dot_product_attention is available in PyTorch 2.0+
+            # Determine if we're in training mode (dropout only applies during training)
+            is_training = dropout_p > 0.0
+            actual_dropout = dropout_p if is_training else 0.0
 
-        # Compute attention scores
-        scores = torch.matmul(q, k.transpose(-2, -1)) * softmax_scale
-        if causal:
-            # Apply causal mask
-            causal_mask = torch.triu(
-                torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool), diagonal=1
+            output = F.scaled_dot_product_attention(
+                q,
+                k,
+                v,
+                attn_mask=None,
+                dropout_p=actual_dropout,
+                is_causal=causal,
+                scale=softmax_scale,
             )
-            scores = scores.masked_fill(causal_mask, float("-inf"))
 
-        attn_weights = torch.softmax(scores, dim=-1)
-        if dropout_p > 0.0 and q.training:
-            attn_weights = torch.dropout(attn_weights, dropout_p, train=True)
+            if return_attn_probs:
+                # PyTorch's function doesn't return attention weights by default
+                # Compute them separately if needed (slower but compatible)
+                if softmax_scale is None:
+                    softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+                scores = torch.matmul(q, k.transpose(-2, -1)) * softmax_scale
+                if causal:
+                    causal_mask = torch.triu(
+                        torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool),
+                        diagonal=1,
+                    )
+                    scores = scores.masked_fill(causal_mask, float("-inf"))
+                attn_weights = torch.softmax(scores, dim=-1)
+                return output, attn_weights
 
-        output = torch.matmul(attn_weights, v)
+            return output
 
-        if return_attn_probs:
-            return output, attn_weights
-        return output
+        except (AttributeError, RuntimeError) as e:
+            # Fallback to manual implementation if scaled_dot_product_attention is not available
+            print(f"⚠️ Falling back to manual attention: {e}")
+            if softmax_scale is None:
+                softmax_scale = 1.0 / (q.size(-1) ** 0.5)
+
+            scores = torch.matmul(q, k.transpose(-2, -1)) * softmax_scale
+            if causal:
+                causal_mask = torch.triu(
+                    torch.ones(seq_len, seq_len, device=q.device, dtype=torch.bool), diagonal=1
+                )
+                scores = scores.masked_fill(causal_mask, float("-inf"))
+
+            attn_weights = torch.softmax(scores, dim=-1)
+            if dropout_p > 0.0:
+                attn_weights = torch.nn.functional.dropout(attn_weights, p=dropout_p, training=True)
+
+            output = torch.matmul(attn_weights, v)
+
+            if return_attn_probs:
+                return output, attn_weights
+            return output
 
     def mock_flash_attn_varlen_func(*args, **kwargs):
         """Mock variable length flash attention - simplified fallback."""
@@ -157,18 +206,6 @@ def get_env_str(env_var: str, default: str) -> str:
 # =================== PYTEST CONFIGURATION ===================
 def pytest_sessionstart(session):
     """Set up global test environment at start of session."""
-    # Suppress known MPS backend warnings for cleaner test output
-    warnings.filterwarnings(
-        "ignore",
-        message=".*aten::scatter_reduce.two_out.*not currently supported on the MPS backend.*",
-        category=UserWarning,
-    )
-
-    # Suppress common warnings that appear across multiple tests
-    warnings.filterwarnings("ignore", category=UserWarning)
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-
     # Set up default device for the entire test session
     if torch.cuda.is_available():
         default_device = torch.device("cuda")
@@ -196,7 +233,9 @@ def pytest_configure(config):
     )
     config.addinivalue_line("markers", "integration: marks tests as integration tests")
     config.addinivalue_line("markers", "unit: marks tests as unit tests")
-    config.addinivalue_line("markers", "requires_llama: marks tests that require real Llama model")
+    config.addinivalue_line(
+        "markers", "requires_mistral: marks tests that require real Mistral model"
+    )
     config.addinivalue_line("markers", "requires_aifs: marks tests that require real AIFS model")
     config.addinivalue_line(
         "markers",
@@ -241,7 +280,7 @@ def llm_mock_status():
     """Provide information about whether LLM mocking is enabled."""
     use_mock_llm = get_env_bool("USE_MOCK_LLM", False)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
-    model_name = os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B")
+    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3")
 
     return {
         "use_mock_llm": use_mock_llm,
@@ -408,7 +447,7 @@ class MockLLMModel(nn.Module):
 def llm_model_path():
     """Get path to local LLM model if available."""
     # Check for specific model name from environment
-    model_name = os.environ.get("LLM_MODEL_NAME", "Meta-Llama-3-8B")
+    model_name = os.environ.get("LLM_MODEL_NAME", "Mistral-7B-Instruct-v0.3")
 
     possible_paths = [
         f"models/{model_name}",
@@ -435,7 +474,7 @@ def llm_model(llm_path, device):
 
     use_mock = get_env_bool("USE_MOCK_LLM", True)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
-    model_name = os.environ.get("LLM_MODEL_NAME", "meta-llama/Meta-Llama-3-8B")
+    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3")
 
     print("🤖 Loading LLM Model for Testing...")
     print(f"   Model: {model_name}")
@@ -564,7 +603,7 @@ def llm_tokenizer(model):
 _MODEL_CACHE: dict[str, Any] = {
     "aifs_model_available": None,  # Cached AIFS model availability check
     "aifs_model": None,  # Cached AIFS model instance
-    "aifs_llama_model": None,  # Cached AIFS+LLM fusion model
+    "aifs_mistral_model": None,  # Cached AIFS+LLM fusion model
     "llm_model": None,  # Cached LLM model instance
 }
 
@@ -666,7 +705,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
         model,
         device_str: str = "cpu",
         fusion_dim: int = 512,
-        use_mock_llama: bool = True,
+        use_mock_mistral: bool = True,
         verbose: bool = False,
     ):
         super().__init__()
@@ -703,17 +742,17 @@ class AIFSClimateTextFusionWrapper(nn.Module):
         )
 
         # Mock LLM attributes for compatibility
-        self.llama_hidden_size = fusion_dim
-        self.llama_tokenizer = None
+        self.mistral_hidden_size = fusion_dim
+        self.mistral_tokenizer = None
         # Create a mock LLM model with parameters for testing compatibility
-        self.llama_model = torch.nn.Linear(
+        self.mistral_model = torch.nn.Linear(
             fusion_dim,
             fusion_dim,
             dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,
         )
         # Add vocab_size attribute for compatibility with tests
-        setattr(self.llama_model, "vocab_size", 32000)  # Standard LLaMA vocab size
-        self.use_mock_llama = use_mock_llama  # Respect the environment variable
+        setattr(self.mistral_model, "vocab_size", 32000)  # Standard Mistral vocab size
+        self.use_mock_mistral = use_mock_mistral  # Respect the environment variable
 
     def tokenize_climate_data(self, climate_time_series: torch.Tensor) -> torch.Tensor:
         """
@@ -797,19 +836,19 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
 
 @pytest.fixture(scope="module")
-def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
+def aifs_mistral_model(test_device, aifs_model):  # pylint: disable=W0621
     """
     Fixture to create AIFS + LLM fusion model.
     """
-    if _MODEL_CACHE["aifs_llama_model"] is not None:
+    if _MODEL_CACHE["aifs_mistral_model"] is not None:
         print("♻️ Reusing cached AIFS+LLM fusion model")
-        return _MODEL_CACHE["aifs_llama_model"]
+        return _MODEL_CACHE["aifs_mistral_model"]
 
     # Setup flash attention mocking first
     setup_flash_attn_mock()
 
     # Get environment variables
-    use_mock_llama = get_env_bool("USE_MOCK_LLM", True)
+    use_mock_mistral = get_env_bool("USE_MOCK_LLM", True)
     # use_quantization and model_name are not used in this fixture
 
     print("🔗 Creating AIFS+LLM Fusion Model...")
@@ -827,12 +866,12 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
             {
                 "device": str(test_device),  # Add device attribute
                 "time_series_tokenizer": None,
-                "llama_hidden_size": 512,
-                "llama_tokenizer": None,
-                "llama_model": type(
+                "mistral_hidden_size": 512,
+                "mistral_tokenizer": None,
+                "mistral_model": type(
                     "MockLLM", (), {"vocab_size": 32000}
                 )(),  # Mock LLM with vocab_size
-                "use_mock_llama": use_mock_llama,  # Respect the environment variable
+                "use_mock_mistral": use_mock_mistral,  # Respect the environment variable
                 "tokenize_climate_data": lambda self, x: torch.randn(x.shape[0], 8, 256),
                 "tokenize_text": lambda self, x: {
                     "input_ids": torch.randint(1, 1000, (len(x), 32)),
@@ -861,11 +900,11 @@ def aifs_llama_model(test_device, aifs_model):  # pylint: disable=W0621
             model=actual_aifs_model,
             device_str=str(test_device),
             fusion_dim=512,
-            use_mock_llama=use_mock_llama,  # Pass the environment variable value
+            use_mock_mistral=use_mock_mistral,  # Pass the environment variable value
             verbose=True,
         )
 
-    _MODEL_CACHE["aifs_llama_model"] = fusion_model
+    _MODEL_CACHE["aifs_mistral_model"] = fusion_model
     print(f"AIFS+LLM Fusion Model created and cached on {test_device}")
     return fusion_model
 

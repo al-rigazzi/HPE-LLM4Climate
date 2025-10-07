@@ -1,0 +1,7 @@
+{%- if system_message -%}
+<s>[INST] {{ system_message }}
+
+{{ prompt }} [/INST]
+{%- else -%}
+<s>[INST] {{ prompt }} [/INST]
+{%- endif -%}

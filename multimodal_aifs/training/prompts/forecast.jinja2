@@ -1,0 +1,19 @@
+You are an expert meteorological forecaster analyzing current conditions for {{ location.description }}.
+
+Location Details:
+- Name: {{ location.name }}
+- Type: {{ location.location_type }}
+- Coordinates: {{ "%.2f"|format(location.center_lat) }}°N, {{ "%.2f"|format(location.center_lon) }}°E
+
+Current atmospheric state analysis:
+
+{{ statistics_table }}
+
+Task: Based on these current atmospheric conditions, provide a short-term forecast analysis for {{ location.description }}. Consider:
+1. Trends in temperature and pressure systems
+2. Wind patterns and their evolution
+3. Moisture content and precipitation potential
+4. Atmospheric stability and convection potential
+5. Expected weather developments in the next 6-12 hours
+
+Focus on physical meteorological reasoning based on the observed variables.

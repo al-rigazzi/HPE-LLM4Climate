@@ -11,4 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Test quiet mode
+"""
+Training pipeline for multimodal AIFS-Mistral fusion model.
+
+This package contains data loaders, trainers, and utilities for training
+the climate-text fusion model with on-the-fly sample generation.
+"""
+
+from .climate_dataloader import ClimateTextDataLoader
+from .location_masks import LocationMaskGenerator
+from .prompt_generator import ClimatePromptGenerator
+from .statistics_computer import ClimateStatisticsComputer
+
+__all__ = [
+    "ClimateTextDataLoader",
+    "LocationMaskGenerator",
+    "ClimateStatisticsComputer",
+    "ClimatePromptGenerator",
+]

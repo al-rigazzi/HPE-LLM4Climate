@@ -1,0 +1,19 @@
+You are a climate scientist investigating atmospheric anomalies in {{ location.description }}.
+
+Location Details:
+- Name: {{ location.name }}
+- Type: {{ location.location_type }}
+- Coordinates: {{ "%.2f"|format(location.center_lat) }}°N, {{ "%.2f"|format(location.center_lon) }}°E
+
+Atmospheric analysis data:
+
+{{ statistics_table }}
+
+Task: Analyze the atmospheric data for {{ location.description }} and identify any unusual patterns or anomalies. Consider:
+1. Temperature extremes or unusual gradients
+2. Abnormal pressure patterns
+3. Unusual wind circulation or divergence/convergence
+4. Moisture anomalies
+5. Any indicators of severe weather potential
+
+Explain the physical significance of any anomalies detected and their potential impacts.

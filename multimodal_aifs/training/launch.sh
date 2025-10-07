@@ -1,4 +1,8 @@
 #!/bin/bash
+# NOTE: This file belongs to an old iteration of the training infrastructure
+# and is preserved for reference only. The current implementation uses the
+# on-the-fly data loading system in climate_dataloader.py and related modules.
+
 """
 Launch script for multimodal climate-text fusion training
 
