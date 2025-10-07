@@ -81,7 +81,7 @@ class TestClimateTextDataLoaderReal:
             # Let it auto-detect device (will use MPS on macOS to catch compatibility issues)
             dataloader = ClimateTextDataLoader(
                 zarr_paths=[real_test_zarr_path],
-                mistral_model_name="mistralai/Ministral-8B-Instruct-2410",
+                mistral_model_name="mistralai/Mistral-7B-Instruct-v0.3",
                 batch_size=2,
                 samples_per_epoch=5,
                 max_prompt_length=512,
@@ -121,7 +121,7 @@ class TestClimateTextDataLoaderReal:
 
             dataloader = ClimateTextDataLoader(
                 zarr_paths=[real_test_zarr_path],
-                mistral_model_name="mistralai/Ministral-8B-Instruct-2410",
+                mistral_model_name="mistralai/Mistral-7B-Instruct-v0.3",
                 batch_size=4,
                 samples_per_epoch=20,
                 max_prompt_length=1024,
