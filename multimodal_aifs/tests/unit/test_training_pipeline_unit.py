@@ -1,5 +1,6 @@
 """Unit tests for ClimateTextDataLoader using real components instead of mocks."""
 
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -16,6 +17,10 @@ from multimodal_aifs.training.prompt_generator import ClimatePromptGenerator
 from multimodal_aifs.training.statistics_computer import ClimateStatisticsComputer
 
 
+@pytest.mark.skipif(
+    not os.environ.get("HF_TOKEN"),
+    reason="Requires HuggingFace token for accessing gated Mistral models",
+)
 class TestClimateTextDataLoaderReal:
     """Test suite using real components (minimal mocking)."""
 
