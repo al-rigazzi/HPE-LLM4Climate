@@ -38,6 +38,8 @@ The tone of natural language must always be professional, even in comments, docs
 
 # Coding guidelines
 
+- Every file must start with the copyright and license header, if you forget, you can
+  use the header in `scripts/add_license_headers.py`
 - Type hints must follow Python 3.10+ conventions
   * No `Optional[Type]`, use `Type | None`
   * No `Union[TypeA, TypeB]`, use `TypeA | TypeB`
