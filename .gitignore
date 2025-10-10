@@ -16,6 +16,7 @@ coverage*
 *.pyc
 *.tar.gz
 *.tgz
+.DS_Store
 
 # PR description file (local only)
 pr_description.md

@@ -64,7 +64,7 @@ colors = {
 
 
 def create_box(
-    ax, xy, width, height, text, color, text_color="white", fontsize=10, fontweight="bold"
+    ax, xy, width, height, text, color, text_color="white", fontsize=14, fontweight="bold"
 ):
     """Create a professional rounded rectangle box with text"""
     box = FancyBboxPatch(
@@ -134,7 +134,7 @@ ax.text(
     "TimeSeries Tokens ↔ Mistral-7B-Instruct Embeddings Fusion",
     ha="center",
     va="center",
-    fontsize=12,
+    fontsize=14,
     fontweight="normal",
     color="gray",
 )
@@ -161,19 +161,19 @@ math_text = """Multi-Head Cross-Attention:
 6. Residual: Y = LayerNorm(X_text + O)"""
 
 create_box(
-    ax, (0.5, 9.0), 7, 1.5, math_text, colors["math"], "black", fontsize=9, fontweight="normal"
+    ax, (0.5, 9.0), 7, 1.5, math_text, colors["math"], "black", fontsize=13, fontweight="normal"
 )
 
 # =================== ATTENTION COMPUTATION DETAIL ===================
 # Attention matrix visualization
 create_box(
     ax,
-    (8.5, 9.0),
+    (8.0, 9.0),
     3.5,
     1.5,
     "Attention Matrix\nA: [B, 32, 128, 64]\nText pos × Climate pos\nTemperature-scaled\nτ = 0.1 (learnable)",
     colors["attention"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # =================== INPUT TOKEN REPRESENTATIONS ===================
@@ -196,18 +196,18 @@ create_box(
     1,
     "AIFS Climate Embeddings\nX_climate = [B, T, 218]\nB=1, time=2, d_model=218\nFrom AIFS encoder output",
     colors["aifs_tokens"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # Mistral Tokens
 create_box(
     ax,
-    (12, 7),
-    3.5,
+    (11.5, 7),
+    4,
     1,
-    "LLM Text Tokens\nX_text = [B, seq_len, d_llm]\nB=1, seq_len variable, d_llm=768/4096\nFrom climate queries",
+    "LLM Text Tokens\nX_text = [B, seq_len, d_llm]\nB=1, seq_len variable, d_llm=4096\nFrom climate queries",
     colors["mistral_tokens"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # =================== PROJECTION LAYER ===================
@@ -228,9 +228,9 @@ create_box(
     (0.5, 5),
     3.5,
     0.8,
-    "Climate Projector\nW_c: 218 → d_llm\nLinear(218, 768/4096) + LayerNorm",
+    "Climate Projector\nW_c: 218 → d_llm\nLinear(218, 4096) + LayerNorm",
     colors["projection"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # Projected Climate Tokens
@@ -241,7 +241,7 @@ create_box(
     0.8,
     "Projected Climate\nX'_climate = [B, T, d_llm]\nAligned with LLM dim",
     colors["projection"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # =================== MULTI-HEAD ATTENTION ===================
@@ -265,7 +265,7 @@ create_box(
     0.8,
     "Query Projection\nQ = X_text · W_Q\nQ: [B, 128, 4096]",
     colors["attention"],
-    fontsize=8,
+    fontsize=11,
 )
 
 create_box(
@@ -275,7 +275,7 @@ create_box(
     0.8,
     "Key Projection\nK = X'_climate · W_K\nK: [B, 64, 4096]",
     colors["attention"],
-    fontsize=8,
+    fontsize=11,
 )
 
 create_box(
@@ -285,7 +285,7 @@ create_box(
     0.8,
     "Value Projection\nV = X'_climate · W_V\nV: [B, 64, 4096]",
     colors["attention"],
-    fontsize=8,
+    fontsize=11,
 )
 
 create_box(
@@ -295,7 +295,7 @@ create_box(
     0.8,
     "Multi-Head Split\n32 heads of d_k=128\nParallel computation",
     colors["attention"],
-    fontsize=8,
+    fontsize=11,
 )
 
 create_box(
@@ -305,14 +305,14 @@ create_box(
     0.8,
     "Attention Computation\nA_h = softmax(Q_h K_h^T / √d_k)\nPer-head attention weights",
     colors["attention"],
-    fontsize=8,
+    fontsize=11,
 )
 
 
 # =================== OUTPUT FUSION ===================
 ax.text(
     8,
-    0.9,
+    1.9,
     "Output Fusion & Integration",
     ha="center",
     va="center",
@@ -324,56 +324,56 @@ ax.text(
 # Concatenation
 create_box(
     ax,
-    (0.5, 0.1),
+    (0.5, 1.1),
     3,
     0.6,
     "Head Concatenation\nConcat(O_1,...,O_32)\n[B, 128, 4096]",
     colors["output"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # Output projection
 create_box(
     ax,
-    (4, 0.1),
+    (4, 1.1),
     3,
     0.6,
     "Output Projection\nW_O: 4096 → 4096\nLinear + Dropout",
     colors["output"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # Final output
 create_box(
     ax,
-    (7.5, 0.1),
+    (7.5, 1.1),
     4,
     0.6,
     "Fused Embeddings\nY = [B, 128, 4096]\nText enhanced with climate context\nReady for Mistral decoder",
     colors["output"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # =================== ARROWS ===================
 # Input flow
 create_arrow(ax, (2.25, 7), (2.25, 5.8), colors["aifs_tokens"])
-create_arrow(ax, (4, 5.4), (5, 5.4), colors["projection"])
+create_arrow(ax, (3.25, 5.4), (5, 5.4), colors["projection"])
 
 # Projection flow
-create_arrow(ax, (6.5, 5), (1.6, 3.6), colors["projection"])  # To Q
-create_arrow(ax, (6.5, 5), (4.1, 3.6), colors["projection"])  # To K
-create_arrow(ax, (6.5, 5), (6.6, 3.6), colors["projection"])  # To V
+create_arrow(ax, (6.6, 4.95), (1.6, 3.6), colors["projection"])  # To Q
+create_arrow(ax, (6.6, 4.95), (4.1, 3.6), colors["projection"])  # To K
+create_arrow(ax, (6.6, 4.95), (6.6, 3.6), colors["projection"])  # To V
 
-create_arrow(ax, (13.75, 7), (1.6, 3.6), colors["mistral_tokens"])  # Text to Q
+create_arrow(ax, (13.5, 7), (1.6, 3.6), colors["mistral_tokens"])  # Text to Q
 
 # Attention computation flow
 create_arrow(ax, (7.8, 2.8), (8.5, 2.8), colors["attention"])  # To Multi-head split
 create_arrow(ax, (11.2, 2.8), (12, 2.8), colors["attention"])  # To Attention computation
 
 # Output flow
-create_arrow(ax, (13.75, 2.8), (2, 0.7), colors["attention"])  # From attention to concatenation
-create_arrow(ax, (3.5, 0.1), (4, 0.4), colors["output"])  # Concat to projection
-create_arrow(ax, (7, 0.1), (7.5, 0.4), colors["output"])  # Projection to fused
+create_arrow(ax, (13.75, 2.8), (2, 1.7), colors["attention"])  # From attention to concatenation
+create_arrow(ax, (3.5, 1.4), (4, 1.4), colors["output"])  # Concat to projection
+create_arrow(ax, (7, 1.4), (7.5, 1.4), colors["output"])  # Projection to fused
 
 # =================== TECHNICAL ANNOTATIONS ===================
 # Dimension annotations
@@ -382,7 +382,7 @@ ax.annotate(
     xy=(6.5, 5.65),
     xytext=(9, 6.5),
     arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
-    fontsize=8,
+    fontsize=11,
     color="gray",
 )
 
@@ -391,16 +391,16 @@ ax.annotate(
     xy=(9.7, 3.6),
     xytext=(10.5, 4.5),
     arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
-    fontsize=8,
+    fontsize=11,
     color="gray",
 )
 
 ax.annotate(
     "Cross-modal\nattention matrix",
-    xy=(10.25, 9.25),
-    xytext=(13, 8.5),
+    xy=(9.75, 9.25),
+    xytext=(12.5, 8.5),
     arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
-    fontsize=8,
+    fontsize=11,
     color="gray",
 )
 
@@ -408,12 +408,12 @@ ax.annotate(
 specs_text = """AIFS Cross-Attention Specifications:
 
 Input Dimensions:
-  - Climate: [B, T, 218] → projected to [B, T, d_llm]
-  - Text: [B, seq_len, d_llm] (native LLM dimension: 768 or 4096)
+  - Climate: [B, T, 218] → projected to [B, T, 4096]
+  - Text: [B, seq_len, 4096] (Mistral-7B dimension)
 
 Multi-Head Configuration:
-  - Heads: 32 (for Mistral-7B-Instruct) or 12 (for smaller models)
-  - Per-head dimension: 128 (4096 ÷ 32) or 64 (768 ÷ 12)
+  - Heads: 32 (Mistral-7B-Instruct)
+  - Per-head dimension: 128 (4096 ÷ 32)
   - Total parameters: ~67M for attention layers
 
 Attention Mechanism:
@@ -422,16 +422,29 @@ Attention Mechanism:
   - Temperature scaling: learnable τ ∈ [0.01, 1.0]
   - Dropout: 0.1 during training"""
 
-create_box(
-    ax,
-    (12.5, 9.0),
-    3.2,
+# Create the box
+box = FancyBboxPatch(
+    (12.2, 9.0),
+    3.6,
     2.5,
+    boxstyle="round,pad=0.1",
+    facecolor=colors["background"],
+    edgecolor="black",
+    linewidth=1.5,
+    alpha=0.9,
+)
+ax.add_patch(box)
+
+# Add left-aligned text
+ax.text(
+    12.2,  # Left margin
+    11.5,  # Near top of box (box top is at 9.0 + 2.5 = 11.5)
     specs_text,
-    colors["background"],
-    "black",
-    fontsize=7,
+    ha="left",
+    va="top",
+    fontsize=10,
     fontweight="normal",
+    color="black",
 )
 
 # Save the diagram (PDF only as requested)
@@ -440,11 +453,4 @@ pdf_path = output_dir / "aifs_cross_attention_detail.pdf"
 plt.tight_layout()
 plt.savefig(str(pdf_path), dpi=300, bbox_inches="tight", facecolor="white", edgecolor="none")
 
-print("AIFS Cross-Attention Detail Diagram saved as:")
-print(f"    {pdf_path}")
-print("\nDiagram shows:")
-print("   AIFS climate data processing")
-print("   Dimension alignment (218 → d_llm)")
-print("   Multi-head attention computation")
-print("   Mathematical formulation details")
-print("   Tensor dimension tracking")
+print(f"AIFS Cross-Attention Detail Diagram saved as: {pdf_path}")

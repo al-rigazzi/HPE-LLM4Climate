@@ -71,7 +71,7 @@ colors = {
 
 # Helper function to create professional boxes
 def create_box(
-    ax, xy, width, height, text, color, text_color="white", fontsize=10, fontweight="bold"
+    ax, xy, width, height, text, color, text_color="white", fontsize=14, fontweight="bold"
 ):
     """Create a professional rounded rectangle box with text"""
     box = FancyBboxPatch(
@@ -128,7 +128,7 @@ def create_arrow(ax, start, end, color="black", style="->", linewidth=2):
 ax.text(
     9,
     13.2,
-    "AIFS Multimodal Climate AI Architecture (2025)",
+    "AIFS Multimodal Climate AI Architecture",
     ha="center",
     va="center",
     fontsize=20,
@@ -155,11 +155,11 @@ ax.text(
 create_box(
     ax,
     (0.5, 10.5),
-    4,
+    5,
     1.2,
     "ECMWF Climate Data\n(Zarr/GRIB Format)\n5D Format: [batch, time, ensemble, grid, vars]\nExample: [1, 2, 1, 542080, 103]\nSurface + 13 Pressure levels",
     colors["data"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # Text Query Input
@@ -170,7 +170,7 @@ create_box(
     1.2,
     'Climate Text Queries\n"Analyze temperature patterns"\n"Predict extreme weather"\nTokenized: [B, seq_len]\n[2, 512 tokens]',
     colors["data"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # =================== AIFS ENCODER LAYER ===================
@@ -193,7 +193,7 @@ create_box(
     1.2,
     "AIFS Complete Encoder (Pre-trained ECMWF)\nGraphTransformerForwardMapper\n19.9M parameters (encoder only)\nInput: 103 variables → Raw output: 102 dims\nProjection: 102 → 218 embeddings\nSpatial processing: 542,080 grid points",
     colors["aifs"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # =================== MISTRAL PROCESSING LAYER ===================
@@ -216,7 +216,7 @@ create_box(
     1.2,
     "Mistral-7B-Instruct-v0.3 Language Model\n7.25B parameters (frozen)\n32 transformer layers\n4096 hidden dimensions\n32 attention heads",
     colors["mistral"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # =================== FUSION LAYER ===================
@@ -239,7 +239,7 @@ create_box(
     1.3,
     "Climate Projection\nAIFS features: 218 → 768/4096\nLinear projection layer\nLayer normalization\nAdapted for LLM dimension",
     colors["fusion"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # Cross-Modal Fusion
@@ -250,7 +250,7 @@ create_box(
     1.3,
     "Fusion Mechanisms\nElement-wise addition\nGated fusion\nCross-attention (optional)\nResidual connections",
     colors["fusion"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # Location-Aware Processing
@@ -261,7 +261,7 @@ create_box(
     1.3,
     "Location-Aware Features\nSpatial attention\nGeographic cropping\nRegional climate analysis\nCoordinate embeddings",
     colors["encoder"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # =================== MODEL INTEGRATION LAYER ===================
@@ -284,7 +284,7 @@ create_box(
     1.2,
     "Climate Encoder (Configurable)\nAIFS encoder output: 218 dims\nProjection to LLM space: 218 → 768/4096\nTrainable fusion layers\nFrozen Mistral-7B-Instruct backbone",
     colors["aifs"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # Integrated Output
@@ -295,7 +295,7 @@ create_box(
     1.2,
     "Integrated Model Output\nJoint climate-text embeddings\nClimate-aware text generation\nMulti-task capabilities\nReal-time inference",
     colors["fusion"],
-    fontsize=9,
+    fontsize=13,
 )
 
 # =================== OUTPUT LAYER ===================
@@ -318,12 +318,12 @@ create_box(
     1.2,
     "Climate-Text Analysis Outputs\nClimate-aware text generation\nWeather pattern explanations\nScientific insights & predictions\nLocation-specific analysis\nReal-time climate responses",
     colors["output"],
-    fontsize=10,
+    fontsize=14,
 )
 
 # =================== ARROWS ===================
 # Data flow arrows from inputs to processing
-create_arrow(ax, (2.5, 10.5), (4, 9.2), colors["aifs"])
+create_arrow(ax, (3.0, 10.5), (4, 9.2), colors["aifs"])
 create_arrow(ax, (15.5, 10.5), (13.2, 9.2), colors["mistral"])
 
 # Processing to fusion
@@ -338,7 +338,6 @@ create_arrow(ax, (14.7, 5.5), (10.5, 4.2), colors["encoder"])
 # Integration to output
 create_arrow(ax, (3.5, 3), (7.5, 1.7), colors["aifs"])
 create_arrow(ax, (9.5, 3), (9, 1.7), colors["fusion"])
-create_arrow(ax, (15, 3), (10.5, 1.7), colors["background"])
 
 # =================== TECHNICAL SPECIFICATIONS ===================
 # Add technical specs box in bottom right corner
@@ -357,7 +356,7 @@ ax.text(
     0.02,
     specs_text,
     transform=ax.transAxes,
-    fontsize=8,
+    fontsize=12,
     verticalalignment="bottom",
     horizontalalignment="right",
     bbox=dict(boxstyle="round,pad=0.3", facecolor=colors["background"], alpha=0.8),
@@ -381,10 +380,10 @@ ax.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(1, 0.98), 
 # Add dimension annotations
 ax.annotate(
     "ECMWF Climate Data\n[B, T, E, G, V] format\nCached arrays for fast access",
-    xy=(2.5, 11.1),
-    xytext=(5, 12),
+    xy=(3, 11.1),
+    xytext=(5.75, 10.25),
     arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
-    fontsize=8,
+    fontsize=10,
     color="gray",
 )
 
@@ -393,7 +392,7 @@ ax.annotate(
     xy=(4, 8.6),
     xytext=(1, 9.8),
     arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
-    fontsize=8,
+    fontsize=10,
     color="gray",
 )
 
