@@ -52,6 +52,13 @@ Homepage = "https://github.com/al-rigazzi/HPE-LLM4Climate"
 Repository = "https://github.com/al-rigazzi/HPE-LLM4Climate"
 Issues = "https://github.com/al-rigazzi/HPE-LLM4Climate/issues"
 
+[tool.setuptools]
+# Explicitly specify which packages to include
+packages = ["multimodal_aifs"]
+
+[tool.setuptools.package-data]
+multimodal_aifs = ["py.typed"]
+
 [tool.pylint.main]
 # Specify a score threshold to be exceeded before program exits with error.
 fail-under = 10.0
