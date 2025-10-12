@@ -896,7 +896,8 @@ def test_climate_data_fusion(test_device, zarr_dataset_path):  # pylint: disable
     all_vars = []
     for var_name in ALL_AIFS_VARIABLES:
         if var_name in ds:
-            var_data = torch.from_numpy(ds[var_name].values)  # [time, grid_point]
+            # Convert to float32 for MPS compatibility
+            var_data = torch.from_numpy(ds[var_name].values).float()  # [time, grid_point]
             all_vars.append(var_data)
         else:
             # If variable missing, fill with zeros
@@ -938,7 +939,8 @@ def test_climate_data(test_device, zarr_dataset_path):  # pylint: disable=W0621
     all_vars = []
     for var_name in ALL_AIFS_VARIABLES:
         if var_name in ds:
-            var_data = torch.from_numpy(ds[var_name].values)  # [time, grid_point]
+            # Convert to float32 first for MPS compatibility, then to target dtype
+            var_data = torch.from_numpy(ds[var_name].values).float()  # [time, grid_point]
             all_vars.append(var_data)
         else:
             # If variable missing, fill with zeros
