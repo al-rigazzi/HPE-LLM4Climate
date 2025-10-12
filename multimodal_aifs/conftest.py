@@ -897,11 +897,11 @@ def test_climate_data_fusion(test_device, zarr_dataset_path):  # pylint: disable
     for var_name in ALL_AIFS_VARIABLES:
         if var_name in ds:
             # Convert to float32 for MPS compatibility
-            var_data = torch.from_numpy(ds[var_name].values).float()  # [time, grid_point]
+            var_data = torch.from_numpy(ds[var_name].values).float().to(test_device)
             all_vars.append(var_data)
         else:
-            # If variable missing, fill with zeros
-            var_data = torch.zeros(2, AIFS_GRID_POINTS)
+            # If variable missing, fill with zeros on the correct device
+            var_data = torch.zeros(2, AIFS_GRID_POINTS, device=test_device)
             all_vars.append(var_data)
 
     # Stack variables: [time, grid_point, n_vars]
@@ -909,7 +909,6 @@ def test_climate_data_fusion(test_device, zarr_dataset_path):  # pylint: disable
 
     # Reshape to AIFS format: [batch, time, ensemble, grid, vars]
     climate_data = climate_tensor.unsqueeze(0).unsqueeze(2)  # [1, time, 1, grid, vars]
-    climate_data = climate_data.to(test_device)
 
     text_inputs = ["Predict weather patterns based on the climate data."]
     return climate_data, text_inputs
@@ -940,31 +939,30 @@ def test_climate_data(test_device, zarr_dataset_path):  # pylint: disable=W0621
     for var_name in ALL_AIFS_VARIABLES:
         if var_name in ds:
             # Convert to float32 first for MPS compatibility, then to target dtype
-            var_data = torch.from_numpy(ds[var_name].values).float()  # [time, grid_point]
+            var_data = torch.from_numpy(ds[var_name].values).float().to(device)
             all_vars.append(var_data)
         else:
-            # If variable missing, fill with zeros
-            var_data = torch.zeros(2, AIFS_GRID_POINTS)
+            # If variable missing, fill with zeros on the correct device
+            var_data = torch.zeros(2, AIFS_GRID_POINTS, device=device)
             all_vars.append(var_data)
 
     # Stack variables: [time, grid_point, n_vars]
     climate_tensor = torch.stack(all_vars, dim=-1)  # [time, grid_point, vars]
 
     # Reshape to AIFS format: [batch, time, ensemble, grid, vars]
-    tensor_5d = climate_tensor.unsqueeze(0).unsqueeze(2)  # [1, time, 1, grid, vars]
-    tensor_5d = tensor_5d.to(dtype).to(device)
+    tensor_5d = climate_tensor.unsqueeze(0).unsqueeze(2).to(dtype)  # [1, time, 1, grid, vars]
 
     # Create 4D tensor by taking first timestep and reshaping spatially
     # [batch, vars, height, width] - reshape grid_points to approximate spatial
     grid_size = int(np.sqrt(AIFS_GRID_POINTS))  # Approximate square grid
     tensor_4d_flat = climate_tensor[0, :, :AIFS_INPUT_VARIABLES]  # [grid, vars]
-    tensor_4d = tensor_4d_flat.T.reshape(1, AIFS_INPUT_VARIABLES, grid_size, grid_size)
-    tensor_4d = tensor_4d.to(dtype).to(device)
+    tensor_4d = tensor_4d_flat.T.reshape(1, AIFS_INPUT_VARIABLES, grid_size, grid_size).to(dtype)
 
     # Create 2D tensor for encoder testing
     # [batch, features] - take mean across grid points
-    tensor_2d = climate_tensor[0, :, :AIFS_PROJECTED_ENCODER_OUTPUT_DIM].mean(dim=0).unsqueeze(0)
-    tensor_2d = tensor_2d.to(dtype).to(device)
+    tensor_2d = (
+        climate_tensor[0, :, :AIFS_PROJECTED_ENCODER_OUTPUT_DIM].mean(dim=0).unsqueeze(0).to(dtype)
+    )
 
     return {
         "tensor_5d": tensor_5d,
