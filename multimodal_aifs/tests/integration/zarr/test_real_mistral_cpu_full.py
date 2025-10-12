@@ -29,10 +29,8 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
-import torch.nn.functional as F
 
 # Add project root to path
 project_root = Path(__file__).parent
@@ -46,7 +44,6 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
     """Test real Mistral model with AIFS on CPU with full integration."""
 
     try:
-        from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
         from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
         print("Modules imported")
@@ -60,7 +57,7 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
         pytest.skip("USE_MOCK_LLM is enabled, skipping real Mistral test")
 
     # Step 1: Load minimal climate data
-    print(f"\nStep 1: Loading Climate Data")
+    print("\nStep 1: Loading Climate Data")
     print("-" * 30)
 
     try:
@@ -81,7 +78,7 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
         pytest.fail(f"Failed to load climate data: {e}")
 
     # Step 2: Use the pre-configured fusion model
-    print(f"\n🤖 Step 2: Using Fusion Model from Fixture")
+    print("\n🤖 Step 2: Using Fusion Model from Fixture")
     print("-" * 50)
 
     # Check if model was created successfully
@@ -91,7 +88,7 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
 
     # Use the pre-configured fusion model from fixture
     model = aifs_mistral_model
-    print(f"   Using fusion model from fixture")
+    print("   Using fusion model from fixture")
     print(f"   Hidden size: {model.mistral_hidden_size}")
 
     # Check if we actually got real Mistral
@@ -104,7 +101,7 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
         pytest.skip("Real Mistral model not available, test skipped")
 
     # Step 3: Test AIFS tokenization
-    print(f"\nStep 3: AIFS Climate Tokenization")
+    print("\nStep 3: AIFS Climate Tokenization")
     print("-" * 30)
 
     try:
@@ -116,7 +113,7 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
         pytest.fail(f"Climate tokenization failed: {e}")
 
     # Step 4: Test real Mistral text processing
-    print(f"\nStep 4: Real Mistral Text Processing")
+    print("\nStep 4: Real Mistral Text Processing")
     print("-" * 30)
 
     try:
@@ -138,7 +135,7 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
         pytest.fail(f"Text processing failed: {e}")
 
     # Step 5: Test real multimodal processing (lightweight)
-    print(f"\n🔗 Step 5: Real Multimodal Processing")
+    print("\n🔗 Step 5: Real Multimodal Processing")
     print("-" * 30)
 
     try:
@@ -163,11 +160,11 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
 
     except Exception as e:
         print(f"Multimodal processing failed: {e}")
-        print(f"   This is expected on systems with limited RAM")
+        print("   This is expected on systems with limited RAM")
         pytest.fail(f"Multimodal processing failed: {e}")
 
     # Step 6: Memory usage analysis
-    print(f"\nStep 6: Memory Analysis")
+    print("\nStep 6: Memory Analysis")
     print("-" * 30)
 
     try:
@@ -190,28 +187,28 @@ def test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr
         print(f"Memory analysis incomplete: {e}")
 
     # Cleanup
-    print(f"\n🧹 Cleanup")
+    print("\n🧹 Cleanup")
     print("-" * 10)
     try:
         del model
         gc.collect()
         print("Memory cleaned up")
-    except:
+    except RuntimeError:
         pass
 
-    print(f"\nReal Mistral CPU Test Complete!")
-    print(f"Successfully demonstrated:")
-    print(f"   Zarr → AIFS tokenization")
-    print(f"   🤖 Real Mistral-7B-Instruct-v0.3 loading")
-    print(f"   Real Mistral text processing")
-    print(f"   🔗 Multimodal fusion")
-    print(f"   CPU execution (full precision)")
+    print("\nReal Mistral CPU Test Complete!")
+    print("Successfully demonstrated:")
+    print("   Zarr → AIFS tokenization")
+    print("   🤖 Real Mistral-7B-Instruct-v0.3 loading")
+    print("   Real Mistral text processing")
+    print("   🔗 Multimodal fusion")
+    print("   CPU execution (full precision)")
     # Test passes by reaching this point without failures
 
 
 def test_memory_requirements():
     """Test what happens with memory constraints."""
-    print(f"\nMemory Requirements Test")
+    print("\nMemory Requirements Test")
     print("-" * 30)
 
     try:
@@ -225,13 +222,13 @@ def test_memory_requirements():
         # Estimate if Mistral will fit
         estimated_need = 16  # GB
         if mem.available / 1e9 >= estimated_need:
-            print(f"   Should be able to load Mistral-7B-Instruct")
+            print("   Should be able to load Mistral-7B-Instruct")
         else:
-            print(f"   May struggle to load Mistral-7B-Instruct")
-            print(f"   Recommended: Close other applications")
+            print("   May struggle to load Mistral-7B-Instruct")
+            print("   Recommended: Close other applications")
 
     except ImportError:
-        print(f"   Cannot check memory (psutil not installed)")
+        print("   Cannot check memory (psutil not installed)")
 
 
 def main():
@@ -249,27 +246,24 @@ def main():
     test_memory_requirements()
 
     # Warning about loading time
-    print(f"\nImportant Notes:")
-    print(f"   First run will download ~16GB model")
-    print(f"   Loading may take 2-5 minutes")
-    print(f"   Processing will be slow on CPU")
-    print(f"   Requires 16+ GB RAM")
+    print("\nImportant Notes:")
+    print("   First run will download ~16GB model")
+    print("   Loading may take 2-5 minutes")
+    print("   Processing will be slow on CPU")
+    print("   Requires 16+ GB RAM")
 
-    response = input(f"\n   Continue with real Mistral test? (y/N): ")
+    response = input("\n   Continue with real Mistral test? (y/N): ")
     if response.lower() != "y":
-        print(f"   Test cancelled")
+        print("   Test cancelled")
         return
 
     # Create fixtures manually for standalone execution
-    print(f"\nSetting up test fixtures...")
+    print("\nSetting up test fixtures...")
 
     # Create test device
-    if torch.cuda.is_available():
-        test_device = torch.device("cuda")
-    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        test_device = torch.device("mps")
-    else:
-        test_device = torch.device("cpu")
+    from multimodal_aifs.utils import get_best_device
+
+    test_device = get_best_device()
     print(f"   📱 Using device: {test_device}")
 
     # Create LLM mock status
@@ -293,11 +287,8 @@ def main():
         return
 
     # Create AIFS model fixture manually
-    print(f"\n🏗️ Creating AIFS model...")
+    print("\n🏗️ Creating AIFS model...")
     try:
-        # Import the wrapper from conftest.py
-        import sys
-
         sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
         from multimodal_aifs.conftest import AIFSClimateTextFusionWrapper
 
@@ -315,11 +306,11 @@ def main():
                     use_mock_mistral=False,
                     verbose=True,
                 )
-                print(f"   Note: AIFS model loading not fully implemented in standalone script")
-                print(f"   For full functionality, run as pytest test")
+                print("   Note: AIFS model loading not fully implemented in standalone script")
+                print("   For full functionality, run as pytest test")
             except Exception as e:
                 print(f"   Failed to load real AIFS model: {e}")
-                print(f"   Falling back to mock model")
+                print("   Falling back to mock model")
                 aifs_mistral_model = None
         else:
             print(f"   AIFS model not found at {aifs_model_path}, using mock")
@@ -330,16 +321,13 @@ def main():
         return
 
     # Run the test with manually created fixtures
-    success = test_real_mistral_cpu(
-        llm_mock_status, aifs_mistral_model, test_device, zarr_dataset_path
-    )
-
-    if success:
-        print(f"\n🏆 SUCCESS: Real Mistral-7B-Instruct working on CPU!")
-        print(f"Your system can run the full AIFS + Mistral pipeline")
-    else:
-        print(f"\n💥 FAILED: Real Mistral couldn't run on this system")
-        print(f"Consider using the mock version for development")
+    try:
+        test_real_mistral_cpu(llm_mock_status, aifs_mistral_model, test_device, zarr_dataset_path)
+        print("\n🏆 SUCCESS: Real Mistral-7B-Instruct working on CPU!")
+        print("Your system can run the full AIFS + Mistral pipeline")
+    except Exception:
+        print("\n💥 FAILED: Real Mistral couldn't run on this system")
+        print("Consider using the mock version for development")
 
 
 if __name__ == "__main__":

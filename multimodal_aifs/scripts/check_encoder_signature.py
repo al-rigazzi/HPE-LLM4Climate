@@ -23,9 +23,9 @@ from pathlib import Path
 
 # Add current directory to path for imports
 sys.path.append(str(Path(__file__).parent))
-sys.path.append("extracted_models")
+sys.path.append(str(Path(__file__).parent.parent / "models" / "extracted_models"))
 
-from load_aifs_encoder import load_aifs_encoder
+from load_aifs_encoder import load_aifs_encoder  # pylint: disable=import-error
 
 
 def analyze_encoder_signature():
@@ -46,9 +46,8 @@ def analyze_encoder_signature():
 
     print("\n📌 Parameters:")
     for param_name, param in signature.parameters.items():
-        print(
-            f"   {param_name}: {param.annotation if param.annotation != inspect.Parameter.empty else 'Any'}"
-        )
+        annotation = param.annotation if param.annotation != inspect.Parameter.empty else "Any"
+        print(f"   {param_name}: {annotation}")
         if param.default != inspect.Parameter.empty:
             print(f"      Default: {param.default}")
 

@@ -61,7 +61,7 @@ All diagrams are generated in PDF format for professional presentations and docu
 
 ### AIFS Architecture Features
 - **Data Source**: ECMWF climate data (GRIB/Cached Arrays)
-- **Model**: AIFS-Single-1.0 (Encoder extracted, 19.9M parameters)
+- **Model**: AIFS-Single-1.1 (Encoder extracted, 19.9M parameters)
 - **Processing**: Direct encoder integration (no tokenization)
 - **Integration**: Mistral-7B-Instruct-v0.3 language model (7.25B parameters)
 - **Fusion**: Element-wise addition, gated fusion, cross-attention

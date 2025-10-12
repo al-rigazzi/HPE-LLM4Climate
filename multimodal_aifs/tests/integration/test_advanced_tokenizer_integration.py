@@ -17,11 +17,11 @@ Test  AIFS Time Series Tokenizer
 
 This test validates that the updated tokenizer works with the new AIFSCompleteEncoder interface.
 """
+# pylint: disable=redefined-outer-name
+
 
 import sys
 from pathlib import Path
-
-import torch
 
 # Add project root to path
 project_root = Path(__file__).parent

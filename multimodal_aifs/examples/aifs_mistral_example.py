@@ -137,7 +137,7 @@ def demonstrate_aifs_mistral_fusion():
 
         from anemoi.inference.runners.simple import SimpleRunner
 
-        checkpoint = {"huggingface": "ecmwf/aifs-single-1.0"}
+        checkpoint = {"huggingface": "ecmwf/aifs-single-1.1"}
         runner = SimpleRunner(checkpoint, device="cpu")
         aifs_model = runner.model
         print("   Real AIFS model loaded")
@@ -312,7 +312,7 @@ def main():
 
         from anemoi.inference.runners.simple import SimpleRunner
 
-        checkpoint = {"huggingface": "ecmwf/aifs-single-1.0"}
+        checkpoint = {"huggingface": "ecmwf/aifs-single-1.1"}
         runner = SimpleRunner(checkpoint, device="cpu")
         aifs_model = runner.model
         print("AIFS model loaded for demo")

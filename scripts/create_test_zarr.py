@@ -37,7 +37,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 try:
-    import zarr
+    import zarr  # type: ignore[import-untyped]
 
     print(f"Using zarr version: {zarr.__version__}")
 except ImportError:
@@ -263,9 +263,10 @@ def create_synthetic_zarr_dataset(
 
     num_vars = len(selected_vars)
     # Create the complete dataset
+    grid_points: int = config["grid_points"]  # type: ignore[assignment]
     ds = xr.Dataset(
         data_vars,
-        coords={"time": times, "grid_point": np.arange(config["grid_points"])},
+        coords={"time": times, "grid_point": np.arange(grid_points)},
         attrs={
             "title": f"Synthetic AIFS-Compatible Climate Test Dataset ({size})",
             "description": config["description"],

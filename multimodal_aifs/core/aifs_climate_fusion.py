@@ -249,14 +249,11 @@ class AIFSClimateTextFusion(nn.Module):
             Encoded text features
         """
         if text_embeddings is None:
-            # Simple embedding for now - in practice, use a proper text encoder
-            # Create embeddings for each text but average them to get single representation
-            num_texts = len(texts)
-            text_embeddings = torch.randn(
-                num_texts, self.text_dim, device=self.device, dtype=self.dtype
+            raise ValueError(
+                "text_embeddings must be provided. "
+                "Use a proper text encoder (e.g., sentence-transformers, BERT) "
+                "to generate embeddings before calling this method."
             )
-            # Average across texts to get single text representation
-            text_embeddings = text_embeddings.mean(dim=0, keepdim=True)  # [1, text_dim]
 
         # Project to fusion dimension
         projected = self.text_projection(text_embeddings)

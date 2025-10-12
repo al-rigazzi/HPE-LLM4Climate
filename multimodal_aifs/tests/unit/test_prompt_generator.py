@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-b"""Unit tests for ClimatePromptGenerator with Jinja2 templates."""
+"""Unit tests for ClimatePromptGenerator with Jinja2 templates."""
+
+# pylint: disable=protected-access
 
 import tempfile
 from pathlib import Path
@@ -22,6 +24,8 @@ import pytest
 from multimodal_aifs.training.location_masks import Location
 from multimodal_aifs.training.prompt_generator import ClimatePromptGenerator
 from multimodal_aifs.training.statistics_computer import VariableStatistics
+
+# pylint: disable=too-many-public-methods
 
 
 class TestClimatePromptGenerator:
@@ -536,7 +540,7 @@ class TestPromptTemplateFiles:
 
         env = Environment(loader=FileSystemLoader(str(templates_dir)))
 
-        template_files = [f for f in templates_dir.glob("*.jinja2")]
+        template_files = list(templates_dir.glob("*.jinja2"))
         assert len(template_files) > 0, "No template files found"
 
         for template_file in template_files:

@@ -43,11 +43,13 @@ class AIFSMultimodalInference:
     """Inference engine for trained multimodal models."""
 
     def __init__(self, checkpoint_path: str, device: str = "auto"):
+        from multimodal_aifs.utils import get_best_device
+
         self.checkpoint_path = Path(checkpoint_path)
 
         # Auto-detect device
         if device == "auto":
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.device = get_best_device()
         else:
             self.device = torch.device(device)
 
@@ -71,7 +73,7 @@ class AIFSMultimodalInference:
         """Load the trained AIFS model."""
         # Initialize model with same config used during training
         model = AIFSClimateTextFusion(
-            aifs_encoder_path=self.config["model"]["aifs_encoder_path"],
+            aifs_checkpoint_path=self.config["model"]["aifs_encoder_path"],
             climate_dim=self.config["model"].get("climate_dim", 1024),
             text_dim=self.config["model"].get("text_dim", 768),
             fusion_dim=self.config["model"].get("fusion_dim", 512),

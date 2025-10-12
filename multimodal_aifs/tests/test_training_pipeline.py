@@ -16,8 +16,6 @@
 import sys
 from pathlib import Path
 
-import torch
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from multimodal_aifs.training import ClimateTextDataLoader
@@ -36,7 +34,7 @@ def test_sample_generation():
         print(f"\nTest Zarr file not found at {zarr_path}")
         raise FileNotFoundError(f"Required test data not found: {zarr_path}")
 
-    print(f"\nInitializing DataLoader with Ministral-8B-Instruct-2410...")
+    print("\nInitializing DataLoader with Ministral-8B-Instruct-2410...")
     print(f"Zarr path: {zarr_path}")
     print("\nNote: Requires HuggingFace authentication for gated model")
     print("If not authenticated, run: huggingface-cli login")
@@ -45,11 +43,11 @@ def test_sample_generation():
         zarr_paths=str(zarr_path),
         samples_per_epoch=3,
         cache_mistral_model=True,
-        device="cpu",  # Use CPU for model inference
+        device="cpu",  # Use CPU for modelerence
         seed=42,
     )
 
-    print(f"DataLoader initialized successfully")
+    print("DataLoader initialized successfully")
     print(f"Samples per epoch: {len(dataloader)}")
 
     # Generate samples
@@ -75,7 +73,7 @@ def test_sample_generation():
 
         # Show first sample's response preview
         if i == 0:
-            print(f"\n--- Mistral Response Preview (Sample 1) ---")
+            print("\n--- Mistral Response Preview (Sample 1) ---")
             print(
                 sample.llm_response[:300] + "..."
                 if len(sample.llm_response) > 300
@@ -86,36 +84,36 @@ def test_sample_generation():
         assert sample.climate_tensor_t1.shape == (
             expected_grid,
             expected_vars,
-        ), f"Sample {i+1}: Wrong t1 shape: {sample.climate_tensor_t1.shape}"
+        ), "Sample {i+1}: Wrong t1 shape: {sample.climate_tensor_t1.shape}"
         assert sample.climate_tensor_t2.shape == (
             expected_grid,
             expected_vars,
-        ), f"Sample {i+1}: Wrong t2 shape: {sample.climate_tensor_t2.shape}"
+        ), "Sample {i+1}: Wrong t2 shape: {sample.climate_tensor_t2.shape}"
         assert sample.aifs_input_tensor.shape == (
             1,
             2,
             1,
             expected_grid,
             expected_vars,
-        ), f"Sample {i+1}: Wrong AIFS shape: {sample.aifs_input_tensor.shape}"
+        ), "Sample {i+1}: Wrong AIFS shape: {sample.aifs_input_tensor.shape}"
         assert sample.mask.shape == (
             expected_grid,
-        ), f"Sample {i+1}: Wrong mask shape: {sample.mask.shape}"
+        ), "Sample {i+1}: Wrong mask shape: {sample.mask.shape}"
 
         # Verify mask has some points selected
-        assert sample.mask.sum() > 0, f"Sample {i+1}: Mask has no points selected"
+        assert sample.mask.sum() > 0, "Sample {i+1}: Mask has no points selected"
 
         # Verify text is not empty
-        assert len(sample.prompt) > 0, f"Sample {i+1}: Prompt is empty"
-        assert len(sample.llm_response) > 0, f"Sample {i+1}: Response is empty"
+        assert len(sample.prompt) > 0, "Sample {i+1}: Prompt is empty"
+        assert len(sample.llm_response) > 0, "Sample {i+1}: Response is empty"
 
         # Verify statistics table exists
-        assert len(sample.statistics_table) > 0, f"Sample {i+1}: Statistics table is empty"
+        assert len(sample.statistics_table) > 0, "Sample {i+1}: Statistics table is empty"
 
         # Verify timesteps are consecutive
         assert (
             sample.timestep_2_index == sample.timestep_1_index + 1
-        ), f"Sample {i+1}: Timesteps are not consecutive"
+        ), "Sample {i+1}: Timesteps are not consecutive"
 
     print("\n" + "=" * 80)
     print("✓ All sample generation tests passed")

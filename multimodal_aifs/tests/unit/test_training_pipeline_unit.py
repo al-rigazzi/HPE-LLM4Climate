@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for ClimateTextDataLoader using real components instead of mocks."""
 
+# pylint: disable=protected-access
+
 import os
 import tempfile
 from pathlib import Path
@@ -25,9 +27,7 @@ import zarr
 
 from multimodal_aifs.training import ClimateTextDataLoader
 from multimodal_aifs.training.climate_dataloader import TrainingSample
-from multimodal_aifs.training.location_masks import Location, LocationMaskGenerator
-from multimodal_aifs.training.prompt_generator import ClimatePromptGenerator
-from multimodal_aifs.training.statistics_computer import ClimateStatisticsComputer
+from multimodal_aifs.training.location_masks import Location
 
 
 @pytest.mark.skipif(
@@ -94,7 +94,7 @@ class TestClimateTextDataLoaderReal:
         """Create a real ClimateTextDataLoader but mock only the expensive model loading."""
         from unittest.mock import Mock
 
-        with patch.object(ClimateTextDataLoader, "_initialize_mistral_model") as mock_init_model:
+        with patch.object(ClimateTextDataLoader, "_initialize_mistral_model"):
             # Create real dataloader with real components (including real tokenizer)
             # Let it auto-detect device (will use MPS on macOS to catch compatibility issues)
             dataloader = ClimateTextDataLoader(

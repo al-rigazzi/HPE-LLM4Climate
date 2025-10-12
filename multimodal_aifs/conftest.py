@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-lines
 """
 pytest Configuration and Fixtures for HPE-LLM4Climate
 
@@ -120,6 +121,7 @@ def setup_flash_attn_mock():
             is_training = dropout_p > 0.0
             actual_dropout = dropout_p if is_training else 0.0
 
+            # pylint: disable=not-callable
             output = F.scaled_dot_product_attention(
                 q,
                 k,
@@ -206,13 +208,10 @@ def get_env_str(env_var: str, default: str) -> str:
 # =================== PYTEST CONFIGURATION ===================
 def pytest_sessionstart(session):
     """Set up global test environment at start of session."""
+    from multimodal_aifs.utils import get_best_device
+
     # Set up default device for the entire test session
-    if torch.cuda.is_available():
-        default_device = torch.device("cuda")
-    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        default_device = torch.device("mps")
-    else:
-        default_device = torch.device("cpu")
+    default_device = get_best_device()
     # Set the default device for PyTorch
     if hasattr(torch, "set_default_device"):
         torch.set_default_device(default_device)
@@ -268,11 +267,9 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture(scope="session")
 def test_device():
     """Provide the best available device for testing."""
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        return torch.device("mps")
-    return torch.device("cpu")
+    from multimodal_aifs.utils import get_best_device
+
+    return get_best_device()
 
 
 @pytest.fixture(scope="session")
@@ -322,7 +319,7 @@ def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
             print("Install with: pip install zarr xarray")
             return None
         # Create synthetic climate data in AIFS-compatible format
-        # Use real AIFS dimensions as per copilot instructions
+        # Use real AIFS dimensions
         time_steps = 2  # Match AIFS format
         grid_points = AIFS_GRID_POINTS  # Real AIFS grid points
         # Create coordinates matching AIFS format
@@ -631,7 +628,7 @@ def aifs_model_available(test_device):  # pylint: disable=W0621
         from anemoi.inference.runners.simple import SimpleRunner
 
         # Try to initialize AIFS
-        checkpoint = {"huggingface": "ecmwf/aifs-single-1.0"}
+        checkpoint = {"huggingface": "ecmwf/aifs-single-1.1"}
         runner = SimpleRunner(checkpoint, device=str(test_device))
         aifs_model_instance = runner.model.to(str(test_device))
 
@@ -663,7 +660,7 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
             "runner": runner,
             "model": model_instance,
             "is_mock": False,
-            "model_name": "AIFS-Single-1.0",
+            "model_name": "AIFS-Single-1.1",
         }
         return _MODEL_CACHE["aifs_model"]
 

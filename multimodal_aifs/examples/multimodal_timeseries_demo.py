@@ -35,13 +35,12 @@ import time
 from pathlib import Path
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
 from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 
 
@@ -157,7 +156,8 @@ class MultimodalTimeSeriesDemo:
         for case_name, batch_size, time_steps, n_vars, spatial_shape in test_cases:
             print(f"\\nTest Case: {case_name}")
             print(
-                f"   Shape: [batch={batch_size}, time={time_steps}, vars={n_vars}, spatial={spatial_shape}]"
+                f"   Shape: [batch={batch_size}, time={time_steps}, "
+                f"vars={n_vars}, spatial={spatial_shape}]"
             )
 
             # Create data
@@ -179,7 +179,8 @@ class MultimodalTimeSeriesDemo:
                     tokenization_time = time.time() - start_time
 
                     print(
-                        f"   {model_type.upper():11s}: {data_5d.shape} -> {tokens.shape} ({tokenization_time:.4f}s)"
+                        f"   {model_type.upper():11s}: {data_5d.shape} -> "
+                        f"{tokens.shape} ({tokenization_time:.4f}s)"
                     )
 
                     # Memory usage estimation
@@ -188,7 +189,8 @@ class MultimodalTimeSeriesDemo:
                     compression_ratio = input_size / output_size
 
                     print(
-                        f"      Compression: {compression_ratio:.1f}x ({input_size/1024:.1f}KB -> {output_size/1024:.1f}KB)"
+                        f"      Compression: {compression_ratio:.1f}x ({input_size/1024:.1f}KB -> "
+                        f"{output_size/1024:.1f}KB)"
                     )
 
                 except Exception as e:
@@ -211,7 +213,7 @@ class MultimodalTimeSeriesDemo:
         descriptions = create_climate_descriptions()[:batch_size]
 
         print(f"Sample data: {data_5d.shape}")
-        print(f"Text descriptions:")
+        print("Text descriptions:")
         for i, desc in enumerate(descriptions):
             print(f"   {i+1}. {desc}")
         print()
@@ -299,9 +301,9 @@ class MultimodalTimeSeriesDemo:
             print(f"   Use case: {app['use_case']}")
 
             if app["temporal_model"] in self.tokenizers:
-                print(f"   Tokenizer available and ready")
+                print("   Tokenizer available and ready")
             else:
-                print(f"   Tokenizer not available")
+                print("   Tokenizer not available")
 
         print()
 
@@ -327,7 +329,8 @@ class MultimodalTimeSeriesDemo:
         ]
 
         print(
-            f"{'Configuration':<20} {'Model':<12} {'Time (s)':<10} {'Throughput':<15} {'Memory':<10}"
+            f"{'Configuration':<20} {'Model':<12} {'Time (s)':<10} "
+            f"{'Throughput':<15} {'Memory':<10}"
         )
         print("-" * 75)
 
@@ -355,7 +358,8 @@ class MultimodalTimeSeriesDemo:
                     memory_mb = tokens.numel() * 4 / (1024 * 1024)  # MB
 
                     print(
-                        f"{config_name:<20} {model_type:<12} {processing_time:<10.4f} {throughput:<15.1f} {memory_mb:<10.2f}"
+                        f"{config_name:<20} {model_type:<12} {processing_time:<10.4f} "
+                        f"{throughput:<15.1f} {memory_mb:<10.2f}"
                     )
 
                 except Exception as e:
@@ -387,10 +391,10 @@ class MultimodalTimeSeriesDemo:
         print("Demo Summary")
         print("=" * 40)
         print(f"Tokenizers tested: {list(self.tokenizers.keys())}")
-        print(f"5-D tensor processing demonstrated")
-        print(f"Multimodal fusion showcased")
-        print(f"Real-world applications outlined")
-        print(f"Performance benchmarks completed")
+        print("5-D tensor processing demonstrated")
+        print("Multimodal fusion showcased")
+        print("Real-world applications outlined")
+        print("Performance benchmarks completed")
         print()
         print("Next Steps:")
         print("   Integrate with your climate datasets")

@@ -26,12 +26,10 @@ on-the-fly by:
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import torch
 import zarr
-from torch.utils.data import Dataset, IterableDataset
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from torch.utils.data import IterableDataset
 
 from ..constants import AIFS_GRID_POINTS, ALL_AIFS_VARIABLES
 from .location_masks import Location, LocationMaskGenerator
@@ -157,7 +155,7 @@ class ClimateTextDataLoader(IterableDataset):
         print(f"Loading Mistral model: {mistral_model_name}")
         self._initialize_mistral_model(mistral_model_name)
 
-        print(f"DataLoader initialized:")
+        print("DataLoader initialized:")
         print(f"  - Zarr files: {len(self.zarr_paths)}")
         print(f"  - Samples per epoch: {samples_per_epoch}")
         print(f"  - Device: {device}")
@@ -189,7 +187,7 @@ class ClimateTextDataLoader(IterableDataset):
 
             print(f"  ✓ Mistral model loaded in float16 mode on {self.device}")
         else:
-            print(f"  ℹ Mistral will be loaded per-sample (memory efficient mode)")
+            print("  ℹ Mistral will be loaded per-sample (memory efficient mode)")
 
     def _load_zarr_metadata(self) -> None:
         """Load metadata from Zarr files."""
@@ -213,7 +211,7 @@ class ClimateTextDataLoader(IterableDataset):
                 print(f"  ✓ Loaded {zarr_path.name}: {n_timesteps} timesteps")
 
             except Exception as e:
-                raise RuntimeError(f"Failed to load Zarr file {zarr_path}: {e}")
+                raise RuntimeError(f"Failed to load Zarr file {zarr_path}: {e}") from e
 
     def _detect_grid_size(self) -> int:
         """Detect the actual grid size from the loaded datasets."""
@@ -228,7 +226,7 @@ class ClimateTextDataLoader(IterableDataset):
                 var_shape = ds[var_name].shape
                 if len(var_shape) == 1:
                     return var_shape[0]
-                elif len(var_shape) == 2:
+                if len(var_shape) == 2:
                     return var_shape[1]  # [time, grid_points]
 
         # Fallback if no AIFS variables found
@@ -379,7 +377,7 @@ class ClimateTextDataLoader(IterableDataset):
         if n_timesteps < 2:
             raise ValueError(
                 f"Zarr file {self.zarr_paths[zarr_idx]} has only {n_timesteps} timesteps, "
-                f"but need at least 2 consecutive timesteps for training"
+                "but need at least 2 consecutive timesteps for training"
             )
 
         max_t = n_timesteps - 1  # Maximum valid starting timestep
@@ -460,6 +458,12 @@ class ClimateTextDataLoader(IterableDataset):
                 print(f"⚠ Error generating sample {i}: {e}")
                 continue
 
+    def __getitem__(self, index):
+        """Not used for IterableDataset, but required by abstract base class."""
+        raise NotImplementedError(
+            "ClimateTextDataLoader is an IterableDataset. Use __iter__ instead."
+        )
+
     def __len__(self) -> int:
         """Return number of samples per epoch."""
         return self.samples_per_epoch
@@ -503,7 +507,7 @@ class ClimateTextDataLoader(IterableDataset):
         print("TRAINING SAMPLE PREVIEW")
         print("=" * 80)
 
-        print(f"\n📍 Location:")
+        print("\n📍 Location:")
         print(f"  Name: {sample.location.name}")
         print(f"  Type: {sample.location.location_type}")
         print(
@@ -511,7 +515,7 @@ class ClimateTextDataLoader(IterableDataset):
         )
         print(f"  Masked grid points: {sample.mask.sum().item()} / {len(sample.mask)}")
 
-        print(f"\n🌍 Climate Data:")
+        print("\n🌍 Climate Data:")
         print(f"  Timestep 1: {sample.timestep_1_index}")
         print(f"  Timestep 2: {sample.timestep_2_index}")
         print(f"  Tensor shape (t1): {sample.climate_tensor_t1.shape}")
@@ -519,7 +523,7 @@ class ClimateTextDataLoader(IterableDataset):
         print(f"  AIFS input shape: {sample.aifs_input_tensor.shape}")
         print(f"  Data source: {Path(sample.zarr_file_path).name}")
 
-        print(f"\n📊 Statistics Table:")
+        print("\n📊 Statistics Table:")
         print(sample.statistics_table)
 
         print(f"\n💬 Prompt ({len(sample.prompt)} chars):")
@@ -534,7 +538,7 @@ class ClimateTextDataLoader(IterableDataset):
             else sample.llm_response
         )
 
-        print(f"\n🔢 Tokenization:")
+        print("\n🔢 Tokenization:")
         print(f"  Prompt tokens: {sample.prompt_tokens['input_ids'].shape}")
         print(f"  Response tokens: {sample.response_tokens['input_ids'].shape}")
 

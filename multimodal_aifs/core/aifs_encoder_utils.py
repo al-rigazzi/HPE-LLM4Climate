@@ -32,6 +32,7 @@ import torch
 from torch import nn
 
 from ..constants import (
+    AIFS_GRID_POINTS,
     AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
     AIFS_RAW_ENCODER_OUTPUT_DIM,
     DEFAULT_CHECKPOINT_DIR,
@@ -128,8 +129,13 @@ class AIFSCompleteEncoder(nn.Module):
 
         # Check input dimensions
         _, _, _, grid_size, _ = x.shape
-        # AIFS_GRID_POINTS for AIFS-Single-1.0
-        expected_grid_size = self.aifs_model.latlons_data.shape[0]
+        # Get expected grid size - handle both AIFS versions
+        # Older versions have latlons_data, newer versions (1.1+) do not
+        if hasattr(self.aifs_model, "latlons_data"):
+            expected_grid_size = self.aifs_model.latlons_data.shape[0]
+        else:
+            # For newer models without latlons_data, use constant
+            expected_grid_size = AIFS_GRID_POINTS
 
         if grid_size != expected_grid_size:
             raise ValueError(

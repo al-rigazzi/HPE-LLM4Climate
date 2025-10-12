@@ -24,7 +24,6 @@ Usage:
 
 import sys
 import time
-import warnings
 from pathlib import Path
 
 import pytest
@@ -146,7 +145,8 @@ def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
         print(f"   Skipping embedding test (initialization failed: {e})")
         pytest.skip(f"Initialization failed: {e}")
 
-    # Use the 5D tensor (raw climate data) for embedding module test since it calls AIFS encoder internally
+    # Use the 5D tensor (raw climate data) for embedding module
+    # test since it calls AIFS encoder internally
     sample_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103] - raw climate data
     print(f"   Using 5D climate data: {sample_data_5d.shape}")
 
@@ -159,7 +159,7 @@ def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
         assert embeddings.device.type == device
 
         print(f"   Embedding: {sample_data_5d.shape} -> {embeddings.shape}")
-        print(f"   Embedding module test passed")
+        print("   Embedding module test passed")
     except Exception as e:
         print(f"   Embedding test failed: {e}")
         pytest.fail(f"Embedding test failed: {e}")
@@ -183,12 +183,11 @@ def test_error_handling(aifs_model, test_device):
         print("   Invalid path handled gracefully (encoder=None)")
         assert fusion_module.aifs_encoder is None, "Expected None encoder for invalid path"
     except (ValueError, RuntimeError) as e:
-        print(f"   Invalid path handling")
-        # Expected behavior for invalid path
-        pass
+        print(f"   Invalid path handling: {e}")
     except TypeError as e:
         print(
-            f"   Error handling test skipped: {e!r} is not an instance of {(ValueError, RuntimeError)}"
+            f"   Error handling test skipped: {e!r} "
+            f"is not an instance of {(ValueError, RuntimeError)}"
         )
         # Different error type, but still handled
 
@@ -196,7 +195,13 @@ def test_error_handling(aifs_model, test_device):
     print("\n   Testing valid checkpoint path handling...")
     try:
         # Use a real checkpoint path
-        valid_checkpoint = "/Users/arigazzi/Documents/DeepLearning/LLM for climate/HPE-LLM4Climate/multimodal_aifs/models/extracted_models/aifs_encoder_full.pth"
+        valid_checkpoint = (
+            project_root
+            / "multimodal_aifs"
+            / "models"
+            / "extracted_models"
+            / "aifs_encoder_full.pth"
+        )
 
         fusion_module = AIFSClimateTextFusion(
             aifs_checkpoint_path=valid_checkpoint,
@@ -292,7 +297,8 @@ def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
         assert fused_features.shape[1] == 512  # fusion_dim
 
         print(
-            f"   Fusion: Climate {climate_data_5d.shape} + {len(texts)} texts -> {fused_features.shape}"
+            f"   Fusion: Climate {climate_data_5d.shape} + "
+            f"{len(texts)} texts -> {fused_features.shape}"
         )
         print("   Multimodal fusion test passed")
     except Exception as e:
@@ -374,22 +380,31 @@ def test_text_encoding(aifs_model, test_device):
     ]
 
     try:
-        # Test text encoding (should work regardless of AIFS encoder availability)
+        # Use real text embeddings from TextEmbeddingUtils
+        from multimodal_aifs.utils.text_utils import TextEmbeddingUtils
+
+        text_embedding_utils = TextEmbeddingUtils(embedding_dim=768, vocab_size=500)
+        text_embedding_utils.build_vocabulary(texts)
+
+        # Generate real embeddings for each text
         text_features = []
         for text in texts:
-            # Mock text embedding (in real implementation would use text encoder)
-            text_embedding = torch.randn(1, 768).to(device)  # text_dim
+            embedding = text_embedding_utils.embed_text(text, max_length=64)
+            # Take mean across sequence to get single embedding
+            text_embedding = embedding.mean(dim=0, keepdim=True).to(device)
             text_features.append(text_embedding)
 
         text_features = torch.cat(text_features, dim=0)
-        projected_text = fusion_module.text_projection(text_features)
+
+        # Test that encode_text requires pre-computed embeddings
+        projected_text = fusion_module.encode_text(texts, text_embeddings=text_features)
 
         # Validate output
         assert projected_text.shape[0] == len(texts)
         assert projected_text.shape[1] == 512  # fusion_dim
 
-        print(f"   Text encoding: 4 texts -> torch.Size([4, 512])")
-        print("   Pre-computed embeddings")
+        print(f"   Text encoding: {len(texts)} texts -> {projected_text.shape}")
+        print("   Real embeddings from TextEmbeddingUtils")
     except Exception as e:
         print(f"   Text encoding failed: {e}")
         pytest.fail(f"Text encoding failed: {e}")

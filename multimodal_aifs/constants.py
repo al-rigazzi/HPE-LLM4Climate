@@ -66,6 +66,59 @@ SURFACE_VARIABLES: Final[list[str]] = [
     "sdor",  # Standard deviation of orography
 ]
 
+# ===================== ECMWF OPEN DATA API CONSTANTS =====================
+# These constants define parameter names and mappings specific to the ECMWF Open Data API.
+# They are used when downloading data from ECMWF's operational forecast service.
+# Note: ECMWF API parameter names differ from AIFS internal naming conventions.
+
+# Surface parameters for ECMWF Open Data API requests
+ECMWF_PARAM_SFC: Final[list[str]] = [
+    "10u",  # 10m u-component of wind
+    "10v",  # 10m v-component of wind
+    "2d",  # 2m dewpoint temperature
+    "2t",  # 2m temperature
+    "msl",  # Mean sea level pressure
+    "skt",  # Skin temperature
+    "sp",  # Surface pressure
+    "tcw",  # Total column water
+    "lsm",  # Land-sea mask
+    "z",  # Geopotential at surface
+    "slor",  # Slope of sub-gridscale orography
+    "sdor",  # Standard deviation of orography
+]
+
+# Soil parameters for ECMWF Open Data API requests
+ECMWF_PARAM_SOIL: Final[list[str]] = [
+    "vsw",  # Volumetric soil water (maps to swvl1/swvl2)
+    "sot",  # Soil temperature (maps to stl1/stl2)
+]
+
+# Pressure level parameters for ECMWF Open Data API requests
+ECMWF_PARAM_PL: Final[list[str]] = [
+    "gh",  # Geopotential height (converted to geopotential z via multiplication by 9.80665)
+    "t",  # Temperature
+    "u",  # U-component of wind
+    "v",  # V-component of wind
+    "w",  # Vertical velocity
+    "q",  # Specific humidity
+]
+
+# Pressure levels in hPa for ECMWF Open Data API requests
+ECMWF_LEVELS: Final[list[int]] = [1000, 925, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100, 50]
+
+# Soil levels for ECMWF Open Data API requests
+ECMWF_SOIL_LEVELS: Final[list[int]] = [1, 2]
+
+# Mapping from ECMWF soil parameter names to AIFS variable names
+# ECMWF uses generic names (vsw, sot) with level suffixes,
+# while AIFS uses specific names (swvl1, stl1, etc.)
+ECMWF_SOIL_MAPPING: Final[dict[str, str]] = {
+    "sot_1": "stl1",  # Soil temperature level 1
+    "sot_2": "stl2",  # Soil temperature level 2
+    "vsw_1": "swvl1",  # Volumetric soil water level 1
+    "vsw_2": "swvl2",  # Volumetric soil water level 2
+}
+
 # Soil variables (4 total)
 SOIL_VARIABLES: Final[list[str]] = [
     "stl1",  # Soil temperature level 1

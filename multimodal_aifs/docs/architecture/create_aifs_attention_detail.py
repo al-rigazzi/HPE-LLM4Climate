@@ -64,10 +64,10 @@ colors = {
 
 
 def create_box(
-    ax, xy, width, height, text, color, text_color="white", fontsize=14, fontweight="bold"
+    axis_handle, xy, width, height, text, color, text_color="white", fontsize=14, fontweight="bold"
 ):
     """Create a professional rounded rectangle box with text"""
-    box = FancyBboxPatch(
+    text_box = FancyBboxPatch(
         xy,
         width,
         height,
@@ -77,12 +77,12 @@ def create_box(
         linewidth=1.5,
         alpha=0.9,
     )
-    ax.add_patch(box)
+    axis_handle.add_patch(text_box)
 
     # Add text in center of box
     text_x = xy[0] + width / 2
     text_y = xy[1] + height / 2
-    ax.text(
+    axis_handle.text(
         text_x,
         text_y,
         text,
@@ -94,10 +94,10 @@ def create_box(
         wrap=True,
     )
 
-    return box
+    return text_box
 
 
-def create_arrow(ax, start, end, color="black", style="->", linewidth=2, alpha=1.0):
+def create_arrow(axis_handle, start, end, color="black", style="->", linewidth=2, alpha=1.0):
     """Create professional arrows between components"""
     arrow = ConnectionPatch(
         start,
@@ -113,7 +113,7 @@ def create_arrow(ax, start, end, color="black", style="->", linewidth=2, alpha=1
         linewidth=linewidth,
         alpha=alpha,
     )
-    ax.add_patch(arrow)
+    axis_handle.add_patch(arrow)
     return arrow
 
 
@@ -152,7 +152,7 @@ ax.text(
 )
 
 # Main attention formula
-math_text = """Multi-Head Cross-Attention:
+MATH_TEXT = """Multi-Head Cross-Attention:
 1. Projection: Q = X_text W_Q,  K = V = X'_climate W_K,V
 2. Multi-Head: Q_h = Q W_h^Q,  K_h = K W_h^K,  V_h = V W_h^V
 3. Attention: A_h = softmax(Q_h K_h^T / √(d_k))
@@ -161,7 +161,7 @@ math_text = """Multi-Head Cross-Attention:
 6. Residual: Y = LayerNorm(X_text + O)"""
 
 create_box(
-    ax, (0.5, 9.0), 7, 1.5, math_text, colors["math"], "black", fontsize=13, fontweight="normal"
+    ax, (0.5, 9.0), 7, 1.5, MATH_TEXT, colors["math"], "black", fontsize=13, fontweight="normal"
 )
 
 # =================== ATTENTION COMPUTATION DETAIL ===================
@@ -171,7 +171,8 @@ create_box(
     (8.0, 9.0),
     3.5,
     1.5,
-    "Attention Matrix\nA: [B, 32, 128, 64]\nText pos × Climate pos\nTemperature-scaled\nτ = 0.1 (learnable)",
+    "Attention Matrix\nA: [B, 32, 128, 64]\nText "
+    "pos × Climate pos\nTemperature-scaled\nτ = 0.1 (learnable)",
     colors["attention"],
     fontsize=13,
 )
@@ -194,7 +195,8 @@ create_box(
     (0.5, 7),
     3.5,
     1,
-    "AIFS Climate Embeddings\nX_climate = [B, T, 218]\nB=1, time=2, d_model=218\nFrom AIFS encoder output",
+    "AIFS Climate Embeddings\nX_climate = [B, T, 218]\nB=1, "
+    "time=2, d_model=218\nFrom AIFS encoder output",
     colors["aifs_tokens"],
     fontsize=13,
 )
@@ -205,7 +207,8 @@ create_box(
     (11.5, 7),
     4,
     1,
-    "LLM Text Tokens\nX_text = [B, seq_len, d_llm]\nB=1, seq_len variable, d_llm=4096\nFrom climate queries",
+    "LLM Text Tokens\nX_text = [B, seq_len, d_llm]\nB=1, "
+    "seq_len variable, d_llm=4096\nFrom climate queries",
     colors["mistral_tokens"],
     fontsize=13,
 )
@@ -349,7 +352,8 @@ create_box(
     (7.5, 1.1),
     4,
     0.6,
-    "Fused Embeddings\nY = [B, 128, 4096]\nText enhanced with climate context\nReady for Mistral decoder",
+    "Fused Embeddings\nY = [B, 128, 4096]\nText enhanced with climate context"
+    "\nReady for Mistral decoder",
     colors["output"],
     fontsize=13,
 )
@@ -381,7 +385,7 @@ ax.annotate(
     "Climate tokens\nprojected to\nLLM dimension",
     xy=(6.5, 5.65),
     xytext=(9, 6.5),
-    arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
+    arrowprops={"arrowstyle": "->", "color": "gray", "alpha": 0.7},
     fontsize=11,
     color="gray",
 )
@@ -390,7 +394,7 @@ ax.annotate(
     "32 attention heads\nparallel computation",
     xy=(9.7, 3.6),
     xytext=(10.5, 4.5),
-    arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
+    arrowprops={"arrowstyle": "->", "color": "gray", "alpha": 0.7},
     fontsize=11,
     color="gray",
 )
@@ -399,13 +403,13 @@ ax.annotate(
     "Cross-modal\nattention matrix",
     xy=(9.75, 9.25),
     xytext=(12.5, 8.5),
-    arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
+    arrowprops={"arrowstyle": "->", "color": "gray", "alpha": 0.7},
     fontsize=11,
     color="gray",
 )
 
 # =================== SPECIFICATIONS PANEL ===================
-specs_text = """AIFS Cross-Attention Specifications:
+SPECS_TEXT = """AIFS Cross-Attention Specifications:
 
 Input Dimensions:
   - Climate: [B, T, 218] → projected to [B, T, 4096]
@@ -439,7 +443,7 @@ ax.add_patch(box)
 ax.text(
     12.2,  # Left margin
     11.5,  # Near top of box (box top is at 9.0 + 2.5 = 11.5)
-    specs_text,
+    SPECS_TEXT,
     ha="left",
     va="top",
     fontsize=10,

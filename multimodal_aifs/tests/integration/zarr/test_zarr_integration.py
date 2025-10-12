@@ -35,7 +35,7 @@ try:
     import xarray as xr
     import zarr
 
-    print(f"Dependencies loaded successfully")
+    print("Dependencies loaded successfully")
     print(f"   📦 zarr version: {zarr.__version__}")
     print(f"   📦 xarray version: {xr.__version__}")
     print(f"   📦 torch version: {torch.__version__}")
@@ -187,18 +187,19 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
         batch_size, time_steps, num_vars = tensor.shape[0], tensor.shape[1], tensor.shape[2]
         if len(variables) == 1 and variables[0] == "data":
             grid_points = tensor.shape[3]
-            print(f"\nAIFS Multimodal Integration (Conftest):")
+            print("\nAIFS Multimodal Integration (Conftest):")
             print(f"   Batch size: {batch_size} (ready for processing)")
             print(f"   Time steps: {time_steps} (temporal sequence)")
             print(f"   Variables: {num_vars} (climate features)")
             print(f"   Grid points: {grid_points} (flattened spatial)")
             print(f"   Total features: {num_vars * grid_points} per timestep")
             print(
-                f"   Tensor format: [B={batch_size}, T={time_steps}, V={num_vars}, G={grid_points}] (conftest)"
+                f"   Tensor format: [B={batch_size}, T={time_steps}, "
+                f"V={num_vars}, G={grid_points}] (conftest)"
             )
         elif is_aifs_format:
             grid_points = tensor.shape[3]
-            print(f"\nAIFS Multimodal Integration:")
+            print("\nAIFS Multimodal Integration:")
             print(f"   Batch size: {batch_size} (ready for processing)")
             print(f"   Time steps: {time_steps} (temporal sequence)")
             print(f"   Variables: {num_vars} (climate features)")
@@ -209,14 +210,15 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
             )
         else:
             height, width = tensor.shape[3], tensor.shape[4]
-            print(f"\nAIFS Multimodal Integration:")
+            print("\nAIFS Multimodal Integration:")
             print(f"   Batch size: {batch_size} (ready for processing)")
             print(f"   Time steps: {time_steps} (temporal sequence)")
             print(f"   Variables: {num_vars} (climate features)")
             print(f"   Spatial: {height}x{width} (grid resolution)")
             print(f"   Total features: {num_vars * height * width} per timestep")
             print(
-                f"   Tensor format: [B={batch_size}, T={time_steps}, V={num_vars}, H={height}, W={width}]"
+                f"   Tensor format: [B={batch_size}, T={time_steps}, "
+                f"V={num_vars}, H={height}, W={width}]"
             )
 
     except Exception as e:
@@ -237,8 +239,3 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
     print("Feed tokenized data to Mistral-7B-Instruct model")
     print("Apply cross-attention fusion for multimodal processing")
     # Test passes by reaching this point without failures
-
-
-if __name__ == "__main__":
-    success = test_zarr_to_aifs_pipeline()
-    sys.exit(0 if success else 1)
