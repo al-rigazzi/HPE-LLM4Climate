@@ -1,15 +1,17 @@
-# AIFS Dependencies - Successfully Installed with Python 3.12
+# AIFS Dependencies - Updated for AIFS-ENS-1.0
 # Core AIFS packages
-anemoi-inference[huggingface]==0.4.9
-anemoi-models==0.3.1
-torch==2.4.0
+anemoi-inference[huggingface]==0.6.0
+anemoi-models==0.6.0
+anemoi-graphs==0.6.0
+anemoi-datasets==0.5.23
+torch==2.5.0
 
 # Additional dependencies from AIFS notebook
 earthkit-regrid==0.4.0
 ecmwf-opendata
 
 # Zarr support for modern climate data formats
-zarr>=2.10.0
+zarr>=2.10.0,<=2.18.4
 xarray>=2023.1.0
 dask[array]>=2023.1.0
 
@@ -18,6 +20,7 @@ s3fs>=2023.1.0  # For S3 Zarr datasets
 gcsfs>=2023.1.0  # For Google Cloud Zarr datasets
 
 # Note: flash_attn requires CUDA/GPU, not compatible with macOS
-# AIFS works on CPU without flash_attn using environment variables:
+# AIFS works on CPU/MPS without flash_attn using PyTorch-based mock implementation
+# Environment variables for memory optimization:
 # PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
-# ANEMOI_INFERENCE_NUM_CHUNKS='16'
+# ANEMOI_INFERENCE_NUM_CHUNKS='16'  # Reduces memory from 38GB to 24GB

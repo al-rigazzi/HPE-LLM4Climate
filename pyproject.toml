@@ -207,6 +207,7 @@ module = [
     "folium.*",
     "anemoi.*",
     "ecmwf.*",
+    "earthkit.*",
     "cfgrib.*",
     "pygrib.*",
     "psutil.*",

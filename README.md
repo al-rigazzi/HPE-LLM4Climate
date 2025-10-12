@@ -49,8 +49,8 @@ HPE-LLM4Climate/
 │   │   └── unit/                      # Unit tests
 │   └── training/                      # Training examples
 │       └── examples/                  # Training scripts
-├── aifs-single-1.0/                   # ECMWF AIFS model (submodule)
-│   ├── aifs-single-mse-1.0.ckpt      # AIFS model weights (948MB)
+├── aifs-single-1.1/                   # ECMWF AIFS model (submodule)
+│   ├── aifs-single-mse-1.1.ckpt      # AIFS model weights
 │   └── config_pretraining.yaml       # AIFS configuration
 ├── scripts/                           # Utility scripts
 ├── test_aifs_large.zarr/              # Test Zarr dataset
@@ -300,7 +300,7 @@ This matches the license used by ECMWF AIFS for code and scripts.
 
 - **ECMWF AIFS**: AI Forecasting System integration
   - Paper: [AIFS - ECMWF's data-driven forecasting system](https://arxiv.org/abs/2406.01465)
-  - Model: [ecmwf/aifs-single-1.0](https://huggingface.co/ecmwf/aifs-single-1.0)
+  - Model: [ecmwf/aifs-single-1.1](https://huggingface.co/ecmwf/aifs-single-1.1)
 - **Mistral AI**: Mistral model series and open-source AI contributions
 - **HuggingFace**: Transformers library and model hub infrastructure
 

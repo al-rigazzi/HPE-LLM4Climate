@@ -4,8 +4,8 @@ pandas
 xarray
 
 # Deep learning framework
-torch==2.4.0
-torchvision==0.19.0
+torch==2.5.0
+torchvision==0.20.0
 torch_geometric==2.4.0
 
 # Natural Language Processing and Transformers
