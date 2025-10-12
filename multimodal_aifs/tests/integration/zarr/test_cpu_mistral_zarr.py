@@ -65,7 +65,7 @@ def test_lightweight_mistral_zarr(aifs_mistral_model, zarr_dataset_path, llm_moc
     try:
         loader = ZarrClimateLoader(zarr_dataset_path)
 
-        # Load all available timesteps (synthetic test data has exactly 2 timesteps)
+        # Load all available timesteps (real ECMWF data has exactly 2 timesteps)
         climate_data = loader.load_time_range(None, None)  # Load all timesteps
 
         # Convert to small tensor
@@ -177,7 +177,7 @@ def test_compare_with_mock(aifs_mistral_model, zarr_dataset_path, llm_mock_statu
         print(f"      🔢 Parameters: {param_count:,}")
         print(f"      Type: {'Mock' if use_mock_env else 'Real'} LLM")
 
-        # Simple performance test - use AIFS-compatible dimensions
+        # Simple performance test using dummy tensor (shape testing only, not real climate data)
         dummy_data = torch.randn(1, 2, 1, 542080, 103).to(model.device)  # AIFS format
         dummy_text = ["Test query"]
 

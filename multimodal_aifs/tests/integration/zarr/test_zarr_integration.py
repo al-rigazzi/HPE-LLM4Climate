@@ -78,9 +78,12 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
         subset = ds.isel(time=slice(0, 4))
         print(f"Selected subset: {dict(subset.sizes)}")
 
-        # Get variables
-        variables = list(subset.data_vars.keys())
-        print(f"   🔢 Variables: {variables}")
+        # Get variables - exclude coordinate variables like latitude/longitude
+        all_variables = list(subset.data_vars.keys())
+        # Filter out coordinate-like variables
+        coord_like_vars = {"latitude", "longitude", "lat", "lon"}
+        variables = [v for v in all_variables if v not in coord_like_vars]
+        print(f"   🔢 Climate Variables: {len(variables)} (excluding coordinates)")
 
         # Convert to numpy arrays and stack
         arrays = []
@@ -108,7 +111,8 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
                     # AIFS format: [time, grid_points]
                     if var_data.ndim == 2:
                         arrays.append(var_data)
-                        print(f"   {var}: {var_data.shape} (AIFS grid_point format)")
+                        if len(arrays) <= 5:  # Only print first 5 to avoid clutter
+                            print(f"   {var}: {var_data.shape} (AIFS grid_point format)")
                     else:
                         raise ValueError(
                             f"AIFS format: Variable {var} has unexpected shape: {var_data.shape}"
@@ -117,7 +121,8 @@ def test_zarr_to_aifs_pipeline(zarr_dataset_path):
                     # Lat/lon format: [time, lat, lon]
                     if var_data.ndim == 3:
                         arrays.append(var_data)
-                        print(f"   {var}: {var_data.shape} (lat/lon format)")
+                        if len(arrays) <= 5:  # Only print first 5 to avoid clutter
+                            print(f"   {var}: {var_data.shape} (lat/lon format)")
                     else:
                         raise ValueError(
                             f"Lat/lon format: Variable {var} has unexpected shape: {var_data.shape}"

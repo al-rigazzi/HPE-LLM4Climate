@@ -289,92 +289,66 @@ def llm_mock_status():
 
 @pytest.fixture(scope="session")
 def zarr_dataset_path():
-    """Get the zarr dataset path for testing."""
-    # Use the standard test dataset path
-    zarr_path = "test_aifs_large.zarr"
+    """Get the real ECMWF zarr dataset path for testing."""
+    # Use real ECMWF data instead of synthetic data
+    zarr_path = "data/real_ecmwf_latest.zarr"
 
-    print(f"Using test Zarr dataset: {zarr_path}")
+    print(f"Using real ECMWF Zarr dataset: {zarr_path}")
 
     return zarr_path
 
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
-    """Ensure test Zarr dataset exists for integration tests."""
-    # Path to the test zarr dataset - use AIFS-compatible format
+    """Ensure real ECMWF Zarr dataset exists for integration tests."""
     zarr_path = Path(zarr_dataset_path)
+
     # Check if dataset already exists
     if zarr_path.exists():
-        print(f"Test Zarr dataset already exists: {zarr_path}")
+        print(f"Real ECMWF Zarr dataset already exists: {zarr_path}")
         return str(zarr_path)
-    print("🏗️ Creating test Zarr dataset for integration tests...")
+
+    print("📥 Downloading real ECMWF data for integration tests...")
+    print("This will download real meteorological data and may take a few minutes.")
+
     try:
-        # Create a simple zarr dataset directly
-        try:
-            from datetime import datetime, timedelta
+        # Import the download script
+        import subprocess
 
-            import xarray as xr
-        except ImportError as e:
-            print(f"Missing required packages for zarr creation: {e}")
-            print("Install with: pip install zarr xarray")
-            return None
-        # Create synthetic climate data in AIFS-compatible format
-        # Use real AIFS dimensions
-        time_steps = 2  # Match AIFS format
-        grid_points = AIFS_GRID_POINTS  # Real AIFS grid points
-        # Create coordinates matching AIFS format
-        times = [datetime(2024, 1, 1) + timedelta(hours=i * 12) for i in range(time_steps)]
-        variables = ALL_AIFS_VARIABLES  # Use the complete AIFS variable list from constants
-        # Create synthetic data with AIFS-compatible dimensions [time, grid_point]
-        # AIFS format: time=2, grid_point=10000
-        data_shape = (time_steps, grid_points)
+        # Ensure data directory exists
+        zarr_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Create individual data variables for each climate variable
-        data_vars = {}
-        for var_name in variables:
-            # Generate synthetic data for this variable
-            var_data = np.random.normal(0, 1, data_shape)
-            data_vars[var_name] = xr.DataArray(
-                var_data,
-                dims=["time", "grid_point"],
-                coords={
-                    "time": times,
-                    "grid_point": range(grid_points),
-                },
-                attrs={"units": "normalized", "description": f"Synthetic {var_name} data"},
-            )
+        # Download real ECMWF data using the download script
+        script_path = Path(__file__).parent.parent / "scripts" / "download_real_ecmwf_data.py"
 
-        # Create xarray dataset with individual variables
-        ds = xr.Dataset(data_vars)
-        ds.attrs = {
-            "title": "Synthetic AIFS-Compatible Dataset for Testing",
-            "created": datetime.now().isoformat(),
-            "description": (
-                f"Synthetic dataset with {len(variables)} variables in AIFS format "
-                "[time, grid_point]"
-            ),
-            "format": "AIFS-compatible",
-            "aifs_grid_points": grid_points,
-            "aifs_variables": len(variables),
-            "aifs_timesteps": time_steps,
-            "standard_aifs_dims": f"{time_steps}x{len(variables)}x{grid_points}",
-            "note": "Data follows AIFS input format: [time, variables, grid_points]",
-        }
+        if not script_path.exists():
+            raise FileNotFoundError(f"Download script not found: {script_path}")
 
-        # Save to zarr
-        ds.to_zarr(zarr_path, mode="w")
+        # Run the download script
+        result = subprocess.run(
+            [sys.executable, str(script_path), "--output", str(zarr_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
 
-        print(f"Test Zarr dataset created successfully: {zarr_path}")
-        print(f"   Dimensions: [{time_steps}, {len(variables)}, {grid_points}] (AIFS format)")
+        if result.returncode != 0:
+            print("Failed to download real ECMWF data:")
+            print(result.stdout)
+            print(result.stderr)
+            raise RuntimeError("ECMWF data download failed")
 
+        print(f"Real ECMWF dataset downloaded successfully: {zarr_path}")
         return str(zarr_path)
 
     except Exception as e:
-        print(f"Failed to create test Zarr dataset: {e}")
+        print(f"Failed to download real ECMWF dataset: {e}")
         print(f"   Error type: {type(e).__name__}")
-        # Don't fail the test session, just warn
-        print("Zarr tests may fail without test dataset")
-        return None
+        # Fail the test session since we require real data
+        raise RuntimeError(
+            f"Cannot run tests without real ECMWF data. "
+            f"Please run: python scripts/download_real_ecmwf_data.py --output {zarr_path}"
+        ) from e
 
 
 # =================== LLM MODEL FIXTURES ===================
@@ -907,19 +881,48 @@ def aifs_mistral_model(test_device, aifs_model):  # pylint: disable=W0621
 
 
 @pytest.fixture
-def test_climate_data_fusion(test_device):  # pylint: disable=W0621
-    """Fixture for test climate data for fusion model testing"""
-    # Create AIFS-compatible climate data: [batch, time, ensemble, grid, vars]
-    # AIFS expects: batch=1, time=2, ensemble=1, grid=AIFS_GRID_POINTS, vars=AIFS_INPUT_VARIABLES
-    climate_data = torch.randn(1, 2, 1, AIFS_GRID_POINTS, AIFS_INPUT_VARIABLES).to(test_device)
+def test_climate_data_fusion(test_device, zarr_dataset_path):  # pylint: disable=W0621
+    """Fixture for test climate data for fusion model testing using real ECMWF data."""
+    try:
+        import xarray as xr
+    except ImportError as e:
+        pytest.skip(f"xarray required for real data tests: {e}")
+
+    # Load real ECMWF data
+    ds = xr.open_zarr(zarr_dataset_path)
+
+    # Convert to AIFS format: [batch, time, ensemble, grid, vars]
+    # batch=1, time=2, ensemble=1, grid=AIFS_GRID_POINTS, vars=AIFS_INPUT_VARIABLES
+    all_vars = []
+    for var_name in ALL_AIFS_VARIABLES:
+        if var_name in ds:
+            var_data = torch.from_numpy(ds[var_name].values)  # [time, grid_point]
+            all_vars.append(var_data)
+        else:
+            # If variable missing, fill with zeros
+            var_data = torch.zeros(2, AIFS_GRID_POINTS)
+            all_vars.append(var_data)
+
+    # Stack variables: [time, grid_point, n_vars]
+    climate_tensor = torch.stack(all_vars, dim=-1)  # [time, grid_point, vars]
+
+    # Reshape to AIFS format: [batch, time, ensemble, grid, vars]
+    climate_data = climate_tensor.unsqueeze(0).unsqueeze(2)  # [1, time, 1, grid, vars]
+    climate_data = climate_data.to(test_device)
+
     text_inputs = ["Predict weather patterns based on the climate data."]
     return climate_data, text_inputs
 
 
 # =================== TEST DATA FIXTURES ===================
 @pytest.fixture(scope="session")
-def test_climate_data(test_device):  # pylint: disable=W0621
-    """Generate synthetic climate data for testing."""
+def test_climate_data(test_device, zarr_dataset_path):  # pylint: disable=W0621
+    """Load real ECMWF climate data for testing."""
+    try:
+        import xarray as xr
+    except ImportError as e:
+        pytest.skip(f"xarray required for real data tests: {e}")
+
     device = str(test_device)
 
     # Determine the appropriate floating point format based on device
@@ -928,30 +931,57 @@ def test_climate_data(test_device):  # pylint: disable=W0621
     else:
         dtype = torch.float32
 
+    # Load real ECMWF data
+    ds = xr.open_zarr(zarr_dataset_path)
+
+    # Convert to AIFS format: [batch, time, ensemble, grid, vars]
+    all_vars = []
+    for var_name in ALL_AIFS_VARIABLES:
+        if var_name in ds:
+            var_data = torch.from_numpy(ds[var_name].values)  # [time, grid_point]
+            all_vars.append(var_data)
+        else:
+            # If variable missing, fill with zeros
+            var_data = torch.zeros(2, AIFS_GRID_POINTS)
+            all_vars.append(var_data)
+
+    # Stack variables: [time, grid_point, n_vars]
+    climate_tensor = torch.stack(all_vars, dim=-1)  # [time, grid_point, vars]
+
+    # Reshape to AIFS format: [batch, time, ensemble, grid, vars]
+    tensor_5d = climate_tensor.unsqueeze(0).unsqueeze(2)  # [1, time, 1, grid, vars]
+    tensor_5d = tensor_5d.to(dtype).to(device)
+
+    # Create 4D tensor by taking first timestep and reshaping spatially
+    # [batch, vars, height, width] - reshape grid_points to approximate spatial
+    grid_size = int(np.sqrt(AIFS_GRID_POINTS))  # Approximate square grid
+    tensor_4d_flat = climate_tensor[0, :, :AIFS_INPUT_VARIABLES]  # [grid, vars]
+    tensor_4d = tensor_4d_flat.T.reshape(1, AIFS_INPUT_VARIABLES, grid_size, grid_size)
+    tensor_4d = tensor_4d.to(dtype).to(device)
+
+    # Create 2D tensor for encoder testing
+    # [batch, features] - take mean across grid points
+    tensor_2d = climate_tensor[0, :, :AIFS_PROJECTED_ENCODER_OUTPUT_DIM].mean(dim=0).unsqueeze(0)
+    tensor_2d = tensor_2d.to(dtype).to(device)
+
     return {
-        # 5D tensor for AIFS: [batch, time, ensemble, grid, vars]
-        # batch=1, time=2 (AIFS expects exactly 2 timesteps: t-6h and t0),
-        # ensemble=1, grid=AIFS_GRID_POINTS (real AIFS grid), vars=AIFS_INPUT_VARIABLES
-        "tensor_5d": torch.randn(1, 2, 1, AIFS_GRID_POINTS, AIFS_INPUT_VARIABLES, dtype=dtype).to(
-            device
+        "tensor_5d": tensor_5d,
+        "tensor_4d": tensor_4d,
+        "tensor_2d": tensor_2d,
+        "variables": list(ALL_AIFS_VARIABLES[:6]),  # First 6 for consistency
+        "lat": (
+            ds.coords.get("latitude", np.linspace(-90, 90, 32))
+            if "latitude" in ds.coords
+            else np.linspace(-90, 90, 32)
         ),
-        # 4D tensor: [batch, vars, height, width]
-        "tensor_4d": torch.randn(2, AIFS_INPUT_VARIABLES, 32, 32, dtype=dtype).to(device),
-        # Flattened for encoder: [batch, features]
-        "tensor_2d": torch.randn(2, AIFS_PROJECTED_ENCODER_OUTPUT_DIM, dtype=dtype).to(device),
-        # Variable names
-        "variables": [
-            "temperature_2m",
-            "surface_pressure",
-            "10m_u_component_of_wind",
-            "10m_v_component_of_wind",
-            "relative_humidity",
-            "precipitation",
-        ],
-        # Coordinates
-        "lat": np.linspace(-90, 90, 32),
-        "lon": np.linspace(-180, 180, 32),
-        "time": ["2024-01-01T00:00:00", "2024-01-01T06:00:00"],  # AIFS expects exactly 2 timesteps
+        "lon": (
+            ds.coords.get("longitude", np.linspace(-180, 180, 32))
+            if "longitude" in ds.coords
+            else np.linspace(-180, 180, 32)
+        ),
+        "time": (
+            list(ds.time.values) if "time" in ds else ["2024-01-01T00:00:00", "2024-01-01T06:00:00"]
+        ),
     }
 
 

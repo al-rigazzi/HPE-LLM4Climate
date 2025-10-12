@@ -242,8 +242,8 @@ def main():
     parser = argparse.ArgumentParser(description="Real Mistral + AIFS + Zarr Integration Test")
     parser.add_argument(
         "--zarr-path",
-        default="test_aifs_large.zarr",
-        help="Path to Zarr dataset (default: test_aifs_large.zarr)",
+        default="data/real_ecmwf_latest.zarr",
+        help="Path to real ECMWF Zarr dataset (default: data/real_ecmwf_latest.zarr)",
     )
     parser.add_argument("--use-quantization", action="store_true", help="Use 8-bit quantization")
     parser.add_argument(

@@ -52,14 +52,16 @@ HPE-LLM4Climate/
 ├── aifs-single-1.1/                   # ECMWF AIFS model (submodule)
 │   ├── aifs-single-mse-1.1.ckpt      # AIFS model weights
 │   └── config_pretraining.yaml       # AIFS configuration
+├── data/                              # Data directory
+│   └── real_ecmwf_latest.zarr/       # Real ECMWF climate data
 ├── scripts/                           # Utility scripts
-├── test_aifs_large.zarr/              # Test Zarr dataset
 └── docs/                              # Documentation
 ```
 
 ## Prerequisites
 
 - **Python**: 3.12+ (exactly 3.12 required for current configuration)
+- **Git LFS**: Required for downloading large data files (see installation below)
 - **Hardware**:
   - **Apple Silicon (M1/M2/M3)**: Full native support with MPS acceleration ✅
   - **NVIDIA GPUs**: CUDA support for training/inference ✅
@@ -77,20 +79,39 @@ HPE-LLM4Climate/
 
 ### 1. Prerequisites Setup
 
-Install Git LFS (required for AIFS model weights):
+#### Install Git LFS (Required)
+
+The repository uses Git LFS to manage large data files (zarr datasets, model weights).
+
+**macOS:**
+```bash
+brew install git-lfs
+git lfs install
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install git-lfs
+git lfs install
+```
+
+**Windows:**
+Download from [git-lfs.github.com](https://git-lfs.github.com/) or use:
+```bash
+winget install git-lfs
+git lfs install
+```
+
+#### Clone the Repository
+
+After installing Git LFS, clone the repository with LFS support:
 
 ```bash
-# macOS
-brew install git-lfs
+git clone https://github.com/al-rigazzi/HPE-LLM4Climate.git
+cd HPE-LLM4Climate
 
-# Ubuntu/Debian
-sudo apt-get install git-lfs
-
-# Windows
-choco install git-lfs
-
-# Initialize Git LFS
-git lfs install
+# Pull LFS files (including real ECMWF data)
+git lfs pull
 ```
 
 ### 2. Clone Repository
@@ -99,11 +120,14 @@ git lfs install
 git clone --recurse-submodules https://github.com/al-rigazzi/HPE-LLM4Climate.git
 cd HPE-LLM4Climate
 
+# Pull LFS files (including real ECMWF data and model weights)
+git lfs pull
+
 # If already cloned, initialize submodules
 git submodule update --init --recursive
 ```
 
-### 3. Python Environment
+### 2. Python Environment
 
 ```bash
 # Create virtual environment
@@ -149,8 +173,8 @@ from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
 from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 import torch
 
-# Load climate data
-loader = ZarrClimateLoader('test_aifs_large.zarr')
+# Load real ECMWF climate data
+loader = ZarrClimateLoader('data/real_ecmwf_latest.zarr')
 climate_data = loader.load_time_range(None, None)  # Load all time steps
 climate_tensor = loader.to_aifs_tensor(climate_data, batch_size=1, device='cpu')
 

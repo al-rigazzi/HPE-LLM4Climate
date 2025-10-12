@@ -27,12 +27,12 @@ def test_sample_generation():
     print("Testing Training Sample Generation with Real Mistral")
     print("=" * 80)
 
-    # Check if test Zarr file exists
-    zarr_path = Path(__file__).parent.parent.parent / "test_aifs_large.zarr"
+    # Check if real ECMWF Zarr file exists
+    zarr_path = Path(__file__).parent.parent.parent / "data" / "real_ecmwf_latest.zarr"
 
     if not zarr_path.exists():
-        print(f"\nTest Zarr file not found at {zarr_path}")
-        raise FileNotFoundError(f"Required test data not found: {zarr_path}")
+        print(f"\nReal ECMWF Zarr file not found at {zarr_path}")
+        raise FileNotFoundError(f"Required real ECMWF data not found: {zarr_path}")
 
     print("\nInitializing DataLoader with Ministral-8B-Instruct-2410...")
     print(f"Zarr path: {zarr_path}")

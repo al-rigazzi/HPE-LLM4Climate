@@ -503,11 +503,11 @@ def test_zarr_integration():
         return False
 
     try:
-        # Test with the test dataset
-        test_path = "test_aifs_large.zarr"
+        # Test with the real ECMWF dataset
+        test_path = "data/real_ecmwf_latest.zarr"
 
         if not Path(test_path).exists():
-            print(f"Test dataset not found: {test_path}")
+            print(f"Real ECMWF dataset not found: {test_path}")
             return False
 
         print(f"Testing with: {test_path}")

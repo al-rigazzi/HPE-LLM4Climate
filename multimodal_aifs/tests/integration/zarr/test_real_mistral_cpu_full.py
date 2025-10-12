@@ -234,12 +234,12 @@ def test_memory_requirements():
 def main():
     """Main function."""
 
-    # Get zarr path - use unified test dataset
-    zarr_file = "test_aifs_large.zarr"
+    # Get zarr path - use real ECMWF dataset
+    zarr_file = "data/real_ecmwf_latest.zarr"
 
     # Check prerequisites
     if not Path(zarr_file).exists():
-        print(f"Test dataset not found: {zarr_file}")
+        print(f"Real ECMWF dataset not found: {zarr_file}")
         return
 
     # Memory check
