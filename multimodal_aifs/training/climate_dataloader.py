@@ -166,26 +166,52 @@ class ClimateTextDataLoader(IterableDataset):
             self.mistral_tokenizer.pad_token = self.mistral_tokenizer.eos_token
 
         if self.cache_mistral_model:
+            import torch
             from transformers import AutoModelForCausalLM
 
-            print("  Loading model in float16 for memory efficiency...")
-            self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                torch_dtype=torch.float16,
-                device_map="auto",
-                low_cpu_mem_usage=True,
-            )
+            # Determine target device and dtype
+            target_device = self.device
+            torch_dtype = torch.float32 if target_device == "cpu" else torch.float16
+
+            print(f"  Loading model for {target_device} ({torch_dtype})...")
+
+            # Load model WITHOUT device_map to avoid buffer allocation issues
+            # Load on CPU first, then move to target device (works better for MPS)
+            load_kwargs = {
+                "torch_dtype": torch_dtype,
+                "low_cpu_mem_usage": True,
+            }
+
+            # Force CPU loading context to prevent MPS warmup allocation
+            with torch.device("cpu"):
+                # For MPS, use eager attention to avoid flash attention issues
+                if target_device == "mps":
+                    # Force eager attention for MPS compatibility
+                    load_kwargs["attn_implementation"] = "eager"
+                    self.mistral_model = AutoModelForCausalLM.from_pretrained(
+                        model_name,
+                        **load_kwargs,
+                    )
+                    print("   Moving model to MPS...")
+                    self.mistral_model = self.mistral_model.to(target_device)
+                else:
+                    # CPU or CUDA
+                    self.mistral_model = AutoModelForCausalLM.from_pretrained(
+                        model_name,
+                        **load_kwargs,
+                    )
+                    if target_device != "cpu":
+                        self.mistral_model = self.mistral_model.to(target_device)
+
             self.mistral_model.eval()
 
-            # Update device to match where the model was actually loaded
-            if hasattr(self.mistral_model, "device"):
-                self.device = self.mistral_model.device
-            elif hasattr(self.mistral_model, "hf_device_map"):
-                # Get the first device from the device map
-                first_device = next(iter(self.mistral_model.hf_device_map.values()))
-                self.device = torch.device(first_device)
+            # Enable gradient checkpointing for memory efficiency
+            if hasattr(self.mistral_model, "gradient_checkpointing_enable"):
+                self.mistral_model.gradient_checkpointing_enable()
+                print("  ✓ Gradient checkpointing enabled")
 
-            print(f"  ✓ Mistral model loaded in float16 mode on {self.device}")
+            self.device = torch.device(target_device)
+            print(f"  ✓ Mistral model loaded in {torch_dtype} mode on {self.device}")
         else:
             print("  ℹ Mistral will be loaded per-sample (memory efficient mode)")
 
@@ -333,13 +359,16 @@ class ClimateTextDataLoader(IterableDataset):
         # Format prompt for Mistral
         formatted_prompt = self.prompt_generator.format_for_mistral(prompt)
 
-        # Tokenize
+        # Tokenize with proper padding to avoid tensor creation issues
         inputs = self.mistral_tokenizer(
             formatted_prompt,
             return_tensors="pt",
             max_length=self.max_prompt_length,
             truncation=True,
+            padding=True,
         )
+
+        # Move to target device explicitly
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         # Generate

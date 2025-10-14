@@ -243,10 +243,10 @@ class AIFSClimateTextFusion(nn.Module):
 
         Args:
             texts: list of text descriptions
-            text_embeddings: Pre-computed text embeddings (optional)
+            text_embeddings: Pre-computed text embeddings [num_texts, text_dim]
 
         Returns:
-            Encoded text features
+            Encoded text features [num_texts, fusion_dim]
         """
         if text_embeddings is None:
             raise ValueError(
@@ -256,7 +256,8 @@ class AIFSClimateTextFusion(nn.Module):
             )
 
         # Project to fusion dimension
-        projected = self.text_projection(text_embeddings)
+        projected = self.text_projection(text_embeddings)  # [num_texts, fusion_dim]
+
         return torch.as_tensor(projected)
 
     def apply_cross_attention(

@@ -89,7 +89,3 @@ class TestClimateDataUtils(unittest.TestCase):
         proc_minmax = ClimateDataProcessor(normalization_method="minmax")
         result_minmax = proc_minmax.fit_transform(data)
         self.assertIsInstance(result_minmax, torch.Tensor)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -79,7 +79,14 @@ class AIFSCompleteEncoder(nn.Module):
         self.verbose = verbose
         self.device = device
 
+        # AIFS model is too memory-intensive for MPS, always keep it on CPU
+        # Only the projection layer will be on the target device
+        self.aifs_device = "cpu"
+        if self.verbose and device == "mps":
+            print(f"Note: AIFS encoder will run on CPU (too large for MPS memory)")
+
         # Determine dtype based on device
+        # AIFS always uses FP32 on CPU for stability
         self.use_fp16 = device in ["cuda", "mps"]
         self.dtype = torch.float16 if self.use_fp16 else torch.float32
 
@@ -89,18 +96,21 @@ class AIFSCompleteEncoder(nn.Module):
             AIFS_RAW_ENCODER_OUTPUT_DIM, AIFS_PROJECTED_ENCODER_OUTPUT_DIM, dtype=self.dtype
         )
 
-        # Move to device and set dtype
-        self.to(device)
+        # Keep AIFS on CPU (always FP32), move only projection layer to target device
+        self.aifs_interface = self.aifs_interface.cpu().float()
+        self.aifs_model = self.aifs_interface.model
+
+        # Move projection layer to target device
+        self.output_projection = self.output_projection.to(device)
         if self.use_fp16:
             self.output_projection = self.output_projection.half()
-            # Convert the AIFS model itself to FP16
-            self.aifs_interface = self.aifs_interface.half()
-            self.aifs_model = self.aifs_interface.model  # Update reference after conversion
 
         if self.verbose:
             print(f"Inner model type: {type(self.aifs_model)}")
             print(f"Has encoder: {hasattr(self.aifs_model, 'encoder')}")
             print(f"Has trainable_data: {hasattr(self.aifs_model, 'trainable_data')}")
+            print(f"AIFS encoder on: {self.aifs_device} (FP32)")
+            print(f"Projection layer on: {device} ({'FP16' if self.use_fp16 else 'FP32'})")
             print(
                 f"Added projection layer: {AIFS_RAW_ENCODER_OUTPUT_DIM} -> "
                 f"{AIFS_PROJECTED_ENCODER_OUTPUT_DIM} features"
@@ -144,16 +154,25 @@ class AIFSCompleteEncoder(nn.Module):
 
         # Follow the EXACT same steps as AnemoiModelEncProcDec.forward() but stop at encoder
         with torch.no_grad():
-            # Clear GPU memory cache before processing if on GPU/MPS
-            if x.device.type == "cuda":
-                torch.cuda.empty_cache()
-            elif x.device.type == "mps" and hasattr(torch.backends, "mps"):
-                torch.mps.empty_cache()
+            # AIFS is always on CPU (set in __init__), move input to CPU for processing
+            original_device = x.device
+            x_cpu = x.cpu().float()  # Convert to FP32 for CPU processing
 
-            # Call the AIFS model directly with the 5D input tensor
-            # This should return encoder embeddings in the expected format
+            # Clear MPS memory if input was on MPS
+            if original_device.type == "mps" and hasattr(torch.backends, "mps"):
+                torch.mps.empty_cache()
+            elif original_device.type == "cuda":
+                torch.cuda.empty_cache()
+
+            # Ensure model is in eval mode for inference chunking to work
+            # (ANEMOI_INFERENCE_NUM_CHUNKS only applies in eval mode)
+            was_training = self.aifs_model.training
+            if was_training:
+                self.aifs_model.eval()
+
+            # Call the AIFS model on CPU
             try:
-                full_output = self.aifs_model(x)
+                full_output = self.aifs_model(x_cpu)
                 if isinstance(full_output, tuple):
                     # Extract the first component (encoder output)
                     data_embeddings = full_output[0]
@@ -180,6 +199,20 @@ class AIFSCompleteEncoder(nn.Module):
                 raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
             except Exception as e:
                 raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
+            finally:
+                # Restore training mode if it was on
+                if was_training:
+                    self.aifs_model.train()
+
+            # Move embeddings back to original device and convert dtype if needed
+            if original_device.type != "cpu":
+                if self.verbose:
+                    print(f"Moving AIFS output from CPU to {original_device}")
+                # Convert to FP16 when moving to MPS/CUDA (if use_fp16 is True)
+                if self.use_fp16:
+                    data_embeddings = data_embeddings.half().to(original_device)
+                else:
+                    data_embeddings = data_embeddings.to(original_device)
 
             # Apply projection to transform to expected AIFS_PROJECTED_ENCODER_OUTPUT_DIM features
             # AIFS outputs AIFS_RAW_ENCODER_OUTPUT_DIM features, we need to project to

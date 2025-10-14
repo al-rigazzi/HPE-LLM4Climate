@@ -45,6 +45,9 @@ import torch
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+# Import constants
+from multimodal_aifs.constants import ALL_AIFS_VARIABLES
+
 # Try to import Zarr and Xarray
 try:
     import xarray as xr
@@ -322,11 +325,15 @@ class ZarrClimateLoader:
         normalize: bool = True,
         device: str = "cpu",
         use_fp16: bool = False,
+        runner=None,
+        use_forcing_pipeline: bool = True,
     ) -> torch.Tensor:
         """
         Convert Xarray dataset to AIFS tensor format.
-        For lat/lon format: [B, T, V, H, W]
-        For AIFS grid_point format: [B, T, V, grid_points]
+
+        This method uses SimpleRunner.prepare_input_tensor() to properly handle
+        forcing variable computation (8 trigonometric + insolation). The runner
+        is required for AIFS format data to ensure correct forcing computation.
 
         Args:
             data: Xarray dataset
@@ -334,121 +341,100 @@ class ZarrClimateLoader:
             normalize: Whether to normalize the data
             device: Device to move tensor to ("cpu", "cuda", "mps", etc.)
             use_fp16: Whether to use FP16 (torch.float16) instead of FP32 (torch.float32)
+            runner: SimpleRunner instance required for AIFS format data
+            use_forcing_pipeline: Whether to use SimpleRunner pipeline (default: True)
 
         Returns:
-            Tensor ready for AIFS model input
+            Tensor ready for AIFS model input [batch, time, ensemble, grid_points, vars]
+            Shape: [batch, time, ensemble=1, grid_points, 103]
+            Contains 103 variables: 94 physics + 9 forcings computed by SimpleRunner
+
+        Raises:
+            ValueError: If runner is None for AIFS format data
+            ValueError: If data is not in AIFS format (grid_point dimension required)
         """
         print("Converting to AIFS tensor format...")
 
-        # Get data variables
-        variables = list(data.data_vars.keys())
+        # Validate requirements for AIFS format
+        if not self.is_aifs_format:
+            raise ValueError(
+                "Data must be in AIFS format (grid_point dimension) to use this method. "
+                f"Current spatial dimensions: {self.spatial_dims}"
+            )
 
-        # Check if data is already in AIFS format
-        if "data" in variables and len(data.data.dims) == 5:
-            # Data is already in AIFS format [batch, time, ensemble, grid_points, variables]
-            print("Data already in AIFS format, using directly")
-            if use_fp16:
-                tensor = torch.from_numpy(data["data"].values).half()
-            else:
-                tensor = torch.from_numpy(data["data"].values).float()
-            print(f"   AIFS tensor shape: {tensor.shape}")
-            return tensor
+        if runner is None:
+            raise ValueError(
+                "SimpleRunner instance is required for AIFS format data. "
+                "The runner handles forcing variable computation (9 variables: "
+                "cos/sin lat/lon/time/julian_day/local_time + insolation). "
+                "Pass a runner instance to to_aifs_tensor()."
+            )
 
-        # Stack variables into single array
-        arrays = []
-        for var in variables:
-            var_data = data[var].values
-            if self.is_aifs_format:
-                # AIFS format: [time, grid_points]
-                if var_data.ndim == 2:
-                    arrays.append(var_data)
+        print("   Using SimpleRunner.prepare_input_tensor()...")
+
+        try:
+            import pandas as pd
+
+            # Extract physics variables only (94 variables)
+            # SimpleRunner will add forcing variables internally
+            fields = {}
+            for var in ALL_AIFS_VARIABLES:
+                if var in data.data_vars:
+                    # Shape: [time, grid_points]
+                    fields[var] = data[var].values
                 else:
                     raise ValueError(
-                        f"AIFS format: Variable {var} has unexpected shape: {var_data.shape}"
-                    )
-            else:
-                # Lat/lon format: [time, lat, lon]
-                if var_data.ndim == 3:
-                    arrays.append(var_data)
-                else:
-                    raise ValueError(
-                        f"Lat/lon format: Variable {var} has unexpected shape: {var_data.shape}"
+                        f"Required variable '{var}' not found in dataset. "
+                        f"Available: {list(data.data_vars.keys())[:20]}..."
                     )
 
-        # Stack variables
-        if self.is_aifs_format:
-            # AIFS format: [time, variables, grid_points]
-            stacked = np.stack(arrays, axis=1)
-        else:
-            # Lat/lon format: [time, variables, lat, lon]
-            stacked = np.stack(arrays, axis=1)
+            # Get date from dataset (use first timestep)
+            date = pd.Timestamp(data.time.values[0]).to_pydatetime()
 
-        # Convert to tensor
-        if use_fp16:
-            tensor = torch.from_numpy(stacked).half().to(device)
-        else:
-            tensor = torch.from_numpy(stacked).float().to(device)
+            # Create input_state dict as expected by SimpleRunner
+            input_state = {
+                "date": date,
+                "fields": fields,
+                # Lat/lon will be added by SimpleRunner if not provided
+            }
 
-        # Add batch dimension or create batches
-        if batch_size == 1:
-            # Single batch
-            if self.is_aifs_format:
-                # For AIFS format, add ensemble dimension: [batch, time, 1, grid_points, vars]
-                tensor = tensor.unsqueeze(0)  # [1, time, vars, grid_points]
-                tensor = tensor.unsqueeze(2)  # [1, time, 1, vars, grid_points]
-                # Reorder to [batch, time, ensemble=1, grid_points, vars]
-                tensor = tensor.permute(0, 1, 2, 4, 3)
-            else:
-                tensor = tensor.unsqueeze(0)
-        else:
-            # Create batches from time series
-            time_steps = tensor.shape[0]
-            if time_steps < batch_size:
-                # Pad if needed
-                padding = batch_size - time_steps
-                tensor = torch.cat([tensor, tensor[-1:].repeat(padding, 1, 1, 1)], dim=0)
+            # Initialize forcing inputs if not already done
+            # These are normally set up during the first run() call
+            if not hasattr(runner, "constant_forcings_inputs"):
+                runner.constant_forcings_inputs = runner.create_constant_forcings_inputs(
+                    input_state
+                )
+            if not hasattr(runner, "dynamic_forcings_inputs"):
+                runner.dynamic_forcings_inputs = runner.create_dynamic_forcings_inputs(input_state)
 
-            # Reshape to batches
-            time_per_batch = tensor.shape[0] // batch_size
-            tensor = tensor[: batch_size * time_per_batch]
-            if self.is_aifs_format:
-                tensor = tensor.view(batch_size, time_per_batch, *tensor.shape[1:])
-                # Add ensemble dimension for AIFS format
-                tensor = tensor.unsqueeze(2)  # Add ensemble dimension
-                # Reorder to [batch, time, ensemble=1, grid_points, vars]
-                tensor = tensor.permute(0, 1, 2, 4, 3)
-            else:
-                tensor = tensor.view(batch_size, time_per_batch, *tensor.shape[1:])
+            # Let SimpleRunner prepare the tensor with all forcings
+            # Returns: [multi_step_input, number_of_features, grid_points]
+            input_tensor_numpy = runner.prepare_input_tensor(input_state)
 
-        # Normalize if requested
-        if normalize:
-            # Simple normalization: standardize each variable
-            for i, var in enumerate(variables):
-                if self.is_aifs_format:
-                    var_data = tensor[:, :, 0, :, i]  # [batch, time, ensemble=1, grid_points, vars]
-                else:
-                    var_data = tensor[:, :, i, :, :]  # [batch, time, vars, lat, lon]
-                mean = var_data.mean()
-                std = var_data.std() + 1e-8  # Avoid division by zero
-                if self.is_aifs_format:
-                    tensor[:, :, 0, :, i] = (var_data - mean) / std
-                else:
-                    tensor[:, :, i, :, :] = (var_data - mean) / std
+            print(f"   SimpleRunner created tensor: {input_tensor_numpy.shape}")
 
-        if self.is_aifs_format:
+            # Convert to PyTorch and reshape to AIFS format
+            # From: [timesteps, features, grid_points]
+            # To: [batch=1, timesteps, ensemble=1, grid_points, features]
+            tensor = torch.from_numpy(input_tensor_numpy).float()
+            tensor = tensor.permute(0, 2, 1)  # [timesteps, grid_points, features]
+            tensor = tensor.unsqueeze(0).unsqueeze(2)  # Add batch and ensemble dims
+
             print(
                 f"   Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
                 f"ensemble={tensor.shape[2]}, grid_points={tensor.shape[3]}, "
-                f"vars={tensor.shape[4]}"
-            )
-        else:
-            print(
-                f"   Format: [batch={tensor.shape[0]}, time={tensor.shape[1]}, "
-                f"vars={tensor.shape[2]}, height={tensor.shape[3]}, width={tensor.shape[4]}]"
+                f"vars={tensor.shape[4]}]"
             )
 
-        tensor = tensor.to(device)
-        return tensor
+            # Move to device and convert to FP16 if needed
+            tensor = tensor.to(device)
+            if use_fp16:
+                tensor = tensor.half()
+
+            return tensor
+
+        except Exception as e:
+            raise RuntimeError(f"Failed to prepare AIFS tensor using SimpleRunner: {e}") from e
 
     def get_info(self) -> dict[str, Any]:
         """Get dataset information."""

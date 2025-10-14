@@ -136,8 +136,3 @@ def test_tokenizer():
 
         traceback.print_exc()
         assert False, f"Test failed: {e}"
-
-
-if __name__ == "__main__":
-    test_tokenizer()
-    print("All tests completed successfully!")

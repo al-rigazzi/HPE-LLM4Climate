@@ -69,6 +69,7 @@ def zarr_path(zarr_dataset_path):
 )
 def test_real_mistral_with_zarr(
     aifs_mistral_model,
+    aifs_model,
     zarr_dataset_path,
     zarr_path: str = None,  # pylint: disable=redefined-outer-name
     use_quantization: bool = None,
@@ -109,12 +110,19 @@ def test_real_mistral_with_zarr(
     try:
         loader = ZarrClimateLoader(zarr_path)
 
-        # Load a small subset for testing
-        climate_data = loader.load_time_range("2024-01-01", "2024-01-01T06:00:00")
+        # Load all available timesteps (real ECMWF data has exactly 2 timesteps)
+        climate_data = loader.load_time_range(None, None)  # Load all timesteps
 
-        # Convert to AIFS tensor
+        # Get runner from aifs_model fixture for input preparation pipeline
+        runner = aifs_model.get("runner") if not aifs_model.get("is_mock") else None
+
+        # Convert to AIFS tensor using new input preparation pipeline
         climate_tensor = loader.to_aifs_tensor(
-            climate_data, batch_size=1, normalize=True  # Small batch for CPU
+            climate_data,
+            batch_size=1,
+            normalize=True,
+            runner=runner,
+            use_forcing_pipeline=True,
         )
 
         print("Climate data loaded successfully")
@@ -235,59 +243,3 @@ def test_real_mistral_with_zarr(
     print("   Text generation")
 
     return True
-
-
-def main():
-    """Main test function."""
-    parser = argparse.ArgumentParser(description="Real Mistral + AIFS + Zarr Integration Test")
-    parser.add_argument(
-        "--zarr-path",
-        default="data/real_ecmwf_latest.zarr",
-        help="Path to real ECMWF Zarr dataset (default: data/real_ecmwf_latest.zarr)",
-    )
-    parser.add_argument("--use-quantization", action="store_true", help="Use 8-bit quantization")
-    parser.add_argument(
-        "--model-name", default="mistralai/Mistral-7B-Instruct-v0.3", help="Mistral model name"
-    )
-    parser.add_argument("--max-memory", type=float, default=8.0, help="Max memory in GB")
-
-    args = parser.parse_args()
-
-    # Check if zarr dataset exists
-    if not Path(args.zarr_path).exists():
-        print(f"Zarr dataset not found: {args.zarr_path}")
-        print("To create the test dataset, run:")
-        print("   cd /path/to/project && python multimodal_aifs/conftest.py")
-        print("   # Or use the ensure_test_zarr_dataset fixture")
-        return
-
-    # Warning about memory requirements
-    if not torch.cuda.is_available():
-        print("\nWARNING: Running on CPU")
-        print("   Mistral-7B-Instruct requires significant memory and will be slow")
-        print("   Consider using --use-quantization to reduce memory usage")
-        print("   Expected processing time: 5-10 minutes")
-
-        response = input("\n   Continue? (y/N): ")
-        if response.lower() != "y":
-            print("   Cancelled by user")
-            return
-
-    # Run the test
-    # NOTE: Standalone execution is not fully supported - fixtures need to be set up manually
-    # This is a test file meant to be run via pytest
-    success = test_real_mistral_with_zarr(  # pylint: disable=no-value-for-parameter
-        zarr_path=args.zarr_path,
-        use_quantization=args.use_quantization,
-        model_name=args.model_name,
-        max_memory_gb=args.max_memory,
-    )
-
-    if success:
-        print("\n🏆 All tests passed! Real Mistral integration is working.")
-    else:
-        print("\n💥 Some tests failed. Check the output above for details.")
-
-
-if __name__ == "__main__":
-    main()

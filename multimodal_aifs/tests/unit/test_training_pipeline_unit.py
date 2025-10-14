@@ -30,10 +30,7 @@ from multimodal_aifs.training.climate_dataloader import TrainingSample
 from multimodal_aifs.training.location_masks import Location
 
 
-@pytest.mark.skipif(
-    not os.environ.get("HF_TOKEN"),
-    reason="Requires HuggingFace token for accessing gated Mistral models",
-)
+@pytest.mark.requires_mistral
 class TestClimateTextDataLoaderReal:
     """Test suite using real components (minimal mocking)."""
 
@@ -48,7 +45,7 @@ class TestClimateTextDataLoaderReal:
 
             # Time dimension (small for testing)
             n_timesteps = 10
-            root.create_array("time", data=np.arange(n_timesteps))
+            root.create_dataset("time", data=np.arange(n_timesteps))
 
             # Grid points (consistent for all variables)
             grid_points = 2560  # Reduced from real size for testing
@@ -56,7 +53,7 @@ class TestClimateTextDataLoaderReal:
             # All variables must have the same grid_points dimension
             # Surface variables
             for var_name in ["2t", "10u", "10v", "msl", "tp"]:
-                root.create_array(
+                root.create_dataset(
                     var_name,
                     data=np.random.randn(n_timesteps, grid_points).astype(np.float32),
                     chunks=(1, grid_points),
@@ -67,23 +64,23 @@ class TestClimateTextDataLoaderReal:
             for level in levels:
                 for var in ["z", "t", "u", "v", "q", "w"]:
                     var_name = f"{var}_{level}"
-                    root.create_array(
+                    root.create_dataset(
                         var_name,
                         data=np.random.randn(n_timesteps, grid_points).astype(np.float32),
                         chunks=(1, grid_points),
                     )
 
             # Grid point coordinates (same grid_points)
-            root.create_array(
+            root.create_dataset(
                 "cos_latitude", data=np.random.uniform(-1, 1, grid_points).astype(np.float32)
             )
-            root.create_array(
+            root.create_dataset(
                 "sin_latitude", data=np.random.uniform(-1, 1, grid_points).astype(np.float32)
             )
-            root.create_array(
+            root.create_dataset(
                 "cos_longitude", data=np.random.uniform(-1, 1, grid_points).astype(np.float32)
             )
-            root.create_array(
+            root.create_dataset(
                 "sin_longitude", data=np.random.uniform(-1, 1, grid_points).astype(np.float32)
             )
 
@@ -114,10 +111,14 @@ class TestClimateTextDataLoaderReal:
 
             yield dataloader
 
-    def test_initialization_basic(self, real_test_zarr_path):
+    def test_initialization_basic(self, real_test_zarr_path, llm_mock_status):
         """Test basic initialization with minimal parameters."""
+        # Skip test if mock LLM is being used
+        if llm_mock_status["use_mock_llm"]:
+            pytest.skip("Skipping real LLM test because mock LLM is enabled")
+
         with (
-            patch("multimodal_aifs.training.climate_dataloader.AutoTokenizer"),
+            patch("transformers.AutoTokenizer"),
             patch.object(ClimateTextDataLoader, "_initialize_mistral_model"),
         ):
 
@@ -130,10 +131,14 @@ class TestClimateTextDataLoaderReal:
             assert dataloader.device == "cpu"
             assert len(dataloader.zarr_datasets) == 1
 
-    def test_initialization_with_custom_parameters(self, real_test_zarr_path):
+    def test_initialization_with_custom_parameters(self, real_test_zarr_path, llm_mock_status):
         """Test initialization with custom parameters."""
+        # Skip test if mock LLM is being used
+        if llm_mock_status["use_mock_llm"]:
+            pytest.skip("Skipping real LLM test because mock LLM is enabled")
+
         with (
-            patch("multimodal_aifs.training.climate_dataloader.AutoTokenizer"),
+            patch("transformers.AutoTokenizer"),
             patch.object(ClimateTextDataLoader, "_initialize_mistral_model"),
         ):
 
@@ -154,8 +159,12 @@ class TestClimateTextDataLoaderReal:
             assert dataloader.max_response_length == 256
             assert dataloader.device == "cuda"
 
-    def test_real_sample_generation(self, real_dataloader_no_model):
+    def test_real_sample_generation(self, real_dataloader_no_model, llm_mock_status):
         """Test that we can generate real samples using real components."""
+        # Skip test if mock LLM is being used
+        if llm_mock_status["use_mock_llm"]:
+            pytest.skip("Skipping real LLM test because mock LLM is enabled")
+
         # This is the key test - it uses ALL real components
         samples = real_dataloader_no_model.get_sample_preview(num_samples=2)
 
@@ -187,8 +196,12 @@ class TestClimateTextDataLoaderReal:
             assert len(sample.prompt) > 50  # Should be substantial
             assert "climate" in sample.prompt.lower() or "weather" in sample.prompt.lower()
 
-    def test_real_statistics_computation(self, real_dataloader_no_model):
+    def test_real_statistics_computation(self, real_dataloader_no_model, llm_mock_status):
         """Test that statistics computation works with real data."""
+        # Skip test if mock LLM is being used
+        if llm_mock_status["use_mock_llm"]:
+            pytest.skip("Skipping real LLM test because mock LLM is enabled")
+
         sample = real_dataloader_no_model._generate_sample(sample_idx=0)
 
         # Verify that statistics are computed correctly
@@ -199,8 +212,12 @@ class TestClimateTextDataLoaderReal:
         # Statistics should contain actual numbers
         assert any(char.isdigit() for char in sample.statistics_table)
 
-    def test_real_location_masks(self, real_dataloader_no_model):
+    def test_real_location_masks(self, real_dataloader_no_model, llm_mock_status):
         """Test that location mask generation works correctly."""
+        # Skip test if mock LLM is being used
+        if llm_mock_status["use_mock_llm"]:
+            pytest.skip("Skipping real LLM test because mock LLM is enabled")
+
         sample = real_dataloader_no_model._generate_sample(sample_idx=0)
 
         # Check mask properties
@@ -214,8 +231,12 @@ class TestClimateTextDataLoaderReal:
         assert 0 < selected_points < total_points  # Some but not all points selected
         assert selected_points >= 1  # At least some points (relaxed for small test data)
 
-    def test_real_prompt_generation(self, real_dataloader_no_model):
+    def test_real_prompt_generation(self, real_dataloader_no_model, llm_mock_status):
         """Test that prompt generation works with real templates."""
+        # Skip test if mock LLM is being used
+        if llm_mock_status["use_mock_llm"]:
+            pytest.skip("Skipping real LLM test because mock LLM is enabled")
+
         sample = real_dataloader_no_model._generate_sample(sample_idx=0)
 
         # Check prompt structure
@@ -225,8 +246,12 @@ class TestClimateTextDataLoaderReal:
         # Should contain location information
         assert sample.location.name in sample.prompt or "location" in sample.prompt.lower()
 
-    def test_data_loader_iteration(self, real_dataloader_no_model):
+    def test_data_loader_iteration(self, real_dataloader_no_model, llm_mock_status):
         """Test that the dataloader can iterate correctly."""
+        # Skip test if mock LLM is being used
+        if llm_mock_status["use_mock_llm"]:
+            pytest.skip("Skipping real LLM test because mock LLM is enabled")
+
         # Test iteration works
         sample_count = 0
         for sample in real_dataloader_no_model:
@@ -240,8 +265,12 @@ class TestClimateTextDataLoaderReal:
 
         assert sample_count > 0
 
-    def test_reproducibility(self, real_test_zarr_path):
+    def test_reproducibility(self, real_test_zarr_path, llm_mock_status):
         """Test that setting seed makes results reproducible."""
+        # Skip test if mock LLM is being used
+        if llm_mock_status["use_mock_llm"]:
+            pytest.skip("Skipping real LLM test because mock LLM is enabled")
+
         from unittest.mock import Mock
 
         def create_dataloader():
@@ -270,8 +299,12 @@ class TestClimateTextDataLoaderReal:
         assert sample1.location.name == sample2.location.name
         assert torch.allclose(sample1.climate_tensor_t1, sample2.climate_tensor_t1)
 
-    def test_error_handling(self):
+    def test_error_handling(self, llm_mock_status):
         """Test error handling for invalid inputs."""
+        # Skip test if mock LLM is being used
+        if llm_mock_status["use_mock_llm"]:
+            pytest.skip("Skipping real LLM test because mock LLM is enabled")
+
         # Test with non-existent file
         with pytest.raises(FileNotFoundError):
             ClimateTextDataLoader(zarr_paths=["non_existent_file.zarr"], samples_per_epoch=1)

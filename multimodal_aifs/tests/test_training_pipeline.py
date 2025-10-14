@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from multimodal_aifs.training import ClimateTextDataLoader
 
 
-def test_sample_generation():
+def test_sample_generation(llm_mock_status):
     """Test that training samples are generated correctly with real Mistral responses."""
     print("\n" + "=" * 80)
     print("Testing Training Sample Generation with Real Mistral")
@@ -34,16 +34,19 @@ def test_sample_generation():
         print(f"\nReal ECMWF Zarr file not found at {zarr_path}")
         raise FileNotFoundError(f"Required real ECMWF data not found: {zarr_path}")
 
-    print("\nInitializing DataLoader with Ministral-8B-Instruct-2410...")
+    # Get model name from fixture (respects LLM_MODEL_NAME env var)
+    model_name = llm_mock_status["model_name"]
+    print(f"\nInitializing DataLoader with {model_name}...")
     print(f"Zarr path: {zarr_path}")
     print("\nNote: Requires HuggingFace authentication for gated model")
     print("If not authenticated, run: huggingface-cli login")
 
     dataloader = ClimateTextDataLoader(
         zarr_paths=str(zarr_path),
+        mistral_model_name=model_name,
         samples_per_epoch=3,
         cache_mistral_model=True,
-        device="cpu",  # Use CPU for modelerence
+        device="mps",  # Use MPS for faster inference (FP16)
         seed=42,
     )
 
@@ -58,7 +61,7 @@ def test_sample_generation():
 
     # Verify each sample
     expected_grid = 542080
-    expected_vars = 103
+    expected_vars = 94  # Actual number of variables in the test zarr file
 
     for i, sample in enumerate(samples):
         print(f"\n--- Sample {i + 1} ---")
@@ -119,7 +122,3 @@ def test_sample_generation():
     print("✓ All sample generation tests passed")
     print("=" * 80)
     print()
-
-
-if __name__ == "__main__":
-    test_sample_generation()

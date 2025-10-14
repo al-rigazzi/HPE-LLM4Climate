@@ -160,7 +160,3 @@ class TestTextUtils(unittest.TestCase):
         text3 = "the quick brown fox jumps over the lazy dog"
         keywords3 = processor.extract_climate_keywords(text3)
         self.assertIsInstance(keywords3, list)
-
-
-if __name__ == "__main__":
-    unittest.main()

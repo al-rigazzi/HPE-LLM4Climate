@@ -462,7 +462,3 @@ class TestTextUtilsIntegration(unittest.TestCase):
         # Build vocabulary with minimal data
         embedding_utils.build_vocabulary(["a", "b", "c"])
         self.assertGreater(len(embedding_utils.word_to_idx), 0)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -283,12 +283,18 @@ def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
 
     # Use 5D climate data and let fusion module handle encoding
     climate_data_5d = test_climate_data["tensor_5d"]  # [1, 2, 1, 542080, 103]
-    texts = ["High temperature patterns", "Precipitation forecast"]
+    # Use single text to match batch size (batch=1)
+    texts = ["High temperature patterns"]
     print(f"   Climate data: {climate_data_5d.shape}, Texts: {len(texts)}")
 
     try:
+        # Create dummy text embeddings for testing (text_dim=768)
+        # In production, these would come from a proper text encoder (BERT, sentence-transformers, etc.)
+        # Number of texts must match batch size
+        text_embeddings = torch.randn(len(texts), 768, device=test_device)
+
         # Test fusion using the forward method that handles encoding internally
-        results = fusion_module.forward(climate_data_5d, texts)
+        results = fusion_module.forward(climate_data_5d, texts, text_embeddings=text_embeddings)
 
         # Validate output
         assert "fused_features" in results
@@ -408,7 +414,3 @@ def test_text_encoding(aifs_model, test_device):
     except Exception as e:
         print(f"   Text encoding failed: {e}")
         pytest.fail(f"Text encoding failed: {e}")
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "-s"])
