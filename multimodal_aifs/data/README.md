@@ -2,27 +2,24 @@
 
 This directory contains cached ECMWF climate data for the multimodal AIFS climate analysis system.
 
-## Directory Structure
+**Note: This directory contains legacy cached data that is no longer used. The project now exclusively uses Zarr format datasets loaded directly from ECMWF sources.**
 
-```
-multimodal_aifs/data/
-├── README.md                          # This file
-└── grib/                             # ECMWF cached data files
-    ├── ecmwf_20250910_12_10u_10v_2d_2t_msl_skt_sp_tcw_lsm_z_slor_sdor_sfc.cache.npy
-    ├── ecmwf_20250910_12_gh_t_u_v_w_q_1000_925_850_700_600_500_400_300_250_200_150_100_50.cache.npy
-    ├── ecmwf_20250910_12_vsw_sot_1_2.cache.npy
-    ├── ecmwf_20250910_18_10u_10v_2d_2t_msl_skt_sp_tcw_lsm_z_slor_sdor_sfc.cache.npy
-    ├── ecmwf_20250910_18_gh_t_u_v_w_q_1000_925_850_700_600_500_400_300_250_200_150_100_50.cache.npy
-    └── ecmwf_20250910_18_vsw_sot_1_2.cache.npy
-```
-
-## Overview
+## Legacy Cache Files (No Longer Used)
 
 The cached ECMWF data files contain weather forecast and atmospheric parameters processed for climate analysis. These are binary numpy arrays that have been extracted and cached from GRIB format for faster access during development and testing.
 
-## Data Files
+**These files are not referenced in the current codebase and can be safely removed.**
 
-The GRIB cache contains weather data from ECMWF forecasts with the following variables:
+## Current Data Pipeline
+
+The project now uses:
+- **Zarr format datasets** downloaded from ECMWF Open Data API
+- **ZarrClimateLoader** for data loading and AIFS tensor conversion
+- **Direct integration** with AIFS models without intermediate caching
+
+## Legacy Data Files (for reference only)
+
+The cached ECMWF data files contained weather data from ECMWF forecasts with the following variables:
 
 **Surface-level variables (sfc):**
 - 10u, 10v: 10m u/v wind components
@@ -46,8 +43,6 @@ The GRIB cache contains weather data from ECMWF forecasts with the following var
 **Additional variables:**
 - vsw: Vertical integral of water vapour
 - sot: Soil temperature
-
-## Usage
 
 ### Working with Cache Files
 ```python

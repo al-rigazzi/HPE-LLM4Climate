@@ -289,7 +289,8 @@ def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
 
     try:
         # Create dummy text embeddings for testing (text_dim=768)
-        # In production, these would come from a proper text encoder (BERT, sentence-transformers, etc.)
+        # In production, these would come from a proper text encoder
+        # (BERT, sentence-transformers, etc.)
         # Number of texts must match batch size
         text_embeddings = torch.randn(len(texts), 768, device=test_device)
 

@@ -632,12 +632,11 @@ def aifs_model_available(test_device):  # pylint: disable=W0621
 
         if hasattr(checkpoint_module, "Checkpoint"):
             original_validate = getattr(checkpoint_module.Checkpoint, "validate_environment", None)
-            if original_validate:
+            if original_validate is not None:
                 # Replace with a no-op that returns None (indicating no validation errors)
                 def patched_validate(self, on_difference=None):
                     """Patched validation that allows version mismatches."""
                     print("⚠️  Environment validation bypassed for AIFS compatibility")
-                    return None  # Return None to indicate no errors (not True!)
 
                 checkpoint_module.Checkpoint.validate_environment = patched_validate
 
@@ -747,6 +746,14 @@ class AIFSClimateTextFusionWrapper(nn.Module):
         self.fusion_strategy = "cross_attention"
         self.time_series_dim = AIFS_PROJECTED_ENCODER_OUTPUT_DIM  # AIFS encoder produces features
 
+        # Initialize model attributes with proper types
+        self.mistral_model: torch.nn.Module | Any | None = (
+            None  # Can be Linear (mock) or PreTrainedModel (real)
+        )
+        self.mistral_tokenizer: Any | None = None
+        self.text_embed_model: Any | None = None
+        self.text_embed_tokenizer: Any | None = None
+
         # Initialize the real AIFSClimateTextFusion
         from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
 
@@ -850,7 +857,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
                         )
 
                     print("   Moving model to MPS device...")
-                    self.mistral_model = self.mistral_model.to(device_str)
+                    self.mistral_model = self.mistral_model.to(device_str)  # type: ignore
 
                     # Enable gradient checkpointing for memory efficiency during inference
                     if hasattr(self.mistral_model, "gradient_checkpointing_enable"):
@@ -865,12 +872,14 @@ class AIFSClimateTextFusionWrapper(nn.Module):
                         model_name, **load_kwargs
                     )
                     if device_str != "cpu":
-                        self.mistral_model = self.mistral_model.to(device_str)
+                        self.mistral_model = self.mistral_model.to(device_str)  # type: ignore
 
                 # CUDA-specific device movement (already on device via device_map)
                 if device_str == "cuda" and "device_map" not in load_kwargs:
+                    assert self.mistral_model is not None
                     self.mistral_model = self.mistral_model.to(device_str)
 
+                assert self.mistral_model is not None
                 self.mistral_model.eval()
 
                 # Estimate memory usage with platform-specific details
@@ -886,7 +895,8 @@ class AIFSClimateTextFusionWrapper(nn.Module):
                     # Gradient checkpointing can reduce peak memory by ~30-40% during inference
                     reduced_gb = estimated_gb * 0.65  # Approximate reduction with checkpointing
                     print(
-                        f"   ✅ Real Mistral loaded on MPS (~{estimated_gb:.1f}GB base, ~{reduced_gb:.1f}GB peak with checkpointing)"
+                        f"   ✅ Real Mistral loaded on MPS "
+                        f"(~{estimated_gb:.1f}GB base, ~{reduced_gb:.1f}GB peak with checkpointing)"
                     )
                 else:
                     bytes_per_param = 2 if load_kwargs["torch_dtype"] == torch.float16 else 4
@@ -975,7 +985,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
         if self.text_embed_model is None or self.text_embed_tokenizer is None:
             # Fallback to random embeddings if model not available
             print("   ⚠️  Text embedding model not available, using random embeddings")
-            return torch.randn(len(text_inputs), 384).to(self.device)
+            return torch.randn(len(text_inputs), 384, device=self.device, dtype=torch.float32)
 
         with torch.no_grad():
             # Tokenize texts
@@ -987,7 +997,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
             outputs = self.text_embed_model(**encoded)
 
             # Use mean pooling over sequence dimension
-            embeddings = outputs.last_hidden_state.mean(dim=1)
+            embeddings: torch.Tensor = outputs.last_hidden_state.mean(dim=1)
 
             return embeddings
 
@@ -1152,12 +1162,7 @@ def test_climate_data_fusion(test_device, zarr_dataset_path, aifs_model):  # pyl
     device = str(test_device)
 
     # Determine the appropriate floating point format based on device
-    if test_device.type in ["cuda", "mps"]:
-        dtype = torch.float16
-        use_fp16 = True
-    else:
-        dtype = torch.float32
-        use_fp16 = False
+    use_fp16 = test_device.type in ["cuda", "mps"]
 
     # Load real ECMWF data using ZarrClimateLoader with forcing pipeline
     loader = ZarrClimateLoader(zarr_dataset_path)

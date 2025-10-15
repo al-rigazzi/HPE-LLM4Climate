@@ -24,14 +24,13 @@ automatically skip when mock LLM is enabled. This ensures that:
 
 To run these tests:
 - Mock LLM disabled (llm_mock_status['use_mock_llm']=False): Tests will run with real LLM models
-- Mock LLM enabled (llm_mock_status['use_mock_llm']=True): Tests will be skipped with informative messages
+- Mock LLM enabled (llm_mock_status['use_mock_llm']=True): Tests will be skipped
+  with informative messages
 
 Use pytest markers to control test execution:
 - pytest -m "requires_mistral": Run only real LLM tests
 - pytest -m "not requires_mistral": Skip real LLM tests
 """
-
-import os
 
 # Add project root to path
 import sys
@@ -51,7 +50,8 @@ def test_aifs_llm_fusion_model(aifs_mistral_model, test_climate_data_fusion, llm
     # Skip test if mock LLM is being used since this test is specifically for real LLM fusion
     if llm_mock_status["use_mock_llm"]:
         pytest.skip(
-            "Skipping real LLM fusion test because mock LLM is enabled (check llm_mock_status fixture)"
+            "Skipping real LLM fusion test because mock LLM is enabled "
+            "(check llm_mock_status fixture)"
         )
 
     print("AIFS + LLM Multimodal Fusion Test (conftest)")
@@ -119,7 +119,8 @@ def test_fusion_performance(aifs_mistral_model, test_climate_data_fusion, llm_mo
     # Skip test if mock LLM is being used since this test is specifically for real LLM fusion
     if llm_mock_status["use_mock_llm"]:
         pytest.skip(
-            "Skipping real LLM performance test because mock LLM is enabled (check llm_mock_status fixture)"
+            "Skipping real LLM performance test because mock LLM is enabled "
+            "(check llm_mock_status fixture)"
         )
 
     model = aifs_mistral_model

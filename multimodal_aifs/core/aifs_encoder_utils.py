@@ -83,7 +83,7 @@ class AIFSCompleteEncoder(nn.Module):
         # Only the projection layer will be on the target device
         self.aifs_device = "cpu"
         if self.verbose and device == "mps":
-            print(f"Note: AIFS encoder will run on CPU (too large for MPS memory)")
+            print("Note: AIFS encoder will run on CPU (too large for MPS memory)")
 
         # Determine dtype based on device
         # AIFS always uses FP32 on CPU for stability

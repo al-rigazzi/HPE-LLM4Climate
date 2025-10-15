@@ -298,9 +298,10 @@ assert (
     _CALCULATED_TOTAL == AIFS_PHYSICS_VARIABLES
 ), f"Calculated total mismatch: {_CALCULATED_TOTAL} != {AIFS_PHYSICS_VARIABLES}"
 
-assert (
-    AIFS_INPUT_VARIABLES == AIFS_PHYSICS_VARIABLES + 9
-), f"Expected AIFS_INPUT_VARIABLES to be {AIFS_PHYSICS_VARIABLES + 9} (94 physics + 9 forcings), got {AIFS_INPUT_VARIABLES}"
+assert AIFS_INPUT_VARIABLES == AIFS_PHYSICS_VARIABLES + 9, (
+    f"Expected AIFS_INPUT_VARIABLES to be {AIFS_PHYSICS_VARIABLES + 9} "
+    f"(94 physics + 9 forcings), got {AIFS_INPUT_VARIABLES}"
+)
 
 assert len(SURFACE_VARIABLES) == 12, f"Expected 12 surface variables, got {len(SURFACE_VARIABLES)}"
 assert len(SOIL_VARIABLES) == 4, f"Expected 4 soil variables, got {len(SOIL_VARIABLES)}"

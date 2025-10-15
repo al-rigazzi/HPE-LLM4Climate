@@ -38,7 +38,6 @@ import warnings
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import torch
 
 # Add project root to path
@@ -99,7 +98,6 @@ class ZarrClimateLoader:
         # Initialize attributes with proper types
         self.spatial_dims: tuple[str, ...] = ()
         self.spatial_shape: tuple[int, ...] = ()
-        self.is_aifs_format: bool = False
         self.time_dim: str = ""
         self.time_range: tuple[str, str] = ("", "")
         self.available_variables: list[str] = []
@@ -134,22 +132,13 @@ class ZarrClimateLoader:
         coords = set(self.ds.coords.keys())
         self.available_variables = [v for v in self.ds.data_vars.keys() if v not in coords]
 
-        # Get spatial dimensions - handle both lat/lon and AIFS grid_point formats
-        if "lat" in self.ds.dims and "lon" in self.ds.dims:
-            self.spatial_dims = ("lat", "lon")
-            self.spatial_shape = (self.ds.dims["lat"], self.ds.dims["lon"])
-            self.is_aifs_format = False
-        elif "latitude" in self.ds.dims and "longitude" in self.ds.dims:
-            self.spatial_dims = ("latitude", "longitude")
-            self.spatial_shape = (self.ds.sizes["latitude"], self.ds.sizes["longitude"])
-            self.is_aifs_format = False
-        elif "grid_point" in self.ds.dims:
+        # Get spatial dimensions - assume AIFS grid_point format
+        if "grid_point" in self.ds.dims:
             # AIFS-compatible format with flattened grid points
             self.spatial_dims = ("grid_point",)
             self.spatial_shape = (self.ds.sizes["grid_point"],)
-            self.is_aifs_format = True
         else:
-            raise ValueError("Could not identify spatial dimensions (lat/lon or grid_point)")
+            raise ValueError("Dataset must be in AIFS format with grid_point dimension")
 
         # Get time dimension
         if "time" in self.ds.dims:
@@ -356,12 +345,6 @@ class ZarrClimateLoader:
         print("Converting to AIFS tensor format...")
 
         # Validate requirements for AIFS format
-        if not self.is_aifs_format:
-            raise ValueError(
-                "Data must be in AIFS format (grid_point dimension) to use this method. "
-                f"Current spatial dimensions: {self.spatial_dims}"
-            )
-
         if runner is None:
             raise ValueError(
                 "SimpleRunner instance is required for AIFS format data. "

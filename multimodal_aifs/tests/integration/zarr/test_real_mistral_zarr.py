@@ -23,7 +23,6 @@ Usage:
     python test_real_mistral_zarr.py --zarr-path test_aifs_small.zarr --use-quantization
 """
 
-import argparse
 import os
 import sys
 import time

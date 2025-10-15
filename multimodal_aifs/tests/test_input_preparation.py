@@ -51,7 +51,7 @@ def test_input_preparation_with_simplerunner():
 
     checkpoint = {"huggingface": "ecmwf/aifs-single-1.1"}
     runner = SimpleRunner(checkpoint, device="cpu")
-    print(f"✓ SimpleRunner loaded")
+    print("✓ SimpleRunner loaded")
     print(f"  Number of input features: {runner.checkpoint.number_of_input_features}")
     print()
 
@@ -73,7 +73,7 @@ def test_input_preparation_with_simplerunner():
         "date": date,
         "fields": fields,
     }
-    print(f"✓ input_state created")
+    print("✓ input_state created")
     print(f"  Date: {date}")
     print(f"  Fields: {len(input_state['fields'])} variables")
     print()
@@ -84,7 +84,7 @@ def test_input_preparation_with_simplerunner():
         runner.constant_forcings_inputs = runner.create_constant_forcings_inputs(input_state)
     if not hasattr(runner, "dynamic_forcings_inputs"):
         runner.dynamic_forcings_inputs = runner.create_dynamic_forcings_inputs(input_state)
-    print(f"✓ Forcing inputs initialized")
+    print("✓ Forcing inputs initialized")
     print()
 
     # Step 6: Prepare input tensor
@@ -93,7 +93,7 @@ def test_input_preparation_with_simplerunner():
     try:
         input_tensor_numpy = runner.prepare_input_tensor(input_state)
         print(f"✓ SimpleRunner created tensor: {input_tensor_numpy.shape}")
-        print(f"  Format: [timesteps, features, grid_points]")
+        print("  Format: [timesteps, features, grid_points]")
         print()
 
         # Step 7: Convert to PyTorch and reshape to AIFS format
@@ -102,7 +102,7 @@ def test_input_preparation_with_simplerunner():
         tensor = tensor.permute(0, 2, 1)  # [timesteps, grid_points, features]
         tensor = tensor.unsqueeze(0).unsqueeze(2)  # Add batch and ensemble dims
         print(f"✓ Tensor reshaped: {tensor.shape}")
-        print(f"  Format: [batch, time, ensemble, grid_points, vars]")
+        print("  Format: [batch, time, ensemble, grid_points, vars]")
         print()
 
         # Success summary

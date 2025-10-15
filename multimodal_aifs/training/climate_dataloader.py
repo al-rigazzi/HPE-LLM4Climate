@@ -166,7 +166,6 @@ class ClimateTextDataLoader(IterableDataset):
             self.mistral_tokenizer.pad_token = self.mistral_tokenizer.eos_token
 
         if self.cache_mistral_model:
-            import torch
             from transformers import AutoModelForCausalLM
 
             # Determine target device and dtype
