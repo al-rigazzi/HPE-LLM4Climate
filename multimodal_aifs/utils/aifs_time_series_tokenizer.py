@@ -178,6 +178,13 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         if self.verbose:
             print(f"Input tensor shape: {tensor_5d.shape}")
 
+        # Basic validation: must be 5D tensor
+        if tensor_5d.ndim != 5:
+            raise ValueError(
+                f"Input tensor must be 5D [batch, time, ensemble, grid, vars], "
+                f"got {tensor_5d.ndim}D tensor with shape {tensor_5d.shape}"
+            )
+
         # Assume input is always in AIFS format [batch, time, ensemble, grid, vars]
         if self.verbose:
             print("Input is in AIFS format [batch, time, ensemble, grid, vars]")
