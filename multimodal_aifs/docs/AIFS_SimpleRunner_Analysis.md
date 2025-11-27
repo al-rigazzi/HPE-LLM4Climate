@@ -56,8 +56,8 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 pytest test_cpu_mistral_zarr.py -xvs
 
 SimpleRunner created tensor: (2, 103, 542080)
 Climate tensor: torch.Size([1, 2, 1, 542080, 103])
-AIFS encoder output: torch.Size([1, 1, 542080, 218])
-Climate tokens: torch.Size([1, 2, 218])
+AIFS encoder output: torch.Size([1, 1, 542080, 102])
+Climate tokens: torch.Size([1, 2, 102])
 ✓ Test PASSED
 ```
 

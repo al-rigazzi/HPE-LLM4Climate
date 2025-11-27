@@ -40,7 +40,7 @@ sys.path.insert(0, str(project_root))
 from multimodal_aifs.constants import (
     AIFS_GRID_POINTS,
     AIFS_INPUT_VARIABLES,
-    AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+    AIFS_RAW_ENCODER_OUTPUT_DIM,
     ALL_AIFS_VARIABLES,
 )
 
@@ -707,7 +707,7 @@ def aifs_model(aifs_model_available):  # pylint: disable=W0621
     def mock_forward(x):
         batch_size = x.shape[0] if hasattr(x, "shape") else 1
         # AIFS encoder output dimension
-        return torch.randn(batch_size, AIFS_PROJECTED_ENCODER_OUTPUT_DIM)
+        return torch.randn(batch_size, AIFS_RAW_ENCODER_OUTPUT_DIM)
 
     # Use setattr to avoid mypy method assignment error
     setattr(mock_model, "forward", mock_forward)
@@ -744,7 +744,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
         # Add attributes expected by tests
         self.fusion_strategy = "cross_attention"
-        self.time_series_dim = AIFS_PROJECTED_ENCODER_OUTPUT_DIM  # AIFS encoder produces features
+        self.time_series_dim = AIFS_RAW_ENCODER_OUTPUT_DIM  # AIFS encoder produces features
 
         # Initialize model attributes with proper types
         self.mistral_model: torch.nn.Module | Any | None = (
@@ -762,7 +762,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
         self.fusion_model = AIFSClimateTextFusion(
             aifs_model=model,
-            climate_dim=AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+            climate_dim=AIFS_RAW_ENCODER_OUTPUT_DIM,
             text_dim=text_embedding_dim,  # Match the text embedding model output
             fusion_dim=fusion_dim,
             device=device_str,
@@ -1235,7 +1235,7 @@ def test_climate_data(test_device, zarr_dataset_path, aifs_model):  # pylint: di
     # Create 2D tensor for encoder testing
     # [batch, features] - take mean across grid points
     tensor_2d = (
-        tensor_5d[0, 0, 0, :, :AIFS_PROJECTED_ENCODER_OUTPUT_DIM].mean(dim=0).unsqueeze(0).to(dtype)
+        tensor_5d[0, 0, 0, :, :AIFS_RAW_ENCODER_OUTPUT_DIM].mean(dim=0).unsqueeze(0).to(dtype)
     )
 
     return {

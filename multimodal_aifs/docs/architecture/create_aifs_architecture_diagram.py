@@ -195,7 +195,7 @@ create_box(
     1.2,
     "AIFS Complete Encoder (Pre-trained ECMWF)\nGraphTransformerForwardMapper\n"
     "19.9M parameters (encoder only)\nInput: 103 variables → Raw output: 102 dims\n"
-    "Projection: 102 → 218 embeddings\nSpatial processing: 542,080 grid points",
+    "Spatial processing: 542,080 grid points",
     colors["aifs"],
     fontsize=13,
 )
@@ -242,7 +242,7 @@ create_box(
     (2, 5.5),
     4.5,
     1.3,
-    "Climate Projection\nAIFS features: 218 → 768/4096\nLinear projection layer\n"
+    "Climate Projection\nAIFS features: 102 → 768/4096\nLinear projection layer\n"
     "Layer normalization\nAdapted for LLM dimension",
     colors["fusion"],
     fontsize=13,
@@ -290,8 +290,8 @@ create_box(
     (1, 3),
     5,
     1.2,
-    "Climate Encoder (Configurable)\nAIFS encoder output: 218 dims\n"
-    "Projection to LLM space: 218 → 768/4096\nTrainable fusion layers\n"
+    "Climate Encoder (Configurable)\nAIFS encoder output: 102 dims\n"
+    "Projection to LLM space: 102 → 768/4096\nTrainable fusion layers\n"
     "Frozen Mistral-7B-Instruct backbone",
     colors["aifs"],
     fontsize=13,

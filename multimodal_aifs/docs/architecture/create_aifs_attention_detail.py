@@ -19,7 +19,7 @@ This script generates detailed technical diagrams of the attention mechanism
 used in the AIFS multimodal climate AI system for climate-text fusion.
 
 Key Updates:
-- Real AIFS encoder dimensions (102 raw → 218 projected embeddings)
+- Real AIFS encoder dimensions (102 raw channels)
 - Accurate Mistral-7B-Instruct-v0.3 specifications
 - Current fusion mechanisms and projection layers
 - Actual parameter counts
@@ -195,8 +195,8 @@ create_box(
     (0.5, 7),
     3.5,
     1,
-    "AIFS Climate Embeddings\nX_climate = [B, T, 218]\nB=1, "
-    "time=2, d_model=218\nFrom AIFS encoder output",
+    "AIFS Climate Embeddings\nX_climate = [B, T, 102]\nB=1, "
+    "time=2, d_model=102\nFrom raw encoder output",
     colors["aifs_tokens"],
     fontsize=13,
 )
@@ -231,7 +231,7 @@ create_box(
     (0.5, 5),
     3.5,
     0.8,
-    "Climate Projector\nW_c: 218 → d_llm\nLinear(218, 4096) + LayerNorm",
+    "Climate Projector\nW_c: 102 → d_llm\nLinear(102, 4096) + LayerNorm",
     colors["projection"],
     fontsize=13,
 )
@@ -412,7 +412,7 @@ ax.annotate(
 SPECS_TEXT = """AIFS Cross-Attention Specifications:
 
 Input Dimensions:
-  - Climate: [B, T, 218] → projected to [B, T, 4096]
+    - Climate: [B, T, 102] → projected to [B, T, 4096]
   - Text: [B, seq_len, 4096] (Mistral-7B dimension)
 
 Multi-Head Configuration:

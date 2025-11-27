@@ -27,6 +27,7 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
+from multimodal_aifs.constants import AIFS_RAW_ENCODER_OUTPUT_DIM
 from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 
 
@@ -56,7 +57,7 @@ def test_tokenizer():
         print("\nTest 2: Configuration Validation")
 
         info = tokenizer.get_tokenizer_info()
-        assert info["spatial_dim"] == 218, f"Expected 218, got {info['spatial_dim']}"
+        assert info["spatial_dim"] == AIFS_RAW_ENCODER_OUTPUT_DIM
         assert info["temporal_modeling"] == "transformer"
         assert info["aifs_encoder"]["type"] == "Checkpoint mode"
 
@@ -80,7 +81,7 @@ def test_tokenizer():
 
             test_info = test_tokenizer.get_tokenizer_info()
             assert test_info["temporal_modeling"] == model_type
-            assert test_info["spatial_dim"] == 218
+            assert test_info["spatial_dim"] == AIFS_RAW_ENCODER_OUTPUT_DIM
 
             print(f"   {model_type} model configured correctly")
 
@@ -99,7 +100,7 @@ def test_tokenizer():
             )
 
             if model_type == "none":
-                expected_features = test_tokenizer.spatial_dim  # 218
+                expected_features = test_tokenizer.spatial_dim
             else:
                 expected_features = test_tokenizer.hidden_dim  # 256
 

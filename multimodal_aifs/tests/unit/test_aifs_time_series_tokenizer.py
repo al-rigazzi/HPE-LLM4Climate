@@ -34,6 +34,7 @@ import torch
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from multimodal_aifs.constants import AIFS_RAW_ENCODER_OUTPUT_DIM
 from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
 
 
@@ -175,7 +176,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             # Test tokenizer configuration without actual tokenization
             # (since we don't have a real AIFS model in tests)
             info = tokenizer.get_tokenizer_info()
-            self.assertEqual(info["spatial_dim"], 218)  #  encoder dimension
+            self.assertEqual(info["spatial_dim"], AIFS_RAW_ENCODER_OUTPUT_DIM)
 
             expected_output_shape = (
                 batch,
@@ -217,12 +218,12 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             # Test configuration validation
             info = tokenizer.get_tokenizer_info()
             self.assertEqual(info["temporal_modeling"], model_type)
-            self.assertEqual(info["spatial_dim"], 218)  #  AIFS dimension
+            self.assertEqual(info["spatial_dim"], AIFS_RAW_ENCODER_OUTPUT_DIM)  #  AIFS dimension
             self.assertEqual(info["dtype"], self.dtype)
 
             if model_type == "none":
                 # Spatial-only should preserve AIFS output dimension
-                expected_output_dim = tokenizer.spatial_dim  # 218
+                expected_output_dim = tokenizer.spatial_dim
             else:
                 # Temporal models should output hidden_dim
                 expected_output_dim = 256
@@ -241,7 +242,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         # Test configuration without actual processing
         info = tokenizer.get_tokenizer_info()
         self.assertEqual(info["temporal_modeling"], "none")
-        self.assertEqual(info["spatial_dim"], 218)
+        self.assertEqual(info["spatial_dim"], AIFS_RAW_ENCODER_OUTPUT_DIM)
         self.assertEqual(info["dtype"], self.dtype)
 
         # Test expected behavior for different data sizes
@@ -334,7 +335,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             input_elements = batch * time_steps * variables * height * width
 
             if model_type == "none":
-                expected_output_dim = tokenizer.spatial_dim  # 218
+                expected_output_dim = tokenizer.spatial_dim
             else:
                 expected_output_dim = tokenizer.hidden_dim
 
@@ -401,7 +402,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
         # Validate configuration consistency
         self.assertEqual(info["temporal_modeling"], "transformer")
-        self.assertEqual(info["spatial_dim"], 218)
+        self.assertEqual(info["spatial_dim"], AIFS_RAW_ENCODER_OUTPUT_DIM)
         self.assertEqual(info["dtype"], self.dtype)
 
     def test_device_consistency(self):

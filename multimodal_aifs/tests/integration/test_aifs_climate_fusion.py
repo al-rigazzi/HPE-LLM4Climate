@@ -33,6 +33,7 @@ import torch
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from multimodal_aifs.constants import AIFS_RAW_ENCODER_OUTPUT_DIM
 from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateEmbedding, AIFSClimateTextFusion
 
 
@@ -48,7 +49,7 @@ def test_batch_processing(aifs_model, test_device):
         # Create fusion module with real AIFS model
         fusion_module = AIFSClimateTextFusion(
             aifs_model=aifs_model_instance,  # Use real model from fixture
-            climate_dim=218,  # AIFS encoder dimension
+            climate_dim=AIFS_RAW_ENCODER_OUTPUT_DIM,
             text_dim=768,
             fusion_dim=512,
             device=device,
@@ -80,7 +81,7 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
         # Create fusion module with real AIFS model
         fusion_module = AIFSClimateTextFusion(
             aifs_model=aifs_model_instance,  # Use real model from fixture
-            climate_dim=218,  # AIFS encoder dimension
+            climate_dim=AIFS_RAW_ENCODER_OUTPUT_DIM,
             text_dim=768,
             fusion_dim=512,
             device=device,
@@ -175,7 +176,7 @@ def test_error_handling(aifs_model, test_device):
     try:
         fusion_module = AIFSClimateTextFusion(
             aifs_checkpoint_path="/invalid/path/to/model.pth",
-            climate_dim=218,
+            climate_dim=AIFS_RAW_ENCODER_OUTPUT_DIM,
             text_dim=768,
             fusion_dim=512,
             device=device,
@@ -205,7 +206,7 @@ def test_error_handling(aifs_model, test_device):
 
         fusion_module = AIFSClimateTextFusion(
             aifs_checkpoint_path=valid_checkpoint,
-            climate_dim=218,
+            climate_dim=AIFS_RAW_ENCODER_OUTPUT_DIM,
             text_dim=768,
             fusion_dim=512,
             device=device,
@@ -235,14 +236,14 @@ def test_fusion_module_initialization(aifs_model, test_device):
     # Test with real AIFS model
     fusion_module = AIFSClimateTextFusion(
         aifs_model=aifs_model_instance,  # Use real model from fixture
-        climate_dim=218,  # AIFS encoder dimension
+        climate_dim=AIFS_RAW_ENCODER_OUTPUT_DIM,
         text_dim=768,
         fusion_dim=512,
         num_attention_heads=8,
         device=device,
     )
 
-    assert fusion_module.climate_dim == 218
+    assert fusion_module.climate_dim == AIFS_RAW_ENCODER_OUTPUT_DIM
     assert fusion_module.text_dim == 768
     assert fusion_module.fusion_dim == 512
     assert fusion_module.device == device
@@ -266,7 +267,7 @@ def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
     try:
         fusion_module = AIFSClimateTextFusion(
             aifs_model=aifs_model_instance,  # Use real model from fixture
-            climate_dim=218,
+            climate_dim=AIFS_RAW_ENCODER_OUTPUT_DIM,
             text_dim=768,
             fusion_dim=512,
             device=device,
@@ -325,7 +326,7 @@ def test_similarity_and_alignment(aifs_model, test_device, test_climate_data):
     try:
         fusion_module = AIFSClimateTextFusion(
             aifs_model=aifs_model_instance,  # Use real model from fixture
-            climate_dim=218,
+            climate_dim=AIFS_RAW_ENCODER_OUTPUT_DIM,
             text_dim=768,
             fusion_dim=512,
             device=device,
@@ -372,7 +373,7 @@ def test_text_encoding(aifs_model, test_device):
     # Create fusion module
     fusion_module = AIFSClimateTextFusion(
         aifs_model=aifs_model_instance,  # Use real model from fixture
-        climate_dim=218,  # AIFS encoder dimension
+        climate_dim=AIFS_RAW_ENCODER_OUTPUT_DIM,
         text_dim=768,
         fusion_dim=512,
         device=device,

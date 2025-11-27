@@ -34,7 +34,6 @@ AIFS_GRID_POINTS: Final[int] = (
 AIFS_INPUT_VARIABLES: Final[int] = 103  # Total: 94 physics + 9 forcings (8 trig + insolation)
 
 AIFS_RAW_ENCODER_OUTPUT_DIM: Final[int] = 102  # Raw AIFS encoder output dimension
-AIFS_PROJECTED_ENCODER_OUTPUT_DIM: Final[int] = 218  # Projected encoder output dimension
 
 # AIFS temporal specifications
 AIFS_DEFAULT_TIME_STEPS: Final[int] = 2  # Default number of time steps
@@ -52,7 +51,7 @@ AIFS_BATCH_SHAPE: Final[tuple[int, ...]] = (1, 2, 1, AIFS_GRID_POINTS, AIFS_INPU
 # AIFS output tensor shapes
 AIFS_ENCODER_OUTPUT_SHAPE: Final[tuple[int, ...]] = (
     AIFS_GRID_POINTS,
-    AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
+    AIFS_RAW_ENCODER_OUTPUT_DIM,
 )
 """Expected encoder output shape: [grid_points, embedding_dim]"""
 
@@ -201,7 +200,7 @@ DEFAULT_CHECKPOINT_NAME: Final[str] = "aifs_complete_encoder.pth"
 # [batch, time, ensemble, grid, vars]
 EXPECTED_INPUT_SHAPE: Final[list[int]] = [1, 2, 1, AIFS_GRID_POINTS, AIFS_INPUT_VARIABLES]
 # [grid_points, embedding_dim]
-EXPECTED_OUTPUT_SHAPE: Final[list[int]] = [AIFS_GRID_POINTS, AIFS_PROJECTED_ENCODER_OUTPUT_DIM]
+EXPECTED_OUTPUT_SHAPE: Final[list[int]] = [AIFS_GRID_POINTS, AIFS_RAW_ENCODER_OUTPUT_DIM]
 
 # ===================== VALIDATION CONSTANTS =====================
 
@@ -216,7 +215,7 @@ EXPECTED_GRID_SIZE: Final[int] = AIFS_GRID_POINTS
 EXPECTED_VARIABLE_COUNT: Final[int] = AIFS_INPUT_VARIABLES
 
 # Embedding dimension validation
-EXPECTED_EMBEDDING_DIM: Final[int] = AIFS_PROJECTED_ENCODER_OUTPUT_DIM
+EXPECTED_EMBEDDING_DIM: Final[int] = AIFS_RAW_ENCODER_OUTPUT_DIM
 
 # ===================== UTILITY FUNCTIONS =====================
 

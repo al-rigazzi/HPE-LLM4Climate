@@ -6,7 +6,7 @@
 ## Problem
 
 We were passing 94 variables directly to the AIFS model, but:
-1. The model expected 218 features after preprocessing
+1. The model expected 103 features after preprocessing
 2. We were missing forcing variables (trigonometric encodings, insolation)
 3. Dimension mismatches caused model failures
 
@@ -151,8 +151,8 @@ SimpleRunner created tensor: (2, 103, 542080)
 Format: [batch=1, time=2, ensemble=1, grid_points=542080, vars=103]
 Input is in AIFS format [batch, time, ensemble, grid, vars]
 Processing full tensor with AIFS encoder: torch.Size([1, 2, 1, 542080, 103])
-AIFS encoder output shape: torch.Size([1, 1, 542080, 218])
-Climate tokens: torch.Size([1, 2, 218])
+AIFS encoder output shape: torch.Size([1, 1, 542080, 102])
+Climate tokens: torch.Size([1, 2, 102])
 ✓ Test PASSED in 73.73s
 ```
 

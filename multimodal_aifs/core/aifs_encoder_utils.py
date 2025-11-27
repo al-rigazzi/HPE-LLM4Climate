@@ -33,8 +33,6 @@ from torch import nn
 
 from ..constants import (
     AIFS_GRID_POINTS,
-    AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
-    AIFS_RAW_ENCODER_OUTPUT_DIM,
     DEFAULT_CHECKPOINT_DIR,
     DEFAULT_CHECKPOINT_NAME,
     EXPECTED_INPUT_SHAPE,
@@ -90,31 +88,15 @@ class AIFSCompleteEncoder(nn.Module):
         self.use_fp16 = device in ["cuda", "mps"]
         self.dtype = torch.float16 if self.use_fp16 else torch.float32
 
-        # Projection layer to transform AIFS encoder output to expected dimension
-        # AIFS encoder produces 102 features, but downstream code expects 218
-        self.output_projection = nn.Linear(
-            AIFS_RAW_ENCODER_OUTPUT_DIM, AIFS_PROJECTED_ENCODER_OUTPUT_DIM, dtype=self.dtype
-        )
-
-        # Keep AIFS on CPU (always FP32), move only projection layer to target device
+        # Keep AIFS on CPU (always FP32)
         self.aifs_interface = self.aifs_interface.cpu().float()
         self.aifs_model = self.aifs_interface.model
-
-        # Move projection layer to target device
-        self.output_projection = self.output_projection.to(device)
-        if self.use_fp16:
-            self.output_projection = self.output_projection.half()
 
         if self.verbose:
             print(f"Inner model type: {type(self.aifs_model)}")
             print(f"Has encoder: {hasattr(self.aifs_model, 'encoder')}")
             print(f"Has trainable_data: {hasattr(self.aifs_model, 'trainable_data')}")
             print(f"AIFS encoder on: {self.aifs_device} (FP32)")
-            print(f"Projection layer on: {device} ({'FP16' if self.use_fp16 else 'FP32'})")
-            print(
-                f"Added projection layer: {AIFS_RAW_ENCODER_OUTPUT_DIM} -> "
-                f"{AIFS_PROJECTED_ENCODER_OUTPUT_DIM} features"
-            )
 
     def forward(self, x):
         """
@@ -214,33 +196,16 @@ class AIFSCompleteEncoder(nn.Module):
                 else:
                     data_embeddings = data_embeddings.to(original_device)
 
-            # Apply projection to transform to expected AIFS_PROJECTED_ENCODER_OUTPUT_DIM features
-            # AIFS outputs AIFS_RAW_ENCODER_OUTPUT_DIM features, we need to project to
-            # AIFS_PROJECTED_ENCODER_OUTPUT_DIM
-            if data_embeddings.shape[-1] == 102:
-                projected_data_embeddings = self.output_projection(data_embeddings)
-            else:
-                projected_data_embeddings = data_embeddings
-
         if self.verbose:
             print("AIFS encoder forward completed")
             print(f"Raw encoder output shape: {data_embeddings.shape} ({data_embeddings.dtype})")
             print(
-                "Projected output shape: "
-                f"{projected_data_embeddings.shape} ({projected_data_embeddings.dtype})"
-            )
-            print(
                 f"Raw data embeddings range: "
                 f"[{data_embeddings.min():.4f}, {data_embeddings.max():.4f}]"
             )
-            print(
-                f"Projected data embeddings range: "
-                f"[{projected_data_embeddings.min():.4f}, {projected_data_embeddings.max():.4f}]"
-            )
 
-        # Return the projected encoder embeddings
-        # (data embeddings represent the main climate features)
-        return projected_data_embeddings
+        # Return the encoder embeddings (main climate features)
+        return data_embeddings
 
 
 def save_aifs_encoder(

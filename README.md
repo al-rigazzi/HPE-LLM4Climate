@@ -181,7 +181,7 @@ climate_tensor = loader.to_aifs_tensor(climate_data, batch_size=1, device='cpu')
 # Initialize fusion model
 fusion_model = AIFSClimateTextFusion(
     aifs_model=None,  # Uses mock for testing
-    climate_dim=218,  # AIFS projected encoder output
+  climate_dim=102,  # Raw AIFS encoder output
     text_dim=768,     # Text model hidden size
     fusion_dim=512,   # Output dimension
     device='cpu'
@@ -240,7 +240,7 @@ Key constants defined in `multimodal_aifs/constants.py`:
 
 - `AIFS_GRID_POINTS = 542080`: Spatial grid points in AIFS model
 - `AIFS_INPUT_VARIABLES = 103`: Total input variables (90 prognostic + 13 forcing)
-- `AIFS_PROJECTED_ENCODER_OUTPUT_DIM = 218`: Projected encoder output dimension
+- `AIFS_RAW_ENCODER_OUTPUT_DIM = 102`: Raw encoder output dimension
 - `ALL_AIFS_VARIABLES`: Complete list of 103 climate variables
 
 ## Testing
