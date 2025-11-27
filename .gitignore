@@ -13,6 +13,7 @@
 *.npy
 **/dataset/example_*
 **/extracted_models/**
+results/**
 
 # Coverage
 .coverage*
