@@ -102,6 +102,7 @@ jobs:
         # Set PyTorch to use CPU for consistent testing
         echo "PYTORCH_MPS_HIGH_WATERMARK_RATIO=2.0" >> $GITHUB_ENV
         echo "PYTORCH_ENABLE_MPS_FALLBACK=1" >> $GITHUB_ENV
+        echo "ANEMOI_INFERENCE_NUM_CHUNKS=16" >> $GITHUB_ENV
 
     - name: Clear pytest cache
       run: |
@@ -116,7 +117,7 @@ jobs:
     - name: Run integration tests
       if: matrix.os == 'macos-latest'
       run: |
-        python -m pytest multimodal_aifs/tests/integration/ -v -s --tb=short --maxfail=5 -m "not large_memory"
+        python -m pytest multimodal_aifs/tests/integration/ -v -s --tb=short --maxfail=5
 
     - name: Run integration tests (Ubuntu - limited subset)
       if: matrix.os == 'ubuntu-latest'
