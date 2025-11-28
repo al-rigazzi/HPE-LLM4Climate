@@ -37,7 +37,8 @@ print("🖥️  CPU-Optimized Mistral + AIFS + Zarr Test")
 print("=" * 50)
 
 
-@pytest.mark.large_memory
+# TODO remove this decorator if test passes
+# @pytest.mark.large_memory
 @pytest.mark.integration
 def test_lightweight_mistral_zarr(
     aifs_mistral_model, aifs_model, zarr_dataset_path, llm_mock_status
@@ -162,7 +163,8 @@ def test_lightweight_mistral_zarr(
     # Test passes by reaching this point without failures
 
 
-@pytest.mark.large_memory
+# TODO remove this decorator if test pass on GH
+# @pytest.mark.large_memory
 @pytest.mark.integration
 def test_compare_with_mock(aifs_mistral_model, aifs_model, zarr_dataset_path, llm_mock_status):
     """Compare real vs mock LLM performance with same climate data."""

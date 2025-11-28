@@ -68,7 +68,6 @@ def test_batch_processing(aifs_model, test_device):
         pytest.skip(f"Initialization failed: {e}")
 
 
-@pytest.mark.large_memory
 def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
     """Test climate data encoding with AIFS."""
     print("\nTesting Climate Data Encoding")
@@ -121,7 +120,6 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
         pytest.fail(f"Encoding failed: {e}")
 
 
-@pytest.mark.large_memory
 def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
     """Test AIFSClimateEmbedding module."""
     print("\nTesting Climate Embedding Module")
@@ -255,7 +253,6 @@ def test_fusion_module_initialization(aifs_model, test_device):
         print("   Mock model initialization successful")
 
 
-@pytest.mark.large_memory
 def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
     """Test multimodal fusion functionality."""
     print("\n🔀 Testing Multimodal Fusion")
