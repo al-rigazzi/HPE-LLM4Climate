@@ -39,7 +39,9 @@ print("=" * 50)
 
 @pytest.mark.large_memory
 @pytest.mark.integration
-def test_lightweight_mistral_zarr(aifs_mistral_model, zarr_dataset_path, llm_mock_status):
+def test_lightweight_mistral_zarr(
+    aifs_mistral_model, aifs_model, zarr_dataset_path, llm_mock_status
+):
     """Test with lightweight configuration for CPU."""
 
     try:
@@ -65,12 +67,20 @@ def test_lightweight_mistral_zarr(aifs_mistral_model, zarr_dataset_path, llm_moc
     try:
         loader = ZarrClimateLoader(zarr_dataset_path)
 
-        # Load all available timesteps (synthetic test data has exactly 2 timesteps)
+        # Load all available timesteps (real ECMWF data has exactly 2 timesteps)
         climate_data = loader.load_time_range(None, None)  # Load all timesteps
 
-        # Convert to small tensor
+        # Get runner from aifs_model fixture for input preparation pipeline
+        runner = aifs_model.get("runner") if not aifs_model.get("is_mock") else None
+
+        # Convert to small tensor using new input preparation pipeline
         climate_tensor = loader.to_aifs_tensor(
-            climate_data, batch_size=1, normalize=True, device=device
+            climate_data,
+            batch_size=1,
+            normalize=True,
+            device=device,
+            runner=runner,
+            use_forcing_pipeline=True,
         )
 
         print(f"Climate tensor: {climate_tensor.shape} on {climate_tensor.device}")
@@ -154,7 +164,7 @@ def test_lightweight_mistral_zarr(aifs_mistral_model, zarr_dataset_path, llm_moc
 
 @pytest.mark.large_memory
 @pytest.mark.integration
-def test_compare_with_mock(aifs_mistral_model, zarr_dataset_path, llm_mock_status):
+def test_compare_with_mock(aifs_mistral_model, aifs_model, zarr_dataset_path, llm_mock_status):
     """Compare real vs mock LLM performance with same climate data."""
     print("\n⚖️  Comparison: Real vs Mock Mistral (conftest)")
     print("-" * 40)
@@ -177,7 +187,7 @@ def test_compare_with_mock(aifs_mistral_model, zarr_dataset_path, llm_mock_statu
         print(f"      🔢 Parameters: {param_count:,}")
         print(f"      Type: {'Mock' if use_mock_env else 'Real'} LLM")
 
-        # Simple performance test - use AIFS-compatible dimensions
+        # Simple performance test using dummy tensor (shape testing only, not real climate data)
         dummy_data = torch.randn(1, 2, 1, 542080, 103).to(model.device)  # AIFS format
         dummy_text = ["Test query"]
 
@@ -191,7 +201,3 @@ def test_compare_with_mock(aifs_mistral_model, zarr_dataset_path, llm_mock_statu
     except Exception as e:
         print(f"      Failed: {e}")
         pytest.fail(f"Comparison test failed: {e}")
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "-s"])

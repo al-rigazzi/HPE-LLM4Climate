@@ -32,8 +32,7 @@ import torch
 from torch import nn
 
 from ..constants import (
-    AIFS_PROJECTED_ENCODER_OUTPUT_DIM,
-    AIFS_RAW_ENCODER_OUTPUT_DIM,
+    AIFS_GRID_POINTS,
     DEFAULT_CHECKPOINT_DIR,
     DEFAULT_CHECKPOINT_NAME,
     EXPECTED_INPUT_SHAPE,
@@ -78,32 +77,26 @@ class AIFSCompleteEncoder(nn.Module):
         self.verbose = verbose
         self.device = device
 
+        # AIFS model is too memory-intensive for MPS, always keep it on CPU
+        # Only the projection layer will be on the target device
+        self.aifs_device = "cpu"
+        if self.verbose and device == "mps":
+            print("Note: AIFS encoder will run on CPU (too large for MPS memory)")
+
         # Determine dtype based on device
+        # AIFS always uses FP32 on CPU for stability
         self.use_fp16 = device in ["cuda", "mps"]
         self.dtype = torch.float16 if self.use_fp16 else torch.float32
 
-        # Projection layer to transform AIFS encoder output to expected dimension
-        # AIFS encoder produces 102 features, but downstream code expects 218
-        self.output_projection = nn.Linear(
-            AIFS_RAW_ENCODER_OUTPUT_DIM, AIFS_PROJECTED_ENCODER_OUTPUT_DIM, dtype=self.dtype
-        )
-
-        # Move to device and set dtype
-        self.to(device)
-        if self.use_fp16:
-            self.output_projection = self.output_projection.half()
-            # Convert the AIFS model itself to FP16
-            self.aifs_interface = self.aifs_interface.half()
-            self.aifs_model = self.aifs_interface.model  # Update reference after conversion
+        # Keep AIFS on CPU (always FP32)
+        self.aifs_interface = self.aifs_interface.cpu().float()
+        self.aifs_model = self.aifs_interface.model
 
         if self.verbose:
             print(f"Inner model type: {type(self.aifs_model)}")
             print(f"Has encoder: {hasattr(self.aifs_model, 'encoder')}")
             print(f"Has trainable_data: {hasattr(self.aifs_model, 'trainable_data')}")
-            print(
-                f"Added projection layer: {AIFS_RAW_ENCODER_OUTPUT_DIM} -> "
-                f"{AIFS_PROJECTED_ENCODER_OUTPUT_DIM} features"
-            )
+            print(f"AIFS encoder on: {self.aifs_device} (FP32)")
 
     def forward(self, x):
         """
@@ -128,8 +121,13 @@ class AIFSCompleteEncoder(nn.Module):
 
         # Check input dimensions
         _, _, _, grid_size, _ = x.shape
-        # AIFS_GRID_POINTS for AIFS-Single-1.0
-        expected_grid_size = self.aifs_model.latlons_data.shape[0]
+        # Get expected grid size - handle both AIFS versions
+        # Older versions have latlons_data, newer versions (1.1+) do not
+        if hasattr(self.aifs_model, "latlons_data"):
+            expected_grid_size = self.aifs_model.latlons_data.shape[0]
+        else:
+            # For newer models without latlons_data, use constant
+            expected_grid_size = AIFS_GRID_POINTS
 
         if grid_size != expected_grid_size:
             raise ValueError(
@@ -138,16 +136,25 @@ class AIFSCompleteEncoder(nn.Module):
 
         # Follow the EXACT same steps as AnemoiModelEncProcDec.forward() but stop at encoder
         with torch.no_grad():
-            # Clear GPU memory cache before processing if on GPU/MPS
-            if x.device.type == "cuda":
-                torch.cuda.empty_cache()
-            elif x.device.type == "mps" and hasattr(torch.backends, "mps"):
-                torch.mps.empty_cache()
+            # AIFS is always on CPU (set in __init__), move input to CPU for processing
+            original_device = x.device
+            x_cpu = x.cpu().float()  # Convert to FP32 for CPU processing
 
-            # Call the AIFS model directly with the 5D input tensor
-            # This should return encoder embeddings in the expected format
+            # Clear MPS memory if input was on MPS
+            if original_device.type == "mps" and hasattr(torch.backends, "mps"):
+                torch.mps.empty_cache()
+            elif original_device.type == "cuda":
+                torch.cuda.empty_cache()
+
+            # Ensure model is in eval mode for inference chunking to work
+            # (ANEMOI_INFERENCE_NUM_CHUNKS only applies in eval mode)
+            was_training = self.aifs_model.training
+            if was_training:
+                self.aifs_model.eval()
+
+            # Call the AIFS model on CPU
             try:
-                full_output = self.aifs_model(x)
+                full_output = self.aifs_model(x_cpu)
                 if isinstance(full_output, tuple):
                     # Extract the first component (encoder output)
                     data_embeddings = full_output[0]
@@ -174,34 +181,31 @@ class AIFSCompleteEncoder(nn.Module):
                 raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
             except Exception as e:
                 raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
+            finally:
+                # Restore training mode if it was on
+                if was_training:
+                    self.aifs_model.train()
 
-            # Apply projection to transform to expected AIFS_PROJECTED_ENCODER_OUTPUT_DIM features
-            # AIFS outputs AIFS_RAW_ENCODER_OUTPUT_DIM features, we need to project to
-            # AIFS_PROJECTED_ENCODER_OUTPUT_DIM
-            if data_embeddings.shape[-1] == 102:
-                projected_data_embeddings = self.output_projection(data_embeddings)
-            else:
-                projected_data_embeddings = data_embeddings
+            # Move embeddings back to original device and convert dtype if needed
+            if original_device.type != "cpu":
+                if self.verbose:
+                    print(f"Moving AIFS output from CPU to {original_device}")
+                # Convert to FP16 when moving to MPS/CUDA (if use_fp16 is True)
+                if self.use_fp16:
+                    data_embeddings = data_embeddings.half().to(original_device)
+                else:
+                    data_embeddings = data_embeddings.to(original_device)
 
         if self.verbose:
             print("AIFS encoder forward completed")
             print(f"Raw encoder output shape: {data_embeddings.shape} ({data_embeddings.dtype})")
             print(
-                "Projected output shape: "
-                f"{projected_data_embeddings.shape} ({projected_data_embeddings.dtype})"
-            )
-            print(
                 f"Raw data embeddings range: "
                 f"[{data_embeddings.min():.4f}, {data_embeddings.max():.4f}]"
             )
-            print(
-                f"Projected data embeddings range: "
-                f"[{projected_data_embeddings.min():.4f}, {projected_data_embeddings.max():.4f}]"
-            )
 
-        # Return the projected encoder embeddings
-        # (data embeddings represent the main climate features)
-        return projected_data_embeddings
+        # Return the encoder embeddings (main climate features)
+        return data_embeddings
 
 
 def save_aifs_encoder(

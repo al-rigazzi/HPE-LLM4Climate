@@ -30,6 +30,7 @@ def test_imports():
     print("=" * 50)
 
     # Test core imports
+    # pylint: disable=unused-import
     from multimodal_aifs.core.aifs_encoder_utils import (
         AIFSCompleteEncoder,
         check_aifs_dependencies,
@@ -48,6 +49,8 @@ def test_imports():
     from multimodal_aifs import create_aifs_encoder as package_create
     from multimodal_aifs import load_aifs_encoder as package_load
     from multimodal_aifs import save_aifs_encoder as package_save
+
+    # pylint: enable=unused-import
 
     print("Package-level imports successful")
 
@@ -107,51 +110,3 @@ def test_utility_functions():
     print(f"Dependencies: {deps_available}")
     print(f"Expected input shape: {EXPECTED_INPUT_SHAPE}")
     print(f"Expected output shape: {EXPECTED_OUTPUT_SHAPE}")
-
-
-def main():
-    """Run all tests."""
-    print("AIFS Encoder Utils Test Suite")
-    print("=" * 40)
-
-    tests = [
-        ("Import Tests", test_imports),
-        ("Class Definition Tests", test_class_definition),
-        ("Utility Function Tests", test_utility_functions),
-    ]
-
-    results = []
-    for test_name, test_func in tests:
-        print(f"\n📋 Running {test_name}...")
-        try:
-            success = test_func()
-            results.append((test_name, success))
-        except Exception as e:
-            print(f"{test_name} crashed: {e}")
-            results.append((test_name, False))
-
-    # Summary
-    print("\n" + "=" * 50)
-    print("TEST SUMMARY")
-    print("=" * 50)
-
-    passed = 0
-    for test_name, success in results:
-        status = "PASS" if success else "FAIL"
-        print(f"{status} - {test_name}")
-        if success:
-            passed += 1
-
-    print(f"\nResults: {passed}/{len(results)} tests passed")
-
-    if passed == len(results):
-        print("All tests passed! AIFS Encoder Utils is ready to use.")
-        return 0
-    else:
-        print("Some tests failed. Please check the output above.")
-        return 1
-
-
-if __name__ == "__main__":
-    EXIT_CODE = main()
-    sys.exit(EXIT_CODE)

@@ -32,6 +32,7 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -39,7 +40,7 @@ sys.path.insert(0, str(project_root))
 
 try:
     from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
-    from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader, load_zarr_for_aifs
+    from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
     ZARR_LOADER_AVAILABLE = True
 except ImportError as e:
@@ -62,7 +63,7 @@ def demonstrate_zarr_to_aifs(
     start_time: str = "2024-01-01",
     end_time: str = "2024-01-07",
     variables: list[str] | None = None,
-):
+) -> dict[str, Any] | None:
     """Demonstrate loading Zarr data and processing with AIFS."""
 
     print("AIFS Multimodal with Zarr Data Demo")
@@ -70,7 +71,7 @@ def demonstrate_zarr_to_aifs(
 
     if not ZARR_LOADER_AVAILABLE:
         print("Zarr loader not available. Please install: pip install zarr xarray")
-        return
+        return None
 
     # Step 1: Load Zarr Dataset
     print("\nStep 1: Loading Zarr Climate Dataset")
@@ -88,7 +89,7 @@ def demonstrate_zarr_to_aifs(
 
     except Exception as e:
         print(f"Failed to load Zarr dataset: {e}")
-        return
+        return None
 
     # Step 2: Load Specific Time Range
     print(f"\n⏰ Step 2: Loading Time Range ({start_time} to {end_time})")
@@ -98,7 +99,7 @@ def demonstrate_zarr_to_aifs(
 
     except Exception as e:
         print(f"Failed to load time range: {e}")
-        return
+        return None
 
     # Step 3: Convert to AIFS Tensor Format
     print("\nStep 3: Converting to AIFS 5D Tensor Format")
@@ -108,13 +109,14 @@ def demonstrate_zarr_to_aifs(
         print(f"AIFS tensor created: {aifs_tensor.shape}")
         print(
             f"   Format: [batch={aifs_tensor.shape[0]}, time={aifs_tensor.shape[1]}, "
-            f"vars={aifs_tensor.shape[2]}, height={aifs_tensor.shape[3]}, width={aifs_tensor.shape[4]}]"
+            f"vars={aifs_tensor.shape[2]}, height={aifs_tensor.shape[3]}, "
+            f"width={aifs_tensor.shape[4]}]"
         )
         print(f"   Memory: {aifs_tensor.element_size() * aifs_tensor.nelement() / 1e6:.1f} MB")
 
     except Exception as e:
         print(f"Failed to convert to AIFS tensor: {e}")
-        return
+        return None
 
     # Step 4: AIFS TimeSeries Tokenization
     print("\n🤖 Step 4: AIFS TimeSeries Tokenization")
@@ -126,10 +128,11 @@ def demonstrate_zarr_to_aifs(
 
         # Tokenize the climate data
         climate_tokens = tokenizer(aifs_tensor)
-        print(f"Climate tokenization successful!")
+        print("Climate tokenization successful!")
         print(f"   Token shape: {climate_tokens.shape}")
         print(
-            f"   Format: [batch={climate_tokens.shape[0]}, seq_len={climate_tokens.shape[1]}, hidden={climate_tokens.shape[2]}]"
+            f"   Format: [batch={climate_tokens.shape[0]}, "
+            f"seq_len={climate_tokens.shape[1]}, hidden={climate_tokens.shape[2]}]"
         )
 
     except Exception as e:
@@ -158,17 +161,17 @@ def demonstrate_zarr_to_aifs(
             # Process multimodal input
             result = model.process_climate_text(climate_tokens, sample_text)
 
-            print(f"Multimodal processing successful!")
+            print("Multimodal processing successful!")
             print(f"   Output shape: {result['fused_output'].shape}")
             print(f"   Sample analysis: {result.get('generated_text', 'Analysis complete')}")
 
         except Exception as e:
             print(f"Multimodal integration failed: {e}")
     else:
-        print(f"\nSkipping multimodal integration (Mistral not available)")
+        print("\nSkipping multimodal integration (Mistral not available)")
 
     # Summary
-    print(f"\n📋 Demo Summary")
+    print("\n📋 Demo Summary")
     print("=" * 20)
     print("Zarr data successfully loaded and processed!")
     print("AIFS tensor format conversion complete")
@@ -196,12 +199,12 @@ def demonstrate_zarr_spatial_region(
 
     if not ZARR_LOADER_AVAILABLE:
         print("Zarr loader not available")
-        return
+        return None
 
     try:
         loader = ZarrClimateLoader(zarr_path)
 
-        print(f"📍 Loading region:")
+        print("📍 Loading region:")
         print(f"   Latitude: {lat_range[0]}° to {lat_range[1]}°")
         print(f"   Longitude: {lon_range[0]}° to {lon_range[1]}°")
 
@@ -213,7 +216,7 @@ def demonstrate_zarr_spatial_region(
         # Convert to AIFS format
         regional_tensor = loader.to_aifs_tensor(regional_data, batch_size=1)
 
-        print(f"Regional data loaded!")
+        print("Regional data loaded!")
         print(f"   Tensor shape: {regional_tensor.shape}")
         print(f"   Spatial resolution: {regional_tensor.shape[3]}×{regional_tensor.shape[4]}")
 
@@ -255,8 +258,8 @@ def main():
         demonstrate_zarr_spatial_region(args.zarr_path)
 
     if result:
-        print(f"\nDemo completed successfully!")
-        print(f"   Ready for AIFS multimodal processing with Zarr data!")
+        print("\nDemo completed successfully!")
+        print("   Ready for AIFS multimodal processing with Zarr data!")
 
 
 if __name__ == "__main__":

@@ -27,8 +27,8 @@ import torch
 # Initialize AIFS encoder (use the new approach)
 encoder = create_aifs_encoder(aifs_model)
 
-# Encode climate data
-climate_data = torch.randn(4, 218)  # Batch of climate data
+# Encode climate data (raw encoder channels)
+climate_data = torch.randn(4, 102)
 encoded = encoder.encode_climate_data(climate_data)
 print(f"Encoded: {climate_data.shape} -> {encoded.shape}")
 ```

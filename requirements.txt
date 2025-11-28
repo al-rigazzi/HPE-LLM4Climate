@@ -4,12 +4,16 @@ pandas
 xarray
 
 # Deep learning framework
-torch==2.4.0
-torchvision==0.19.0
+torch==2.5.0
+torchvision==0.20.0
 torch_geometric==2.4.0
 
 # Natural Language Processing and Transformers
 transformers>=4.21.0
+
+# Quantization support for efficient LLM loading (CUDA only)
+# Note: bitsandbytes requires CUDA. On MPS/CPU, models load in full precision.
+bitsandbytes>=0.44.0; sys_platform != "darwin"
 
 # Template engine for prompt management
 jinja2>=3.1.0

@@ -1,0 +1,12 @@
+# Additional dependencies for the multimodal_aifs training pipeline
+# Root requirements already provide torch, transformers, Jinja2, etc.
+-r ../../requirements.txt
+
+# Distributed / accelerated training runtime
+deepspeed>=0.14.0
+
+# Zarr ingestion for the on-the-fly climate dataloader
+zarr>=2.17.0
+
+# Ensure SentencePiece-based tokenizers (e.g., Mistral) can be loaded
+sentencepiece>=0.1.99

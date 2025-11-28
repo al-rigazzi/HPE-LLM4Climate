@@ -63,7 +63,7 @@ Requirements:
 
 __version__ = "0.1.0"
 __author__ = "HPE-LLM4Climate Team"
-__email__ = "climate-ai@hpe.com"
+__email__ = "alessandro@hpe.com"
 
 # Core climate fusion modules
 from .core.aifs_climate_fusion import (
@@ -123,7 +123,7 @@ __all__ = [
 ]
 
 # Package-level configuration
-AIFS_DEFAULT_MODEL_PATH = "aifs-single-1.0/aifs-single-mse-1.0.ckpt"
+AIFS_DEFAULT_MODEL_PATH = "aifs-single-1.1/aifs-single-mse-1.1.ckpt"
 DEFAULT_LLM_MODEL = "microsoft/DialoGPT-medium"
 DEFAULT_CLIMATE_RESOLUTION = (721, 1440)  # AIFS standard resolution
 DEFAULT_ATTENTION_HEADS = 16

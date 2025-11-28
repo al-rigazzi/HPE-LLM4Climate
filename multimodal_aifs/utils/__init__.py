@@ -23,6 +23,7 @@ from .climate_data_utils import (
     ClimateDataProcessor,
     create_synthetic_climate_data,
 )
+from .device_utils import get_best_device
 from .location_utils import (
     COMMON_RESOLUTIONS,
     EARTH_RADIUS_KM,
@@ -44,6 +45,8 @@ __all__ = [
     "ClimateDataProcessor",
     "CLIMATE_VARIABLES",
     "create_synthetic_climate_data",
+    # Device utilities
+    "get_best_device",
     # Location utilities
     "LocationUtils",
     "GridUtils",

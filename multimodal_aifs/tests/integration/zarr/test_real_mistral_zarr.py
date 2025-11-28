@@ -23,46 +23,36 @@ Usage:
     python test_real_mistral_zarr.py --zarr-path test_aifs_small.zarr --use-quantization
 """
 
-import argparse
+import os
 import sys
 import time
 from pathlib import Path
 
+import pytest
 import torch
 
 # Add project root to path
-project_root = Path(__file__).parent
+project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 print("🤖 Real Mistral + AIFS + Zarr Integration Test")
 print("=" * 50)
 
 # Check system
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+from multimodal_aifs.utils import get_best_device
+
+DEVICE = str(get_best_device())
 print(f"🖥️  Device: {DEVICE}")
 print(f"📦 PyTorch: {torch.__version__}")
 
 try:
-    import sys
-    from pathlib import Path
-
-    # Add the project root to path to import conftest
-    project_root = Path(__file__).parent.parent.parent.parent
-    sys.path.insert(0, str(project_root))
-
-    # Import required modules (AIFSMistralFusionModel removed - using production model now)
-    from multimodal_aifs.utils.aifs_time_series_tokenizer import AIFSTimeSeriesTokenizer
+    # Import required modules
     from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
     print("All modules imported successfully")
 except ImportError as e:
     print(f"Import error: {e}")
     sys.exit(1)
-
-
-import os
-
-import pytest
 
 
 @pytest.fixture
@@ -78,8 +68,9 @@ def zarr_path(zarr_dataset_path):
 )
 def test_real_mistral_with_zarr(
     aifs_mistral_model,
+    aifs_model,
     zarr_dataset_path,
-    zarr_path: str = None,
+    zarr_path: str = None,  # pylint: disable=redefined-outer-name
     use_quantization: bool = None,
     model_name: str = None,
     max_memory_gb: float = 8.0,
@@ -97,7 +88,7 @@ def test_real_mistral_with_zarr(
         "LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3"
     )
 
-    print(f"\nStarting Real Mistral Integration Test (conftest)")
+    print("\nStarting Real Mistral Integration Test (conftest)")
     print(f"Zarr path: {zarr_path}")
     print(f"🤖 Model: {model_name}")
     print(f"⚗️  Quantization: {use_quantization}")
@@ -105,28 +96,35 @@ def test_real_mistral_with_zarr(
 
     # Use model from conftest fixture
     model = aifs_mistral_model
-    print(f"Using model from conftest fixture")
+    print("Using model from conftest fixture")
     print(f"   AIFS: {type(model.time_series_tokenizer).__name__}")
     print(f"   🤖 LLM: {type(model.mistral_model).__name__}")
     print(f"   Hidden size: {model.mistral_hidden_size}")
     print(f"   Device: {model.device}")
 
     # Step 1: Load Zarr Climate Data
-    print(f"\nStep 1: Loading Climate Data from Zarr")
+    print("\nStep 1: Loading Climate Data from Zarr")
     print("-" * 40)
 
     try:
         loader = ZarrClimateLoader(zarr_path)
 
-        # Load a small subset for testing
-        climate_data = loader.load_time_range("2024-01-01", "2024-01-01T06:00:00")
+        # Load all available timesteps (real ECMWF data has exactly 2 timesteps)
+        climate_data = loader.load_time_range(None, None)  # Load all timesteps
 
-        # Convert to AIFS tensor
+        # Get runner from aifs_model fixture for input preparation pipeline
+        runner = aifs_model.get("runner") if not aifs_model.get("is_mock") else None
+
+        # Convert to AIFS tensor using new input preparation pipeline
         climate_tensor = loader.to_aifs_tensor(
-            climate_data, batch_size=1, normalize=True  # Small batch for CPU
+            climate_data,
+            batch_size=1,
+            normalize=True,
+            runner=runner,
+            use_forcing_pipeline=True,
         )
 
-        print(f"Climate data loaded successfully")
+        print("Climate data loaded successfully")
         print(f"   Tensor shape: {climate_tensor.shape}")
         print(f"   Memory: {climate_tensor.numel() * 4 / 1e6:.1f} MB")
 
@@ -135,27 +133,28 @@ def test_real_mistral_with_zarr(
         return False
 
     # Step 2: Climate Data Processing with AIFS
-    print(f"\nStep 2: Processing Climate Data with AIFS")
+    print("\nStep 2: Processing Climate Data with AIFS")
     print("-" * 40)
 
     # Step 3: AIFS Climate Tokenization
-    print(f"\nStep 3: AIFS Climate Tokenization")
+    print("\nStep 3: AIFS Climate Tokenization")
     print("-" * 40)
 
     try:
         climate_tokens = model.tokenize_climate_data(climate_tensor)
-        print(f"Climate tokenization successful")
+        print("Climate tokenization successful")
         print(f"   Token shape: {climate_tokens.shape}")
-        print(
-            f"   Format: [batch={climate_tokens.shape[0]}, seq_len={climate_tokens.shape[1]}, hidden={climate_tokens.shape[2]}]"
-        )
+        batch_size = climate_tokens.shape[0]
+        seq_len = climate_tokens.shape[1]
+        hidden_size = climate_tokens.shape[2]
+        print(f"   Format: [batch={batch_size}, seq_len={seq_len}, hidden={hidden_size}]")
 
     except Exception as e:
         print(f"Climate tokenization failed: {e}")
         return False
 
     # Step 4: Text Processing with Real Mistral
-    print(f"\nStep 4: Text Processing with Real Mistral")
+    print("\nStep 4: Text Processing with Real Mistral")
     print("-" * 40)
 
     try:
@@ -167,7 +166,7 @@ def test_real_mistral_with_zarr(
 
         # Process text with real Mistral tokenizer
         text_tokens = model.tokenize_text(text_inputs)
-        print(f"Text tokenization successful")
+        print("Text tokenization successful")
         print(f"   Input IDs shape: {text_tokens['input_ids'].shape}")
         print(f"   👁️  Attention mask shape: {text_tokens['attention_mask'].shape}")
 
@@ -182,11 +181,11 @@ def test_real_mistral_with_zarr(
         return False
 
     # Step 5: Multimodal Fusion with Real Mistral
-    print(f"\n🔗 Step 5: Multimodal Fusion with Real Mistral")
+    print("\n🔗 Step 5: Multimodal Fusion with Real Mistral")
     print("-" * 40)
 
     try:
-        print(f"⏳ Running multimodal fusion (this may take a few minutes on CPU)...")
+        print("⏳ Running multimodal fusion (this may take a few minutes on CPU)...")
         start_time = time.time()
 
         # Use the convenience method we added
@@ -197,7 +196,7 @@ def test_real_mistral_with_zarr(
         )
 
         elapsed = time.time() - start_time
-        print(f"Multimodal fusion successful!")
+        print("Multimodal fusion successful!")
         print(f"   ⏱️  Processing time: {elapsed:.1f} seconds")
         print(f"   Fused output shape: {result['fused_output'].shape}")
 
@@ -211,11 +210,11 @@ def test_real_mistral_with_zarr(
 
     except Exception as e:
         print(f"Multimodal fusion failed: {e}")
-        print(f"This is expected on CPU with limited memory")
+        print("This is expected on CPU with limited memory")
         return False
 
     # Step 6: Memory and Performance Analysis
-    print(f"\nStep 6: Performance Analysis")
+    print("\nStep 6: Performance Analysis")
     print("-" * 40)
 
     try:
@@ -235,65 +234,11 @@ def test_real_mistral_with_zarr(
     except Exception as e:
         print(f"Performance analysis incomplete: {e}")
 
-    print(f"\nReal Mistral Integration Test Complete!")
-    print(f"Successfully processed climate data through:")
-    print(f"   Zarr → AIFS tokenization")
-    print(f"   🤖 Real Mistral-7B-Instruct-v0.3 processing")
-    print(f"   🔗 Multimodal fusion")
-    print(f"   Text generation")
+    print("\nReal Mistral Integration Test Complete!")
+    print("Successfully processed climate data through:")
+    print("   Zarr → AIFS tokenization")
+    print("   🤖 Real Mistral-7B-Instruct-v0.3 processing")
+    print("   🔗 Multimodal fusion")
+    print("   Text generation")
 
     return True
-
-
-def main():
-    """Main test function."""
-    parser = argparse.ArgumentParser(description="Real Mistral + AIFS + Zarr Integration Test")
-    parser.add_argument(
-        "--zarr-path",
-        default="test_aifs_large.zarr",
-        help="Path to Zarr dataset (default: test_aifs_large.zarr)",
-    )
-    parser.add_argument("--use-quantization", action="store_true", help="Use 8-bit quantization")
-    parser.add_argument(
-        "--model-name", default="mistralai/Mistral-7B-Instruct-v0.3", help="Mistral model name"
-    )
-    parser.add_argument("--max-memory", type=float, default=8.0, help="Max memory in GB")
-
-    args = parser.parse_args()
-
-    # Check if zarr dataset exists
-    if not Path(args.zarr_path).exists():
-        print(f"Zarr dataset not found: {args.zarr_path}")
-        print(f"To create the test dataset, run:")
-        print(f"   cd /path/to/project && python multimodal_aifs/conftest.py")
-        print(f"   # Or use the ensure_test_zarr_dataset fixture")
-        return
-
-    # Warning about memory requirements
-    if not torch.cuda.is_available():
-        print(f"\nWARNING: Running on CPU")
-        print(f"   Mistral-7B-Instruct requires significant memory and will be slow")
-        print(f"   Consider using --use-quantization to reduce memory usage")
-        print(f"   Expected processing time: 5-10 minutes")
-
-        response = input(f"\n   Continue? (y/N): ")
-        if response.lower() != "y":
-            print(f"   Cancelled by user")
-            return
-
-    # Run the test
-    success = test_real_mistral_with_zarr(
-        zarr_path=args.zarr_path,
-        use_quantization=args.use_quantization,
-        model_name=args.model_name,
-        max_memory_gb=args.max_memory,
-    )
-
-    if success:
-        print(f"\n🏆 All tests passed! Real Mistral integration is working.")
-    else:
-        print(f"\n💥 Some tests failed. Check the output above for details.")
-
-
-if __name__ == "__main__":
-    main()

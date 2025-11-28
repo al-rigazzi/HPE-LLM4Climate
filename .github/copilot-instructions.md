@@ -61,6 +61,7 @@ The tone of natural language must always be professional, even in comments, docs
   in `pyproject.toml`, no other options should be passed through command line
   arguments.
 - Tests should only test real code features, not implement higher order ones
+- Tests must be run through `pytest` and should not have a standalone `main` function
 - Coverage should be above 90% for `multimodal_aifs.core` files
 - The project must run on
   * `gpu`

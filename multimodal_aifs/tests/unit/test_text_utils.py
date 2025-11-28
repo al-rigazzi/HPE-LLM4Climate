@@ -53,7 +53,7 @@ class TestLocationExtraction(unittest.TestCase):
         self.assertGreater(len(locations), 0)
 
         # Should find multiple locations
-        text_lower = text.lower()
+        _ = text.lower()
         for location in ["london", "paris", "tokyo"]:
             self.assertTrue(any(location in loc.lower() for loc in locations))
 
@@ -226,7 +226,7 @@ class TestClimateTextProcessor(unittest.TestCase):
 
         # Check that scores are between 0 and 1
         for scores in [weather_score, forecast_score, alert_score]:
-            for category, score in scores.items():
+            for _, score in scores.items():
                 self.assertGreaterEqual(score, 0.0)
                 self.assertLessEqual(score, 1.0)
 
@@ -462,7 +462,3 @@ class TestTextUtilsIntegration(unittest.TestCase):
         # Build vocabulary with minimal data
         embedding_utils.build_vocabulary(["a", "b", "c"])
         self.assertGreater(len(embedding_utils.word_to_idx), 0)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -20,7 +20,6 @@ This module computes statistical measures and differential operators
 
 from dataclasses import dataclass
 
-import numpy as np
 import torch
 
 from ..constants import ALL_AIFS_VARIABLES
@@ -269,7 +268,7 @@ class ClimateStatisticsComputer:
         statistics = []
 
         # Create dictionary for quick lookup of vector pairs
-        vector_pair_dict = {u: v for u, v in self.vector_pairs}
+        vector_pair_dict = dict(self.vector_pairs)
 
         for i, var_name in enumerate(variable_names):
             if not self._should_analyze_variable(var_name):
@@ -352,7 +351,8 @@ class ClimateStatisticsComputer:
         lines = []
         lines.append("=" * 120)
         lines.append(
-            f"{'Variable':<20} {'Min':<12} {'Max':<12} {'Mean':<12} {'Gradient':<12} {'Rotation':<12} {'Divergence':<12}"
+            f"{'Variable':<20} {'Min':<12} {'Max':<12} {'Mean':<12} "
+            f"{'Gradient':<12} {'Rotation':<12} {'Divergence':<12}"
         )
         lines.append("=" * 120)
 
@@ -371,7 +371,7 @@ class ClimateStatisticsComputer:
             )
 
         lines.append("=" * 120)
-        lines.append(f"Units and descriptions:")
+        lines.append("Units and descriptions:")
         for stat in statistics[:10]:  # Show first 10 descriptions
             lines.append(f"  {stat.variable_name}: {stat.description} ({stat.unit})")
         if len(statistics) > 10:

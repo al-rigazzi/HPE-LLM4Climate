@@ -35,11 +35,6 @@ multimodal_aifs/tests/unit/test_climate_data_utils.py
 multimodal_aifs/tests/unit/test_text_utils.py
 multimodal_aifs/tests/unit/test_text_utils_simple.py
 multimodal_aifs/training/inference.py
-multimodal_aifs/training/prepare_data.py
-multimodal_aifs/training/train_multimodal.py
-multimodal_aifs/training/examples/mistral7b_final_success.py
-multimodal_aifs/training/examples/spatial_comparative_analysis.py
-multimodal_aifs/training/examples/train_mistral7b.py
 multimodal_aifs/utils/__init__.py
 multimodal_aifs/utils/aifs_time_series_tokenizer.py
 multimodal_aifs/utils/climate_data_utils.py

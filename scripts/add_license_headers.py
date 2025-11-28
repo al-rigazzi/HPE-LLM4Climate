@@ -7,7 +7,6 @@ Usage:
 """
 
 import argparse
-import os
 from pathlib import Path
 
 # Standard Apache 2.0 header for Python files
@@ -101,7 +100,7 @@ def find_python_files(root_dir: Path) -> list[Path]:
         "build",
         "dist",
         "*.egg-info",
-        "aifs-single-1.0",  # Submodule - don't modify
+        "aifs-single-1.1",  # Submodule - don't modify
     }
 
     for py_file in root_dir.rglob("*.py"):

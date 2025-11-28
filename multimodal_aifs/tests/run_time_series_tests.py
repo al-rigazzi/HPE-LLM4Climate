@@ -299,8 +299,7 @@ def main():
     # Return appropriate exit code
     if unit_success and integration_success and benchmark_success:
         return 0
-    else:
-        return 1
+    return 1
 
 
 if __name__ == "__main__":

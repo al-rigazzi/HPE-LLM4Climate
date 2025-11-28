@@ -68,7 +68,8 @@ class ClimatePromptGenerator:
             location: Location object with mask and metadata
             statistics: List of variable statistics
             statistics_table: Formatted statistics table
-            task_type: Type of task ("weather_description", "forecast", "anomaly_detection", "basic")
+            task_type: Type of task
+                ("weather_description", "forecast", "anomaly_detection", "basic")
 
         Returns:
             Formatted prompt string
@@ -254,42 +255,34 @@ class ClimatePromptGenerator:
         """Format a value with appropriate units and precision."""
         # Temperature variables (convert K to °C)
         if variable_name in ["2t", "skt"] or variable_name.startswith("t_"):
-            celsius = value - 273.15
-            return f"{celsius:.1f}°C"
+            return f"{value - 273.15:.1f}°C"
 
         # Wind components (m/s)
-        elif (
-            variable_name in ["10u", "10v"]
-            or variable_name.startswith("u_")
-            or variable_name.startswith("v_")
-            or variable_name.startswith("w_")
-        ):
+        if variable_name in ["10u", "10v"] or variable_name.startswith(("u_", "v_", "w_")):
             return f"{value:.1f} m/s"
 
-        # Pressure variables (convert Pa to hPa)
-        elif variable_name in ["msl", "sp"] or variable_name.startswith("z_"):
-            if variable_name.startswith("z_"):
-                return f"{value:.0f} m"  # Geopotential height in meters
-            else:
-                hpa = value / 100
-                return f"{hpa:.1f} hPa"
+        # Height variables (m)
+        if variable_name.startswith("z_"):
+            return f"{value:.0f} m"
 
-        # Precipitation (convert m to mm)
-        elif variable_name == "tp":
-            mm = value * 1000
-            return f"{mm:.2f} mm"
-
-        # Humidity (kg/kg, keep as is but with appropriate precision)
-        elif variable_name.startswith("q_"):
+        # Humidity
+        if variable_name.startswith("q_"):
             return f"{value:.6f} kg/kg"
 
-        # Total column water (kg/m²)
-        elif variable_name == "tcw":
-            return f"{value:.1f} kg/m²"
+        # Special variables with unit conversions
+        special_formats = {
+            "tp": (lambda v: v * 1000, "{:.2f} mm"),
+            "tcw": (lambda v: v, "{:.1f} kg/m²"),
+            "msl": (lambda v: v / 100, "{:.1f} hPa"),
+            "sp": (lambda v: v / 100, "{:.1f} hPa"),
+        }
+
+        if variable_name in special_formats:
+            converter, fmt = special_formats[variable_name]
+            return fmt.format(converter(value))
 
         # Default formatting
-        else:
-            return f"{value:.3f}"
+        return f"{value:.3f}"
 
     def _build_context_summary(self, statistics: list[VariableStatistics]) -> str:
         """

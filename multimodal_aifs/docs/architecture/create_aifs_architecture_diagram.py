@@ -42,8 +42,8 @@ Output:
 
 from pathlib import Path
 
-import matplotlib.patches as patches
 import matplotlib.pyplot as plt
+from matplotlib import patches
 from matplotlib.patches import ConnectionPatch, FancyBboxPatch
 
 # Get the directory where this script is located
@@ -71,7 +71,7 @@ colors = {
 
 # Helper function to create professional boxes
 def create_box(
-    ax, xy, width, height, text, color, text_color="white", fontsize=14, fontweight="bold"
+    axis_handle, xy, width, height, text, color, text_color="white", fontsize=14, fontweight="bold"
 ):
     """Create a professional rounded rectangle box with text"""
     box = FancyBboxPatch(
@@ -84,12 +84,12 @@ def create_box(
         linewidth=2,
         alpha=0.9,
     )
-    ax.add_patch(box)
+    axis_handle.add_patch(box)
 
     # Add text in center of box
     text_x = xy[0] + width / 2
     text_y = xy[1] + height / 2
-    ax.text(
+    axis_handle.text(
         text_x,
         text_y,
         text,
@@ -105,7 +105,7 @@ def create_box(
 
 
 # Helper function to create arrows
-def create_arrow(ax, start, end, color="black", style="->", linewidth=2):
+def create_arrow(axis_handle, start, end, color="black", style="->", linewidth=2):
     """Create professional arrows between components"""
     arrow = ConnectionPatch(
         start,
@@ -120,7 +120,7 @@ def create_arrow(ax, start, end, color="black", style="->", linewidth=2):
         ec=color,
         linewidth=linewidth,
     )
-    ax.add_patch(arrow)
+    axis_handle.add_patch(arrow)
     return arrow
 
 
@@ -157,7 +157,8 @@ create_box(
     (0.5, 10.5),
     5,
     1.2,
-    "ECMWF Climate Data\n(Zarr/GRIB Format)\n5D Format: [batch, time, ensemble, grid, vars]\nExample: [1, 2, 1, 542080, 103]\nSurface + 13 Pressure levels",
+    "ECMWF Climate Data\n(Zarr/GRIB Format)\n5D Format: [batch, time, ensemble, grid, vars]\n"
+    "Example: [1, 2, 1, 542080, 103]\nSurface + 13 Pressure levels",
     colors["data"],
     fontsize=13,
 )
@@ -168,7 +169,8 @@ create_box(
     (13.5, 10.5),
     4,
     1.2,
-    'Climate Text Queries\n"Analyze temperature patterns"\n"Predict extreme weather"\nTokenized: [B, seq_len]\n[2, 512 tokens]',
+    'Climate Text Queries\n"Analyze temperature patterns"\n"Predict extreme weather"\n'
+    "Tokenized: [B, seq_len]\n[2, 512 tokens]",
     colors["data"],
     fontsize=13,
 )
@@ -191,7 +193,9 @@ create_box(
     (0.5, 8),
     7.5,
     1.2,
-    "AIFS Complete Encoder (Pre-trained ECMWF)\nGraphTransformerForwardMapper\n19.9M parameters (encoder only)\nInput: 103 variables → Raw output: 102 dims\nProjection: 102 → 218 embeddings\nSpatial processing: 542,080 grid points",
+    "AIFS Complete Encoder (Pre-trained ECMWF)\nGraphTransformerForwardMapper\n"
+    "19.9M parameters (encoder only)\nInput: 103 variables → Raw output: 102 dims\n"
+    "Spatial processing: 542,080 grid points",
     colors["aifs"],
     fontsize=13,
 )
@@ -214,7 +218,8 @@ create_box(
     (10, 8),
     7.5,
     1.2,
-    "Mistral-7B-Instruct-v0.3 Language Model\n7.25B parameters (frozen)\n32 transformer layers\n4096 hidden dimensions\n32 attention heads",
+    "Mistral-7B-Instruct-v0.3 Language Model\n7.25B parameters (frozen)\n32 transformer layers\n"
+    "4096 hidden dimensions\n32 attention heads",
     colors["mistral"],
     fontsize=13,
 )
@@ -237,7 +242,8 @@ create_box(
     (2, 5.5),
     4.5,
     1.3,
-    "Climate Projection\nAIFS features: 218 → 768/4096\nLinear projection layer\nLayer normalization\nAdapted for LLM dimension",
+    "Climate Projection\nAIFS features: 102 → 768/4096\nLinear projection layer\n"
+    "Layer normalization\nAdapted for LLM dimension",
     colors["fusion"],
     fontsize=13,
 )
@@ -248,7 +254,8 @@ create_box(
     (7.5, 5.5),
     4,
     1.3,
-    "Fusion Mechanisms\nElement-wise addition\nGated fusion\nCross-attention (optional)\nResidual connections",
+    "Fusion Mechanisms\nElement-wise addition\nGated fusion\nCross-attention (optional)\n"
+    "Residual connections",
     colors["fusion"],
     fontsize=13,
 )
@@ -259,7 +266,8 @@ create_box(
     (12.5, 5.5),
     4.5,
     1.3,
-    "Location-Aware Features\nSpatial attention\nGeographic cropping\nRegional climate analysis\nCoordinate embeddings",
+    "Location-Aware Features\nSpatial attention\nGeographic cropping\n"
+    "Regional climate analysis\nCoordinate embeddings",
     colors["encoder"],
     fontsize=13,
 )
@@ -282,7 +290,9 @@ create_box(
     (1, 3),
     5,
     1.2,
-    "Climate Encoder (Configurable)\nAIFS encoder output: 218 dims\nProjection to LLM space: 218 → 768/4096\nTrainable fusion layers\nFrozen Mistral-7B-Instruct backbone",
+    "Climate Encoder (Configurable)\nAIFS encoder output: 102 dims\n"
+    "Projection to LLM space: 102 → 768/4096\nTrainable fusion layers\n"
+    "Frozen Mistral-7B-Instruct backbone",
     colors["aifs"],
     fontsize=13,
 )
@@ -293,7 +303,8 @@ create_box(
     (7, 3),
     5,
     1.2,
-    "Integrated Model Output\nJoint climate-text embeddings\nClimate-aware text generation\nMulti-task capabilities\nReal-time inference",
+    "Integrated Model Output\nJoint climate-text embeddings\nClimate-aware text generation\n"
+    "Multi-task capabilities\nReal-time inference",
     colors["fusion"],
     fontsize=13,
 )
@@ -316,7 +327,8 @@ create_box(
     (6, 0.5),
     6,
     1.2,
-    "Climate-Text Analysis Outputs\nClimate-aware text generation\nWeather pattern explanations\nScientific insights & predictions\nLocation-specific analysis\nReal-time climate responses",
+    "Climate-Text Analysis Outputs\nClimate-aware text generation\nWeather pattern explanations\n"
+    "Scientific insights & predictions\nLocation-specific analysis\nReal-time climate responses",
     colors["output"],
     fontsize=14,
 )
@@ -341,9 +353,9 @@ create_arrow(ax, (9.5, 3), (9, 1.7), colors["fusion"])
 
 # =================== TECHNICAL SPECIFICATIONS ===================
 # Add technical specs box in bottom right corner
-specs_text = """AIFS Multimodal Specifications (2025):
+SPECS_TEXT = """AIFS Multimodal Specifications (2025):
 
-AIFS Model: ECMWF AIFS-Single-1.0
+AIFS Model: ECMWF AIFS-Single-1.1
 Language Model: Mistral-7B-Instruct-v0.3 (7.25B params)
 AIFS Encoder: 19.9M parameters (extracted)
 Climate Variables: 103 variables
@@ -354,12 +366,12 @@ Training: CPU optimized, GPU compatible"""
 ax.text(
     0.98,
     0.02,
-    specs_text,
+    SPECS_TEXT,
     transform=ax.transAxes,
     fontsize=12,
     verticalalignment="bottom",
     horizontalalignment="right",
-    bbox=dict(boxstyle="round,pad=0.3", facecolor=colors["background"], alpha=0.8),
+    bbox={"boxstyle": "round,pad=0.3", "facecolor": colors["background"], "alpha": 0.8},
     color="black",
     fontweight="normal",
 )
@@ -382,7 +394,7 @@ ax.annotate(
     "ECMWF Climate Data\n[B, T, E, G, V] format\nCached arrays for fast access",
     xy=(3, 11.1),
     xytext=(5.75, 10.25),
-    arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
+    arrowprops={"arrowstyle": "->", "color": "gray", "alpha": 0.7},
     fontsize=10,
     color="gray",
 )
@@ -391,7 +403,7 @@ ax.annotate(
     "Direct AIFS Encoding\nNo tokenization step\nDirect feature extraction",
     xy=(4, 8.6),
     xytext=(1, 9.8),
-    arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
+    arrowprops={"arrowstyle": "->", "color": "gray", "alpha": 0.7},
     fontsize=10,
     color="gray",
 )
@@ -400,7 +412,7 @@ ax.annotate(
     "Climate-Text Fusion\nProjection + Element-wise ops\nFrozen LLM backbone",
     xy=(9, 6.1),
     xytext=(11.5, 7.5),
-    arrowprops=dict(arrowstyle="->", color="gray", alpha=0.7),
+    arrowprops={"arrowstyle": "->", "color": "gray", "alpha": 0.7},
     fontsize=8,
     color="gray",
 )

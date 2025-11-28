@@ -89,9 +89,9 @@ class TestClimateStatisticsComputer:
 
         # Should handle empty mask gracefully by returning empty list
         stats = computer.compute_statistics(sample_data, empty_mask, variable_names)
-        assert (
-            len(stats) == 0
-        )  # No statistics should be computed for empty mask    def test_compute_statistics_single_point(self, computer, sample_data, variable_names):
+        assert len(stats) == 0  # No statistics should be computed for empty mask
+
+    def test_compute_statistics_single_point(self, computer, sample_data, variable_names):
         """Test statistics computation with single point mask."""
         single_mask = torch.zeros(100, dtype=torch.bool)
         single_mask[50] = True

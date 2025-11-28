@@ -64,9 +64,9 @@ def test_fusion_model_initialization(aifs_mistral_model):
 
     # Check if AIFS encoder is available, if not, just note it
     if not has_aifs_encoder(model):
-        print(f"   Model initialized but AIFS encoder not available")
+        print("   Model initialized but AIFS encoder not available")
     else:
-        print(f"   Model initialized successfully with AIFS encoder")
+        print("   Model initialized successfully with AIFS encoder")
 
 
 @pytest.mark.large_memory
@@ -183,9 +183,5 @@ def test_process_climate_text_interface(aifs_mistral_model, test_climate_data):
     assert "fused_output" in result
     assert "generated_text" in result
 
-    print(f"   process_climate_text interface working")
+    print("   process_climate_text interface working")
     print(f"   Generated text: {result['generated_text'][:50]}...")
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

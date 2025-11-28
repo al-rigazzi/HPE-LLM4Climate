@@ -1,22 +1,33 @@
+# Python
 .mypy_cache
 .pytest_cache
-*.zarr
 *.cpython-*
+*.pyc
+**/.python-version
+
+# Data and Model Files
 *.pt
 *.nc
-**/dataset/example_*
 *.grib
 *.idx
 *.npy
-**/.python-version
+**/dataset/example_*
 **/extracted_models/**
+results/**
+
+# Coverage
 .coverage*
 coverage*
+
+# Cache directories
 **/.cache
-*.pyc
+
+# Build artifacts
 *.tar.gz
 *.tgz
+
+# OS-specific
 .DS_Store
 
-# PR description file (local only)
+# Local development files
 pr_description.md

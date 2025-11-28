@@ -17,21 +17,20 @@ AIFS + LLM Real Fusion Integration Test
 Tests the complete multimodal fusion with real models
 
 IMPORTANT: These tests are specifically designed to test REAL LLM fusion and will
-automatically skip when USE_MOCK_LLM=true. This ensures that:
+automatically skip when mock LLM is enabled. This ensures that:
 1. Mock LLM tests don't accidentally load real models (expensive/slow)
 2. Real LLM tests are only run when explicitly requested
-3. Test behavior is consistent with environment variable settings
+3. Test behavior is consistent with llm_mock_status fixture settings
 
 To run these tests:
-- SET USE_MOCK_LLM=false (or unset): Tests will run with real LLM models
-- SET USE_MOCK_LLM=true: Tests will be skipped with informative messages
+- Mock LLM disabled (llm_mock_status['use_mock_llm']=False): Tests will run with real LLM models
+- Mock LLM enabled (llm_mock_status['use_mock_llm']=True): Tests will be skipped
+  with informative messages
 
 Use pytest markers to control test execution:
 - pytest -m "requires_mistral": Run only real LLM tests
 - pytest -m "not requires_mistral": Skip real LLM tests
 """
-
-import os
 
 # Add project root to path
 import sys
@@ -50,7 +49,10 @@ def test_aifs_llm_fusion_model(aifs_mistral_model, test_climate_data_fusion, llm
 
     # Skip test if mock LLM is being used since this test is specifically for real LLM fusion
     if llm_mock_status["use_mock_llm"]:
-        pytest.skip("Skipping real LLM fusion test because USE_MOCK_LLM is True")
+        pytest.skip(
+            "Skipping real LLM fusion test because mock LLM is enabled "
+            "(check llm_mock_status fixture)"
+        )
 
     print("AIFS + LLM Multimodal Fusion Test (conftest)")
     print("=" * 60)
@@ -99,9 +101,10 @@ def test_aifs_llm_fusion_model(aifs_mistral_model, test_climate_data_fusion, llm
     mistral_params = sum(p.numel() for p in model.mistral_model.parameters())
     print(f"   🤖 Mistral parameters: {mistral_params:,}")
 
-    # Determine if using real models
-    use_mock_env = os.environ.get("USE_MOCK_LLM", "").lower() in ("true", "1", "yes")
-    real_llm = mistral_params > 1_000_000 and not use_mock_env  # 1M+ indicates substantial model
+    # Determine if using real models based on fixture status
+    real_llm = (
+        mistral_params > 1_000_000 and not llm_mock_status["use_mock_llm"]
+    )  # 1M+ indicates substantial model
 
     print(f'   🤖 Real LLM: {"YES" if real_llm else "NO (mock)"}')
 
@@ -115,7 +118,10 @@ def test_fusion_performance(aifs_mistral_model, test_climate_data_fusion, llm_mo
 
     # Skip test if mock LLM is being used since this test is specifically for real LLM fusion
     if llm_mock_status["use_mock_llm"]:
-        pytest.skip("Skipping real LLM performance test because USE_MOCK_LLM is True")
+        pytest.skip(
+            "Skipping real LLM performance test because mock LLM is enabled "
+            "(check llm_mock_status fixture)"
+        )
 
     model = aifs_mistral_model
     climate_data, text_inputs = test_climate_data_fusion
@@ -165,7 +171,3 @@ def test_fusion_strategies(aifs_mistral_model, llm_mock_status):
         assert hasattr(model, "adapter"), "Adapter layer should exist"
 
     print(f"Fusion strategy {model.fusion_strategy} verified")
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "-s"])

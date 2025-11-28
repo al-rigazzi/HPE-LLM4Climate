@@ -21,6 +21,8 @@ multimodal analysis, including data preprocessing, normalization, and format con
 import numpy as np
 import torch
 
+from ..constants import AIFS_RAW_ENCODER_OUTPUT_DIM
+
 # Climate data constants
 CLIMATE_VARIABLES = {
     # Temperature variables (Kelvin)
@@ -66,7 +68,11 @@ class ClimateDataProcessor:
     of climate data from various sources.
     """
 
-    def __init__(self, normalization_method: str = "standard", target_features: int = 218):
+    def __init__(
+        self,
+        normalization_method: str = "standard",
+        target_features: int = AIFS_RAW_ENCODER_OUTPUT_DIM,
+    ):
         """
         Initialize climate data processor.
 

@@ -26,12 +26,10 @@ on-the-fly by:
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import torch
 import zarr
-from torch.utils.data import Dataset, IterableDataset
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from torch.utils.data import IterableDataset
 
 from ..constants import AIFS_GRID_POINTS, ALL_AIFS_VARIABLES
 from .location_masks import Location, LocationMaskGenerator
@@ -157,7 +155,7 @@ class ClimateTextDataLoader(IterableDataset):
         print(f"Loading Mistral model: {mistral_model_name}")
         self._initialize_mistral_model(mistral_model_name)
 
-        print(f"DataLoader initialized:")
+        print("DataLoader initialized:")
         print(f"  - Zarr files: {len(self.zarr_paths)}")
         print(f"  - Samples per epoch: {samples_per_epoch}")
         print(f"  - Device: {device}")
@@ -170,26 +168,51 @@ class ClimateTextDataLoader(IterableDataset):
         if self.cache_mistral_model:
             from transformers import AutoModelForCausalLM
 
-            print("  Loading model in float16 for memory efficiency...")
-            self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                torch_dtype=torch.float16,
-                device_map="auto",
-                low_cpu_mem_usage=True,
-            )
+            # Determine target device and dtype
+            target_device = self.device
+            torch_dtype = torch.float32 if target_device == "cpu" else torch.float16
+
+            print(f"  Loading model for {target_device} ({torch_dtype})...")
+
+            # Load model WITHOUT device_map to avoid buffer allocation issues
+            # Load on CPU first, then move to target device (works better for MPS)
+            load_kwargs = {
+                "torch_dtype": torch_dtype,
+                "low_cpu_mem_usage": True,
+            }
+
+            # Force CPU loading context to prevent MPS warmup allocation
+            with torch.device("cpu"):
+                # For MPS, use eager attention to avoid flash attention issues
+                if target_device == "mps":
+                    # Force eager attention for MPS compatibility
+                    load_kwargs["attn_implementation"] = "eager"
+                    self.mistral_model = AutoModelForCausalLM.from_pretrained(
+                        model_name,
+                        **load_kwargs,
+                    )
+                    print("   Moving model to MPS...")
+                    self.mistral_model = self.mistral_model.to(target_device)
+                else:
+                    # CPU or CUDA
+                    self.mistral_model = AutoModelForCausalLM.from_pretrained(
+                        model_name,
+                        **load_kwargs,
+                    )
+                    if target_device != "cpu":
+                        self.mistral_model = self.mistral_model.to(target_device)
+
             self.mistral_model.eval()
 
-            # Update device to match where the model was actually loaded
-            if hasattr(self.mistral_model, "device"):
-                self.device = self.mistral_model.device
-            elif hasattr(self.mistral_model, "hf_device_map"):
-                # Get the first device from the device map
-                first_device = next(iter(self.mistral_model.hf_device_map.values()))
-                self.device = torch.device(first_device)
+            # Enable gradient checkpointing for memory efficiency
+            if hasattr(self.mistral_model, "gradient_checkpointing_enable"):
+                self.mistral_model.gradient_checkpointing_enable()
+                print("  ✓ Gradient checkpointing enabled")
 
-            print(f"  ✓ Mistral model loaded in float16 mode on {self.device}")
+            self.device = torch.device(target_device)
+            print(f"  ✓ Mistral model loaded in {torch_dtype} mode on {self.device}")
         else:
-            print(f"  ℹ Mistral will be loaded per-sample (memory efficient mode)")
+            print("  ℹ Mistral will be loaded per-sample (memory efficient mode)")
 
     def _load_zarr_metadata(self) -> None:
         """Load metadata from Zarr files."""
@@ -213,7 +236,7 @@ class ClimateTextDataLoader(IterableDataset):
                 print(f"  ✓ Loaded {zarr_path.name}: {n_timesteps} timesteps")
 
             except Exception as e:
-                raise RuntimeError(f"Failed to load Zarr file {zarr_path}: {e}")
+                raise RuntimeError(f"Failed to load Zarr file {zarr_path}: {e}") from e
 
     def _detect_grid_size(self) -> int:
         """Detect the actual grid size from the loaded datasets."""
@@ -228,7 +251,7 @@ class ClimateTextDataLoader(IterableDataset):
                 var_shape = ds[var_name].shape
                 if len(var_shape) == 1:
                     return var_shape[0]
-                elif len(var_shape) == 2:
+                if len(var_shape) == 2:
                     return var_shape[1]  # [time, grid_points]
 
         # Fallback if no AIFS variables found
@@ -335,13 +358,16 @@ class ClimateTextDataLoader(IterableDataset):
         # Format prompt for Mistral
         formatted_prompt = self.prompt_generator.format_for_mistral(prompt)
 
-        # Tokenize
+        # Tokenize with proper padding to avoid tensor creation issues
         inputs = self.mistral_tokenizer(
             formatted_prompt,
             return_tensors="pt",
             max_length=self.max_prompt_length,
             truncation=True,
+            padding=True,
         )
+
+        # Move to target device explicitly
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         # Generate
@@ -379,7 +405,7 @@ class ClimateTextDataLoader(IterableDataset):
         if n_timesteps < 2:
             raise ValueError(
                 f"Zarr file {self.zarr_paths[zarr_idx]} has only {n_timesteps} timesteps, "
-                f"but need at least 2 consecutive timesteps for training"
+                "but need at least 2 consecutive timesteps for training"
             )
 
         max_t = n_timesteps - 1  # Maximum valid starting timestep
@@ -460,6 +486,12 @@ class ClimateTextDataLoader(IterableDataset):
                 print(f"⚠ Error generating sample {i}: {e}")
                 continue
 
+    def __getitem__(self, index):
+        """Not used for IterableDataset, but required by abstract base class."""
+        raise NotImplementedError(
+            "ClimateTextDataLoader is an IterableDataset. Use __iter__ instead."
+        )
+
     def __len__(self) -> int:
         """Return number of samples per epoch."""
         return self.samples_per_epoch
@@ -503,7 +535,7 @@ class ClimateTextDataLoader(IterableDataset):
         print("TRAINING SAMPLE PREVIEW")
         print("=" * 80)
 
-        print(f"\n📍 Location:")
+        print("\n📍 Location:")
         print(f"  Name: {sample.location.name}")
         print(f"  Type: {sample.location.location_type}")
         print(
@@ -511,7 +543,7 @@ class ClimateTextDataLoader(IterableDataset):
         )
         print(f"  Masked grid points: {sample.mask.sum().item()} / {len(sample.mask)}")
 
-        print(f"\n🌍 Climate Data:")
+        print("\n🌍 Climate Data:")
         print(f"  Timestep 1: {sample.timestep_1_index}")
         print(f"  Timestep 2: {sample.timestep_2_index}")
         print(f"  Tensor shape (t1): {sample.climate_tensor_t1.shape}")
@@ -519,7 +551,7 @@ class ClimateTextDataLoader(IterableDataset):
         print(f"  AIFS input shape: {sample.aifs_input_tensor.shape}")
         print(f"  Data source: {Path(sample.zarr_file_path).name}")
 
-        print(f"\n📊 Statistics Table:")
+        print("\n📊 Statistics Table:")
         print(sample.statistics_table)
 
         print(f"\n💬 Prompt ({len(sample.prompt)} chars):")
@@ -534,7 +566,7 @@ class ClimateTextDataLoader(IterableDataset):
             else sample.llm_response
         )
 
-        print(f"\n🔢 Tokenization:")
+        print("\n🔢 Tokenization:")
         print(f"  Prompt tokens: {sample.prompt_tokens['input_ids'].shape}")
         print(f"  Response tokens: {sample.response_tokens['input_ids'].shape}")
 

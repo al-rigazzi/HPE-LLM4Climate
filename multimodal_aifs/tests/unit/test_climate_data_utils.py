@@ -20,6 +20,7 @@ import unittest
 
 import torch
 
+from multimodal_aifs.constants import AIFS_RAW_ENCODER_OUTPUT_DIM
 from multimodal_aifs.utils.climate_data_utils import (
     CLIMATE_VARIABLES,
     ClimateDataProcessor,
@@ -34,7 +35,7 @@ class TestClimateDataUtils(unittest.TestCase):
         """Test ClimateDataProcessor initialization."""
         processor = ClimateDataProcessor()
         self.assertEqual(processor.normalization_method, "standard")
-        self.assertEqual(processor.target_features, 218)
+        self.assertEqual(processor.target_features, AIFS_RAW_ENCODER_OUTPUT_DIM)
         self.assertFalse(processor.is_fitted)
 
     def test_climate_data_processor_fit_transform(self):
@@ -89,7 +90,3 @@ class TestClimateDataUtils(unittest.TestCase):
         proc_minmax = ClimateDataProcessor(normalization_method="minmax")
         result_minmax = proc_minmax.fit_transform(data)
         self.assertIsInstance(result_minmax, torch.Tensor)
-
-
-if __name__ == "__main__":
-    unittest.main()

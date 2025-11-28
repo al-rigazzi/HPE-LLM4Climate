@@ -45,16 +45,16 @@ def load_aifs_encoder(
         model_path = Path(model_dir)  # Load analysis
     analysis_path = model_path / f"{model_name}_analysis.json"
     with open(analysis_path, "r", encoding="utf-8") as f:
-        analysis = json.load(f)
+        encoder_summary = json.load(f)
 
     # Try to load full model first
     full_model_path = model_path / f"{model_name}_full.pth"
     if full_model_path.exists():
         print(f"Loading full encoder model from {full_model_path}")
-        encoder = torch.load(full_model_path, map_location=device)
-        print(f"Loaded encoder: {type(encoder).__name__}")
-        print(f"   Parameters: {sum(p.numel() for p in encoder.parameters()):,}")
-        return encoder, analysis
+        loaded_aifs_encoder = torch.load(full_model_path, map_location=device)
+        print(f"Loaded encoder: {type(loaded_aifs_encoder).__name__}")
+        print(f"   Parameters: {sum(p.numel() for p in loaded_aifs_encoder.parameters()):,}")
+        return loaded_aifs_encoder, encoder_summary
 
     # Fallback to state dict (requires architecture definition)
     state_dict_path = model_path / f"{model_name}_state_dict.pth"
@@ -63,7 +63,7 @@ def load_aifs_encoder(
         print("Loading state dict requires the original model architecture")
         print("   Use the full model file for easier loading")
         state_dict = torch.load(state_dict_path, map_location=device)
-        return state_dict, analysis
+        return state_dict, encoder_summary
 
     raise FileNotFoundError(f"No encoder files found in {model_dir}")
 
@@ -95,18 +95,18 @@ if __name__ == "__main__":
         print("Loading extracted AIFS encoder...")
         encoder, analysis = load_aifs_encoder()
 
-        print(f"\nEncoder Analysis:")
+        print("\nEncoder Analysis:")
         print(f"   Type: {analysis['encoder_type']}")
         print(f"   Parameters: {analysis['total_parameters']:,}")
         print(f"   Memory: {analysis['memory_mb']:.1f} MB")
         print(f"   Input Features: {analysis['input_features']}")
         print(f"   Output Features: {analysis['output_features']}")
 
-        print(f"\n🏗️  Encoder Structure:")
+        print("\n🏗️  Encoder Structure:")
         for name, info in analysis["structure"].items():
             print(f"   {name}: {info['type']} ({info['parameters']:,} params)")
 
-        print(f"\nEncoder ready for use!")
+        print("\nEncoder ready for use!")
 
     except Exception as e:
         print(f"Error loading encoder: {e}")

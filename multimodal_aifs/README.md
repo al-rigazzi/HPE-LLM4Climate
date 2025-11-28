@@ -219,8 +219,8 @@ python -m pytest multimodal_aifs/tests/integration/ -v
 The AIFS encoder (`extracted_models/aifs_encoder_full.pth`) contains:
 - **Architecture**: GraphTransformerForwardMapper
 - **Parameters**: 19,884,832 total parameters
-- **Input**: 218-dimensional climate features
-- **Output**: 1024-dimensional embeddings
+- **Input**: 103 climate variables (real ECMWF forcings)
+- **Output**: 102-dimensional raw encoder embeddings
 - **Source**: ECMWF AIFS v1.0 (extracted encoder module)
 
 ## Results and Analysis
