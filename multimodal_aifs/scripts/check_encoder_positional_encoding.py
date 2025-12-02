@@ -90,6 +90,12 @@ from multimodal_aifs.constants import (  # noqa: E402
     AIFS_RAW_ENCODER_OUTPUT_DIM,
 )
 from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder  # noqa: E402
+from multimodal_aifs.utils.device_utils import (  # noqa: E402
+    configure_device_for_max_perf,
+    device_to_str,
+    resolve_device,
+    supports_amp,
+)
 from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader  # noqa: E402
 
 
@@ -155,14 +161,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--device",
         type=str,
-        default="cpu",
-        help="Device for encoder inference (cpu, cuda, mps).",
+        default="auto",
+        help="Device for encoder inference (auto, cpu, cuda, mps).",
     )
     parser.add_argument(
         "--runner-device",
         type=str,
-        default="cpu",
-        help="Device for loading the AIFS SimpleRunner (keep cpu unless you have ample GPU memory).",
+        default="auto",
+        help="Device for loading the AIFS SimpleRunner (auto-detected by default).",
     )
     parser.add_argument(
         "--checkpoint",
@@ -341,10 +347,25 @@ def run_check(args: argparse.Namespace) -> dict[str, Any]:
     """Execute the positional encoding verification workflow."""
 
     quiet = bool(args.quiet)
+    encoder_device = resolve_device(args.device)
+    configure_device_for_max_perf(encoder_device)
+    amp_supported = supports_amp(encoder_device)
+    runner_device = resolve_device(args.runner_device)
+    configure_device_for_max_perf(runner_device)
+    runner_device_str = device_to_str(runner_device)
+
+    log(
+        "Encoder device: {enc} ({prec}) | Runner device: {run}".format(
+            enc=device_to_str(encoder_device),
+            prec="FP16" if amp_supported else "FP32",
+            run=runner_device_str,
+        ),
+        quiet,
+    )
     log("Loading AIFS SimpleRunner...", quiet)
 
     checkpoint = {"huggingface": args.checkpoint}
-    runner = SimpleRunner(checkpoint, device=args.runner_device)
+    runner = SimpleRunner(checkpoint, device=runner_device_str)
     aifs_model = runner.model
 
     log("Initializing AIFSCompleteEncoder wrapper...", quiet)
@@ -354,8 +375,8 @@ def run_check(args: argparse.Namespace) -> dict[str, Any]:
         quiet,
     )
 
-    encoder = AIFSCompleteEncoder(aifs_model, verbose=not quiet, device=args.device)
-    encoder.output_projection = nn.Identity().to(torch.device(args.device))
+    encoder = AIFSCompleteEncoder(aifs_model, verbose=not quiet, device=encoder_device)
+    encoder.output_projection = nn.Identity().to(encoder_device)
     log("Configured encoder to return raw 102-D embeddings (projection disabled).", quiet)
 
     log(f"Loading Zarr dataset from {args.zarr_path}...", quiet)
@@ -367,14 +388,14 @@ def run_check(args: argparse.Namespace) -> dict[str, Any]:
         quiet,
     )
 
-    use_fp16 = torch.device(args.device).type in ("cuda", "mps")
+    use_fp16 = amp_supported
 
     log("Converting dataset to AIFS tensor (5D)...", quiet)
     tensor_5d = loader.to_aifs_tensor(
         climate_slice,
         batch_size=1,
         normalize=not args.skip_normalization,
-        device=args.device,
+        device=encoder_device,
         use_fp16=use_fp16,
         runner=runner,
         use_forcing_pipeline=True,

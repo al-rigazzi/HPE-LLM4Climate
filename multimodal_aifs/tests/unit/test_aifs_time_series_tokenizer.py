@@ -52,7 +52,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             / "extracted_models"
             / "aifs_encoder_full.pth"
         )
-        cls.device = "cpu"  # Use CPU for testing
+        cls.device = torch.device("cpu")  # Use CPU for testing
         cls.dtype = torch.float32  # Default dtype for testing
         cls.has_real_model = cls.aifs_model_path.exists()
 
@@ -369,7 +369,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             self.assertIn(key, info)
 
         self.assertEqual(info["temporal_modeling"], "transformer")  # Default
-        self.assertEqual(info["device"], self.device)
+        self.assertEqual(info["device"], str(self.device))
         self.assertEqual(info["dtype"], self.dtype)
         self.assertIsInstance(info["aifs_encoder"], dict)
 
@@ -414,7 +414,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
         # Test device configuration
         info = tokenizer.get_tokenizer_info()
-        self.assertEqual(info["device"], device)
+        self.assertEqual(info["device"], str(device))
         self.assertEqual(info["dtype"], self.dtype)
 
         # Test expected device behavior

@@ -43,7 +43,7 @@ def test_batch_processing(aifs_model, test_device):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         # Create fusion module with real AIFS model
@@ -74,7 +74,7 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         # Create fusion module with real AIFS model
@@ -126,7 +126,7 @@ def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         embedding_module = AIFSClimateEmbedding(
@@ -168,7 +168,7 @@ def test_error_handling(aifs_model, test_device):
     """Test error handling for invalid inputs."""
     print("\nTesting Error Handling")
 
-    device = str(test_device)
+    device = test_device
 
     # Test with invalid path
     try:
@@ -229,7 +229,7 @@ def test_fusion_module_initialization(aifs_model, test_device):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     # Test with real AIFS model
     fusion_module = AIFSClimateTextFusion(
@@ -259,7 +259,7 @@ def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         fusion_module = AIFSClimateTextFusion(
@@ -318,7 +318,7 @@ def test_similarity_and_alignment(aifs_model, test_device, test_climate_data):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         fusion_module = AIFSClimateTextFusion(
@@ -365,7 +365,7 @@ def test_text_encoding(aifs_model, test_device):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     # Create fusion module
     fusion_module = AIFSClimateTextFusion(

@@ -32,6 +32,12 @@ import zarr
 from torch.utils.data import IterableDataset
 
 from ..constants import AIFS_GRID_POINTS, ALL_AIFS_VARIABLES
+from ..utils.device_utils import (
+    autocast_if_available,
+    configure_device_for_max_perf,
+    resolve_device,
+    supports_amp,
+)
 from .location_masks import Location, LocationMaskGenerator
 from .prompt_generator import ClimatePromptGenerator
 from .statistics_computer import ClimateStatisticsComputer
@@ -90,7 +96,7 @@ class ClimateTextDataLoader(IterableDataset):
         batch_size: int = 1,
         samples_per_epoch: int = 1000,
         cache_mistral_model: bool = True,
-        device: str = "cpu",
+        device: str | torch.device | None = None,
         seed: int | None = None,
         max_prompt_length: int = 2048,
         max_response_length: int = 512,
@@ -115,8 +121,11 @@ class ClimateTextDataLoader(IterableDataset):
         self.samples_per_epoch = samples_per_epoch
         self.max_prompt_length = max_prompt_length
         self.max_response_length = max_response_length
-        self.device = device
         self.cache_mistral_model = cache_mistral_model
+        self.device = resolve_device(device)
+        configure_device_for_max_perf(self.device)
+        self._use_fp16 = supports_amp(self.device)
+        self.tensor_dtype = torch.float16 if self._use_fp16 else torch.float32
 
         # Initialize Zarr paths
         if isinstance(zarr_paths, str):
@@ -158,7 +167,7 @@ class ClimateTextDataLoader(IterableDataset):
         print("DataLoader initialized:")
         print(f"  - Zarr files: {len(self.zarr_paths)}")
         print(f"  - Samples per epoch: {samples_per_epoch}")
-        print(f"  - Device: {device}")
+        print(f"  - Device: {self.device}")
 
     def _initialize_mistral_model(self, model_name: str) -> None:
         """Initialize Mistral model for inference."""
@@ -168,39 +177,27 @@ class ClimateTextDataLoader(IterableDataset):
         if self.cache_mistral_model:
             from transformers import AutoModelForCausalLM
 
-            # Determine target device and dtype
             target_device = self.device
-            torch_dtype = torch.float32 if target_device == "cpu" else torch.float16
+            torch_dtype = torch.float16 if target_device.type != "cpu" else torch.float32
 
             print(f"  Loading model for {target_device} ({torch_dtype})...")
 
-            # Load model WITHOUT device_map to avoid buffer allocation issues
-            # Load on CPU first, then move to target device (works better for MPS)
             load_kwargs = {
                 "torch_dtype": torch_dtype,
                 "low_cpu_mem_usage": True,
             }
 
-            # Force CPU loading context to prevent MPS warmup allocation
-            with torch.device("cpu"):
-                # For MPS, use eager attention to avoid flash attention issues
-                if target_device == "mps":
-                    # Force eager attention for MPS compatibility
-                    load_kwargs["attn_implementation"] = "eager"
-                    self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                        model_name,
-                        **load_kwargs,
-                    )
-                    print("   Moving model to MPS...")
-                    self.mistral_model = self.mistral_model.to(target_device)
-                else:
-                    # CPU or CUDA
-                    self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                        model_name,
-                        **load_kwargs,
-                    )
-                    if target_device != "cpu":
-                        self.mistral_model = self.mistral_model.to(target_device)
+            if target_device.type == "mps":
+                load_kwargs["attn_implementation"] = "eager"
+
+            self.mistral_model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                **load_kwargs,
+            )
+
+            if target_device.type != "cpu":
+                print(f"   Moving model to {target_device}...")
+                self.mistral_model = self.mistral_model.to(target_device)
 
             self.mistral_model.eval()
 
@@ -209,8 +206,7 @@ class ClimateTextDataLoader(IterableDataset):
                 self.mistral_model.gradient_checkpointing_enable()
                 print("  ✓ Gradient checkpointing enabled")
 
-            self.device = torch.device(target_device)
-            print(f"  ✓ Mistral model loaded in {torch_dtype} mode on {self.device}")
+            print(f"  ✓ Mistral model loaded in {torch_dtype} mode on {target_device}")
         else:
             print("  ℹ Mistral will be loaded per-sample (memory efficient mode)")
 
@@ -296,10 +292,10 @@ class ClimateTextDataLoader(IterableDataset):
             if var_name not in ds:
                 # Handle missing variables with zeros using actual grid size and correct device
                 data_t1.append(
-                    torch.zeros(actual_grid_points, dtype=torch.float32, device=self.device)
+                    torch.zeros(actual_grid_points, dtype=self.tensor_dtype, device=self.device)
                 )
                 data_t2.append(
-                    torch.zeros(actual_grid_points, dtype=torch.float32, device=self.device)
+                    torch.zeros(actual_grid_points, dtype=self.tensor_dtype, device=self.device)
                 )
                 continue
 
@@ -308,13 +304,19 @@ class ClimateTextDataLoader(IterableDataset):
             # Handle different array shapes
             if len(var_data.shape) == 1:
                 # Static field (no time dimension)
-                field = torch.from_numpy(var_data[:]).float().to(self.device)
+                field = torch.from_numpy(var_data[:]).to(
+                    device=self.device, dtype=self.tensor_dtype
+                )
                 data_t1.append(field)
                 data_t2.append(field)
             else:
                 # Time-varying field
-                field_t1 = torch.from_numpy(var_data[t1, :]).float().to(self.device)
-                field_t2 = torch.from_numpy(var_data[t2, :]).float().to(self.device)
+                field_t1 = torch.from_numpy(var_data[t1, :]).to(
+                    device=self.device, dtype=self.tensor_dtype
+                )
+                field_t2 = torch.from_numpy(var_data[t2, :]).to(
+                    device=self.device, dtype=self.tensor_dtype
+                )
                 data_t1.append(field_t1)
                 data_t2.append(field_t2)
 
@@ -372,13 +374,14 @@ class ClimateTextDataLoader(IterableDataset):
 
         # Generate
         with torch.no_grad():
-            outputs = self.mistral_model.generate(
-                **inputs,
-                max_new_tokens=self.max_response_length,
-                temperature=0.7,
-                top_p=0.9,
-                do_sample=True,
-            )
+            with autocast_if_available(self.device):
+                outputs = self.mistral_model.generate(
+                    **inputs,
+                    max_new_tokens=self.max_response_length,
+                    temperature=0.7,
+                    top_p=0.9,
+                    do_sample=True,
+                )
 
         # Decode response (remove prompt)
         full_text = self.mistral_tokenizer.decode(outputs[0], skip_special_tokens=True)

@@ -33,10 +33,12 @@ Usage:
     tensor = loader.to_aifs_tensor(data)
 """
 
+from __future__ import annotations
+
 import sys
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import torch
 
@@ -46,6 +48,11 @@ sys.path.insert(0, str(project_root))
 
 # Import constants
 from multimodal_aifs.constants import ALL_AIFS_VARIABLES
+from multimodal_aifs.utils.device_utils import (
+    configure_device_for_max_perf,
+    resolve_device,
+    supports_amp,
+)
 
 # Try to import Zarr and Xarray
 try:
@@ -57,6 +64,11 @@ except ImportError as e:
     ZARR_AVAILABLE = False
     warnings.warn(f"Zarr/Xarray not available: {e}. Install with: pip install zarr xarray")
     xr = None  # type: ignore
+
+if TYPE_CHECKING:
+    import xarray as xr_typing
+else:
+    xr_typing = Any
 
 # Import climate data utilities
 try:
@@ -101,7 +113,7 @@ class ZarrClimateLoader:
         self.time_dim: str = ""
         self.time_range: tuple[str, str] = ("", "")
         self.available_variables: list[str] = []
-        self.ds: xr.Dataset | None = None
+        self.ds: xr_typing.Dataset | None = None
 
         # Load dataset
         self._load_dataset()
@@ -154,7 +166,7 @@ class ZarrClimateLoader:
 
     def load_time_range(
         self, start_time: str | None, end_time: str | None, variables: list[str] | None = None
-    ) -> xr.Dataset:
+    ) -> xr_typing.Dataset:
         """
         Load data for a specific time range.
 
@@ -312,8 +324,8 @@ class ZarrClimateLoader:
         data,
         batch_size: int = 1,
         normalize: bool = True,
-        device: str = "cpu",
-        use_fp16: bool = False,
+        device: str | torch.device | None = None,
+        use_fp16: bool | None = None,
         runner=None,
         use_forcing_pipeline: bool = True,
     ) -> torch.Tensor:
@@ -328,8 +340,8 @@ class ZarrClimateLoader:
             data: Xarray dataset
             batch_size: Batch size (for creating batches from time series)
             normalize: Whether to normalize the data
-            device: Device to move tensor to ("cpu", "cuda", "mps", etc.)
-            use_fp16: Whether to use FP16 (torch.float16) instead of FP32 (torch.float32)
+            device: Device to move tensor to (auto-detected when None)
+            use_fp16: Whether to use FP16 (auto-enabled for CUDA/MPS when None)
             runner: SimpleRunner instance required for AIFS format data
             use_forcing_pipeline: Whether to use SimpleRunner pipeline (default: True)
 
@@ -343,6 +355,12 @@ class ZarrClimateLoader:
             ValueError: If data is not in AIFS format (grid_point dimension required)
         """
         print("Converting to AIFS tensor format...")
+
+        target_device = resolve_device(device)
+        configure_device_for_max_perf(target_device)
+        if use_fp16 is None:
+            use_fp16 = supports_amp(target_device)
+        tensor_dtype = torch.float16 if use_fp16 else torch.float32
 
         # Validate requirements for AIFS format
         if runner is None:
@@ -410,9 +428,8 @@ class ZarrClimateLoader:
             )
 
             # Move to device and convert to FP16 if needed
-            tensor = tensor.to(device)
-            if use_fp16:
-                tensor = tensor.half()
+            tensor = tensor.to(target_device)
+            tensor = tensor.to(tensor_dtype)
 
             return tensor
 

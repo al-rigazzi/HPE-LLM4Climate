@@ -61,6 +61,12 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from multimodal_aifs.constants import AIFS_INPUT_VARIABLES, ALL_AIFS_VARIABLES
 from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder
+from multimodal_aifs.utils.device_utils import (
+    configure_device_for_max_perf,
+    device_to_str,
+    resolve_device,
+    supports_amp,
+)
 from multimodal_aifs.utils.zarr_data_loader import ZarrClimateLoader
 
 POSITIONAL_FORCINGS = [
@@ -161,14 +167,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--device",
         type=str,
-        default="cpu",
-        help="Device for encoder inference (cpu, cuda, mps).",
+        default="auto",
+        help="Device for encoder inference (auto, cpu, cuda, mps).",
     )
     parser.add_argument(
         "--runner-device",
         type=str,
-        default="cpu",
-        help="Device for SimpleRunner instantiation (keep cpu unless enough GPU memory).",
+        default="auto",
+        help="Device for SimpleRunner instantiation (auto-detected by default).",
     )
     parser.add_argument(
         "--permutation-mode",
@@ -367,6 +373,22 @@ def run_analysis(args: argparse.Namespace) -> dict[str, Any]:
     quiet = bool(args.quiet)
     ensure_inference_chunks(args.inference_chunks)
 
+    encoder_device = resolve_device(args.device)
+    configure_device_for_max_perf(encoder_device)
+    amp_supported = supports_amp(encoder_device)
+    runner_device = resolve_device(args.runner_device)
+    configure_device_for_max_perf(runner_device)
+    runner_device_str = device_to_str(runner_device)
+
+    log(
+        "Encoder device: {enc} ({prec}) | Runner device: {run}".format(
+            enc=device_to_str(encoder_device),
+            prec="FP16" if amp_supported else "FP32",
+            run=runner_device_str,
+        ),
+        quiet,
+    )
+
     log("Configuring flash-attention fallback and environment patch...", quiet)
     configure_flash_attention()
     bypass_environment_validation()
@@ -375,7 +397,7 @@ def run_analysis(args: argparse.Namespace) -> dict[str, Any]:
     from anemoi.inference.runners.simple import SimpleRunner
 
     checkpoint = {"huggingface": "ecmwf/aifs-single-1.1"}
-    runner = SimpleRunner(checkpoint, device=args.runner_device)
+    runner = SimpleRunner(checkpoint, device=runner_device_str)
     mapping = runner.checkpoint.variable_to_input_tensor_index
 
     log("Loading dataset slice...", quiet)
@@ -413,10 +435,10 @@ def run_analysis(args: argparse.Namespace) -> dict[str, Any]:
     tensor = maybe_roll_tensor(tensor, args.permutation_mode, args.grid_shift)
 
     log("Running AIFS encoder forward pass...", quiet)
-    encoder = AIFSCompleteEncoder(runner.model, verbose=not quiet, device=args.device)
-    encoder.output_projection = nn.Identity().to(torch.device(args.device))
+    encoder = AIFSCompleteEncoder(runner.model, verbose=not quiet, device=encoder_device)
+    encoder.output_projection = nn.Identity().to(encoder_device)
     log("Configured encoder to return raw 102-D embeddings (projection disabled).", quiet)
-    tensor = tensor.to(args.device)
+    tensor = tensor.to(encoder_device)
     with torch.no_grad():
         embeddings = encoder(tensor)
     log(f"Encoder output shape: {tuple(embeddings.shape)}", quiet)

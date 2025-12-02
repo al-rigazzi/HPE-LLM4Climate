@@ -127,7 +127,7 @@ class TestClimateTextDataLoaderReal:
 
             assert dataloader.batch_size == 1  # Default value
             assert dataloader.samples_per_epoch == 3
-            assert dataloader.device == "cpu"
+            assert dataloader.device.type == "cpu"
             assert len(dataloader.zarr_datasets) == 1
 
     def test_initialization_with_custom_parameters(self, real_test_zarr_path, llm_mock_status):
@@ -156,7 +156,7 @@ class TestClimateTextDataLoaderReal:
             assert dataloader.samples_per_epoch == 20
             assert dataloader.max_prompt_length == 1024
             assert dataloader.max_response_length == 256
-            assert dataloader.device == "cuda"
+            assert dataloader.device.type == "cuda"
 
     def test_real_sample_generation(self, real_dataloader_no_model, llm_mock_status):
         """Test that we can generate real samples using real components."""

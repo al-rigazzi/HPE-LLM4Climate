@@ -38,6 +38,7 @@ from ..constants import (
     EXPECTED_INPUT_SHAPE,
     EXPECTED_OUTPUT_SHAPE,
 )
+from ..utils.device_utils import configure_device_for_max_perf, resolve_device
 
 try:
     # AIFS dependencies check - these imports verify AIFS availability
@@ -60,7 +61,7 @@ class AIFSCompleteEncoder(nn.Module):
     4. Returns ENCODER EMBEDDINGS (not final predictions)
     """
 
-    def __init__(self, aifs_model, verbose: bool = True, device: str = "cpu"):
+    def __init__(self, aifs_model, verbose: bool = True, device: str | torch.device = "cpu"):
         """
         Initialize the complete AIFS encoder.
 
@@ -75,17 +76,18 @@ class AIFSCompleteEncoder(nn.Module):
         self.aifs_interface = aifs_model
         self.aifs_model = aifs_model.model  # Access the actual AnemoiModelEncProcDec
         self.verbose = verbose
-        self.device = device
+        self.device = resolve_device(device)
+        configure_device_for_max_perf(self.device)
 
         # AIFS model is too memory-intensive for MPS, always keep it on CPU
         # Only the projection layer will be on the target device
         self.aifs_device = "cpu"
-        if self.verbose and device == "mps":
+        if self.verbose and self.device.type == "mps":
             print("Note: AIFS encoder will run on CPU (too large for MPS memory)")
 
         # Determine dtype based on device
         # AIFS always uses FP32 on CPU for stability
-        self.use_fp16 = device in ["cuda", "mps"]
+        self.use_fp16 = self.device.type in {"cuda", "mps"}
         self.dtype = torch.float16 if self.use_fp16 else torch.float32
 
         # Keep AIFS on CPU (always FP32)

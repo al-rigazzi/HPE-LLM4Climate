@@ -37,6 +37,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from multimodal_aifs.core.aifs_climate_fusion import AIFSClimateTextFusion
+from multimodal_aifs.utils.device_utils import configure_device_for_max_perf, resolve_device
 
 
 class AIFSMultimodalInference:
@@ -51,7 +52,9 @@ class AIFSMultimodalInference:
         if device == "auto":
             self.device = get_best_device()
         else:
-            self.device = torch.device(device)
+            self.device = resolve_device(device)
+
+        configure_device_for_max_perf(self.device)
 
         print(f"Using device: {self.device}")
 
@@ -79,7 +82,7 @@ class AIFSMultimodalInference:
             fusion_dim=self.config["model"].get("fusion_dim", 512),
             num_attention_heads=self.config["model"].get("num_fusion_layers", 4),
             dropout=self.config["model"].get("dropout", 0.1),
-            device=str(self.device),
+            device=self.device,
         )
 
         # Load model weights
