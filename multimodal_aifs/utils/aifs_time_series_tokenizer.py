@@ -117,6 +117,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
 
         # Get AIFS encoder output dimension
         self.spatial_dim = AIFS_RAW_ENCODER_OUTPUT_DIM
+        self.output_dim = self.spatial_dim
 
         # Initialize temporal modeling component - can be LSTM, TransformerEncoder, or None
         self.temporal_model: nn.Module | None = None
@@ -153,18 +154,24 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         else:
             raise ValueError(f"Unsupported temporal modeling: {temporal_modeling}")
 
-        # Output projection if using temporal modeling
-        self.output_projection: nn.Linear | nn.Identity
+        # Output projection keeps public interface at spatial_dim regardless of temporal backend
+        self.output_projection: nn.Module
         if self.temporal_model is not None:
             if temporal_modeling == "lstm":
-                output_dim = hidden_dim
+                temporal_output_dim = hidden_dim
             elif temporal_modeling == "transformer":
-                output_dim = self.transformer_dim or self.spatial_dim
+                temporal_output_dim = self.transformer_dim or self.spatial_dim
             else:
-                output_dim = self.spatial_dim
-            self.output_projection = nn.Linear(output_dim, hidden_dim, dtype=self.dtype).to(
-                self.device
-            )
+                temporal_output_dim = self.spatial_dim
+
+            if temporal_output_dim == self.output_dim:
+                self.output_projection = nn.Identity()
+            else:
+                self.output_projection = nn.Linear(
+                    temporal_output_dim,
+                    self.output_dim,
+                    dtype=self.dtype,
+                ).to(self.device)
         else:
             self.output_projection = nn.Identity()
 
@@ -177,7 +184,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
 
         Returns:
             Tokenized representation based on temporal modeling choice:
-            - "lstm": [batch, time, hidden_dim]
+            - "lstm": [batch, time, spatial_dim]
             - "transformer": [batch, time, spatial_dim]
             - "none": [batch, time, spatial_dim]
         """
@@ -400,6 +407,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
             "temporal_modeling": self.temporal_modeling,
             "hidden_dim": self.hidden_dim,
             "spatial_dim": self.spatial_dim,
+            "output_dim": self.output_dim,
             "device": str(self.device),
             "dtype": self.dtype,
             "output_shape_pattern": "batch x time x features",
@@ -476,7 +484,7 @@ def demonstrate_time_series_tokenization():
     print("Usage with real AIFS model:")
     print("   aifs_model = load_your_aifs_model()")
     print("   tokenizer = AIFSTimeSeriesTokenizer(aifs_model=aifs_model)")
-    print("   tokens = tokenizer(climate_data_5d)  # [batch, time, hidden_dim or 102]")
+    print("   tokens = tokenizer(climate_data_5d)  # [batch, time, 102]")
 
     print()
 

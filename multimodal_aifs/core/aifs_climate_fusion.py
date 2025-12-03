@@ -90,8 +90,26 @@ class AIFSClimateTextFusion(nn.Module):
         self.device = resolve_device(device)
         configure_device_for_max_perf(self.device)
 
-        self.dtype = dtype or (torch.float16 if supports_amp(self.device) else torch.float32)
-        self.autocast_dtype = torch.float16 if supports_amp(self.device) else None
+        prefers_bf16 = (
+            self.device.type == "cuda"
+            and torch.cuda.is_available()
+            and getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+        )
+
+        if dtype is not None:
+            self.dtype = dtype
+        else:
+            if prefers_bf16:
+                self.dtype = torch.bfloat16
+            elif supports_amp(self.device):
+                self.dtype = torch.float16
+            else:
+                self.dtype = torch.float32
+
+        if self.dtype in {torch.float16, torch.bfloat16} and supports_amp(self.device):
+            self.autocast_dtype = self.dtype
+        else:
+            self.autocast_dtype = None
         self.verbose = verbose
         self.climate_dim = climate_dim
         self.text_dim = text_dim
@@ -177,8 +195,8 @@ class AIFSClimateTextFusion(nn.Module):
         self.text_processor = ClimateTextProcessor()
 
         # Convert entire module to appropriate dtype for device
-        if supports_amp(self.device) and target_dtype == torch.float16:
-            self.half()  # Convert all module parameters to FP16
+        if supports_amp(self.device) and target_dtype in {torch.float16, torch.bfloat16}:
+            self.to(dtype=target_dtype)
 
     def encode_climate_data(self, climate_data: torch.Tensor) -> torch.Tensor:
         """

@@ -108,7 +108,7 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
         # Validate output
         assert climate_features.shape[0] == climate_data_5d.shape[0]  # batch dimension
         assert climate_features.shape[1] == 512  # fusion_dim
-        assert climate_features.device.type == device
+        assert climate_features.device == device
 
         print(
             f"   Climate encoding: {climate_data_5d.shape} ({climate_data_5d.dtype}) "
@@ -155,7 +155,7 @@ def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
         # Validate output
         assert embeddings.shape[0] == sample_data_5d.shape[0]
         assert embeddings.shape[1] == 256  # embedding_dim
-        assert embeddings.device.type == device
+        assert embeddings.device == device
 
         print(f"   Embedding: {sample_data_5d.shape} -> {embeddings.shape}")
         print("   Embedding module test passed")

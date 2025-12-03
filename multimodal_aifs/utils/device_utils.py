@@ -15,10 +15,35 @@
 
 from __future__ import annotations
 
+import warnings
 from contextlib import contextmanager, nullcontext
 from typing import Iterator
 
 import torch
+
+
+def _is_mps_supported() -> bool:
+    return bool(getattr(torch.backends, "mps", None)) and torch.backends.mps.is_available()
+
+
+def _format_device(device: torch.device) -> str:
+    if device.index is not None:
+        return f"{device.type}:{device.index}"
+    return device.type
+
+
+def _fallback_device(requested: str) -> torch.device:
+    fallback = get_best_device()
+    if fallback.type != requested:
+        warnings.warn(
+            (
+                f"Requested device '{requested}' is not available. "
+                f"Falling back to '{_format_device(fallback)}'."
+            ),
+            RuntimeWarning,
+            stacklevel=3,
+        )
+    return fallback
 
 
 def get_best_device() -> torch.device:
@@ -37,8 +62,13 @@ def get_best_device() -> torch.device:
     """
 
     if torch.cuda.is_available():
-        return torch.device("cuda")
-    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        # torch.device("cuda") does not resolve to a concrete index, which breaks
+        # APIs such as torch.cuda.set_device. Always bind explicitly to the
+        # current CUDA device so downstream code receives a fully qualified
+        # device handle.
+        default_index = torch.cuda.current_device()
+        return torch.device(f"cuda:{default_index}")
+    if _is_mps_supported():
         return torch.device("mps")
     return torch.device("cpu")
 
@@ -46,13 +76,41 @@ def get_best_device() -> torch.device:
 def resolve_device(device: str | torch.device | None = None) -> torch.device:
     """Normalize user-provided device hints to a concrete :class:`torch.device`."""
 
-    if isinstance(device, torch.device):
-        return device
-
-    if device is None or str(device).lower() in {"auto", "best", "default"}:
+    if device is None or (isinstance(device, str) and device.lower() in {"auto", "best", "default"}):
         return get_best_device()
 
-    return torch.device(str(device))
+    device_str = device
+    if isinstance(device, torch.device):
+        device_str = _format_device(device)
+
+    if device_str is None:
+        return get_best_device()
+
+    normalized = str(device_str).lower()
+
+    if normalized.startswith("cuda"):
+        if not torch.cuda.is_available():
+            return _fallback_device("cuda")
+        if ":" in normalized:
+            return torch.device(normalized)
+        default_index = torch.cuda.current_device()
+        return torch.device(f"cuda:{default_index}")
+
+    if normalized == "mps":
+        if _is_mps_supported():
+            return torch.device("mps")
+        return _fallback_device("mps")
+
+    resolved = torch.device(normalized)
+
+    if resolved.type == "cuda" and resolved.index is None:
+        if not torch.cuda.is_available():
+            return _fallback_device("cuda")
+        return torch.device(f"cuda:{torch.cuda.current_device()}")
+    if resolved.type == "mps" and not _is_mps_supported():
+        return _fallback_device("mps")
+
+    return resolved
 
 
 def configure_device_for_max_perf(device: torch.device) -> None:
@@ -72,10 +130,7 @@ def configure_device_for_max_perf(device: torch.device) -> None:
 
 def device_to_str(device: torch.device) -> str:
     """Return a canonical string representation for a :class:`torch.device`."""
-
-    if device.index is not None:
-        return f"{device.type}:{device.index}"
-    return device.type
+    return _format_device(device)
 
 
 def supports_amp(device: torch.device) -> bool:

@@ -25,6 +25,7 @@ Key Components:
 """
 
 import os
+from contextlib import nullcontext
 from datetime import datetime
 from typing import Any
 
@@ -79,26 +80,77 @@ class AIFSCompleteEncoder(nn.Module):
         self.device = resolve_device(device)
         configure_device_for_max_perf(self.device)
 
-        # AIFS model is too memory-intensive for MPS, always keep it on CPU
-        # Only the projection layer will be on the target device
-        self.aifs_device = "cpu"
-        if self.verbose and self.device.type == "mps":
-            print("Note: AIFS encoder will run on CPU (too large for MPS memory)")
+        force_cpu = os.environ.get("AIFS_FORCE_CPU", "false").lower() in {"1", "true", "yes"}
+        self.disable_flash_attn = os.environ.get("AIFS_DISABLE_FLASH_ATTN", "false").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        if force_cpu and self.verbose:
+            print("AIFS_FORCE_CPU=true -> forcing encoder to run on CPU")
 
-        # Determine dtype based on device
-        # AIFS always uses FP32 on CPU for stability
-        self.use_fp16 = self.device.type in {"cuda", "mps"}
-        self.dtype = torch.float16 if self.use_fp16 else torch.float32
+        # Prefer CUDA for the encoder when available to keep flash attention on GPU
+        if self.device.type == "cuda" and not force_cpu:
+            cuda_index = self.device.index
+            if cuda_index is None:
+                cuda_index = torch.cuda.current_device()
+            self.aifs_device = torch.device("cuda", cuda_index)
+        else:
+            self.aifs_device = torch.device("cpu")
+            if self.device.type == "mps" and self.verbose:
+                print("Note: AIFS encoder will run on CPU (MPS memory constraints)")
 
-        # Keep AIFS on CPU (always FP32)
-        self.aifs_interface = self.aifs_interface.cpu().float()
+        try:
+            self.aifs_interface = self.aifs_interface.to(
+                device=self.aifs_device, dtype=torch.float32
+            )
+        except RuntimeError as exc:
+            if self.aifs_device.type == "cuda":
+                raise RuntimeError(
+                    "Failed to move AIFS encoder to CUDA. Free GPU memory or set "
+                    "AIFS_FORCE_CPU=true to force CPU execution."
+                ) from exc
+            raise
+
         self.aifs_model = self.aifs_interface.model
+
+        # Determine dtype for outputs (downstream models still consume FP16 on GPU)
+        prefers_bf16 = False
+        if self.device.type == "cuda" and torch.cuda.is_available():
+            prefers_bf16 = getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+
+        self.low_precision_dtype: torch.dtype | None = None
+        if self.device.type == "cuda" and torch.cuda.is_available():
+            self.low_precision_dtype = torch.bfloat16 if prefers_bf16 else torch.float16
+        elif self.device.type == "mps":
+            self.low_precision_dtype = torch.float16
+
+        self.dtype = self.low_precision_dtype or torch.float32
+        self.use_fp16 = self.low_precision_dtype == torch.float16
+
+        # CUDA flash attention prefers low precision inputs; favor BF16 for dynamic range
+        self.encoder_forward_dtype = torch.float32
+        self._use_autocast = False
+        if self.aifs_device.type == "cuda" and not self.disable_flash_attn:
+            bf16_supported = getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+            self.encoder_forward_dtype = torch.bfloat16 if bf16_supported else torch.float16
+            self._use_autocast = True
 
         if self.verbose:
             print(f"Inner model type: {type(self.aifs_model)}")
             print(f"Has encoder: {hasattr(self.aifs_model, 'encoder')}")
             print(f"Has trainable_data: {hasattr(self.aifs_model, 'trainable_data')}")
             print(f"AIFS encoder on: {self.aifs_device} (FP32)")
+            if self._use_autocast:
+                dtype_name = (
+                    "bf16" if self.encoder_forward_dtype == torch.bfloat16 else "fp16"
+                )
+                print(
+                    "Enabling CUDA autocast for flash attention compatibility "
+                    f"({dtype_name} forward)"
+                )
+            elif self.disable_flash_attn and self.aifs_device.type == "cuda":
+                print("Flash attention disabled - running encoder in CUDA FP32 mode")
 
     def forward(self, x):
         """
@@ -114,12 +166,6 @@ class AIFSCompleteEncoder(nn.Module):
             raise RuntimeError(
                 "AIFS dependencies not available. Please install anemoi-models and einops."
             )
-
-        # Convert input to appropriate dtype
-        if self.use_fp16 and x.dtype != torch.float16:
-            x = x.half()
-        elif not self.use_fp16 and x.dtype != torch.float32:
-            x = x.float()
 
         # Check input dimensions
         _, _, _, grid_size, _ = x.shape
@@ -138,15 +184,21 @@ class AIFSCompleteEncoder(nn.Module):
 
         # Follow the EXACT same steps as AnemoiModelEncProcDec.forward() but stop at encoder
         with torch.no_grad():
-            # AIFS is always on CPU (set in __init__), move input to CPU for processing
             original_device = x.device
-            x_cpu = x.cpu().float()  # Convert to FP32 for CPU processing
 
-            # Clear MPS memory if input was on MPS
-            if original_device.type == "mps" and hasattr(torch.backends, "mps"):
-                torch.mps.empty_cache()
-            elif original_device.type == "cuda":
-                torch.cuda.empty_cache()
+            # Clear accelerator memory when transferring from GPU/MPS to CPU
+            if self.aifs_device.type == "cpu":
+                if original_device.type == "mps" and hasattr(torch.backends, "mps"):
+                    torch.mps.empty_cache()
+                elif original_device.type == "cuda" and torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+
+            # Move tensor to the encoder device in the dtype expected by the backend kernels
+            fp32_input = x.to(self.aifs_device, dtype=torch.float32)
+            if self._use_autocast:
+                model_input = fp32_input.to(self.encoder_forward_dtype)
+            else:
+                model_input = fp32_input
 
             # Ensure model is in eval mode for inference chunking to work
             # (ANEMOI_INFERENCE_NUM_CHUNKS only applies in eval mode)
@@ -154,49 +206,89 @@ class AIFSCompleteEncoder(nn.Module):
             if was_training:
                 self.aifs_model.eval()
 
-            # Call the AIFS model on CPU
+            def _run_encoder(tensor, use_autocast):
+                autocast_ctx = (
+                    torch.autocast(device_type="cuda", dtype=self.encoder_forward_dtype)
+                    if use_autocast
+                    else nullcontext()
+                )
+                with autocast_ctx:
+                    result = self.aifs_model(tensor)
+                if isinstance(result, tuple):
+                    return result[0]
+                return result
+
             try:
-                full_output = self.aifs_model(x_cpu)
-                if isinstance(full_output, tuple):
-                    # Extract the first component (encoder output)
-                    data_embeddings = full_output[0]
-                else:
-                    data_embeddings = full_output
-            except RuntimeError as e:
-                # Handle memory issues gracefully
-                if "out of memory" in str(e).lower():
-                    # Clear cache and suggest fallback to CPU
-                    if x.device.type == "cuda":
-                        torch.cuda.empty_cache()
-                    elif x.device.type == "mps":
-                        torch.mps.empty_cache()
-                    raise RuntimeError(
-                        f"AIFS model out of memory on {x.device}. "
-                        f"Consider using CPU or smaller batch size: {e}"
-                    ) from e
-                # Handle unsupported operations
-                if "not currently implemented" in str(e) or "not currently supported" in str(e):
-                    raise RuntimeError(
-                        f"AIFS model operation not supported on {x.device}. "
-                        f"Set PYTORCH_ENABLE_MPS_FALLBACK=1 for CPU fallback: {e}"
-                    ) from e
-                raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
-            except Exception as e:
-                raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
+                # Call the AIFS model (possibly twice if autocast overflows)
+                try:
+                    data_embeddings = _run_encoder(model_input, self._use_autocast)
+                except RuntimeError as e:
+                    # Handle memory issues gracefully
+                    if "out of memory" in str(e).lower():
+                        # Clear cache and suggest fallback to CPU
+                        if x.device.type == "cuda":
+                            torch.cuda.empty_cache()
+                        elif x.device.type == "mps":
+                            torch.mps.empty_cache()
+                        raise RuntimeError(
+                            f"AIFS model out of memory on {x.device}. "
+                            f"Consider using CPU or smaller batch size: {e}"
+                        ) from e
+                    # Handle unsupported operations
+                    if "not currently implemented" in str(e) or "not currently supported" in str(e):
+                        raise RuntimeError(
+                            f"AIFS model operation not supported on {x.device}. "
+                            f"Set PYTORCH_ENABLE_MPS_FALLBACK=1 for CPU fallback: {e}"
+                        ) from e
+                    raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
+                except Exception as e:
+                    raise RuntimeError(f"Failed to encode with AIFS model: {e}") from e
+
+                needs_fp32_rerun = False
+                if self._use_autocast:
+                    finite_ratio = torch.isfinite(data_embeddings).float().mean().item()
+                    if finite_ratio < 1.0:
+                        print(
+                            "⚠️  AIFS encoder autocast produced non-finite values "
+                            f"(finite ratio {finite_ratio:.6f}). Retrying in FP32."
+                        )
+                        needs_fp32_rerun = True
+
+                if needs_fp32_rerun:
+                    data_embeddings = _run_encoder(fp32_input, False)
+                    self._use_autocast = False
+                    self.encoder_forward_dtype = torch.float32
+                    if not torch.isfinite(data_embeddings).all():
+                        raise RuntimeError("AIFS encoder produced non-finite outputs in FP32 mode")
             finally:
                 # Restore training mode if it was on
                 if was_training:
                     self.aifs_model.train()
 
             # Move embeddings back to original device and convert dtype if needed
-            if original_device.type != "cpu":
+            if original_device != self.aifs_device:
                 if self.verbose:
-                    print(f"Moving AIFS output from CPU to {original_device}")
-                # Convert to FP16 when moving to MPS/CUDA (if use_fp16 is True)
-                if self.use_fp16:
-                    data_embeddings = data_embeddings.half().to(original_device)
-                else:
-                    data_embeddings = data_embeddings.to(original_device)
+                    print(f"Moving AIFS output from {self.aifs_device} to {original_device}")
+                data_embeddings = data_embeddings.to(original_device)
+
+            if data_embeddings.dtype != self.dtype:
+                converted = data_embeddings.to(self.dtype)
+                if not torch.isfinite(converted).all() and self.dtype in {
+                    torch.float16,
+                    torch.bfloat16,
+                }:
+                    print(
+                        "⚠️  AIFS encoder output overflows low-precision dtype. Keeping climate embeddings in FP32."
+                    )
+                    self.dtype = torch.float32
+                    self.low_precision_dtype = None
+                    self.use_fp16 = False
+                    converted = data_embeddings.to(self.dtype)
+                    if not torch.isfinite(converted).all():
+                        raise RuntimeError(
+                            "AIFS encoder produced non-finite outputs even in FP32 mode"
+                        )
+                data_embeddings = converted
 
         if self.verbose:
             print("AIFS encoder forward completed")

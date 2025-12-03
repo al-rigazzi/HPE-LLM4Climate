@@ -35,6 +35,7 @@ Usage:
 
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 from pathlib import Path
@@ -426,6 +427,58 @@ class ZarrClimateLoader:
                 f"ensemble={tensor.shape[2]}, grid_points={tensor.shape[3]}, "
                 f"vars={tensor.shape[4]}]"
             )
+
+            should_log_stats = os.environ.get("AIFS_LOG_TENSOR_STATS", "false").lower() in {
+                "1",
+                "true",
+                "yes",
+            }
+            max_abs_value = float(tensor.abs().max().item())
+
+            fp16_limit = 65504.0
+            force_fp32 = False
+
+            if use_fp16 and max_abs_value > fp16_limit:
+                print(
+                    "⚠️  Tensor values exceed FP16 dynamic range "
+                    f"(|value|={max_abs_value:.2f} > {fp16_limit}). Keeping FP32 inputs."
+                )
+                force_fp32 = True
+
+            if force_fp32:
+                use_fp16 = False
+                tensor_dtype = torch.float32
+
+            if should_log_stats:
+                finite_mask = torch.isfinite(tensor)
+                finite_ratio = finite_mask.float().mean().item()
+                nan_ratio = 1.0 - finite_ratio
+                print(
+                    f"   Tensor finite ratio: {finite_ratio:.6f} (nan ratio {nan_ratio:.6f})"
+                )
+
+                finite_count = finite_mask.sum().item()
+                if finite_count > 0:
+                    finite_values = tensor[finite_mask]
+                    finite_min = finite_values.min().item()
+                    finite_max = finite_values.max().item()
+                    finite_mean = finite_values.mean().item()
+                    print(
+                        "   Tensor finite stats: "
+                        f"min={finite_min:.6f}, max={finite_max:.6f}, mean={finite_mean:.6f}"
+                    )
+                else:
+                    print("   Tensor finite stats: no finite values available")
+
+                nan_counts = (~finite_mask).reshape(-1, tensor.shape[-1]).sum(dim=0)
+                if torch.any(nan_counts):
+                    topk = min(5, tensor.shape[-1])
+                    top_vals, top_idx = torch.topk(nan_counts.float(), k=topk)
+                    top_idx = top_idx.tolist()
+                    top_vals = top_vals.tolist()
+                    print("   Vars with most NaNs (index -> count):")
+                    for var_index, count in zip(top_idx, top_vals):
+                        print(f"      [{var_index}] -> {int(count)}")
 
             # Move to device and convert to FP16 if needed
             tensor = tensor.to(target_device)
