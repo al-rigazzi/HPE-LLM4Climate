@@ -26,6 +26,10 @@ def _is_mps_supported() -> bool:
     return bool(getattr(torch.backends, "mps", None)) and torch.backends.mps.is_available()
 
 
+def _cuda_supports_bf16() -> bool:
+    return torch.cuda.is_available() and getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+
+
 def _format_device(device: torch.device) -> str:
     if device.index is not None:
         return f"{device.type}:{device.index}"
@@ -76,7 +80,9 @@ def get_best_device() -> torch.device:
 def resolve_device(device: str | torch.device | None = None) -> torch.device:
     """Normalize user-provided device hints to a concrete :class:`torch.device`."""
 
-    if device is None or (isinstance(device, str) and device.lower() in {"auto", "best", "default"}):
+    if device is None or (
+        isinstance(device, str) and device.lower() in {"auto", "best", "default"}
+    ):
         return get_best_device()
 
     device_str = device
@@ -134,26 +140,27 @@ def device_to_str(device: torch.device) -> str:
 
 
 def supports_amp(device: torch.device) -> bool:
-    """Return True when autocast is supported on the target device."""
+    """Return True only when BF16 autocast is supported on the target device."""
 
-    return device.type in {"cuda", "mps"}
+    if device.type == "cuda":
+        return _cuda_supports_bf16()
+    return False
 
 
 @contextmanager
-def autocast_if_available(
-    device: torch.device, dtype: torch.dtype | None = None
-) -> Iterator[None]:
+def autocast_if_available(device: torch.device, dtype: torch.dtype | None = None) -> Iterator[None]:
     """Autocast context manager that no-ops on unsupported devices."""
 
-    if device.type == "cuda" and torch.cuda.is_available():
-        target_dtype = dtype or torch.float16
-        with torch.cuda.amp.autocast(dtype=target_dtype):
-            yield
-        return
+    requested_dtype = dtype
+    if requested_dtype == torch.float16:
+        requested_dtype = torch.bfloat16
 
-    if device.type == "mps" and hasattr(torch, "autocast"):
-        target_dtype = dtype or torch.float16
-        with torch.autocast(device_type="mps", dtype=target_dtype):
+    dtype_to_use = requested_dtype
+    if dtype_to_use is None and device.type == "cuda" and _cuda_supports_bf16():
+        dtype_to_use = torch.bfloat16
+
+    if device.type == "cuda" and dtype_to_use == torch.bfloat16:
+        with torch.cuda.amp.autocast(dtype=torch.bfloat16):
             yield
         return
 

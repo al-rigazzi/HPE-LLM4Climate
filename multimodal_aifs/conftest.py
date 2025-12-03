@@ -677,9 +677,7 @@ def aifs_model_available(test_device):  # pylint: disable=W0621
             aifs_model_instance = runner.model.to(aifs_device)
         except RuntimeError as exc:
             if aifs_device.startswith("cuda"):
-                print(
-                    f"⚠️  Failed to load AIFS on {aifs_device}: {exc}. Falling back to CPU."
-                )
+                print(f"⚠️  Failed to load AIFS on {aifs_device}: {exc}. Falling back to CPU.")
                 aifs_device = "cpu"
                 runner = SimpleRunner(checkpoint, device=aifs_device)
                 aifs_model_instance = runner.model.to(aifs_device)

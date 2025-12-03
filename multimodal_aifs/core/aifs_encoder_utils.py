@@ -142,9 +142,7 @@ class AIFSCompleteEncoder(nn.Module):
             print(f"Has trainable_data: {hasattr(self.aifs_model, 'trainable_data')}")
             print(f"AIFS encoder on: {self.aifs_device} (FP32)")
             if self._use_autocast:
-                dtype_name = (
-                    "bf16" if self.encoder_forward_dtype == torch.bfloat16 else "fp16"
-                )
+                dtype_name = "bf16" if self.encoder_forward_dtype == torch.bfloat16 else "fp16"
                 print(
                     "Enabling CUDA autocast for flash attention compatibility "
                     f"({dtype_name} forward)"
@@ -278,7 +276,8 @@ class AIFSCompleteEncoder(nn.Module):
                     torch.bfloat16,
                 }:
                     print(
-                        "⚠️  AIFS encoder output overflows low-precision dtype. Keeping climate embeddings in FP32."
+                        "⚠️  AIFS encoder output overflows low-precision dtype."
+                        " Keeping climate embeddings in FP32."
                     )
                     self.dtype = torch.float32
                     self.low_precision_dtype = None

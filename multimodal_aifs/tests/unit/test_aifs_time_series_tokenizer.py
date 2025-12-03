@@ -74,6 +74,22 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         defaults.update(kwargs)
         return AIFSTimeSeriesTokenizer(**defaults)
 
+    def resolve_expected_dtype(self, requested_dtype: torch.dtype) -> torch.dtype:
+        """Mirror tokenizer dtype policy for test expectations."""
+        resolved_dtype = requested_dtype
+        if resolved_dtype == torch.float16:
+            resolved_dtype = torch.bfloat16
+        if (
+            resolved_dtype == torch.bfloat16
+            and self.device.type == "cuda"
+            and (
+                not torch.cuda.is_available()
+                or not getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+            )
+        ):
+            resolved_dtype = torch.float32
+        return resolved_dtype
+
     def create_test_data(
         self,
         batch_size: int = 2,
@@ -97,7 +113,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         self.assertEqual(tokenizer_default.temporal_modeling, "transformer")
         self.assertEqual(tokenizer_default.hidden_dim, 512)
         self.assertEqual(tokenizer_default.device, self.device)
-        self.assertEqual(tokenizer_default.dtype, self.dtype)
+        self.assertEqual(tokenizer_default.dtype, self.resolve_expected_dtype(self.dtype))
         print("   Transformer tokenizer initialized (default)")
 
         # Test LSTM initialization with different dtype
@@ -106,7 +122,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         )
         self.assertEqual(tokenizer_lstm.temporal_modeling, "lstm")
         self.assertEqual(tokenizer_lstm.hidden_dim, 256)
-        self.assertEqual(tokenizer_lstm.dtype, torch.float16)
+        self.assertEqual(tokenizer_lstm.dtype, self.resolve_expected_dtype(torch.float16))
         print("   LSTM tokenizer initialized with float16")
 
         # Test None initialization (spatial only)
@@ -141,10 +157,11 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
             # Test tokenizer configuration
             info = tokenizer.get_tokenizer_info()
-            self.assertEqual(info["dtype"], dtype)
+            expected_dtype = self.resolve_expected_dtype(dtype)
+            self.assertEqual(info["dtype"], expected_dtype)
 
             # Test that tokenizer maintains dtype
-            self.assertEqual(tokenizer.dtype, dtype)
+            self.assertEqual(tokenizer.dtype, expected_dtype)
 
             print(f"   Tokenizer with {dtype} initialized and validated")
 

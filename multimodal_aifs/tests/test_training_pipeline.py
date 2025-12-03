@@ -16,9 +16,12 @@
 import sys
 from pathlib import Path
 
+import torch
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from multimodal_aifs.training import ClimateTextDataLoader
+from multimodal_aifs.utils.device_utils import get_best_device
 
 
 def test_sample_generation(llm_mock_status):
@@ -41,12 +44,17 @@ def test_sample_generation(llm_mock_status):
     print("\nNote: Requires HuggingFace authentication for gated model")
     print("If not authenticated, run: huggingface-cli login")
 
+    if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+        target_device = torch.device("mps")
+    else:
+        target_device = get_best_device()
+
     dataloader = ClimateTextDataLoader(
         zarr_paths=str(zarr_path),
         mistral_model_name=model_name,
         samples_per_epoch=3,
         cache_mistral_model=True,
-        device="mps",  # Use MPS for faster inference (FP16)
+        device=target_device,
         seed=42,
     )
 

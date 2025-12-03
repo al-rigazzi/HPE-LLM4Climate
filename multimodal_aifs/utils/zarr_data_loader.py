@@ -39,7 +39,7 @@ import os
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import torch
 
@@ -453,9 +453,7 @@ class ZarrClimateLoader:
                 finite_mask = torch.isfinite(tensor)
                 finite_ratio = finite_mask.float().mean().item()
                 nan_ratio = 1.0 - finite_ratio
-                print(
-                    f"   Tensor finite ratio: {finite_ratio:.6f} (nan ratio {nan_ratio:.6f})"
-                )
+                print(f"   Tensor finite ratio: {finite_ratio:.6f} (nan ratio {nan_ratio:.6f})")
 
                 finite_count = finite_mask.sum().item()
                 if finite_count > 0:
