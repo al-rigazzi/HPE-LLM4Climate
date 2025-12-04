@@ -518,7 +518,8 @@ def test_embedding_accepts_preaggregated_encoder_outputs(enable_aifs_dependencie
         verbose=False,
     )
     batch = 3
-    preaggregated = torch.randn(interface.grid_points, module.climate_dim, dtype=torch.float64)
+    # Use float32 as MPS doesn't support float64
+    preaggregated = torch.randn(interface.grid_points, module.climate_dim, dtype=torch.float32)
     module.aifs_encoder = StaticOutputEncoder(preaggregated)
     climate_data = _random_climate_tensor(interface.grid_points, batch=batch)
     embeddings = module(climate_data)
