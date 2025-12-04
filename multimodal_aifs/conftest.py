@@ -62,20 +62,13 @@ def setup_flash_attn_mock():
     """
     import platform
 
-    disable_flash_attn = os.environ.get("AIFS_DISABLE_FLASH_ATTN", "false").lower() in {
-        "1",
-        "true",
-        "yes",
-    }
     is_macos = platform.system() == "Darwin"
 
-    if not is_macos and not disable_flash_attn:
+    if not is_macos:
         print("ℹ️ Skipping flash attention mock - real kernels enabled")
         return
-    if disable_flash_attn and not is_macos:
-        print("⚠️  Flash attention mock enabled (AIFS_DISABLE_FLASH_ATTN=true)")
-    elif is_macos:
-        print("⚠️  Flash attention mock enabled for MacOS")
+
+    print("⚠️  Flash attention mock enabled for MacOS")
 
     flash_attn_mock = types.ModuleType("flash_attn")
 
@@ -232,9 +225,6 @@ def get_env_str(env_var: str, default: str) -> str:
 # =================== PYTEST CONFIGURATION ===================
 def pytest_sessionstart(session):
     """Set up global test environment at start of session."""
-    # Allow tests to run without CUDA flash attention to avoid NaNs in FP16
-    os.environ.setdefault("AIFS_DISABLE_FLASH_ATTN", "true")
-
     # Set up flash attention mock FIRST (before any imports that might need it)
     setup_flash_attn_mock()
 
@@ -808,7 +798,6 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
         self.time_series_tokenizer = AIFSTimeSeriesTokenizer(
             aifs_model=model,
-            temporal_modeling="transformer",
             hidden_dim=256,  # Standard dimension for internal temporal modeling
             device=device_str,
             dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,

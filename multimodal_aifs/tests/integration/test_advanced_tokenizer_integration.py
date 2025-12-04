@@ -42,7 +42,6 @@ def test_tokenizer():
 
         tokenizer = AIFSTimeSeriesTokenizer(
             aifs_checkpoint_path="/path/to/checkpoint.pt",
-            temporal_modeling="transformer",
             hidden_dim=512,
             device="cpu",
             verbose=False,
@@ -66,60 +65,15 @@ def test_tokenizer():
         print(f"   Output dimension: {info['aifs_encoder']['output_dim']}")
 
         # Test 3: Different temporal models
-        print("\n⏱️  Test 3: Different Temporal Models")
-
-        temporal_models = ["none", "lstm", "transformer"]
-
-        for model_type in temporal_models:
-            test_tokenizer = AIFSTimeSeriesTokenizer(
-                aifs_checkpoint_path="/path/to/checkpoint.pt",
-                temporal_modeling=model_type,
-                hidden_dim=256,
-                device="cpu",
-                verbose=False,
-            )
-
-            test_info = test_tokenizer.get_tokenizer_info()
-            assert test_info["temporal_modeling"] == model_type
-            assert test_info["spatial_dim"] == AIFS_RAW_ENCODER_OUTPUT_DIM
-
-            print(f"   {model_type} model configured correctly")
-
-        # Test 4: Expected output shapes
-        print("\nTest 4: Expected Output Shapes")
+        print("\n⏱️  Test 3: Transformer Output Expectations")
 
         batch_size, time_steps = 4, 8
+        expected_features = tokenizer.output_dim
+        expected_shape = (batch_size, time_steps, expected_features)
+        print(f"   Transformer expected output shape {expected_shape}")
 
-        for model_type in temporal_models:
-            test_tokenizer = AIFSTimeSeriesTokenizer(
-                aifs_checkpoint_path="/path/to/checkpoint.pt",
-                temporal_modeling=model_type,
-                hidden_dim=256,
-                device="cpu",
-                verbose=False,
-            )
-
-            if model_type == "none":
-                expected_features = test_tokenizer.spatial_dim
-            else:
-                expected_features = test_tokenizer.hidden_dim  # 256
-
-            expected_shape = (batch_size, time_steps, expected_features)
-            print(f"   {model_type}: Expected output shape {expected_shape}")
-
-        # Test 5: Error handling
-        print("\nTest 5: Error Handling")
-
-        # Test invalid temporal modeling
-        try:
-            AIFSTimeSeriesTokenizer(
-                aifs_checkpoint_path="/path/to/checkpoint.pt",
-                temporal_modeling="invalid",
-                verbose=False,
-            )
-            assert False, "Should have raised ValueError"
-        except ValueError:
-            print("   Invalid temporal modeling rejected")
+        # Test 4: Error handling
+        print("\nTest 4: Error Handling")
 
         # Test missing AIFS model/checkpoint
         try:

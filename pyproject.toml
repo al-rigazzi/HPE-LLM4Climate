@@ -270,3 +270,9 @@ filterwarnings = [
     "ignore::FutureWarning",
     "ignore::DeprecationWarning",
 ]
+
+[tool.coverage.run]
+omit = [
+    "*/conftest.py",
+    "conftest.py",
+]

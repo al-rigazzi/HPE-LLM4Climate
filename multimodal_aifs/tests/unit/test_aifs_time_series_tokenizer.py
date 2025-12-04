@@ -108,7 +108,6 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         """Test AIFSTimeSeriesTokenizer initialization with different configurations."""
         print("\\nTesting Tokenizer Initialization")
 
-        # Test default initialization (transformer) - use checkpoint mode for testing
         tokenizer_default = self.create_test_tokenizer()
         self.assertEqual(tokenizer_default.temporal_modeling, "transformer")
         self.assertEqual(tokenizer_default.hidden_dim, 512)
@@ -116,26 +115,11 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         self.assertEqual(tokenizer_default.dtype, self.resolve_expected_dtype(self.dtype))
         print("   Transformer tokenizer initialized (default)")
 
-        # Test LSTM initialization with different dtype
-        tokenizer_lstm = self.create_test_tokenizer(
-            temporal_modeling="lstm", hidden_dim=256, dtype=torch.float16
-        )
-        self.assertEqual(tokenizer_lstm.temporal_modeling, "lstm")
-        self.assertEqual(tokenizer_lstm.hidden_dim, 256)
-        self.assertEqual(tokenizer_lstm.dtype, self.resolve_expected_dtype(torch.float16))
-        print("   LSTM tokenizer initialized with float16")
-
-        # Test None initialization (spatial only)
-        tokenizer_none = self.create_test_tokenizer(temporal_modeling="none")
-        self.assertEqual(tokenizer_none.temporal_modeling, "none")
-        self.assertEqual(tokenizer_none.dtype, self.dtype)
-        self.assertIsNone(tokenizer_none.temporal_model)
-        print("   Spatial-only tokenizer initialized")
-
-        # Test invalid temporal modeling
-        with self.assertRaises(ValueError):
-            self.create_test_tokenizer(temporal_modeling="invalid")
-        print("   Invalid temporal modeling properly rejected")
+        tokenizer_custom = self.create_test_tokenizer(hidden_dim=256, dtype=torch.float16)
+        self.assertEqual(tokenizer_custom.temporal_modeling, "transformer")
+        self.assertEqual(tokenizer_custom.hidden_dim, 256)
+        self.assertEqual(tokenizer_custom.dtype, self.resolve_expected_dtype(torch.float16))
+        print("   Custom transformer tokenizer initialized with float16")
 
     def test_dtype_consistency(self):
         """Test dtype consistency across tokenizer operations."""
@@ -195,16 +179,12 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             info = tokenizer.get_tokenizer_info()
             self.assertEqual(info["spatial_dim"], AIFS_RAW_ENCODER_OUTPUT_DIM)
 
-            expected_output_shape = (
-                batch,
-                time,
-                (
-                    tokenizer.hidden_dim
-                    if tokenizer.temporal_modeling != "none"
-                    else tokenizer.spatial_dim
-                ),
-            )
-            print(f"   Shape {data.shape} ({dtype}) -> {expected_output_shape} (expected)")
+            outputs = tokenizer.tokenize_time_series(data)
+            expected_output_shape = (batch, time, tokenizer.output_dim)
+            self.assertEqual(outputs.shape, expected_output_shape)
+            self.assertEqual(outputs.dtype, tokenizer.dtype)
+            self.assertEqual(outputs.device, tokenizer.device)
+            print(f"   Shape {data.shape} ({dtype}) -> {expected_output_shape} (validated)")
 
         print("   Tokenizer configuration validated for all shapes and dtypes")
 
@@ -221,56 +201,123 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
                 tokenizer.tokenize_time_series(invalid_tensor)
             print(f"   Invalid shape {invalid_tensor.shape} properly rejected")
 
-    def test_temporal_modeling_outputs(self):
-        """Test that different temporal modeling approaches produce expected outputs."""
-        print("\\n⏱️ Testing Temporal Modeling Outputs")
+    def test_transformer_configuration(self):
+        """Test that transformer configuration metadata is consistent."""
+        print("\n⏱️ Testing Transformer Configuration")
 
-        # Test configuration without actual tokenization
         batch_size, time_steps = 2, 6
-        temporal_models = ["transformer", "lstm", "none"]
+        tokenizer = self.create_test_tokenizer(hidden_dim=256)
 
-        for model_type in temporal_models:
-            tokenizer = self.create_test_tokenizer(temporal_modeling=model_type, hidden_dim=256)
+        info = tokenizer.get_tokenizer_info()
+        self.assertEqual(info["temporal_modeling"], "transformer")
+        self.assertEqual(info["spatial_dim"], AIFS_RAW_ENCODER_OUTPUT_DIM)
+        self.assertEqual(info["dtype"], self.dtype)
 
-            # Test configuration validation
-            info = tokenizer.get_tokenizer_info()
-            self.assertEqual(info["temporal_modeling"], model_type)
-            self.assertEqual(info["spatial_dim"], AIFS_RAW_ENCODER_OUTPUT_DIM)  #  AIFS dimension
-            self.assertEqual(info["dtype"], self.dtype)
+        data = self.create_test_data(batch_size, time_steps, 4, (32, 32))
+        outputs = tokenizer.tokenize_time_series(data)
+        expected_shape = (batch_size, time_steps, tokenizer.output_dim)
+        self.assertEqual(outputs.shape, expected_shape)
+        self.assertEqual(outputs.dtype, tokenizer.dtype)
+        print(f"   Transformer output shape {expected_shape}")
 
-            if model_type == "none":
-                # Spatial-only should preserve AIFS output dimension
-                expected_output_dim = tokenizer.spatial_dim
-            else:
-                # Temporal models should output hidden_dim
-                expected_output_dim = 256
+    def test_summarize_spatial_encoding_variants(self):
+        """Validate spatial aggregation across supported tensor shapes."""
+        print("\nTesting Spatial Aggregation Helpers")
 
-            # Test expected output shape (without actual computation)
-            expected_shape = (batch_size, time_steps, expected_output_dim)
-            print(f"   {model_type.upper()}: Expected output shape {expected_shape}")
+        tokenizer = self.create_test_tokenizer()
+        batch_size, time_steps = 3, 4
+
+        grid_encoding = torch.randn(128, tokenizer.spatial_dim)
+        batch_encoding = tokenizer._summarize_spatial_encoding(grid_encoding, batch_size)
+        self.assertEqual(batch_encoding.shape, (batch_size, tokenizer.spatial_dim))
+
+        time_grid_encoding = torch.randn(batch_size, time_steps, 16, tokenizer.spatial_dim)
+        time_batch_encoding = tokenizer._summarize_spatial_encoding(
+            time_grid_encoding, batch_size
+        )
+        self.assertEqual(time_batch_encoding.shape, (batch_size, tokenizer.spatial_dim))
+
+        high_dim_encoding = torch.randn(batch_size, 6, tokenizer.spatial_dim // 2)
+        fallback_encoding = tokenizer._summarize_spatial_encoding(
+            high_dim_encoding, batch_size
+        )
+        self.assertEqual(fallback_encoding.shape, (batch_size, tokenizer.spatial_dim))
+
+        expanded_tokens = tokenizer._expand_time_dimension(batch_encoding, time_steps)
+        self.assertEqual(expanded_tokens.shape, (batch_size, time_steps, tokenizer.spatial_dim))
+        self.assertEqual(expanded_tokens.dtype, tokenizer.dtype)
+        print("   Spatial aggregation helper outputs validated")
+
+    def test_missing_transformer_components_raise(self):
+        """Ensure missing transformer modules raise explicit errors."""
+        print("\nTesting Transformer Component Validation")
+
+        tokenizer = self.create_test_tokenizer()
+        tokenizer.spatial_to_transformer = None
+        data = self.create_test_data()
+        with self.assertRaises(RuntimeError):
+            tokenizer.tokenize_batch_parallel(data)
+
+        tokenizer = self.create_test_tokenizer()
+        tokenizer.temporal_model = None
+        data = self.create_test_data()
+        with self.assertRaises(RuntimeError):
+            tokenizer.tokenize_batch_parallel(data)
+        print("   Missing transformer components properly rejected")
 
     def test_sequential_vs_parallel_processing(self):
         """Test that sequential and parallel processing configurations are valid."""
         print("\\nTesting Sequential vs Parallel Processing")
 
-        # Test with spatial-only configuration
-        tokenizer = self.create_test_tokenizer(temporal_modeling="none")
+        tokenizer = self.create_test_tokenizer()
 
-        # Test configuration without actual processing
         info = tokenizer.get_tokenizer_info()
-        self.assertEqual(info["temporal_modeling"], "none")
+        self.assertEqual(info["temporal_modeling"], "transformer")
         self.assertEqual(info["spatial_dim"], AIFS_RAW_ENCODER_OUTPUT_DIM)
         self.assertEqual(info["dtype"], self.dtype)
 
-        # Test expected behavior for different data sizes
         test_data_shapes = [(2, 4, 3, 16, 16), (1, 8, 5, 32, 32)]
 
         for shape in test_data_shapes:
-            batch_size, time_steps = shape[0], shape[1]
-            expected_shape = (batch_size, time_steps, tokenizer.spatial_dim)
-            print(f"   Data shape {shape} -> Expected output {expected_shape}")
+            batch_size, time_steps, n_vars, h, w = shape
+            data = self.create_test_data(batch_size, time_steps, n_vars, (h, w))
+            sequential_tokens = tokenizer.tokenize_time_series(data)
+            parallel_tokens = tokenizer.tokenize_batch_parallel(data)
+            expected_shape = (batch_size, time_steps, tokenizer.output_dim)
+            self.assertEqual(sequential_tokens.shape, expected_shape)
+            self.assertEqual(parallel_tokens.shape, expected_shape)
+            print(f"   Data shape {shape} -> Output {expected_shape}")
 
         print("   Sequential and parallel processing configurations validated")
+
+    def test_extract_spatial_tokens_matches_seeded_output(self):
+        """Ensure extract_spatial_tokens mirrors tokenize_time_series when deterministic."""
+        print("\nTesting Extract Spatial Tokens")
+
+        tokenizer = self.create_test_tokenizer()
+        data = self.create_test_data(batch_size=2, time_steps=4, n_variables=3, spatial_shape=(16, 16))
+
+        torch.manual_seed(1234)
+        sequential_tokens = tokenizer.tokenize_time_series(data)
+        torch.manual_seed(1234)
+        extracted_tokens = tokenizer.extract_spatial_tokens(data)
+
+        self.assertTrue(torch.equal(sequential_tokens, extracted_tokens))
+        self.assertEqual(extracted_tokens.shape, (2, 4, tokenizer.output_dim))
+        self.assertEqual(extracted_tokens.dtype, tokenizer.dtype)
+        print("   Spatial extraction matches seeded sequential output")
+
+    def test_batch_parallel_dtype_and_device(self):
+        """Validate dtype/device for batch-parallel processing."""
+        print("\nTesting Batch Parallel Dtype/Device")
+
+        tokenizer = self.create_test_tokenizer()
+        data = self.create_test_data(batch_size=2, time_steps=3, n_variables=4, spatial_shape=(32, 32))
+        tokens = tokenizer.tokenize_batch_parallel(data)
+
+        self.assertEqual(tokens.shape, (2, 3, tokenizer.output_dim))
+        self.assertEqual(tokens.dtype, tokenizer.dtype)
+        print(f"   Batch-parallel outputs on {tokens.device} respect dtype")
 
     def test_memory_efficiency(self):
         """Test memory usage configurations for different data sizes."""
@@ -283,13 +330,12 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         ]
 
         for config_name, batch, time, variables, spatial in test_configs:
-            # Test configuration without actual processing
-            tokenizer = self.create_test_tokenizer(temporal_modeling="transformer")
+            tokenizer = self.create_test_tokenizer()
 
             # Calculate expected input/output sizes
             height, width = spatial
             input_elements = batch * time * variables * height * width
-            output_elements = batch * time * tokenizer.hidden_dim  # 512 by default
+            output_elements = batch * time * tokenizer.output_dim
 
             # pylint: disable=no-member
             dtype_size = torch.finfo(self.dtype).bits // 8 if self.dtype.is_floating_point else 4
@@ -298,12 +344,15 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             output_size = output_elements * dtype_size
             compression_ratio = input_size / output_size if output_size > 0 else 1.0
 
+            data = self.create_test_data(batch, time, variables, spatial)
+            tokens = tokenizer.tokenize_time_series(data)
+            self.assertEqual(tokens.shape, (batch, time, tokenizer.output_dim))
+
             print(
-                f"   {config_name}: Expected {compression_ratio:.1f}x compression"
+                f"   {config_name}: {compression_ratio:.1f}x compression"
                 f" ({input_size//1024}KB -> {output_size//1024}KB)"
             )
 
-            # Validate configuration is correct
             info = tokenizer.get_tokenizer_info()
             self.assertEqual(info["temporal_modeling"], "transformer")
             self.assertEqual(info["dtype"], self.dtype)
@@ -319,50 +368,42 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         time_steps = 6
 
         for batch_size in batch_sizes:
-            # Test configuration without actual processing
+            data = self.create_test_data(batch_size, time_steps, 4, (32, 32))
+            tokens = tokenizer.tokenize_time_series(data)
+            expected_shape = (batch_size, time_steps, tokenizer.output_dim)
+
             info = tokenizer.get_tokenizer_info()
-
-            # Calculate expected output shape
-            expected_shape = (batch_size, time_steps, tokenizer.hidden_dim)
-
+            self.assertEqual(tokens.shape, expected_shape)
+            self.assertEqual(tokens.dtype, tokenizer.dtype)
             self.assertEqual(info["temporal_modeling"], "transformer")
             self.assertEqual(info["dtype"], self.dtype)
-            print(f"   Batch size {batch_size}: Expected output shape {expected_shape}")
+            print(f"   Batch size {batch_size}: Output shape {expected_shape}")
 
     def test_performance_benchmarks(self):
         """Test performance configurations across different models."""
         print("\\nTesting Performance Benchmarks")
 
-        test_cases = [
-            ("transformer", 2, 4, 3, (16, 16)),
-            ("lstm", 2, 4, 3, (16, 16)),
-            ("none", 2, 4, 3, (16, 16)),
-        ]
+        tokenizer = self.create_test_tokenizer()
+        info = tokenizer.get_tokenizer_info()
+        self.assertEqual(info["temporal_modeling"], "transformer")
+        self.assertEqual(info["dtype"], self.dtype)
 
-        for model_type, batch, time_steps, variables, spatial in test_cases:
-            tokenizer = self.create_test_tokenizer(temporal_modeling=model_type)
+        batch, time_steps, variables, spatial = 2, 4, 3, (16, 16)
+        height, width = spatial
+        input_elements = batch * time_steps * variables * height * width
+        expected_output_dim = tokenizer.output_dim
+        output_elements = batch * time_steps * expected_output_dim
+        complexity_ratio = input_elements / output_elements if output_elements > 0 else 1.0
 
-            # Test configuration without actual processing
-            info = tokenizer.get_tokenizer_info()
-            self.assertEqual(info["temporal_modeling"], model_type)
-            self.assertEqual(info["dtype"], self.dtype)
+        data = self.create_test_data(batch, time_steps, variables, spatial)
+        tokens = tokenizer.tokenize_time_series(data)
 
-            # Calculate expected computational complexity
-            height, width = spatial
-            input_elements = batch * time_steps * variables * height * width
+        self.assertEqual(tokens.shape, (batch, time_steps, expected_output_dim))
 
-            if model_type == "none":
-                expected_output_dim = tokenizer.spatial_dim
-            else:
-                expected_output_dim = tokenizer.hidden_dim
-
-            output_elements = batch * time_steps * expected_output_dim
-            complexity_ratio = input_elements / output_elements if output_elements > 0 else 1.0
-
-            print(
-                f"   {model_type.upper()}: Complexity ratio {complexity_ratio:.1f}x, "
-                f"Output dim {expected_output_dim}"
-            )
+        print(
+            f"   TRANSFORMER: Complexity ratio {complexity_ratio:.1f}x, "
+            f"Output dim {expected_output_dim}"
+        )
 
     def test_tokenizer_info(self):
         """Test tokenizer information retrieval."""
@@ -402,22 +443,21 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
         tokenizer = self.create_test_tokenizer()
 
-        # Test configuration for various edge cases
+        configs = [
+            (2, 1, 3, (16, 16)),
+            (2, 4, 1, (16, 16)),
+            (1, 2, 3, (8, 8)),
+        ]
+
+        for batch, time_steps, variables, spatial in configs:
+            data = self.create_test_data(batch, time_steps, variables, spatial)
+            tokens = tokenizer.tokenize_time_series(data)
+            expected_shape = (batch, time_steps, tokenizer.output_dim)
+            self.assertEqual(tokens.shape, expected_shape)
+            config_repr = (batch, time_steps, variables, spatial)
+            print(f"   Edge case {config_repr} -> {expected_shape}")
+
         info = tokenizer.get_tokenizer_info()
-
-        # Test single timestep configuration
-        expected_single_step_shape = (2, 1, tokenizer.hidden_dim)
-        print(f"   Single timestep: Expected shape {expected_single_step_shape}")
-
-        # Test single variable configuration
-        expected_single_var_shape = (2, 4, tokenizer.hidden_dim)
-        print(f"   Single variable: Expected shape {expected_single_var_shape}")
-
-        # Test minimal spatial dimensions configuration
-        expected_minimal_shape = (1, 2, tokenizer.hidden_dim)
-        print(f"   Minimal spatial: Expected shape {expected_minimal_shape}")
-
-        # Validate configuration consistency
         self.assertEqual(info["temporal_modeling"], "transformer")
         self.assertEqual(info["spatial_dim"], AIFS_RAW_ENCODER_OUTPUT_DIM)
         self.assertEqual(info["dtype"], self.dtype)
@@ -434,6 +474,11 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         self.assertEqual(info["device"], str(device))
         self.assertEqual(info["dtype"], self.dtype)
 
+        data = self.create_test_data()
+        tokens = tokenizer.tokenize_time_series(data)
+        self.assertEqual(tokens.device, tokenizer.device)
+        self.assertEqual(tokens.dtype, tokenizer.dtype)
+
         # Test expected device behavior
         print(f"   Device consistency configured: {device}")
         print(f"   Tokenizer device: {info['device']}")
@@ -443,7 +488,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         """Test gradient flow configuration."""
         print("\\nTesting Gradient Flow")
 
-        tokenizer = self.create_test_tokenizer(temporal_modeling="transformer")
+        tokenizer = self.create_test_tokenizer()
 
         # Test gradient-enabled configuration
         info = tokenizer.get_tokenizer_info()
@@ -464,5 +509,77 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
                 p.numel() for p in tokenizer.temporal_model.parameters() if p.requires_grad
             )
             print(f"   Learnable parameters: {param_count}")
+            data = self.create_test_data()
+            tokens = tokenizer.tokenize_time_series(data)
+            self.assertFalse(tokens.requires_grad)
         else:
             print("   No temporal model (spatial-only configuration)")
+
+    def test_aggregation_fallback_paths(self):
+        """Test different encoder output shape handling."""
+        print("\\nTesting Aggregation Fallback Paths")
+
+        tokenizer = self.create_test_tokenizer()
+
+        # Test with 2D output simulation (grid_points, features)
+        # This exercises the 2D aggregation branch
+        data_2d = self.create_test_data(batch_size=1, time_steps=2, n_variables=3, spatial_shape=(16, 16))
+        tokens_2d = tokenizer.tokenize_time_series(data_2d)
+        self.assertEqual(tokens_2d.shape, (1, 2, tokenizer.output_dim))
+        print(f"   2D aggregation: {tokens_2d.shape}")
+
+        # Test with 4D output simulation (batch, time, grid_points, features)
+        # This exercises the 4D aggregation branch
+        data_4d = self.create_test_data(batch_size=2, time_steps=3, n_variables=4, spatial_shape=(32, 32))
+        tokens_4d = tokenizer.tokenize_time_series(data_4d)
+        self.assertEqual(tokens_4d.shape, (2, 3, tokenizer.output_dim))
+        print(f"   4D aggregation: {tokens_4d.shape}")
+
+        print("   Aggregation fallback paths validated")
+
+    def test_batch_parallel_error_conditions(self):
+        """Test error handling in batch parallel processing."""
+        print("\\nTesting Batch Parallel Error Conditions")
+
+        tokenizer = self.create_test_tokenizer()
+
+        # Test with valid data to ensure no errors
+        data = self.create_test_data(batch_size=2, time_steps=4, n_variables=3, spatial_shape=(16, 16))
+        tokens = tokenizer.tokenize_batch_parallel(data)
+        self.assertEqual(tokens.shape, (2, 4, tokenizer.output_dim))
+        print(f"   Batch parallel output: {tokens.shape}")
+
+        # Test dtype conversion in batch parallel
+        data_fp64 = self.create_test_data(
+            batch_size=1, time_steps=2, n_variables=3, spatial_shape=(16, 16), dtype=torch.float64
+        )
+        if not (torch.backends.mps.is_available() and torch.backends.mps.is_built()):
+            tokens_converted = tokenizer.tokenize_batch_parallel(data_fp64)
+            self.assertEqual(tokens_converted.dtype, tokenizer.dtype)
+            print(f"   Dtype conversion: {data_fp64.dtype} -> {tokens_converted.dtype}")
+
+        print("   Batch parallel error conditions validated")
+
+    def test_amp_autocast_branches(self):
+        """Test AMP/autocast conditional branches."""
+        print("\\nTesting AMP Autocast Branches")
+
+        # Create tokenizer with different dtypes to trigger AMP paths
+        for dtype in [torch.float32, torch.bfloat16]:
+            if dtype == torch.bfloat16 and self.device.type != "cuda":
+                continue
+
+            tokenizer = self.create_test_tokenizer(dtype=dtype)
+            data = self.create_test_data(batch_size=1, time_steps=2, n_variables=3, spatial_shape=(16, 16))
+
+            # Sequential tokenization
+            tokens_seq = tokenizer.tokenize_time_series(data)
+            self.assertEqual(tokens_seq.shape, (1, 2, tokenizer.output_dim))
+
+            # Parallel tokenization
+            tokens_par = tokenizer.tokenize_batch_parallel(data)
+            self.assertEqual(tokens_par.shape, (1, 2, tokenizer.output_dim))
+
+            print(f"   {dtype} tokenization: sequential={tokens_seq.shape}, parallel={tokens_par.shape}")
+
+        print("   AMP autocast branches validated")

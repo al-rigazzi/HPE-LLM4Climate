@@ -81,11 +81,6 @@ class AIFSCompleteEncoder(nn.Module):
         configure_device_for_max_perf(self.device)
 
         force_cpu = os.environ.get("AIFS_FORCE_CPU", "false").lower() in {"1", "true", "yes"}
-        self.disable_flash_attn = os.environ.get("AIFS_DISABLE_FLASH_ATTN", "false").lower() in {
-            "1",
-            "true",
-            "yes",
-        }
         if force_cpu and self.verbose:
             print("AIFS_FORCE_CPU=true -> forcing encoder to run on CPU")
 
@@ -131,7 +126,7 @@ class AIFSCompleteEncoder(nn.Module):
         # CUDA flash attention prefers low precision inputs; favor BF16 for dynamic range
         self.encoder_forward_dtype = torch.float32
         self._use_autocast = False
-        if self.aifs_device.type == "cuda" and not self.disable_flash_attn:
+        if self.aifs_device.type == "cuda":
             bf16_supported = getattr(torch.cuda, "is_bf16_supported", lambda: False)()
             self.encoder_forward_dtype = torch.bfloat16 if bf16_supported else torch.float16
             self._use_autocast = True
@@ -147,8 +142,6 @@ class AIFSCompleteEncoder(nn.Module):
                     "Enabling CUDA autocast for flash attention compatibility "
                     f"({dtype_name} forward)"
                 )
-            elif self.disable_flash_attn and self.aifs_device.type == "cuda":
-                print("Flash attention disabled - running encoder in CUDA FP32 mode")
 
     def forward(self, x):
         """
@@ -257,7 +250,9 @@ class AIFSCompleteEncoder(nn.Module):
                     self._use_autocast = False
                     self.encoder_forward_dtype = torch.float32
                     if not torch.isfinite(data_embeddings).all():
-                        raise RuntimeError("AIFS encoder produced non-finite outputs in FP32 mode")
+                        raise RuntimeError(
+                            "AIFS encoder produced non-finite outputs even in FP32 mode"
+                        )
             finally:
                 # Restore training mode if it was on
                 if was_training:
@@ -269,25 +264,37 @@ class AIFSCompleteEncoder(nn.Module):
                     print(f"Moving AIFS output from {self.aifs_device} to {original_device}")
                 data_embeddings = data_embeddings.to(original_device)
 
+            def _promote_low_precision_embeddings(tensor: torch.Tensor) -> torch.Tensor:
+                print(
+                    "⚠️  AIFS encoder output overflows low-precision dtype."
+                    " Keeping climate embeddings in FP32."
+                )
+                self.dtype = torch.float32
+                self.low_precision_dtype = None
+                self.use_fp16 = False
+                promoted = tensor.to(self.dtype)
+                if not torch.isfinite(promoted).all():
+                    raise RuntimeError("AIFS encoder produced non-finite outputs even in FP32 mode")
+                return promoted
+
+            def _raise_non_finite():
+                raise RuntimeError("AIFS encoder produced non-finite outputs even in FP32 mode")
+
             if data_embeddings.dtype != self.dtype:
                 converted = data_embeddings.to(self.dtype)
-                if not torch.isfinite(converted).all() and self.dtype in {
-                    torch.float16,
-                    torch.bfloat16,
-                }:
-                    print(
-                        "⚠️  AIFS encoder output overflows low-precision dtype."
-                        " Keeping climate embeddings in FP32."
-                    )
-                    self.dtype = torch.float32
-                    self.low_precision_dtype = None
-                    self.use_fp16 = False
-                    converted = data_embeddings.to(self.dtype)
-                    if not torch.isfinite(converted).all():
-                        raise RuntimeError(
-                            "AIFS encoder produced non-finite outputs even in FP32 mode"
-                        )
-                data_embeddings = converted
+                if not torch.isfinite(converted).all():
+                    if self.dtype in {torch.float16, torch.bfloat16}:
+                        data_embeddings = _promote_low_precision_embeddings(data_embeddings)
+                    else:
+                        _raise_non_finite()
+                else:
+                    data_embeddings = converted
+            else:
+                if not torch.isfinite(data_embeddings).all():
+                    if self.dtype in {torch.float16, torch.bfloat16}:
+                        data_embeddings = _promote_low_precision_embeddings(data_embeddings)
+                    else:
+                        _raise_non_finite()
 
         if self.verbose:
             print("AIFS encoder forward completed")
