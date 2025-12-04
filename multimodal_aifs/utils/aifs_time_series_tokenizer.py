@@ -100,7 +100,9 @@ class AIFSTimeSeriesTokenizer(nn.Module):
 
         if dtype is None:
             dtype = torch.bfloat16 if self._cuda_bf16_supported else torch.float32
-        elif dtype == torch.bfloat16 and self.device.type == "cuda" and not self._cuda_bf16_supported:
+        elif (
+            dtype == torch.bfloat16 and self.device.type == "cuda" and not self._cuda_bf16_supported
+        ):
             dtype = torch.float32
 
         self.dtype = dtype
@@ -191,9 +193,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
                 print(f"Aggregated 4D encoding shape: {batch_encoding.shape}")
         else:
             if spatial_encoding.dim() > 2:
-                batch_encoding = spatial_encoding.flatten(start_dim=1).mean(
-                    dim=1, keepdim=True
-                )
+                batch_encoding = spatial_encoding.flatten(start_dim=1).mean(dim=1, keepdim=True)
                 if batch_encoding.shape[-1] != self.spatial_dim:
                     batch_encoding = batch_encoding.expand(-1, self.spatial_dim)
             else:
@@ -203,9 +203,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
 
         return batch_encoding.to(self.dtype)
 
-    def _expand_time_dimension(
-        self, batch_encoding: torch.Tensor, time_steps: int
-    ) -> torch.Tensor:
+    def _expand_time_dimension(self, batch_encoding: torch.Tensor, time_steps: int) -> torch.Tensor:
         """Tile batch encodings across the temporal axis."""
         time_series_tokens = batch_encoding.unsqueeze(1).repeat(1, time_steps, 1)
         if time_series_tokens.dtype != self.dtype:
@@ -243,7 +241,9 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         if tensor_5d.dtype != self.dtype:
             tensor_5d = tensor_5d.to(self.dtype)
 
-        amp_dtype = self.dtype if (self.dtype == torch.bfloat16 and supports_amp(self.device)) else None
+        amp_dtype = (
+            self.dtype if (self.dtype == torch.bfloat16 and supports_amp(self.device)) else None
+        )
 
         with autocast_if_available(self.device, dtype=amp_dtype):
             if self.aifs_encoder is not None:
@@ -257,9 +257,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
                 if self.verbose:
                     print(f"AIFS encoder output shape: {spatial_encoding.shape}")
 
-                batch_encoding = self._summarize_spatial_encoding(
-                    spatial_encoding, batch_size
-                )
+                batch_encoding = self._summarize_spatial_encoding(spatial_encoding, batch_size)
                 time_series_tokens = self._expand_time_dimension(batch_encoding, time_steps)
 
                 if self.verbose:
@@ -311,7 +309,9 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         # Reshape: [batch*time, vars, height, width]
         reshaped = tensor_5d.view(batch_size * time_steps, num_vars, height, width)
 
-        amp_dtype = self.dtype if (self.dtype == torch.bfloat16 and supports_amp(self.device)) else None
+        amp_dtype = (
+            self.dtype if (self.dtype == torch.bfloat16 and supports_amp(self.device)) else None
+        )
 
         with autocast_if_available(self.device, dtype=amp_dtype):
             # Encode all timesteps in parallel using  AIFS complete encoder

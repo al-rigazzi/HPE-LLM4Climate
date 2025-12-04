@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the core AIFS fusion and encoder utilities."""
+# pylint: disable=redefined-outer-name,protected-access,abstract-method
 
 from __future__ import annotations
 
@@ -56,8 +57,11 @@ class DummyAIFSInnerModel(nn.Module):
         self.register_buffer("latlons_data", torch.zeros(grid_points, 2))
         self.projection = nn.Linear(1, feature_dim)
 
-    def forward(self, tensor: torch.Tensor) -> torch.Tensor:  # pragma: no cover - exercised via encoder
-        batch, time, ensemble, grid, _ = tensor.shape
+    def forward(
+        self, tensor: torch.Tensor
+    ) -> torch.Tensor:  # pragma: no cover - exercised via encoder
+        """Process input tensor through the dummy encoder."""
+        batch, time, _ensemble, grid, _ = tensor.shape
         assert grid == self.grid_points
 
         if self.mode == "oom_error":
@@ -148,6 +152,7 @@ class StaticOutputEncoder(nn.Module):
         self._output = output
 
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:  # pragma: no cover - trivial wrapper
+        """Return the fixed output tensor."""
         return self._output
 
 
@@ -192,6 +197,7 @@ def fusion_context(enable_aifs_dependencies):
 
 
 def test_fusion_requires_model_or_checkpoint():
+    """Test that fusion module requires either model or checkpoint."""
     with pytest.raises(ValueError):
         AIFSClimateTextFusion(
             aifs_model=None,
@@ -205,7 +211,8 @@ def test_fusion_requires_model_or_checkpoint():
         )
 
 
-def test_fusion_init_promotes_user_half_dtype(enable_aifs_dependencies):
+def test_fusion_init_promotes_user_half_dtype(enable_aifs_dependencies):  # noqa: F811
+    """Test that float16 dtype is promoted to bfloat16."""
     interface = DummyAIFSInterface(grid_points=6, feature_dim=10)
     fusion_module = AIFSClimateTextFusion(
         aifs_model=interface,
@@ -221,16 +228,17 @@ def test_fusion_init_promotes_user_half_dtype(enable_aifs_dependencies):
 
 
 def test_encoder_utils_dependency_guard(monkeypatch):
+    """Test encoder utilities handle missing dependencies gracefully."""
     module_name = "multimodal_aifs.core.aifs_encoder_utils_missingdeps"
     spec = importlib.util.spec_from_file_location(module_name, Path(encoder_utils.__file__))
     module = importlib.util.module_from_spec(spec)
 
     real_import = builtins.__import__
 
-    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+    def fake_import(name, globs=None, locs=None, fromlist=(), level=0):
         if name == "einops":
             raise ImportError("forced missing dependency")
-        return real_import(name, globals, locals, fromlist, level)
+        return real_import(name, globs, locs, fromlist, level)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
     sys.modules[module_name] = module
@@ -240,7 +248,8 @@ def test_encoder_utils_dependency_guard(monkeypatch):
     sys.modules.pop(module_name, None)
 
 
-def test_complete_encoder_forward_returns_expected_shape(enable_aifs_dependencies):
+def test_complete_encoder_forward_returns_expected_shape(enable_aifs_dependencies):  # noqa: F811
+    """Test that encoder forward returns expected output shape."""
     interface = DummyAIFSInterface(grid_points=10, feature_dim=12)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
     inputs = _random_climate_tensor(interface.grid_points, batch=3)
@@ -250,13 +259,15 @@ def test_complete_encoder_forward_returns_expected_shape(enable_aifs_dependencie
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="GPU required")
-def test_encoder_cuda_move_failure(enable_aifs_dependencies):
+def test_encoder_cuda_move_failure(enable_aifs_dependencies):  # noqa: F811
+    """Test that encoder raises on CUDA move failure."""
     with pytest.raises(RuntimeError, match="Failed to move AIFS encoder to CUDA"):
         encoder_utils.AIFSCompleteEncoder(FailingMoveInterface(), verbose=False, device="cuda")
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="GPU required")
-def test_encoder_transfers_outputs_back_with_verbose(enable_aifs_dependencies):
+def test_encoder_transfers_outputs_back_with_verbose(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder transfers outputs back to original device with verbose."""
     interface = DummyAIFSInterface(grid_points=2, feature_dim=4)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=True, device="cpu")
     inputs = _random_climate_tensor(interface.grid_points, batch=1, device="cuda")
@@ -265,6 +276,7 @@ def test_encoder_transfers_outputs_back_with_verbose(enable_aifs_dependencies):
 
 
 def test_encoder_forward_requires_dependencies(monkeypatch):
+    """Test that encoder forward requires AIFS dependencies."""
     interface = DummyAIFSInterface(grid_points=5, feature_dim=7)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
     inputs = _random_climate_tensor(interface.grid_points)
@@ -273,7 +285,8 @@ def test_encoder_forward_requires_dependencies(monkeypatch):
         encoder(inputs)
 
 
-def test_complete_encoder_restores_training_mode(enable_aifs_dependencies):
+def test_complete_encoder_restores_training_mode(enable_aifs_dependencies):  # noqa: F811
+    """Test that encoder restores training mode after forward pass."""
     interface = DummyAIFSInterface(grid_points=6, feature_dim=8)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
     encoder.aifs_model.train()
@@ -282,7 +295,8 @@ def test_complete_encoder_restores_training_mode(enable_aifs_dependencies):
     assert encoder.aifs_model.training is True
 
 
-def test_complete_encoder_grid_size_validation(enable_aifs_dependencies):
+def test_complete_encoder_grid_size_validation(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder validates grid size matches expected dimensions."""
     interface = DummyAIFSInterface(grid_points=4, feature_dim=6)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
     bad_inputs = _random_climate_tensor(grid_points=3, batch=1)
@@ -290,7 +304,8 @@ def test_complete_encoder_grid_size_validation(enable_aifs_dependencies):
         encoder(bad_inputs)
 
 
-def test_encoder_checkpoint_roundtrip(tmp_path, enable_aifs_dependencies):
+def test_encoder_checkpoint_roundtrip(tmp_path, enable_aifs_dependencies):  # noqa: F811
+    """Test saving and loading encoder checkpoints."""
     interface = DummyAIFSInterface(grid_points=5, feature_dim=7)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
     sample_inputs = _random_climate_tensor(interface.grid_points, batch=1)
@@ -321,7 +336,8 @@ def test_encoder_checkpoint_roundtrip(tmp_path, enable_aifs_dependencies):
     )
 
 
-def test_encoder_unwraps_tuple_outputs(enable_aifs_dependencies):
+def test_encoder_unwraps_tuple_outputs(enable_aifs_dependencies):  # noqa: F811
+    """Test that encoder unwraps tuple outputs from inner model."""
     tuple_model = DummyAIFSInnerModel(grid_points=3, feature_dim=4, mode="tuple_output")
     interface = DummyAIFSInterface(inner_model=tuple_model)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
@@ -330,7 +346,8 @@ def test_encoder_unwraps_tuple_outputs(enable_aifs_dependencies):
     assert outputs.shape == (2, 1, interface.grid_points, interface.feature_dim)
 
 
-def test_aggregate_encoder_output_variants(fusion_context):
+def test_aggregate_encoder_output_variants(fusion_context):  # noqa: F811
+    """Test aggregation of encoder outputs for various tensor shapes."""
     fusion_module, _ = fusion_context
     batch_size = 2
     feature_dim = fusion_module.climate_dim
@@ -356,14 +373,16 @@ def test_aggregate_encoder_output_variants(fusion_context):
     assert fallback_result.shape == (batch_size, feature_dim)
 
 
-def test_set_module_precision_handles_float16_requests(fusion_context):
+def test_set_module_precision_handles_float16_requests(fusion_context):  # noqa: F811
+    """Test that float16 precision requests are promoted to bfloat16."""
     fusion_module, _ = fusion_context
     fusion_module._set_module_precision(torch.float16)
     assert fusion_module.dtype == torch.bfloat16
     assert fusion_module._current_module_dtype == torch.bfloat16
 
 
-def test_sanitize_encoder_dtype_promotes_half(fusion_context):
+def test_sanitize_encoder_dtype_promotes_half(fusion_context):  # noqa: F811
+    """Test that half precision is promoted in encoder dtype sanitization."""
     fusion_module, _ = fusion_context
     tensor = torch.randn(2, fusion_module.climate_dim, dtype=torch.float16)
     sanitized, runtime_dtype = fusion_module._sanitize_encoder_dtype(tensor)
@@ -371,13 +390,15 @@ def test_sanitize_encoder_dtype_promotes_half(fusion_context):
     assert sanitized.dtype == torch.bfloat16
 
 
-def test_encode_text_requires_embeddings(fusion_context):
+def test_encode_text_requires_embeddings(fusion_context):  # noqa: F811
+    """Test that encode_text requires text embeddings."""
     fusion_module, _ = fusion_context
     with pytest.raises(ValueError):
         fusion_module.encode_text(["hot spell"], text_embeddings=None)
 
 
-def test_encode_climate_data_with_dummy_encoder(fusion_context):
+def test_encode_climate_data_with_dummy_encoder(fusion_context):  # noqa: F811
+    """Test encoding climate data with dummy encoder."""
     fusion_module, interface = fusion_context
     climate_data = _random_climate_tensor(interface.grid_points, batch=2)
     climate_features = fusion_module.encode_climate_data(climate_data)
@@ -385,7 +406,8 @@ def test_encode_climate_data_with_dummy_encoder(fusion_context):
     assert climate_features.dtype == fusion_module.dtype
 
 
-def test_apply_cross_attention_shapes(fusion_context):
+def test_apply_cross_attention_shapes(fusion_context):  # noqa: F811
+    """Test cross attention produces expected output shapes."""
     fusion_module, _ = fusion_context
     attn_device = fusion_module.cross_attention.in_proj_weight.device
     climate_features = torch.randn(
@@ -401,7 +423,8 @@ def test_apply_cross_attention_shapes(fusion_context):
     assert text_attended.shape == text_features.shape
 
 
-def test_fuse_features_executes_attention(fusion_context):
+def test_fuse_features_executes_attention(fusion_context):  # noqa: F811
+    """Test that feature fusion executes attention mechanism."""
     fusion_module, _ = fusion_context
     fusion_module._set_module_precision(torch.float32)
     climate_features = torch.randn(2, fusion_module.fusion_dim, dtype=torch.float16)
@@ -412,6 +435,7 @@ def test_fuse_features_executes_attention(fusion_context):
 
 
 def test_encode_climate_requires_actual_encoder(tmp_path):
+    """Test that encoding climate data requires an actual encoder."""
     fusion_module = AIFSClimateTextFusion(
         aifs_model=None,
         aifs_checkpoint_path=str(tmp_path / "dummy.ckpt"),
@@ -427,7 +451,8 @@ def test_encode_climate_requires_actual_encoder(tmp_path):
         fusion_module.encode_climate_data(dummy_climate)
 
 
-def test_similarity_helpers_use_encoders(fusion_context):
+def test_similarity_helpers_use_encoders(fusion_context):  # noqa: F811
+    """Test similarity helpers use encoders correctly."""
     fusion_module, interface = fusion_context
     texts = ["storm surge", "heat wave"]
     batch = len(texts)
@@ -445,7 +470,8 @@ def test_similarity_helpers_use_encoders(fusion_context):
     assert similarity.shape == alignment.shape == (batch,)
 
 
-def test_climate_embedding_forward_produces_embeddings(enable_aifs_dependencies):
+def test_climate_embedding_forward_produces_embeddings(enable_aifs_dependencies):  # noqa: F811
+    """Test that climate embedding forward produces embeddings."""
     interface = DummyAIFSInterface(grid_points=6, feature_dim=10)
     embedding_module = AIFSClimateEmbedding(
         aifs_model=interface,
@@ -460,7 +486,10 @@ def test_climate_embedding_forward_produces_embeddings(enable_aifs_dependencies)
     assert embeddings.dtype == embedding_module.dtype
 
 
-def test_embedding_checkpoint_only_initialization(enable_aifs_dependencies, tmp_path, capsys):
+def test_embedding_checkpoint_only_initialization(
+    enable_aifs_dependencies, tmp_path, capsys
+):  # noqa: F811
+    """Test embedding module initialization with checkpoint only."""
     checkpoint = tmp_path / "encoder.pth"
     module = AIFSClimateEmbedding(
         aifs_model=None,
@@ -478,7 +507,8 @@ def test_embedding_checkpoint_only_initialization(enable_aifs_dependencies, tmp_
     assert module.checkpoint_path == str(checkpoint)
 
 
-def test_embedding_accepts_preaggregated_encoder_outputs(enable_aifs_dependencies):
+def test_embedding_accepts_preaggregated_encoder_outputs(enable_aifs_dependencies):  # noqa: F811
+    """Test embedding accepts preaggregated encoder outputs."""
     interface = DummyAIFSInterface(grid_points=4, feature_dim=6)
     module = AIFSClimateEmbedding(
         aifs_model=interface,
@@ -496,10 +526,9 @@ def test_embedding_accepts_preaggregated_encoder_outputs(enable_aifs_dependencie
     assert embeddings.dtype == module.dtype
 
 
-def test_factory_helpers_create_instances(enable_aifs_dependencies):
-    interface = DummyAIFSInterface(
-        grid_points=4, feature_dim=AIFS_RAW_ENCODER_OUTPUT_DIM
-    )
+def test_factory_helpers_create_instances(enable_aifs_dependencies):  # noqa: F811
+    """Test factory helpers create correct instances."""
+    interface = DummyAIFSInterface(grid_points=4, feature_dim=AIFS_RAW_ENCODER_OUTPUT_DIM)
     fusion_instance = create_aifs_fusion_from_model(
         interface,
         fusion_dim=64,
@@ -517,7 +546,8 @@ def test_factory_helpers_create_instances(enable_aifs_dependencies):
     assert isinstance(embedding_instance, AIFSClimateEmbedding)
 
 
-def test_encoder_force_cpu_branch(monkeypatch, enable_aifs_dependencies):
+def test_encoder_force_cpu_branch(monkeypatch, enable_aifs_dependencies):  # noqa: F811
+    """Test encoder force CPU branch when AIFS_FORCE_CPU is set."""
     monkeypatch.setenv("AIFS_FORCE_CPU", "true")
     interface = DummyAIFSInterface(grid_points=3, feature_dim=5)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=True, device="cpu")
@@ -525,7 +555,8 @@ def test_encoder_force_cpu_branch(monkeypatch, enable_aifs_dependencies):
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="GPU required")
-def test_encoder_moves_results_back_to_original_device(enable_aifs_dependencies):
+def test_encoder_moves_results_back_to_original_device(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder moves results back to original device."""
     interface = DummyAIFSInterface(grid_points=2, feature_dim=4)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
     gpu_inputs = _random_climate_tensor(interface.grid_points, batch=1, device="cuda")
@@ -534,7 +565,8 @@ def test_encoder_moves_results_back_to_original_device(enable_aifs_dependencies)
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="GPU required")
-def test_encoder_autocast_retries_on_nan(enable_aifs_dependencies):
+def test_encoder_autocast_retries_on_nan(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder retries without autocast when NaN is produced."""
     unstable_model = DummyAIFSInnerModel(grid_points=3, feature_dim=4, mode="autocast_nan")
     interface = DummyAIFSInterface(inner_model=unstable_model)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cuda")
@@ -546,7 +578,8 @@ def test_encoder_autocast_retries_on_nan(enable_aifs_dependencies):
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="GPU required")
-def test_encoder_handles_out_of_memory_error(enable_aifs_dependencies):
+def test_encoder_handles_out_of_memory_error(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder handles CUDA out of memory error."""
     oom_model = DummyAIFSInnerModel(grid_points=2, feature_dim=3, mode="oom_error")
     interface = DummyAIFSInterface(inner_model=oom_model)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cuda")
@@ -556,10 +589,9 @@ def test_encoder_handles_out_of_memory_error(enable_aifs_dependencies):
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="GPU required")
-def test_encoder_handles_unsupported_operation(enable_aifs_dependencies):
-    unsupported_model = DummyAIFSInnerModel(
-        grid_points=2, feature_dim=3, mode="unsupported_error"
-    )
+def test_encoder_handles_unsupported_operation(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder handles unsupported device operation."""
+    unsupported_model = DummyAIFSInnerModel(grid_points=2, feature_dim=3, mode="unsupported_error")
     interface = DummyAIFSInterface(inner_model=unsupported_model)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cuda")
     cuda_inputs = _random_climate_tensor(interface.grid_points, batch=1, device="cuda")
@@ -567,10 +599,9 @@ def test_encoder_handles_unsupported_operation(enable_aifs_dependencies):
         encoder(cuda_inputs)
 
 
-def test_encoder_handles_generic_runtime_error(enable_aifs_dependencies):
-    failing_model = DummyAIFSInnerModel(
-        grid_points=2, feature_dim=3, mode="generic_runtime_error"
-    )
+def test_encoder_handles_generic_runtime_error(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder handles generic runtime errors."""
+    failing_model = DummyAIFSInnerModel(grid_points=2, feature_dim=3, mode="generic_runtime_error")
     interface = DummyAIFSInterface(inner_model=failing_model)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
     inputs = _random_climate_tensor(interface.grid_points, batch=1)
@@ -578,7 +609,8 @@ def test_encoder_handles_generic_runtime_error(enable_aifs_dependencies):
         encoder(inputs)
 
 
-def test_encoder_handles_generic_exception(enable_aifs_dependencies):
+def test_encoder_handles_generic_exception(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder handles generic exceptions."""
     exception_model = DummyAIFSInnerModel(grid_points=2, feature_dim=3, mode="exception_error")
     interface = DummyAIFSInterface(inner_model=exception_model)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
@@ -588,7 +620,8 @@ def test_encoder_handles_generic_exception(enable_aifs_dependencies):
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="GPU required")
-def test_encoder_dtype_overflow_guard(enable_aifs_dependencies):
+def test_encoder_dtype_overflow_guard(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder dtype overflow guard."""
     inf_model = DummyAIFSInnerModel(grid_points=2, feature_dim=3, mode="inf_output")
     interface = DummyAIFSInterface(inner_model=inf_model)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cuda")
@@ -597,7 +630,8 @@ def test_encoder_dtype_overflow_guard(enable_aifs_dependencies):
         encoder(inputs)
 
 
-def test_encoder_detects_non_finite_outputs_on_cpu(enable_aifs_dependencies):
+def test_encoder_detects_non_finite_outputs_on_cpu(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder detects non-finite outputs on CPU."""
     inf_model = DummyAIFSInnerModel(grid_points=2, feature_dim=3, mode="inf_output")
     interface = DummyAIFSInterface(inner_model=inf_model)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
@@ -606,13 +640,17 @@ def test_encoder_detects_non_finite_outputs_on_cpu(enable_aifs_dependencies):
         encoder(inputs)
 
 
-def test_encoder_helper_functions_report_state(enable_aifs_dependencies):
+def test_encoder_helper_functions_report_state(enable_aifs_dependencies):  # noqa: F811
+    """Test encoder helper functions report state correctly."""
     default_path = encoder_utils.get_default_checkpoint_path()
     assert isinstance(default_path, str) and default_path.endswith(".pth")
     assert encoder_utils.check_aifs_dependencies() is True
 
 
-def test_checkpoint_helpers_verbose_logging(tmp_path, enable_aifs_dependencies, capsys):
+def test_checkpoint_helpers_verbose_logging(
+    tmp_path, enable_aifs_dependencies, capsys
+):  # noqa: F811
+    """Test checkpoint helpers verbose logging output."""
     interface = DummyAIFSInterface(grid_points=4, feature_dim=6)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
     sample_inputs = _random_climate_tensor(interface.grid_points, batch=1)
@@ -639,7 +677,10 @@ def test_checkpoint_helpers_verbose_logging(tmp_path, enable_aifs_dependencies, 
     assert "Creating AIFSCompleteEncoder" in output
 
 
-def test_validate_checkpoint_verbose_output(tmp_path, enable_aifs_dependencies, capsys):
+def test_validate_checkpoint_verbose_output(
+    tmp_path, enable_aifs_dependencies, capsys
+):  # noqa: F811
+    """Test checkpoint validation verbose output."""
     interface = DummyAIFSInterface(grid_points=3, feature_dim=5)
     encoder = encoder_utils.AIFSCompleteEncoder(interface, verbose=False, device="cpu")
     sample_inputs = _random_climate_tensor(interface.grid_points, batch=1)
@@ -651,15 +692,14 @@ def test_validate_checkpoint_verbose_output(tmp_path, enable_aifs_dependencies, 
         filename="validate_verbose.pth",
         verbose=False,
     )
-    assert encoder_utils.validate_checkpoint(
-        checkpoint_path, interface, verbose=True
-    )
+    assert encoder_utils.validate_checkpoint(checkpoint_path, interface, verbose=True)
     output = capsys.readouterr().out
     assert "Validating checkpoint" in output
     assert "Checkpoint validation passed" in output
 
 
 def test_encoder_utils_main_block_executes(capsys):
+    """Test encoder utils main block executes correctly."""
     runpy.run_module("multimodal_aifs.core.aifs_encoder_utils", run_name="__main__")
     output = capsys.readouterr().out
     assert "AIFS Encoder Utils" in output

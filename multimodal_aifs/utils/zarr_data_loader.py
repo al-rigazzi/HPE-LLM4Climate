@@ -67,9 +67,9 @@ except ImportError as e:
     xr = None  # type: ignore
 
 if TYPE_CHECKING:
-    import xarray as xr_typing
+    import xarray as xr_typing  # pylint: disable=invalid-name
 else:
-    xr_typing = Any
+    xr_typing = Any  # pylint: disable=invalid-name
 
 # Import climate data utilities
 try:

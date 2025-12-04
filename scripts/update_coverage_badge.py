@@ -22,7 +22,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 BADGE_PATTERN = re.compile(
-    r"\[!\[Coverage\]\(https://img\.shields\.io/badge/coverage-[^)]*%25-[^)]*\.svg\)\]\(coverage\.xml\)"
+    r"\[!\[Coverage\]\(https://img\.shields\.io/badge/coverage-"
+    r"[^)]*%25-[^)]*\.svg\)\]\(coverage\.xml\)"
 )
 
 
@@ -96,6 +97,7 @@ def _update_readme(readme_path: Path, new_badge: str) -> None:
 
 
 def main() -> int:
+    """CLI entry point for updating the coverage badge."""
     args = _parse_args()
     line_rate = _read_line_rate(args.coverage)
     percent_label = _format_percent(line_rate)

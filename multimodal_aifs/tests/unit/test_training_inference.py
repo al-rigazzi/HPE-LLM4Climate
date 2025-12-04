@@ -13,11 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for ``multimodal_aifs.training.inference``."""
+# pylint: disable=abstract-method,arguments-differ
 
 from __future__ import annotations
 
-import yaml
 import torch
+import yaml
 from torch import nn
 
 from multimodal_aifs.training.inference import AIFSMultimodalInference
@@ -60,11 +61,12 @@ class DummyTokenizer:
 
     @classmethod
     def from_pretrained(cls, *_args, **_kwargs):
+        """Create a dummy tokenizer instance."""
         return cls()
 
 
-def test_inference_predict_batch_and_location(tmp_path, monkeypatch):
-    """``AIFSMultimodalInference`` should orchestrate model/tokenizer interactions."""
+def test_inference_predict_batch_and_location(tmp_path, monkeypatch):  # noqa: F811
+    """Test AIFSMultimodalInference model/tokenizer orchestration."""
 
     monkeypatch.setattr(
         "multimodal_aifs.training.inference.AIFSClimateTextFusion",
