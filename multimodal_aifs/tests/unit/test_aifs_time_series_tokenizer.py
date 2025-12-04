@@ -558,7 +558,11 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         # Test dtype conversion in batch parallel (skip on MPS as it doesn't support float64)
         if not (torch.backends.mps.is_available() and torch.backends.mps.is_built()):
             data_fp64 = self.create_test_data(
-                batch_size=1, time_steps=2, n_variables=3, spatial_shape=(16, 16), dtype=torch.float64
+                batch_size=1,
+                time_steps=2,
+                n_variables=3,
+                spatial_shape=(16, 16),
+                dtype=torch.float64,
             )
             tokens_converted = tokenizer.tokenize_batch_parallel(data_fp64)
             self.assertEqual(tokens_converted.dtype, tokenizer.dtype)
