@@ -1,10 +1,10 @@
 # 🌍 HPE-LLM4Climate: Multimodal Climate Analysis Large Language Model
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-orange.svg)](https://pytorch.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.5.0-orange.svg)](https://pytorch.org/)
 [![Transformers](https://img.shields.io/badge/🤗-Transformers-yellow.svg)](https://huggingface.co/transformers/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
-[![Coverage](https://img.shields.io/badge/coverage-87.8%25-brightgreen.svg)](coverage.xml)
+[![Coverage](https://img.shields.io/badge/coverage-87.8%25-green.svg)](coverage.xml)
 
 ## Overview
 
