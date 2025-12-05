@@ -73,7 +73,7 @@ def get_best_device() -> torch.device:
         default_index = torch.cuda.current_device()
         return torch.device(f"cuda:{default_index}")
     if _is_mps_supported():
-        return torch.device("mps")
+        return torch.device("mps:0")
     return torch.device("cpu")
 
 
@@ -104,7 +104,7 @@ def resolve_device(device: str | torch.device | None = None) -> torch.device:
 
     if normalized == "mps":
         if _is_mps_supported():
-            return torch.device("mps")
+            return torch.device("mps:0")
         return _fallback_device("mps")
 
     resolved = torch.device(normalized)
@@ -113,8 +113,11 @@ def resolve_device(device: str | torch.device | None = None) -> torch.device:
         if not torch.cuda.is_available():
             return _fallback_device("cuda")
         return torch.device(f"cuda:{torch.cuda.current_device()}")
-    if resolved.type == "mps" and not _is_mps_supported():
-        return _fallback_device("mps")
+    if resolved.type == "mps":
+        if not _is_mps_supported():
+            return _fallback_device("mps")
+        if resolved.index is None:
+            return torch.device("mps:0")
 
     return resolved
 

@@ -45,7 +45,7 @@ def test_sample_generation(llm_mock_status):
     print("If not authenticated, run: huggingface-cli login")
 
     if torch.backends.mps.is_available() and torch.backends.mps.is_built():
-        target_device = torch.device("mps")
+        target_device = torch.device("mps:0")
     else:
         target_device = get_best_device()
 
