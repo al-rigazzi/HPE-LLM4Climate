@@ -35,10 +35,10 @@ def test_check_requirements_handles_missing_dependency(monkeypatch):
 
     real_import = builtins.__import__
 
-    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+    def fake_import(name, globs=None, locs=None, fromlist=(), level=0):
         if name.startswith("anemoi"):
             raise ImportError("missing optional dependency")
-        return real_import(name, globals, locals, fromlist, level)
+        return real_import(name, globs, locs, fromlist, level)
 
     monkeypatch.setitem(mma.check_requirements.__globals__, "__import__", fake_import)
     assert mma.check_requirements() is False
@@ -53,7 +53,7 @@ def test_check_requirements_success_when_all_present(monkeypatch):
         def __getattr__(self, _):
             return self
 
-    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+    def fake_import(name, globs=None, locs=None, fromlist=(), level=0):
         return DummyModule()
 
     monkeypatch.setitem(mma.check_requirements.__globals__, "__import__", fake_import)

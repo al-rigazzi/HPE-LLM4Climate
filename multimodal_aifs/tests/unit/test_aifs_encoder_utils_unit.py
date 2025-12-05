@@ -13,12 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Focused unit tests for ``multimodal_aifs.core.aifs_encoder_utils``."""
+# pylint: disable=abstract-method,arguments-differ
 
 from __future__ import annotations
 
+import pytest
 import torch
 from torch import nn
-import pytest
 
 from multimodal_aifs.core import aifs_encoder_utils as enc
 
@@ -32,6 +33,7 @@ class DummyAIFSInnerModel(nn.Module):
         self.scale = nn.Parameter(torch.ones(1))
 
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Process input tensor through the dummy encoder."""
         return tensor.mean(dim=-1) * self.scale
 
 

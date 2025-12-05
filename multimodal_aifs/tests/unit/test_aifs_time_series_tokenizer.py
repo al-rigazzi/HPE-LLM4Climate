@@ -21,7 +21,7 @@ for 5-D climate time series data tokenization and multimodal applications.
 Usage:
     python -m pytest multimodal_aifs/tests/unit/test_aifs_time_series_tokenizer.py -v
 """
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,protected-access,too-many-public-methods
 
 
 import sys
@@ -232,15 +232,11 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         self.assertEqual(batch_encoding.shape, (batch_size, tokenizer.spatial_dim))
 
         time_grid_encoding = torch.randn(batch_size, time_steps, 16, tokenizer.spatial_dim)
-        time_batch_encoding = tokenizer._summarize_spatial_encoding(
-            time_grid_encoding, batch_size
-        )
+        time_batch_encoding = tokenizer._summarize_spatial_encoding(time_grid_encoding, batch_size)
         self.assertEqual(time_batch_encoding.shape, (batch_size, tokenizer.spatial_dim))
 
         high_dim_encoding = torch.randn(batch_size, 6, tokenizer.spatial_dim // 2)
-        fallback_encoding = tokenizer._summarize_spatial_encoding(
-            high_dim_encoding, batch_size
-        )
+        fallback_encoding = tokenizer._summarize_spatial_encoding(high_dim_encoding, batch_size)
         self.assertEqual(fallback_encoding.shape, (batch_size, tokenizer.spatial_dim))
 
         expanded_tokens = tokenizer._expand_time_dimension(batch_encoding, time_steps)
@@ -295,7 +291,9 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         print("\nTesting Extract Spatial Tokens")
 
         tokenizer = self.create_test_tokenizer()
-        data = self.create_test_data(batch_size=2, time_steps=4, n_variables=3, spatial_shape=(16, 16))
+        data = self.create_test_data(
+            batch_size=2, time_steps=4, n_variables=3, spatial_shape=(16, 16)
+        )
 
         torch.manual_seed(1234)
         sequential_tokens = tokenizer.tokenize_time_series(data)
@@ -312,7 +310,9 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         print("\nTesting Batch Parallel Dtype/Device")
 
         tokenizer = self.create_test_tokenizer()
-        data = self.create_test_data(batch_size=2, time_steps=3, n_variables=4, spatial_shape=(32, 32))
+        data = self.create_test_data(
+            batch_size=2, time_steps=3, n_variables=4, spatial_shape=(32, 32)
+        )
         tokens = tokenizer.tokenize_batch_parallel(data)
 
         self.assertEqual(tokens.shape, (2, 3, tokenizer.output_dim))
@@ -523,14 +523,18 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
         # Test with 2D output simulation (grid_points, features)
         # This exercises the 2D aggregation branch
-        data_2d = self.create_test_data(batch_size=1, time_steps=2, n_variables=3, spatial_shape=(16, 16))
+        data_2d = self.create_test_data(
+            batch_size=1, time_steps=2, n_variables=3, spatial_shape=(16, 16)
+        )
         tokens_2d = tokenizer.tokenize_time_series(data_2d)
         self.assertEqual(tokens_2d.shape, (1, 2, tokenizer.output_dim))
         print(f"   2D aggregation: {tokens_2d.shape}")
 
         # Test with 4D output simulation (batch, time, grid_points, features)
         # This exercises the 4D aggregation branch
-        data_4d = self.create_test_data(batch_size=2, time_steps=3, n_variables=4, spatial_shape=(32, 32))
+        data_4d = self.create_test_data(
+            batch_size=2, time_steps=3, n_variables=4, spatial_shape=(32, 32)
+        )
         tokens_4d = tokenizer.tokenize_time_series(data_4d)
         self.assertEqual(tokens_4d.shape, (2, 3, tokenizer.output_dim))
         print(f"   4D aggregation: {tokens_4d.shape}")
@@ -544,16 +548,22 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
         tokenizer = self.create_test_tokenizer()
 
         # Test with valid data to ensure no errors
-        data = self.create_test_data(batch_size=2, time_steps=4, n_variables=3, spatial_shape=(16, 16))
+        data = self.create_test_data(
+            batch_size=2, time_steps=4, n_variables=3, spatial_shape=(16, 16)
+        )
         tokens = tokenizer.tokenize_batch_parallel(data)
         self.assertEqual(tokens.shape, (2, 4, tokenizer.output_dim))
         print(f"   Batch parallel output: {tokens.shape}")
 
-        # Test dtype conversion in batch parallel
-        data_fp64 = self.create_test_data(
-            batch_size=1, time_steps=2, n_variables=3, spatial_shape=(16, 16), dtype=torch.float64
-        )
+        # Test dtype conversion in batch parallel (skip on MPS as it doesn't support float64)
         if not (torch.backends.mps.is_available() and torch.backends.mps.is_built()):
+            data_fp64 = self.create_test_data(
+                batch_size=1,
+                time_steps=2,
+                n_variables=3,
+                spatial_shape=(16, 16),
+                dtype=torch.float64,
+            )
             tokens_converted = tokenizer.tokenize_batch_parallel(data_fp64)
             self.assertEqual(tokens_converted.dtype, tokenizer.dtype)
             print(f"   Dtype conversion: {data_fp64.dtype} -> {tokens_converted.dtype}")
@@ -570,7 +580,9 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
                 continue
 
             tokenizer = self.create_test_tokenizer(dtype=dtype)
-            data = self.create_test_data(batch_size=1, time_steps=2, n_variables=3, spatial_shape=(16, 16))
+            data = self.create_test_data(
+                batch_size=1, time_steps=2, n_variables=3, spatial_shape=(16, 16)
+            )
 
             # Sequential tokenization
             tokens_seq = tokenizer.tokenize_time_series(data)
@@ -580,6 +592,6 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
             tokens_par = tokenizer.tokenize_batch_parallel(data)
             self.assertEqual(tokens_par.shape, (1, 2, tokenizer.output_dim))
 
-            print(f"   {dtype} tokenization: sequential={tokens_seq.shape}, parallel={tokens_par.shape}")
+            print(f"   {dtype} tokenization: seq={tokens_seq.shape}, " f"par={tokens_par.shape}")
 
         print("   AMP autocast branches validated")
