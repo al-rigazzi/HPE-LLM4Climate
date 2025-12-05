@@ -384,10 +384,18 @@ def test_set_module_precision_handles_float16_requests(fusion_context):  # noqa:
 def test_sanitize_encoder_dtype_promotes_half(fusion_context):  # noqa: F811
     """Test that half precision is promoted in encoder dtype sanitization."""
     fusion_module, _ = fusion_context
-    tensor = torch.randn(2, fusion_module.climate_dim, dtype=torch.float16)
+    # Create tensor on same device as module to ensure consistent behavior
+    tensor = torch.randn(
+        2, fusion_module.climate_dim, dtype=torch.float16, device=fusion_module.device
+    )
     sanitized, runtime_dtype = fusion_module._sanitize_encoder_dtype(tensor)
-    assert runtime_dtype == torch.bfloat16
-    assert sanitized.dtype == torch.bfloat16
+    # On CUDA without bfloat16 support, float16 is promoted to float32 instead
+    if fusion_module._cuda_bf16_supported or tensor.device.type != "cuda":
+        expected_dtype = torch.bfloat16
+    else:
+        expected_dtype = torch.float32
+    assert runtime_dtype == expected_dtype
+    assert sanitized.dtype == expected_dtype
 
 
 def test_encode_text_requires_embeddings(fusion_context):  # noqa: F811
