@@ -36,6 +36,30 @@ def _format_device(device: torch.device) -> str:
     return device.type
 
 
+def _select_cuda_device(spec: str = "cuda") -> torch.device:
+    if not torch.cuda.is_available():
+        return _fallback_device("cuda")
+    if ":" in spec:
+        return torch.device(spec)
+    return torch.device(f"cuda:{torch.cuda.current_device()}")
+
+
+def _select_mps_device(spec: str = "mps") -> torch.device:
+    if not _is_mps_supported():
+        return _fallback_device("mps")
+    if ":" in spec:
+        return torch.device(spec)
+    return torch.device("mps:0")
+
+
+def _canonicalize_device(device: torch.device) -> torch.device:
+    if device.type == "cuda":
+        return _select_cuda_device(_format_device(device))
+    if device.type == "mps":
+        return _select_mps_device(_format_device(device))
+    return device
+
+
 def _fallback_device(requested: str) -> torch.device:
     fallback = get_best_device()
     if fallback.type != requested:
@@ -85,38 +109,17 @@ def resolve_device(device: str | torch.device | None = None) -> torch.device:
     ):
         return get_best_device()
 
-    if isinstance(device, torch.device):
-        normalized = _format_device(device).lower()
-    else:
-        normalized = str(device).lower()
+    device_str = _format_device(device) if isinstance(device, torch.device) else str(device)
+    normalized = device_str.lower()
 
     if normalized.startswith("cuda"):
-        if not torch.cuda.is_available():
-            return _fallback_device("cuda")
-        if ":" in normalized:
-            return torch.device(normalized)
-        return torch.device(f"cuda:{torch.cuda.current_device()}")
+        selected = _select_cuda_device(normalized)
+    elif normalized.startswith("mps"):
+        selected = _select_mps_device(normalized)
+    else:
+        selected = _canonicalize_device(torch.device(normalized))
 
-    if normalized.startswith("mps"):
-        if not _is_mps_supported():
-            return _fallback_device("mps")
-        if ":" in normalized:
-            return torch.device(normalized)
-        return torch.device("mps:0")
-
-    resolved = torch.device(normalized)
-
-    if resolved.type == "cuda" and resolved.index is None:
-        if not torch.cuda.is_available():
-            return _fallback_device("cuda")
-        return torch.device(f"cuda:{torch.cuda.current_device()}")
-
-    if resolved.type == "mps" and resolved.index is None:
-        if not _is_mps_supported():
-            return _fallback_device("mps")
-        return torch.device("mps:0")
-
-    return resolved
+    return selected
 
 
 def configure_device_for_max_perf(device: torch.device) -> None:
