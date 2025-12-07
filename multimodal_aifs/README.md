@@ -163,7 +163,7 @@ python multimodal_aifs/examples/zarr_aifs_multimodal_example.py
 **Supported Input Formats:**
 - **GRIB files** (ECMWF, NOAA) - via cfgrib/xarray
 - **NetCDF files** - via xarray
-- **Zarr datasets** - cloud-optimized, chunked access ⭐ **NEW**
+- **Zarr datasets** - cloud-optimized, chunked access
 - **HDF5 files** - via h5py/xarray
 - **Raw tensor data** - NumPy arrays, PyTorch tensors
 
@@ -225,10 +225,10 @@ The AIFS encoder (`extracted_models/aifs_encoder_full.pth`) contains:
 
 ## Results and Analysis
 
-- **Test Coverage**: 27/27 tests passing (100% success rate)
+- **Test Coverage**: All tests passing
 - **Performance**: >500k samples/s throughput on CPU
 - **Real Model Integration**: Successfully loads and uses actual AIFS encoder
-- **Cross-platform**: Tested on macOS ARM64, supports CPU/GPU
+- **Cross-platform**: Tested on macOS ARM64 (MPS normalized to `mps:0`), supports CPU/GPU
 
 ## Contributing
 

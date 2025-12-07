@@ -2,7 +2,7 @@
 
 This directory contains example scripts demonstrating the capabilities of the multimodal AIFS implementation for climate analysis.
 
-## 📁 Example Structure
+## Example Structure
 
 ### `basic/`
 Basic usage examples:
@@ -17,7 +17,7 @@ Complete integration examples:
 
 
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Basic AIFS Encoder Usage
 ```python
@@ -49,7 +49,7 @@ results = fusion(climate_data, texts)
 print(f"Fused features: {results['fused_features'].shape}")
 ```
 
-## 📊 Example Datasets
+## Example Datasets
 
 The examples use various data sources:
 - **Synthetic Data**: Generated climate patterns for testing
@@ -57,14 +57,14 @@ The examples use various data sources:
 - **Sample Locations**: Cities and regions worldwide
 - **Climate Descriptions**: Text descriptions of weather conditions
 
-## 🔧 Requirements
+## Requirements
 
 To run the examples, ensure you have:
 - AIFS model weights (optional, examples work with synthetic data)
 - Required dependencies: torch, numpy (for visualizations)
 - ECMWF data access (for real data examples)
 
-## 📈 Performance Examples
+## Performance Examples
 
 Examples include performance benchmarks:
 - Encoding speed measurements
@@ -72,7 +72,7 @@ Examples include performance benchmarks:
 - Batch processing efficiency
 - Scalability demonstrations
 
-## 🎯 Use Cases Demonstrated
+## Use Cases Demonstrated
 
 ### Climate Analysis
 - Temperature anomaly detection
@@ -92,7 +92,7 @@ Examples include performance benchmarks:
 - Climate model validation
 - Forecast verification
 
-## 🏃‍♀️ Running Examples
+## Running Examples
 
 ### Individual Examples
 ```bash
@@ -101,14 +101,14 @@ python multimodal_aifs/examples/basic/aifs_encoder_demo.py
 
 ```
 
-## 📝 Example Output
+## Example Output
 
 Examples produce various outputs:
 - Performance metrics and timing
 - Analysis results and statistics
 - Model predictions and comparisons
 
-## 🔍 Debugging Examples
+## Debugging Examples
 
 For troubleshooting:
 - Examples include verbose output options
@@ -116,7 +116,7 @@ For troubleshooting:
 - Fallback modes for missing data/models
 - Step-by-step execution logging
 
-## 📚 Learning Path
+## Learning Path
 
 Recommended order for exploring examples:
 1. **Basic demos** - Understand individual components
@@ -124,7 +124,7 @@ Recommended order for exploring examples:
 3. ** examples** - Explore sophisticated use cases
 4. **Application examples** - See real-world applications
 
-## 🤝 Contributing Examples
+## Contributing Examples
 
 When adding new examples:
 1. Follow existing naming conventions

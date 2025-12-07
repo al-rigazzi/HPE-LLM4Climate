@@ -2,7 +2,7 @@
 
 This directory contains the **production-ready training pipeline** for AIFS-based multimodal climate-text fusion using DeepSpeed optimization. All training examples and test scripts have been organized into the `examples/` subdirectory.
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 training/
@@ -21,7 +21,7 @@ training/
 └── *.pt                        # Saved model checkpoints (generated)
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. For Examples and Testing
 ```bash
@@ -53,18 +53,18 @@ python prepare_data.py --output_dir multimodal/data/training --num_samples 1000
 ./launch.sh
 ```
 
-## 🎯 AIFS Training Pipeline Features
+## AIFS Training Pipeline Features
 
 The production AIFS training pipeline supports:
-- **AIFS-based climate encoding** for  time-series processing
+- **AIFS-based climate encoding** for time-series processing
 - **Cross-attention fusion** between AIFS climate features and text
 - **DeepSpeed optimization** for memory efficiency and distributed training
-- **Mixed precision training** (FP16) for faster training
+- **Mixed precision training** (BF16 on CUDA; FP16 requests are promoted to BF16)
 - **Gradient checkpointing** to reduce memory usage
 - **Flexible data loading** for various climate data formats
 - **Proven scalability** up to 8B parameter models with AIFS
 
-## ✅ Validated Performance
+## Validated Performance
 
 | Model Scale | Memory Usage | Status | Example Script |
 |-------------|-------------|--------|----------------|
@@ -72,7 +72,7 @@ The production AIFS training pipeline supports:
 | **AIFS + Mistral-7B-Instruct (Full)** | **10.6GB** | **✅ Production** | `examples/train_mistral7b_8b.py` |
 | **Spatial Analysis** | **Variable** | **✅ Production** | `examples/spatial_comparative_analysis.py` |
 
-## 📊 System Requirements
+## System Requirements
 
 - **Minimum**: 8GB RAM (for basic examples)
 - **Recommended**: 16GB RAM (for large models)
@@ -110,7 +110,7 @@ The model uses cross-attention mechanisms to fuse AIFS climate features with tex
 ### Memory Optimization
 - **DeepSpeed ZeRO**: Partitions optimizer states, gradients, and parameters
 - **Gradient Checkpointing**: Trades compute for memory by recomputing activations
-- **Mixed Precision**: Uses FP16 for faster training with lower memory usage
+- **Mixed Precision**: Uses BF16 on CUDA for faster training with lower memory usage (FP16 promoted to BF16; disabled on MPS/CPU)
 - **Activation Checkpointing**: Selectively saves/recomputes intermediate activations
 
 ### Monitoring
