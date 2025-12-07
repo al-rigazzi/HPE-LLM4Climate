@@ -41,6 +41,12 @@ sys.path.insert(0, str(project_root))
 from multimodal_aifs.core.aifs_encoder_utils import AIFSCompleteEncoder
 
 from ..constants import AIFS_RAW_ENCODER_OUTPUT_DIM
+from .device_utils import (
+    autocast_if_available,
+    configure_device_for_max_perf,
+    resolve_device,
+    supports_amp,
+)
 
 
 class AIFSTimeSeriesTokenizer(nn.Module):
@@ -54,18 +60,17 @@ class AIFSTimeSeriesTokenizer(nn.Module):
     Features:
         - Uses AIFSCompleteEncoder that returns real embeddings with 102 raw channels
         - Avoids any intermediate projection layers or placeholder encoders
-        - Supports optional temporal modeling (LSTM/Transformer) on top of spatial tokens
+        - Applies a TransformerEncoder for temporal modeling on top of spatial tokens
     """
 
     def __init__(
         self,
         aifs_model=None,
         aifs_checkpoint_path: str | None = None,
-        temporal_modeling: str = "transformer",  # "lstm", "transformer", "none"
         hidden_dim: int = 512,
         num_layers: int = 2,
-        device: str = "cpu",
-        dtype: torch.dtype = torch.float32,
+        device: str | torch.device = "cpu",
+        dtype: torch.dtype | None = None,
         verbose: bool = True,
     ):
         """
@@ -74,7 +79,6 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         Args:
             aifs_model: The complete AIFS model instance (preferred)
             aifs_checkpoint_path: Path to saved AIFSCompleteEncoder checkpoint (alternative)
-            temporal_modeling: Type of temporal modeling ("lstm", "transformer", "none")
             hidden_dim: Hidden dimension for temporal model
             num_layers: Number of layers in temporal model
             device: Device to run on
@@ -83,9 +87,26 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         """
         super().__init__()
 
-        self.device = device
+        self.device = resolve_device(device)
+        configure_device_for_max_perf(self.device)
+        self._cuda_bf16_supported = (
+            self.device.type == "cuda"
+            and torch.cuda.is_available()
+            and getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+        )
+
+        if dtype is not None and dtype == torch.float16:
+            dtype = torch.bfloat16
+
+        if dtype is None:
+            dtype = torch.bfloat16 if self._cuda_bf16_supported else torch.float32
+        elif (
+            dtype == torch.bfloat16 and self.device.type == "cuda" and not self._cuda_bf16_supported
+        ):
+            dtype = torch.float32
+
         self.dtype = dtype
-        self.temporal_modeling = temporal_modeling
+        self.temporal_modeling = "transformer"
         self.hidden_dim = hidden_dim
         self.verbose = verbose
 
@@ -93,7 +114,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         self.aifs_encoder: AIFSCompleteEncoder | None = None
         if aifs_model is not None:
             # Create new AIFSCompleteEncoder from AIFS model
-            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose, device=device)
+            self.aifs_encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose, device=self.device)
             if verbose:
                 print("Time series tokenizer using AIFSCompleteEncoder with provided AIFS model")
         elif aifs_checkpoint_path is not None:
@@ -110,53 +131,39 @@ class AIFSTimeSeriesTokenizer(nn.Module):
 
         # Get AIFS encoder output dimension
         self.spatial_dim = AIFS_RAW_ENCODER_OUTPUT_DIM
+        self.output_dim = self.spatial_dim
 
-        # Initialize temporal modeling component - can be LSTM, TransformerEncoder, or None
+        # Initialize transformer temporal modeling component
         self.temporal_model: nn.Module | None = None
         self.spatial_to_transformer: nn.Linear | None = None
         self.transformer_dim: int | None = None
         self.num_layers = num_layers
 
-        if temporal_modeling == "lstm":
-            self.temporal_model = nn.LSTM(
-                input_size=self.spatial_dim,
-                hidden_size=hidden_dim,
-                num_layers=num_layers,
-                batch_first=True,
-                dropout=0.1 if num_layers > 1 else 0.0,
-                dtype=dtype,
-            )
-        elif temporal_modeling == "transformer":
-            # Project to a transformer-friendly dimension divisible by common head counts
-            self.transformer_dim = 96  # divisible by 3, 4, 6, 8, 12
-            self.spatial_to_transformer = nn.Linear(
-                self.spatial_dim, self.transformer_dim, dtype=dtype
-            )
-            encoder_layer = nn.TransformerEncoderLayer(
-                d_model=self.transformer_dim,
-                nhead=8,
-                dim_feedforward=max(hidden_dim, self.transformer_dim) * 2,
-                dropout=0.1,
-                batch_first=True,
-            )
-            self.temporal_model = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        elif temporal_modeling == "none":
-            self.temporal_model = None
-        else:
-            raise ValueError(f"Unsupported temporal modeling: {temporal_modeling}")
+        # Project to a transformer-friendly dimension divisible by common head counts
+        self.transformer_dim = 96  # divisible by 3, 4, 6, 8, 12
+        self.spatial_to_transformer = nn.Linear(
+            self.spatial_dim, self.transformer_dim, dtype=self.dtype
+        ).to(self.device)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=self.transformer_dim,
+            nhead=8,
+            dim_feedforward=max(hidden_dim, self.transformer_dim) * 2,
+            dropout=0.1,
+            batch_first=True,
+        )
+        self.temporal_model = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.temporal_model = self.temporal_model.to(self.device, dtype=self.dtype)
 
-        # Output projection if using temporal modeling
-        self.output_projection: nn.Linear | nn.Identity
-        if self.temporal_model is not None:
-            if temporal_modeling == "lstm":
-                output_dim = hidden_dim
-            elif temporal_modeling == "transformer":
-                output_dim = self.transformer_dim or self.spatial_dim
-            else:
-                output_dim = self.spatial_dim
-            self.output_projection = nn.Linear(output_dim, hidden_dim, dtype=dtype)
-        else:
+        # Output projection keeps public interface at spatial_dim regardless of temporal backend
+        self.output_projection: nn.Module
+        if self.transformer_dim == self.output_dim:
             self.output_projection = nn.Identity()
+        else:
+            self.output_projection = nn.Linear(
+                self.transformer_dim,
+                self.output_dim,
+                dtype=self.dtype,
+            ).to(self.device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -166,12 +173,42 @@ class AIFSTimeSeriesTokenizer(nn.Module):
             x: Input tensor of shape [batch, time, vars, height, width]
 
         Returns:
-            Tokenized representation based on temporal modeling choice:
-            - "lstm": [batch, time, hidden_dim]
-            - "transformer": [batch, time, spatial_dim]
-            - "none": [batch, time, spatial_dim]
+            Tokenized representation with transformer temporal modeling of shape
+            [batch, time, spatial_dim]
         """
         return self.tokenize_time_series(x)
+
+    def _summarize_spatial_encoding(
+        self, spatial_encoding: torch.Tensor, batch_size: int
+    ) -> torch.Tensor:
+        """Aggregate spatial encodings of varying shapes into [batch, features]."""
+        if len(spatial_encoding.shape) == 2:
+            aggregated_encoding = torch.mean(spatial_encoding, dim=0)
+            batch_encoding = aggregated_encoding.unsqueeze(0).repeat(batch_size, 1)
+            if self.verbose:
+                print(f"Aggregated 2D encoding shape: {batch_encoding.shape}")
+        elif len(spatial_encoding.shape) == 4:
+            batch_encoding = spatial_encoding.mean(dim=(1, 2))
+            if self.verbose:
+                print(f"Aggregated 4D encoding shape: {batch_encoding.shape}")
+        else:
+            if spatial_encoding.dim() > 2:
+                batch_encoding = spatial_encoding.flatten(start_dim=1).mean(dim=1, keepdim=True)
+                if batch_encoding.shape[-1] != self.spatial_dim:
+                    batch_encoding = batch_encoding.expand(-1, self.spatial_dim)
+            else:
+                batch_encoding = spatial_encoding
+            if self.verbose:
+                print(f"Fallback encoding shape: {batch_encoding.shape}")
+
+        return batch_encoding.to(self.dtype)
+
+    def _expand_time_dimension(self, batch_encoding: torch.Tensor, time_steps: int) -> torch.Tensor:
+        """Tile batch encodings across the temporal axis."""
+        time_series_tokens = batch_encoding.unsqueeze(1).repeat(1, time_steps, 1)
+        if time_series_tokens.dtype != self.dtype:
+            time_series_tokens = time_series_tokens.to(self.dtype)
+        return time_series_tokens
 
     def tokenize_time_series(self, tensor_5d: torch.Tensor) -> torch.Tensor:
         """
@@ -200,93 +237,51 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         if self.verbose:
             print("Input is in AIFS format [batch, time, ensemble, grid, vars]")
 
-        if self.aifs_encoder is not None:
-            # Process the full 5D tensor with AIFS encoder
-            if self.verbose:
-                print(f"Processing full tensor with AIFS encoder: {tensor_5d.shape}")
+        tensor_5d = tensor_5d.to(self.device)
+        if tensor_5d.dtype != self.dtype:
+            tensor_5d = tensor_5d.to(self.dtype)
 
-            # AIFS processes the full temporal sequence at once
-            spatial_encoding = self.aifs_encoder(tensor_5d)
+        amp_dtype = (
+            self.dtype if (self.dtype == torch.bfloat16 and supports_amp(self.device)) else None
+        )
 
-            if self.verbose:
-                print(f"AIFS encoder output shape: {spatial_encoding.shape}")
+        with autocast_if_available(self.device, dtype=amp_dtype):
+            if self.aifs_encoder is not None:
+                # Process the full 5D tensor with AIFS encoder
+                if self.verbose:
+                    print(f"Processing full tensor with AIFS encoder: {tensor_5d.shape}")
 
-            # AIFS returns various output shapes, need to handle them consistently
-            # Expected output: [batch, features] for time series tokenization
-
-            if len(spatial_encoding.shape) == 2:  # [grid_points, features]
-                # Mean pool across grid points to get [features]
-                # [AIFS_RAW_ENCODER_OUTPUT_DIM]
-                aggregated_encoding = torch.mean(spatial_encoding, dim=0)
-
-                # Expand to batch dimension: [batch_size, AIFS_RAW_ENCODER_OUTPUT_DIM]
-                batch_encoding = aggregated_encoding.unsqueeze(0).repeat(
-                    batch_size, 1
-                )  # [batch_size, AIFS_RAW_ENCODER_OUTPUT_DIM]
+                # AIFS processes the full temporal sequence at once
+                spatial_encoding = self.aifs_encoder(tensor_5d)
 
                 if self.verbose:
-                    print(f"Aggregated encoding shape: {batch_encoding.shape}")
-            elif len(spatial_encoding.shape) == 4:  # [batch, time, grid_points, features]
-                # Aggregate across time and grid point dimensions to get [batch, features]
-                batch_encoding = spatial_encoding.mean(dim=(1, 2))  # [batch, features]
+                    print(f"AIFS encoder output shape: {spatial_encoding.shape}")
+
+                batch_encoding = self._summarize_spatial_encoding(spatial_encoding, batch_size)
+                time_series_tokens = self._expand_time_dimension(batch_encoding, time_steps)
 
                 if self.verbose:
-                    print(f"Aggregated 4D encoding shape: {batch_encoding.shape}")
-            else:
-                # For other shapes, try to flatten to [batch, features]
-                if spatial_encoding.dim() > 2:
-                    # Flatten all non-batch dimensions and aggregate
-                    batch_encoding = spatial_encoding.flatten(start_dim=1).mean(dim=1, keepdim=True)
-                    # Ensure we have the right number of features
-                    if batch_encoding.shape[-1] != self.spatial_dim:
-                        # Project to correct dimension if needed
-                        batch_encoding = batch_encoding.expand(-1, self.spatial_dim)
-                else:
-                    batch_encoding = spatial_encoding
+                    print(
+                        f"Time series tokens (before temporal modeling): "
+                        f"{time_series_tokens.shape}"
+                    )
+
+                # Apply temporal modeling and output projection
+                if self.spatial_to_transformer is None or self.temporal_model is None:
+                    raise RuntimeError("Transformer components not initialized")
+                projected_encodings = self.spatial_to_transformer(time_series_tokens)
+                transformer_model = cast(nn.TransformerEncoder, self.temporal_model)
+                temporal_output = transformer_model(projected_encodings)
+                final_output = self.output_projection(temporal_output)
 
                 if self.verbose:
-                    print(f"Fallback encoding shape: {batch_encoding.shape}")
+                    print(f"Final output shape: {final_output.shape}")
 
-            # Ensure batch_encoding is 2D [batch, features] before proceeding
-
-            # Create time series tokens by repeating for each timestep
-            time_series_tokens = batch_encoding.unsqueeze(1).repeat(
-                1, time_steps, 1
-            )  # [batch, time, spatial_dim]
-
-            if self.verbose:
-                print(
-                    f"Time series tokens (before temporal modeling): " f"{time_series_tokens.shape}"
-                )
-
-            # Apply temporal modeling and output projection
-            final_output: torch.Tensor
-            if self.temporal_model is not None:
-                if self.temporal_modeling == "lstm":
-                    # LSTM expects [batch, seq, features]
-                    temporal_output, _ = self.temporal_model(time_series_tokens)
-                    final_output = self.output_projection(temporal_output)
-                elif self.temporal_modeling == "transformer":
-                    # Project to transformer dimension first
-                    if self.spatial_to_transformer is None or self.temporal_model is None:
-                        raise RuntimeError("Transformer components not initialized")
-                    projected_encodings = self.spatial_to_transformer(time_series_tokens)
-                    transformer_model = cast(nn.TransformerEncoder, self.temporal_model)
-                    temporal_output = transformer_model(projected_encodings)
-                    final_output = self.output_projection(temporal_output)
-                else:
-                    final_output = self.output_projection(time_series_tokens)
-            else:
-                final_output = self.output_projection(time_series_tokens)
-
-            if self.verbose:
-                print(f"Final output shape: {final_output.shape}")
-
-            return final_output
+                return final_output
 
         # Fallback: Create mock spatial encoding with correct shape for testing
         time_series_tokens = torch.randn(
-            batch_size, time_steps, self.spatial_dim, device=tensor_5d.device
+            batch_size, time_steps, self.spatial_dim, device=tensor_5d.device, dtype=self.dtype
         )
         if self.verbose:
             print(f"Using mock spatial encoding with shape {time_series_tokens.shape}")
@@ -307,53 +302,49 @@ class AIFSTimeSeriesTokenizer(nn.Module):
         """
         batch_size, time_steps, num_vars, height, width = tensor_5d.shape
 
+        tensor_5d = tensor_5d.to(self.device)
+        if tensor_5d.dtype != self.dtype:
+            tensor_5d = tensor_5d.to(self.dtype)
+
         # Reshape: [batch*time, vars, height, width]
         reshaped = tensor_5d.view(batch_size * time_steps, num_vars, height, width)
 
-        # Encode all timesteps in parallel using  AIFS complete encoder
-        if self.aifs_encoder is not None:
-            all_encodings = self.aifs_encoder(reshaped)
-        else:
-            # Fallback: Create mock spatial encodings with correct shape for testing
-            all_encodings = torch.randn(
-                batch_size * time_steps, self.spatial_dim, device=reshaped.device
-            )
-            if self.verbose:
-                print(f"Using mock spatial encodings with shape {all_encodings.shape}")
+        amp_dtype = (
+            self.dtype if (self.dtype == torch.bfloat16 and supports_amp(self.device)) else None
+        )
 
-        # Reshape back: [batch, time, spatial_dim]
-        sequence_encodings = all_encodings.view(batch_size, time_steps, -1)
-
-        # Apply temporal modeling
-        if self.temporal_model is not None:
-            if self.temporal_modeling == "lstm":
-                temporal_output, _ = self.temporal_model(sequence_encodings)
-                final_output = self.output_projection(temporal_output)
-            elif self.temporal_modeling == "transformer":
-                # Project to transformer dimension first
-                if self.spatial_to_transformer is None or self.temporal_model is None:
-                    raise RuntimeError("Transformer components not initialized")
-                projected_encodings = self.spatial_to_transformer(sequence_encodings)
-                transformer_model = cast(nn.TransformerEncoder, self.temporal_model)
-                temporal_output = transformer_model(projected_encodings)
-                final_output = self.output_projection(temporal_output)
+        with autocast_if_available(self.device, dtype=amp_dtype):
+            # Encode all timesteps in parallel using  AIFS complete encoder
+            if self.aifs_encoder is not None:
+                all_encodings = self.aifs_encoder(reshaped)
             else:
-                final_output = sequence_encodings
-        else:
-            final_output = sequence_encodings
+                # Fallback: Create mock spatial encodings with correct shape for testing
+                all_encodings = torch.randn(
+                    batch_size * time_steps,
+                    self.spatial_dim,
+                    device=reshaped.device,
+                    dtype=self.dtype,
+                )
+                if self.verbose:
+                    print(f"Using mock spatial encodings with shape {all_encodings.shape}")
+
+            # Reshape back: [batch, time, spatial_dim]
+            sequence_encodings = all_encodings.view(batch_size, time_steps, -1)
+            if sequence_encodings.dtype != self.dtype:
+                sequence_encodings = sequence_encodings.to(self.dtype)
+
+            if self.spatial_to_transformer is None or self.temporal_model is None:
+                raise RuntimeError("Transformer components not initialized")
+
+            projected_encodings = self.spatial_to_transformer(sequence_encodings)
+            transformer_model = cast(nn.TransformerEncoder, self.temporal_model)
+            temporal_output = transformer_model(projected_encodings)
+            final_output = self.output_projection(temporal_output)
 
         return torch.as_tensor(final_output)
 
     def extract_spatial_tokens(self, tensor_5d: torch.Tensor) -> torch.Tensor:
-        """
-        Extract spatial tokens only (no temporal modeling).
-
-        Args:
-            tensor_5d: Input tensor [batch, time, vars, height, width]
-
-        Returns:
-            Spatial tokens [batch, time, spatial_dim]
-        """
+        """Extract tokens using the default transformer temporal modeling."""
         return self.tokenize_time_series(tensor_5d)
 
     def get_tokenizer_info(self) -> dict:
@@ -376,13 +367,14 @@ class AIFSTimeSeriesTokenizer(nn.Module):
             "temporal_modeling": self.temporal_modeling,
             "hidden_dim": self.hidden_dim,
             "spatial_dim": self.spatial_dim,
-            "device": self.device,
+            "output_dim": self.output_dim,
+            "device": str(self.device),
             "dtype": self.dtype,
             "output_shape_pattern": "batch x time x features",
         }
 
 
-def demonstrate_time_series_tokenization():
+def demonstrate_time_series_tokenization():  # pragma: no cover
     """Demonstrate time series tokenization with  encoder."""
 
     print("AIFS Time Series Tokenization with  Encoder")
@@ -400,46 +392,34 @@ def demonstrate_time_series_tokenization():
     print(interpretation)
     print()
 
-    # Test different temporal modeling approaches (using checkpoint mode for demo)
-    approaches = [
-        ("none", "Spatial encoding only"),
-        ("lstm", "LSTM temporal modeling"),
-        ("transformer", "Transformer temporal modeling"),
-    ]
+    print("Initializing transformer-based tokenizer")
 
-    for approach, description in approaches:
-        print(f"Testing: {description}")
+    try:
+        tokenizer = AIFSTimeSeriesTokenizer(
+            aifs_checkpoint_path="/path/to/checkpoint.pt",  # Demo path
+            hidden_dim=512,
+            device="cpu",
+            verbose=False,
+        )
 
-        try:
-            # Initialize tokenizer (checkpoint mode for demo - requires AIFS model for real use)
-            tokenizer = AIFSTimeSeriesTokenizer(
-                aifs_checkpoint_path="/path/to/checkpoint.pt",  # Demo path
-                temporal_modeling=approach,
-                hidden_dim=512,
-                device="cpu",
-                verbose=False,
-            )
+        info = tokenizer.get_tokenizer_info()
+        print(f"   AIFS encoder: {info['aifs_encoder']['type']}")
+        print(f"   Spatial dim: {info['spatial_dim']}")
+        print(f"   Temporal model: {info['temporal_modeling']}")
 
-            # Get tokenizer info
-            info = tokenizer.get_tokenizer_info()
-            print(f"   AIFS encoder: {info['aifs_encoder']['type']}")
-            print(f"   Spatial dim: {info['spatial_dim']}")
-            print(f"   Temporal model: {info['temporal_modeling']}")
+        print("   Tokenizer initialized successfully in checkpoint mode")
+        print("   Note: Requires AIFS model for actual tokenization")
 
-            print("   Tokenizer initialized successfully in checkpoint mode")
-            print("   Note: Requires AIFS model for actual tokenization")
+        print(
+            f"   Expected spatial token shape: {sample_data.shape[:2]} + "
+            f"({AIFS_RAW_ENCODER_OUTPUT_DIM},) = "
+            f"{sample_data.shape[:2] + (AIFS_RAW_ENCODER_OUTPUT_DIM,)}"
+        )
 
-            # Note: Can't actually tokenize without AIFS model
-            print(
-                f"   Expected spatial token shape: {sample_data.shape[:2]} + "
-                f"({AIFS_RAW_ENCODER_OUTPUT_DIM},) = "
-                f"{sample_data.shape[:2] + (AIFS_RAW_ENCODER_OUTPUT_DIM,)}"
-            )
+    except Exception as exc:
+        print(f"   Failed: {exc}")
 
-        except Exception as e:
-            print(f"   Failed: {e}")
-
-        print()
+    print()
 
     print("📋  Time Series Tokenization Features:")
     print("-" * 50)
@@ -447,12 +427,12 @@ def demonstrate_time_series_tokenization():
     print("No more workaround encoders - direct AIFS model integration")
     print("Handles full 5D climate tensors efficiently")
     print("Sequential and batch-parallel processing modes")
-    print("Support for LSTM/Transformer temporal modeling")
+    print("Transformer-based temporal modeling")
     print()
     print("Usage with real AIFS model:")
     print("   aifs_model = load_your_aifs_model()")
     print("   tokenizer = AIFSTimeSeriesTokenizer(aifs_model=aifs_model)")
-    print("   tokens = tokenizer(climate_data_5d)  # [batch, time, hidden_dim or 102]")
+    print("   tokens = tokenizer(climate_data_5d)  # [batch, time, 102]")
 
     print()
 
@@ -469,10 +449,7 @@ def demonstrate_time_series_tokenization():
     print("-" * 20)
     print("Use sequential processing for maximum accuracy")
     print("Use batch-parallel for speed when memory allows")
-    print("Choose temporal modeling based on your downstream task:")
-    print("  - 'none': For spatial analysis without temporal relationships")
-    print("  - 'lstm': For sequential temporal dependencies")
-    print("  - 'transformer': For attention-based temporal modeling")
+    print("Use transformer temporal modeling for attention-based temporal context")
     print("Consider chunking very long time series to manage memory")
 
 

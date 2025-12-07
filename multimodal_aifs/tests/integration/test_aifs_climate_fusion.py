@@ -43,7 +43,7 @@ def test_batch_processing(aifs_model, test_device):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         # Create fusion module with real AIFS model
@@ -74,7 +74,7 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         # Create fusion module with real AIFS model
@@ -108,7 +108,7 @@ def test_climate_data_encoding(aifs_model, test_device, test_climate_data):
         # Validate output
         assert climate_features.shape[0] == climate_data_5d.shape[0]  # batch dimension
         assert climate_features.shape[1] == 512  # fusion_dim
-        assert climate_features.device.type == device
+        assert climate_features.device == device
 
         print(
             f"   Climate encoding: {climate_data_5d.shape} ({climate_data_5d.dtype}) "
@@ -126,7 +126,7 @@ def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         embedding_module = AIFSClimateEmbedding(
@@ -155,7 +155,7 @@ def test_climate_embedding_module(aifs_model, test_device, test_climate_data):
         # Validate output
         assert embeddings.shape[0] == sample_data_5d.shape[0]
         assert embeddings.shape[1] == 256  # embedding_dim
-        assert embeddings.device.type == device
+        assert embeddings.device == device
 
         print(f"   Embedding: {sample_data_5d.shape} -> {embeddings.shape}")
         print("   Embedding module test passed")
@@ -168,7 +168,7 @@ def test_error_handling(aifs_model, test_device):
     """Test error handling for invalid inputs."""
     print("\nTesting Error Handling")
 
-    device = str(test_device)
+    device = test_device
 
     # Test with invalid path
     try:
@@ -229,7 +229,7 @@ def test_fusion_module_initialization(aifs_model, test_device):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     # Test with real AIFS model
     fusion_module = AIFSClimateTextFusion(
@@ -259,7 +259,7 @@ def test_multimodal_fusion(aifs_model, test_device, test_climate_data):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         fusion_module = AIFSClimateTextFusion(
@@ -318,7 +318,7 @@ def test_similarity_and_alignment(aifs_model, test_device, test_climate_data):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     try:
         fusion_module = AIFSClimateTextFusion(
@@ -365,7 +365,7 @@ def test_text_encoding(aifs_model, test_device):
 
     # Get the real AIFS model from fixture
     aifs_model_instance = aifs_model["model"] if not aifs_model["is_mock"] else None
-    device = str(test_device)
+    device = test_device
 
     # Create fusion module
     fusion_module = AIFSClimateTextFusion(

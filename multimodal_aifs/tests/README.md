@@ -2,7 +2,7 @@
 
 This directory contains comprehensive tests for the multimodal AIFS implementation, organized by test type and purpose.
 
-## 📁 Test Structure
+## Test Structure
 
 ### `unit/`
 Unit tests for individual components:
@@ -22,7 +22,7 @@ Integration tests for complex interactions:
 - **`test_aifs_full_pipeline.py`** - End-to-end multimodal pipeline testing
 - **`test_real_data_pipeline.py`** - Real ECMWF data processing pipeline
 - **`test_aifs_mistral_integration.py`** - AIFS + Mistral fusion model testing
-- **`test_aifs_mistral7b_real_fusion.py`** - ⭐ **AIFS + Real Mistral-7B-Instruct fusion (Real Models)**
+- **`test_aifs_mistral7b_real_fusion.py`** - AIFS + Real Mistral-7B-Instruct fusion (Real Models)
 - **`test_5d_aifs_capability.py`** - 5D tensor processing capability tests
 - **`zarr/`** - Zarr format integration tests
 
@@ -35,7 +35,7 @@ System-level validation:
 - **`test_aifs_system_setup.py`** - Complete AIFS system setup verification
 - **`test_multimodal_aifs_integration.py`** - Full multimodal AIFS integration
 
-## 🧪 Running Tests
+## Running Tests
 
 ### Individual Test Files
 ```bash
@@ -55,7 +55,7 @@ python -m pytest multimodal_aifs/tests/benchmarks/ -v
 python -m pytest multimodal_aifs/tests/ -v
 ```
 
-### Real Model Integration Tests (⭐ NEW)
+### Real Model Integration Tests
 ```bash
 # Run AIFS + Real Mistral-7B-Instruct fusion test (standalone)
 cd "/path/to/HPE-LLM4Climate"
@@ -93,7 +93,7 @@ python multimodal_aifs/tests/unit/test_aifs_encoder_utils.py
 python multimodal_aifs/tests/integration/test_aifs_climate_fusion.py
 ```
 
-## ✅ Test Coverage
+## Test Coverage
 
 The test suite covers:
 - **AIFS Encoder Integration**: Model loading, encoding, batch processing
@@ -105,7 +105,7 @@ The test suite covers:
 - **Real Data**: ECMWF data processing, model compatibility
 - **Performance**: Benchmarking across scales, configurations, and temporal patterns
 
-## 🎯 Test Categories
+## Test Categories
 
 ### Unit Tests
 - Component isolation
@@ -125,7 +125,7 @@ The test suite covers:
 - Performance validation
 - Resource management
 
-## 🚀 Continuous Integration
+## Continuous Integration
 
 Tests are designed to:
 - Work with/without AIFS model files
@@ -134,7 +134,7 @@ Tests are designed to:
 - Support both CPU and GPU execution
 - Include synthetic data fallbacks
 
-## 📊 Performance Benchmarks
+## Performance Benchmarks
 
 Key performance metrics tracked:
 - AIFS encoder loading time
@@ -146,7 +146,7 @@ Key performance metrics tracked:
 - Batch processing efficiency
 - Temporal modeling performance
 
-## 🔧 Development Guidelines
+## Development Guidelines
 
 When adding new tests:
 1. Follow existing naming conventions

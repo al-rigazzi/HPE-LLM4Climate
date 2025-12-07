@@ -33,10 +33,13 @@ Usage:
     tensor = loader.to_aifs_tensor(data)
 """
 
+from __future__ import annotations
+
+import os
 import sys
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
@@ -46,6 +49,11 @@ sys.path.insert(0, str(project_root))
 
 # Import constants
 from multimodal_aifs.constants import ALL_AIFS_VARIABLES
+from multimodal_aifs.utils.device_utils import (
+    configure_device_for_max_perf,
+    resolve_device,
+    supports_amp,
+)
 
 # Try to import Zarr and Xarray
 try:
@@ -57,6 +65,11 @@ except ImportError as e:
     ZARR_AVAILABLE = False
     warnings.warn(f"Zarr/Xarray not available: {e}. Install with: pip install zarr xarray")
     xr = None  # type: ignore
+
+if TYPE_CHECKING:
+    import xarray as xr_typing  # pylint: disable=invalid-name
+else:
+    xr_typing = Any  # pylint: disable=invalid-name
 
 # Import climate data utilities
 try:
@@ -101,7 +114,7 @@ class ZarrClimateLoader:
         self.time_dim: str = ""
         self.time_range: tuple[str, str] = ("", "")
         self.available_variables: list[str] = []
-        self.ds: xr.Dataset | None = None
+        self.ds: xr_typing.Dataset | None = None
 
         # Load dataset
         self._load_dataset()
@@ -154,7 +167,7 @@ class ZarrClimateLoader:
 
     def load_time_range(
         self, start_time: str | None, end_time: str | None, variables: list[str] | None = None
-    ) -> xr.Dataset:
+    ) -> xr_typing.Dataset:
         """
         Load data for a specific time range.
 
@@ -312,8 +325,8 @@ class ZarrClimateLoader:
         data,
         batch_size: int = 1,
         normalize: bool = True,
-        device: str = "cpu",
-        use_fp16: bool = False,
+        device: str | torch.device | None = None,
+        use_fp16: bool | None = None,
         runner=None,
         use_forcing_pipeline: bool = True,
     ) -> torch.Tensor:
@@ -328,8 +341,8 @@ class ZarrClimateLoader:
             data: Xarray dataset
             batch_size: Batch size (for creating batches from time series)
             normalize: Whether to normalize the data
-            device: Device to move tensor to ("cpu", "cuda", "mps", etc.)
-            use_fp16: Whether to use FP16 (torch.float16) instead of FP32 (torch.float32)
+            device: Device to move tensor to (auto-detected when None)
+            use_fp16: Whether to use FP16 (auto-enabled for CUDA/MPS when None)
             runner: SimpleRunner instance required for AIFS format data
             use_forcing_pipeline: Whether to use SimpleRunner pipeline (default: True)
 
@@ -343,6 +356,12 @@ class ZarrClimateLoader:
             ValueError: If data is not in AIFS format (grid_point dimension required)
         """
         print("Converting to AIFS tensor format...")
+
+        target_device = resolve_device(device)
+        configure_device_for_max_perf(target_device)
+        if use_fp16 is None:
+            use_fp16 = supports_amp(target_device)
+        tensor_dtype = torch.float16 if use_fp16 else torch.float32
 
         # Validate requirements for AIFS format
         if runner is None:
@@ -409,10 +428,59 @@ class ZarrClimateLoader:
                 f"vars={tensor.shape[4]}]"
             )
 
+            should_log_stats = os.environ.get("AIFS_LOG_TENSOR_STATS", "false").lower() in {
+                "1",
+                "true",
+                "yes",
+            }
+            max_abs_value = float(tensor.abs().max().item())
+
+            fp16_limit = 65504.0
+            force_fp32 = False
+
+            if use_fp16 and max_abs_value > fp16_limit:
+                print(
+                    "⚠️  Tensor values exceed FP16 dynamic range "
+                    f"(|value|={max_abs_value:.2f} > {fp16_limit}). Keeping FP32 inputs."
+                )
+                force_fp32 = True
+
+            if force_fp32:
+                use_fp16 = False
+                tensor_dtype = torch.float32
+
+            if should_log_stats:
+                finite_mask = torch.isfinite(tensor)
+                finite_ratio = finite_mask.float().mean().item()
+                nan_ratio = 1.0 - finite_ratio
+                print(f"   Tensor finite ratio: {finite_ratio:.6f} (nan ratio {nan_ratio:.6f})")
+
+                finite_count = finite_mask.sum().item()
+                if finite_count > 0:
+                    finite_values = tensor[finite_mask]
+                    finite_min = finite_values.min().item()
+                    finite_max = finite_values.max().item()
+                    finite_mean = finite_values.mean().item()
+                    print(
+                        "   Tensor finite stats: "
+                        f"min={finite_min:.6f}, max={finite_max:.6f}, mean={finite_mean:.6f}"
+                    )
+                else:
+                    print("   Tensor finite stats: no finite values available")
+
+                nan_counts = (~finite_mask).reshape(-1, tensor.shape[-1]).sum(dim=0)
+                if torch.any(nan_counts):
+                    topk = min(5, tensor.shape[-1])
+                    top_vals, top_idx = torch.topk(nan_counts.float(), k=topk)
+                    top_idx = top_idx.tolist()
+                    top_vals = top_vals.tolist()
+                    print("   Vars with most NaNs (index -> count):")
+                    for var_index, count in zip(top_idx, top_vals):
+                        print(f"      [{var_index}] -> {int(count)}")
+
             # Move to device and convert to FP16 if needed
-            tensor = tensor.to(device)
-            if use_fp16:
-                tensor = tensor.half()
+            tensor = tensor.to(target_device)
+            tensor = tensor.to(tensor_dtype)
 
             return tensor
 

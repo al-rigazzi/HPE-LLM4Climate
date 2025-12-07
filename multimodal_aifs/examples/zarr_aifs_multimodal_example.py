@@ -122,9 +122,7 @@ def demonstrate_zarr_to_aifs(
     print("\n🤖 Step 4: AIFS TimeSeries Tokenization")
     try:
         # Initialize AIFS tokenizer
-        tokenizer = AIFSTimeSeriesTokenizer(
-            temporal_modeling="transformer", hidden_dim=512, device="cpu"
-        )
+        tokenizer = AIFSTimeSeriesTokenizer(hidden_dim=512, device="cpu")
 
         # Tokenize the climate data
         climate_tokens = tokenizer(aifs_tensor)

@@ -75,6 +75,12 @@ from multimodal_aifs.core.aifs_encoder_utils import (
     AIFSCompleteEncoder,
     save_aifs_encoder,
 )
+from multimodal_aifs.utils.device_utils import (
+    configure_device_for_max_perf,
+    device_to_str,
+    resolve_device,
+    supports_amp,
+)
 
 
 def extract_aifs_encoder(
@@ -92,33 +98,27 @@ def extract_aifs_encoder(
     print("EXTRACTING AIFS-SINGLE-1.1 ENCODER")
     print("=" * 70)
 
-    # Auto-detect device if not specified
-    if device is None:
-        # For AIFS extraction, CPU is recommended because:
-        # - MPS lacks memory-efficient attention kernels (tries to allocate 97GB for 542k grid)
-        # - MPS needs CPU fallback for scatter_reduce operations anyway
-        # - CPU has proper memory-efficient SDPA implementation
-        if torch.cuda.is_available():
-            device = "cuda"
-            print("\nUsing CUDA with FP16")
-        else:
-            device = "cpu"
-            print("\nUsing CPU (recommended for AIFS due to large grid size)")
-    else:
-        print(f"\nUsing {device}")
+    target_device = resolve_device(device)
+    configure_device_for_max_perf(target_device)
+    device_str = device_to_str(target_device)
+    amp_supported = supports_amp(target_device)
+    precision_note = "FP16" if amp_supported else "FP32"
+    print(f"\nUsing {device_str.upper()} with {precision_note}")
+    if target_device.type == "cpu":
+        print("   (CPU remains recommended for extraction due to AIFS memory demands)")
 
     # Load AIFS-Single-1.1 model
     print("\nLoading AIFS-Single-1.1...")
     checkpoint = {"huggingface": "ecmwf/aifs-single-1.1"}
-    runner = SimpleRunner(checkpoint, device=device)
+    runner = SimpleRunner(checkpoint, device=device_str)
     aifs_model = runner.model
 
-    print(f"✓ Model loaded on {device}")
+    print(f"✓ Model loaded on {device_str}")
     print(f"  Model type: {type(aifs_model)}")
 
     # Create complete encoder with FP16 for memory efficiency
     print("\nCreating complete encoder wrapper (FP16 for memory efficiency)...")
-    encoder = AIFSCompleteEncoder(aifs_model, verbose=True, device=device)
+    encoder = AIFSCompleteEncoder(aifs_model, verbose=True, device=target_device)
 
     # Count parameters
     total_params = sum(p.numel() for p in encoder.parameters())
@@ -136,7 +136,8 @@ def extract_aifs_encoder(
         # [batch, time, ensemble, grid_points, features]
         # AIFS-Single-1.1: 542,080 grid points, 103 input features
         # Use FP16 to reduce memory usage
-        dummy_input = torch.randn(1, 2, 1, 542080, 103, device=device, dtype=torch.float16)
+        dummy_dtype = torch.float16 if amp_supported else torch.float32
+        dummy_input = torch.randn(1, 2, 1, 542080, 103, device=target_device, dtype=dummy_dtype)
         sample_output = encoder(dummy_input)
 
     print(f"  Sample output shape: {sample_output.shape}")

@@ -62,10 +62,14 @@ def setup_flash_attn_mock():
     """
     import platform
 
-    # Only mock flash attention on MacOS systems where the CUDA-based flash_attn is unavailable
-    if platform.system() != "Darwin":
-        print("ℹ️ Skipping flash attention mock - not on MacOS")
+    is_macos = platform.system() == "Darwin"
+
+    if not is_macos:
+        print("ℹ️ Skipping flash attention mock - real kernels enabled")
         return
+
+    print("⚠️  Flash attention mock enabled for MacOS")
+
     flash_attn_mock = types.ModuleType("flash_attn")
 
     # Add __spec__ to prevent import errors in transformers library
@@ -205,7 +209,7 @@ def setup_flash_attn_mock():
     os.environ["USE_FLASH_ATTENTION"] = "false"
     os.environ["TRANSFORMERS_USE_FLASH_ATTENTION_2"] = "false"
 
-    print("Flash attention mock enabled for MacOS")
+    print("Flash attention mock ready")
 
 
 def get_env_bool(env_var: str, default) -> bool:
@@ -640,16 +644,35 @@ def aifs_model_available(test_device):  # pylint: disable=W0621
 
                 checkpoint_module.Checkpoint.validate_environment = patched_validate
 
-        # Try to initialize AIFS
-        # AIFS is memory-intensive, always load on CPU even if test_device is MPS/CUDA
-        # The AIFSCompleteEncoder will handle device placement appropriately
+        # Determine preferred execution device for AIFS
+        force_cpu = os.environ.get("AIFS_FORCE_CPU", "false").lower() in {"1", "true", "yes"}
         aifs_device = "cpu"
-        if test_device.type != "cpu":
-            print(f"Loading AIFS on CPU (too memory-intensive for {test_device})")
+        if not force_cpu and test_device.type == "cuda" and torch.cuda.is_available():
+            cuda_index = test_device.index
+            if cuda_index is None:
+                cuda_index = torch.cuda.current_device()
+            aifs_device = f"cuda:{cuda_index}"
+            print(f"Loading AIFS model on {aifs_device}")
+        else:
+            if test_device.type == "mps":
+                print("AIFS model cannot run on MPS directly; falling back to CPU")
+            elif force_cpu:
+                print("AIFS_FORCE_CPU=true -> forcing CPU execution")
+            if test_device.type != "cpu":
+                print(f"Loading AIFS on CPU (target device {test_device})")
 
         checkpoint = {"huggingface": "ecmwf/aifs-single-1.1"}
-        runner = SimpleRunner(checkpoint, device=aifs_device)
-        aifs_model_instance = runner.model.to(aifs_device)
+        try:
+            runner = SimpleRunner(checkpoint, device=aifs_device)
+            aifs_model_instance = runner.model.to(aifs_device)
+        except RuntimeError as exc:
+            if aifs_device.startswith("cuda"):
+                print(f"⚠️  Failed to load AIFS on {aifs_device}: {exc}. Falling back to CPU.")
+                aifs_device = "cpu"
+                runner = SimpleRunner(checkpoint, device=aifs_device)
+                aifs_model_instance = runner.model.to(aifs_device)
+            else:
+                raise
 
         # Restore MPS watermark ratio after loading
         if old_mps_ratio is not None:
@@ -744,7 +767,7 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
         # Add attributes expected by tests
         self.fusion_strategy = "cross_attention"
-        self.time_series_dim = AIFS_RAW_ENCODER_OUTPUT_DIM  # AIFS encoder produces features
+        self.time_series_dim = AIFS_RAW_ENCODER_OUTPUT_DIM  # updated once tokenizer is built
 
         # Initialize model attributes with proper types
         self.mistral_model: torch.nn.Module | Any | None = (
@@ -775,12 +798,14 @@ class AIFSClimateTextFusionWrapper(nn.Module):
 
         self.time_series_tokenizer = AIFSTimeSeriesTokenizer(
             aifs_model=model,
-            temporal_modeling="transformer",
-            hidden_dim=256,  # Standard dimension
+            hidden_dim=256,  # Standard dimension for internal temporal modeling
             device=device_str,
             dtype=torch.float16 if device_str in ["cuda", "mps"] else torch.float32,
             verbose=verbose,
         )
+
+        # Public time series dimension always matches raw encoder output
+        self.time_series_dim = self.time_series_tokenizer.output_dim
 
         # Store mock status
         self.use_mock_mistral = use_mock_mistral

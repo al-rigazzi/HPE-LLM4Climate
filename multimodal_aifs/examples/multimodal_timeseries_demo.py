@@ -120,22 +120,20 @@ class MultimodalTimeSeriesDemo:
         self.fusion_models = {}
 
     def setup_tokenizers(self):
-        """Initialize tokenizers with different temporal modeling approaches."""
-        print("Setting up AIFSTimeSeriesTokenizers...")
+        """Initialize the transformer-based tokenizer."""
+        print("Setting up AIFSTimeSeriesTokenizer...")
 
-        temporal_models = ["transformer", "lstm", "none"]
+        model_type = "transformer"
+        print(f"   Initializing {model_type} tokenizer...")
+        try:
+            self.tokenizers[model_type] = AIFSTimeSeriesTokenizer(
+                hidden_dim=512, device=self.device
+            )
+            print("   Transformer tokenizer ready")
+        except Exception as exc:
+            print(f"   Failed to initialize tokenizer: {exc}")
 
-        for model_type in temporal_models:
-            print(f"   Initializing {model_type} tokenizer...")
-            try:
-                self.tokenizers[model_type] = AIFSTimeSeriesTokenizer(
-                    temporal_modeling=model_type, hidden_dim=512, device=self.device
-                )
-                print(f"   {model_type.capitalize()} tokenizer ready")
-            except Exception as e:
-                print(f"   Failed to initialize {model_type} tokenizer: {e}")
-
-        print(f"   Loaded {len(self.tokenizers)} tokenizers")
+        print(f"   Loaded {len(self.tokenizers)} tokenizer(s)")
         print()
 
     def demonstrate_tokenization(self):

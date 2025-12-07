@@ -330,28 +330,6 @@
       "output_size_mb": 0.0,
       "avg_memory_mb": 0.0,
       "skipped": true
-    },
-    {
-      "test_name": "lstm_temporal",
-      "avg_time": 0.001,
-      "std_time": 0.0,
-      "throughput": 1000.0,
-      "compression_ratio": 1.0,
-      "input_size_mb": 0.0,
-      "output_size_mb": 0.0,
-      "avg_memory_mb": 0.0,
-      "skipped": true
-    },
-    {
-      "test_name": "none_temporal",
-      "avg_time": 0.001,
-      "std_time": 0.0,
-      "throughput": 1000.0,
-      "compression_ratio": 1.0,
-      "input_size_mb": 0.0,
-      "output_size_mb": 0.0,
-      "avg_memory_mb": 0.0,
-      "skipped": true
     }
   ]
 }

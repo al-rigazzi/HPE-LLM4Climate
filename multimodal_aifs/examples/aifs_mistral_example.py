@@ -244,9 +244,7 @@ def demonstrate_compression_analysis(aifs_model=None):
         return
 
     try:
-        tokenizer = AIFSTimeSeriesTokenizer(
-            aifs_model=aifs_model, temporal_modeling="transformer", device="cpu"
-        )
+        tokenizer = AIFSTimeSeriesTokenizer(aifs_model=aifs_model, device="cpu")
     except Exception as e:
         print(f"Could not create tokenizer: {e}")
         print("Skipping compression analysis")

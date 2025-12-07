@@ -1,9 +1,10 @@
-# 🌍 HPE-LLM4Climate: Multimodal Climate Analysis Large Language Model
+# HPE-LLM4Climate: Multimodal Climate Analysis Large Language Model
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.4+-orange.svg)](https://pytorch.org/)
-[![Transformers](https://img.shields.io/badge/🤗-Transformers-yellow.svg)](https://huggingface.co/transformers/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.5.0-orange.svg)](https://pytorch.org/)
+[![Transformers](https://img.shields.io/badge/HuggingFace-Transformers-yellow.svg)](https://huggingface.co/transformers/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
+[![Coverage](https://img.shields.io/badge/coverage-87.8%25-green.svg)](coverage.xml)
 
 ## Overview
 
@@ -71,9 +72,18 @@ HPE-LLM4Climate/
 
 ### Device Compatibility
 
-- **Apple Silicon**: Native ARM64 with MPS acceleration for PyTorch operations
-- **NVIDIA GPUs**: CUDA 11.8+ or 12.x support
-- **CPU-only**: Cross-platform support (Linux/Windows/macOS)
+The system automatically selects the best available device with consistent device handles:
+
+- **Apple Silicon**: Native ARM64 with MPS acceleration for PyTorch operations. MPS devices are normalized to `mps:0` for consistent device comparison.
+- **NVIDIA GPUs**: CUDA 11.8+ or 12.x support. CUDA devices are normalized with explicit indices (e.g., `cuda:0`).
+- **CPU-only**: Cross-platform support (Linux/Windows/macOS).
+
+### Automatic Mixed Precision (AMP)
+
+The system provides device-aware precision handling:
+
+- **CUDA**: BF16 autocast is enabled when supported. FP16 requests are automatically promoted to BF16.
+- **MPS/CPU**: AMP autocast is disabled (not supported). Operations run in FP32.
 
 ## Installation
 

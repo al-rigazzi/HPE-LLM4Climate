@@ -90,3 +90,39 @@ class TestClimateDataUtils(unittest.TestCase):
         proc_minmax = ClimateDataProcessor(normalization_method="minmax")
         result_minmax = proc_minmax.fit_transform(data)
         self.assertIsInstance(result_minmax, torch.Tensor)
+
+    def test_processor_requires_fit_before_transform(self):
+        """Calling transform before fitting should raise a RuntimeError."""
+        processor = ClimateDataProcessor()
+        with self.assertRaises(RuntimeError):
+            processor.transform(torch.randn(2, 4))
+
+    def test_process_for_aifs_flattens_and_pads(self):
+        """Spatial inputs are flattened and padded to the requested feature count."""
+        processor = ClimateDataProcessor(target_features=16)
+        spatial = torch.randn(2, 2, 2, 3)
+        processor.fit(spatial.view(2, -1))
+        processed = processor.process_for_aifs(spatial)
+        self.assertEqual(processed.shape, (2, 16))
+        self.assertTrue(torch.isfinite(processed).all())
+
+    def test_inverse_transform_roundtrip_minmax(self):
+        """Min-max normalization should approximately recover the original data."""
+        data = torch.rand(4, 3)
+        processor = ClimateDataProcessor(normalization_method="minmax")
+        normalized = processor.fit_transform(data)
+        recovered = processor.inverse_transform(normalized)
+        self.assertTrue(torch.allclose(recovered, data, atol=1e-6))
+
+    def test_get_stats_reports_fitted_values(self):
+        """Stats dictionary should expose aggregate metrics after fitting."""
+        data = torch.randn(4, 6)
+        processor = ClimateDataProcessor()
+        processor.fit(data)
+        stats = processor.get_stats()
+        self.assertTrue(stats["is_fitted"])
+        self.assertIn("global_mean", stats)
+
+
+if __name__ == "__main__":
+    unittest.main()
