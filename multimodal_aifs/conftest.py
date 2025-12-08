@@ -65,7 +65,6 @@ def setup_flash_attn_mock():
     is_macos = platform.system() == "Darwin"
 
     if not is_macos:
-        print("ℹ️ Skipping flash attention mock - real kernels enabled")
         return
 
     print("⚠️  Flash attention mock enabled for MacOS")
@@ -228,11 +227,9 @@ def pytest_sessionstart(session):
     # Set up flash attention mock FIRST (before any imports that might need it)
     setup_flash_attn_mock()
 
-    # Set ANEMOI chunking for memory optimization BEFORE any anemoi imports
-    # This is read at module import time in anemoi/models/layers/block.py
-    # and used to split operations during inference (reduces memory usage)
-    os.environ.setdefault("ANEMOI_INFERENCE_NUM_CHUNKS", "16")
-    print(f"ANEMOI_INFERENCE_NUM_CHUNKS set to {os.environ.get('ANEMOI_INFERENCE_NUM_CHUNKS')}")
+    # Print ANALYSIS_GPU environment variable for visibility
+    analysis_gpu = os.environ.get("ANALYSIS_GPU", "0")
+    print(f"ANALYSIS_GPU={analysis_gpu}")
 
     from multimodal_aifs.utils import get_best_device
 
@@ -303,7 +300,7 @@ def llm_mock_status():
     """Provide information about whether LLM mocking is enabled."""
     use_mock_llm = get_env_bool("USE_MOCK_LLM", False)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
-    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3")
+    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Ministral-3-8B-Instruct-2512")
 
     return {
         "use_mock_llm": use_mock_llm,
@@ -444,7 +441,7 @@ class MockLLMModel(nn.Module):
 def llm_model_path():
     """Get path to local LLM model if available."""
     # Check for specific model name from environment
-    model_name = os.environ.get("LLM_MODEL_NAME", "Mistral-7B-Instruct-v0.3")
+    model_name = os.environ.get("LLM_MODEL_NAME", "Ministral-3-8B-Instruct-2512")
 
     possible_paths = [
         f"models/{model_name}",
@@ -471,7 +468,7 @@ def llm_model(llm_path, device):
 
     use_mock = get_env_bool("USE_MOCK_LLM", False)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
-    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3")
+    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Ministral-3-8B-Instruct-2512")
 
     print("🤖 Loading LLM Model for Testing...")
     print(f"   Model: {model_name}")
@@ -503,52 +500,46 @@ def llm_model(llm_path, device):
 
     try:
         # Try to load real model
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import (
+            AutoTokenizer,
+            FineGrainedFP8Config,
+            Mistral3ForConditionalGeneration,
+        )
 
         # Setup flash attention mocking
         setup_flash_attn_mock()
 
-        if llm_path is not None:
-            print(f"Found local model at: {llm_path}")
-            model_path = llm_path
-        else:
-            print(f"🌐 Using HuggingFace model: {model_name}")
-            model_path = model_name
+        print(f"Using HuggingFace model: {model_name}")
 
         print("Loading real LLM model...")
 
-        # Handle quantization
-        quantization_config = None
-        if use_quantization:
-            try:
-                from transformers import BitsAndBytesConfig
-
-                quantization_config = BitsAndBytesConfig(
-                    load_in_8bit=True, llm_int8_enable_fp32_cpu_offload=True
-                )
-                print("Using 8-bit quantization")
-            except ImportError:
-                print("Quantization requested but BitsAndBytesConfig not available")
-
         # Load tokenizer
         tokenizer = AutoTokenizer.from_pretrained(
-            model_path, trust_remote_code=True, padding_side="left"
+            model_name, trust_remote_code=True, padding_side="left"
         )
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        # Load model
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            quantization_config=quantization_config,
-            torch_dtype=torch.float16 if device.type in ["cuda", "mps"] else torch.float32,
-            device_map="auto" if device.type == "cuda" else None,
-            low_cpu_mem_usage=True,
-            trust_remote_code=True,
-            attn_implementation="eager",  # Disable flash attention
+        # Load model with FP8 dequantization to BF16
+        load_kwargs: dict = {
+            "quantization_config": FineGrainedFP8Config(dequantize=True),
+            "low_cpu_mem_usage": True,
+            "trust_remote_code": True,
+        }
+
+        if device.type == "cuda":
+            load_kwargs["device_map"] = "auto"
+        else:
+            load_kwargs["device_map"] = "cpu"
+            load_kwargs["attn_implementation"] = "eager"
+
+        model = Mistral3ForConditionalGeneration.from_pretrained(
+            model_name,
+            **load_kwargs,
         )
 
-        model.to(device)
+        if device.type not in ("cpu", "cuda"):
+            model.to(device)
         model.eval()
 
         _MODEL_CACHE["llm_model"] = {
@@ -816,117 +807,62 @@ class AIFSClimateTextFusionWrapper(nn.Module):
             # Load real Mistral model
             print("   Loading real Mistral model...")
             try:
-                from transformers import AutoModelForCausalLM, AutoTokenizer
+                from transformers import (
+                    AutoTokenizer,
+                    FineGrainedFP8Config,
+                    Mistral3ForConditionalGeneration,
+                )
 
-                model_name = "mistralai/Mistral-7B-Instruct-v0.3"
-                self.mistral_tokenizer = AutoTokenizer.from_pretrained(model_name)
+                model_name = "mistralai/Ministral-3-8B-Instruct-2512"
+                self.mistral_tokenizer = AutoTokenizer.from_pretrained(
+                    model_name, trust_remote_code=True
+                )
 
-                # Configure loading based on device capabilities
-                load_kwargs = {
-                    "torch_dtype": (
-                        torch.float16 if device_str in ["cuda", "mps"] else torch.float32
-                    ),
+                # Use FineGrainedFP8Config with dequantize to convert FP8 to BF16
+                load_kwargs: dict = {
+                    "quantization_config": FineGrainedFP8Config(dequantize=True),
                     "low_cpu_mem_usage": True,
+                    "trust_remote_code": True,
                 }
 
                 # CUDA-specific optimizations
                 if device_str == "cuda":
-                    # Use 4-bit quantization on CUDA for memory efficiency
-                    try:
-                        from transformers import BitsAndBytesConfig
-
-                        quantization_config = BitsAndBytesConfig(
-                            load_in_4bit=True,
-                            bnb_4bit_compute_dtype=torch.float16,
-                            bnb_4bit_use_double_quant=True,
-                            bnb_4bit_quant_type="nf4",
-                        )
-                        load_kwargs["quantization_config"] = quantization_config
-                        load_kwargs["device_map"] = "auto"
-                        print("   Using 4-bit quantization (CUDA)")
-                    except ImportError:
-                        print("   ⚠️  bitsandbytes not available, loading in float16")
-                        load_kwargs["device_map"] = "auto"
+                    load_kwargs["device_map"] = "auto"
+                    print("   Using auto device_map (CUDA)")
 
                 # MPS-specific optimizations
                 elif device_str == "mps":
-                    # MPS doesn't support bitsandbytes, but we can use several techniques:
-                    # 1. Load with reduced precision and optimize memory layout
-                    # 2. Use gradient checkpointing to reduce memory during inference
-                    # 3. Set MPS memory limit environment variable
                     print("   Optimizing for MPS (Apple Silicon)...")
+                    os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
+                    load_kwargs["device_map"] = "cpu"
+                    load_kwargs["attn_implementation"] = "eager"
 
-                    # Set MPS memory management
-                    os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = (
-                        "0.0"  # Aggressive memory management
-                    )
+                # CPU
+                else:
+                    load_kwargs["device_map"] = "cpu"
 
-                    # Load to CPU first with minimal memory footprint
-                    load_kwargs["device_map"] = None
-                    load_kwargs["torch_dtype"] = torch.float16
+                self.mistral_model = Mistral3ForConditionalGeneration.from_pretrained(
+                    model_name,
+                    **load_kwargs,
+                )
 
-                    # Enable additional memory optimizations
-                    try:
-                        # Try loading with memory-efficient attention if available
-                        self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                            model_name,
-                            **load_kwargs,
-                            use_flash_attention_2=False,  # Flash attention not available on MPS
-                            attn_implementation="eager",  # Use memory-efficient eager mode
-                        )
-                    except TypeError:
-                        # Fallback if attn_implementation not supported
-                        self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                            model_name,
-                            **load_kwargs,
-                        )
-
+                # Move to device for MPS
+                if device_str == "mps":
                     print("   Moving model to MPS device...")
                     self.mistral_model = self.mistral_model.to(device_str)  # type: ignore
 
-                    # Enable gradient checkpointing for memory efficiency during inference
                     if hasattr(self.mistral_model, "gradient_checkpointing_enable"):
                         self.mistral_model.gradient_checkpointing_enable()
-                        print("   ✅ Gradient checkpointing enabled")
-
-                    print("   ✅ MPS optimizations applied (float16 + checkpointing)")
-
-                # CPU or other devices
-                else:
-                    self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                        model_name, **load_kwargs
-                    )
-                    if device_str != "cpu":
-                        self.mistral_model = self.mistral_model.to(device_str)  # type: ignore
-
-                # CUDA-specific device movement (already on device via device_map)
-                if device_str == "cuda" and "device_map" not in load_kwargs:
-                    assert self.mistral_model is not None
-                    self.mistral_model = self.mistral_model.to(device_str)
+                        print("   Gradient checkpointing enabled")
 
                 assert self.mistral_model is not None
                 self.mistral_model.eval()
 
-                # Estimate memory usage with platform-specific details
+                # Estimate memory usage
                 param_count = sum(p.numel() for p in self.mistral_model.parameters())
-                if device_str == "cuda" and "quantization_config" in load_kwargs:
-                    estimated_gb = (param_count * 0.5) / 1e9  # 4-bit = 0.5 bytes per param
-                    print(
-                        f"   ✅ Real Mistral loaded on {device_str} (~{estimated_gb:.1f}GB, 4-bit)"
-                    )
-                elif device_str == "mps":
-                    bytes_per_param = 2 if load_kwargs["torch_dtype"] == torch.float16 else 4
-                    estimated_gb = (param_count * bytes_per_param) / 1e9
-                    # Gradient checkpointing can reduce peak memory by ~30-40% during inference
-                    reduced_gb = estimated_gb * 0.65  # Approximate reduction with checkpointing
-                    print(
-                        f"   ✅ Real Mistral loaded on MPS "
-                        f"(~{estimated_gb:.1f}GB base, ~{reduced_gb:.1f}GB peak with checkpointing)"
-                    )
-                else:
-                    bytes_per_param = 2 if load_kwargs["torch_dtype"] == torch.float16 else 4
-                    estimated_gb = (param_count * bytes_per_param) / 1e9
-                    print(f"   ✅ Real Mistral loaded on {device_str} (~{estimated_gb:.1f}GB)")
+                # BF16 = 2 bytes per param
+                estimated_gb = (param_count * 2) / 1e9
+                print(f"   Real Mistral loaded on {device_str} (~{estimated_gb:.1f}GB, BF16)")
 
             except Exception as e:
                 print(f"   ⚠️  Failed to load real Mistral: {e}")
@@ -1187,7 +1123,7 @@ def test_climate_data_fusion(test_device, zarr_dataset_path, aifs_model):  # pyl
     device = str(test_device)
 
     # Determine the appropriate floating point format based on device
-    use_fp16 = test_device.type in ["cuda", "mps"]
+    use_low_precision = test_device.type in ["cuda", "mps"]
 
     # Load real ECMWF data using ZarrClimateLoader with forcing pipeline
     loader = ZarrClimateLoader(zarr_dataset_path)
@@ -1204,7 +1140,7 @@ def test_climate_data_fusion(test_device, zarr_dataset_path, aifs_model):  # pyl
         batch_size=1,
         normalize=True,
         device=device,
-        use_fp16=use_fp16,
+        use_low_precision=use_low_precision,
         runner=runner,
         use_forcing_pipeline=True,
     )
@@ -1227,12 +1163,17 @@ def test_climate_data(test_device, zarr_dataset_path, aifs_model):  # pylint: di
     device = str(test_device)
 
     # Determine the appropriate floating point format based on device
-    if test_device.type in ["cuda", "mps"]:
+    # Prefer BF16 on CUDA (wider dynamic range), FP16 on MPS
+    if test_device.type == "cuda" and torch.cuda.is_available():
+        bf16_supported = getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+        dtype = torch.bfloat16 if bf16_supported else torch.float16
+        use_low_precision = True
+    elif test_device.type == "mps":
         dtype = torch.float16
-        use_fp16 = True
+        use_low_precision = True
     else:
         dtype = torch.float32
-        use_fp16 = False
+        use_low_precision = False
 
     # Load real ECMWF data using ZarrClimateLoader
     loader = ZarrClimateLoader(zarr_dataset_path)
@@ -1249,7 +1190,7 @@ def test_climate_data(test_device, zarr_dataset_path, aifs_model):  # pylint: di
         batch_size=1,
         normalize=True,
         device=device,
-        use_fp16=use_fp16,
+        use_low_precision=use_low_precision,
         runner=runner,
         use_forcing_pipeline=True,
     )  # Returns [batch, time, ensemble, grid, 103]

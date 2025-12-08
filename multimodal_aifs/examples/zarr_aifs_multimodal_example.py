@@ -143,7 +143,7 @@ def demonstrate_zarr_to_aifs(
         try:
             # Initialize multimodal fusion model
             model = AIFSMistralFusionModel(
-                llm_model_name="mistralai/Mistral-7B-Instruct-v0.3",
+                llm_model_name="mistralai/Ministral-3-8B-Instruct-2512",
                 time_series_dim=512,
                 fusion_strategy="cross_attention",
                 device="cpu",

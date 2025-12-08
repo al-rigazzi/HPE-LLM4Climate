@@ -15,7 +15,7 @@
 """
 Real Mistral on CPU Test (No Quantization)
 
-This script tests with real Mistral-7B-Instruct-v0.3 on CPU without quantization.
+This script tests with real Ministral-3-8B-Instruct-2512 on CPU without quantization.
 Since quantization requires CUDA, we'll load the model in full precision
 but use very small batches and sequences.
 
@@ -218,7 +218,7 @@ def test_real_mistral_cpu(
     print("\nReal Mistral CPU Test Complete!")
     print("Successfully demonstrated:")
     print("   Zarr → AIFS tokenization")
-    print("   🤖 Real Mistral-7B-Instruct-v0.3 loading")
+    print("   🤖 Real Ministral-3-8B-Instruct-2512 loading")
     print("   Real Mistral text processing")
     print("   🔗 Multimodal fusion")
     print("   CPU execution (full precision)")

@@ -92,7 +92,7 @@ class ClimateTextDataLoader(IterableDataset):
     def __init__(
         self,
         zarr_paths: list[str] | str,
-        mistral_model_name: str = "mistralai/Ministral-8B-Instruct-2410",
+        mistral_model_name: str = "mistralai/Ministral-3-8B-Instruct-2512",
         batch_size: int = 1,
         samples_per_epoch: int = 1000,
         cache_mistral_model: bool = True,
@@ -124,8 +124,19 @@ class ClimateTextDataLoader(IterableDataset):
         self.cache_mistral_model = cache_mistral_model
         self.device = resolve_device(device)
         configure_device_for_max_perf(self.device)
-        self._use_fp16 = supports_amp(self.device)
-        self.tensor_dtype = torch.float16 if self._use_fp16 else torch.float32
+
+        # Determine optimal dtype: prefer BF16 on CUDA (wider dynamic range), FP16 on MPS
+        self._use_low_precision = supports_amp(self.device)
+        if self._use_low_precision:
+            if self.device.type == "cuda" and torch.cuda.is_available():
+                bf16_supported = getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+                self.tensor_dtype = torch.bfloat16 if bf16_supported else torch.float16
+            elif self.device.type == "mps":
+                self.tensor_dtype = torch.float16
+            else:
+                self.tensor_dtype = torch.float32
+        else:
+            self.tensor_dtype = torch.float32
 
         # Initialize Zarr paths
         if isinstance(zarr_paths, str):
@@ -146,7 +157,9 @@ class ClimateTextDataLoader(IterableDataset):
         # Detect actual grid size from the first available dataset
         actual_grid_points = self._detect_grid_size()
 
-        self.location_generator = LocationMaskGenerator(grid_points=actual_grid_points, seed=seed)
+        self.location_generator = LocationMaskGenerator(
+            grid_points=actual_grid_points, seed=seed, device=self.device
+        )
         self.statistics_computer = ClimateStatisticsComputer()
         self.prompt_generator = ClimatePromptGenerator()  # Uses default templates directory
 
@@ -154,7 +167,10 @@ class ClimateTextDataLoader(IterableDataset):
         print(f"Loading tokenizer: {mistral_model_name}")
         from transformers import AutoTokenizer
 
-        self.mistral_tokenizer = AutoTokenizer.from_pretrained(mistral_model_name)
+        self.mistral_tokenizer = AutoTokenizer.from_pretrained(
+            mistral_model_name,
+            trust_remote_code=True,
+        )
 
         # Ensure tokenizer has pad token (required for padding)
         if self.mistral_tokenizer.pad_token is None:
@@ -175,27 +191,36 @@ class ClimateTextDataLoader(IterableDataset):
             self.mistral_tokenizer.pad_token = self.mistral_tokenizer.eos_token
 
         if self.cache_mistral_model:
-            from transformers import AutoModelForCausalLM
+            from transformers import (
+                FineGrainedFP8Config,
+                Mistral3ForConditionalGeneration,
+            )
 
             target_device = self.device
-            torch_dtype = torch.float16 if target_device.type != "cpu" else torch.float32
 
-            print(f"  Loading model for {target_device} ({torch_dtype})...")
+            print(f"  Loading model for {target_device} (BF16 dequantized)...")
 
-            load_kwargs = {
-                "torch_dtype": torch_dtype,
+            # Use FineGrainedFP8Config with dequantize to convert FP8 weights to BF16
+            load_kwargs: dict = {
+                "quantization_config": FineGrainedFP8Config(dequantize=True),
                 "low_cpu_mem_usage": True,
+                "trust_remote_code": True,
             }
+
+            if target_device.type == "cuda":
+                load_kwargs["device_map"] = "auto"
+            else:
+                load_kwargs["device_map"] = "cpu"
 
             if target_device.type == "mps":
                 load_kwargs["attn_implementation"] = "eager"
 
-            self.mistral_model = AutoModelForCausalLM.from_pretrained(
+            self.mistral_model = Mistral3ForConditionalGeneration.from_pretrained(
                 model_name,
                 **load_kwargs,
             )
 
-            if target_device.type != "cpu":
+            if target_device.type not in ("cpu", "cuda"):
                 print(f"   Moving model to {target_device}...")
                 self.mistral_model = self.mistral_model.to(target_device)
 
@@ -206,7 +231,7 @@ class ClimateTextDataLoader(IterableDataset):
                 self.mistral_model.gradient_checkpointing_enable()
                 print("  ✓ Gradient checkpointing enabled")
 
-            print(f"  ✓ Mistral model loaded in {torch_dtype} mode on {target_device}")
+            print(f"  ✓ Mistral model loaded (BF16 dequantized) on {target_device}")
         else:
             print("  ℹ Mistral will be loaded per-sample (memory efficient mode)")
 
@@ -371,6 +396,9 @@ class ClimateTextDataLoader(IterableDataset):
 
         # Move to target device explicitly
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+        # Remove token_type_ids if present - Mistral3 doesn't support it
+        inputs.pop("token_type_ids", None)
 
         # Generate
         with torch.no_grad():

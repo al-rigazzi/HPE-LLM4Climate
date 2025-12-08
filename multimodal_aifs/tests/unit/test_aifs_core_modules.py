@@ -709,6 +709,15 @@ def test_validate_checkpoint_verbose_output(
 
 def test_encoder_utils_main_block_executes(capsys):
     """Test encoder utils main block executes correctly."""
-    runpy.run_module("multimodal_aifs.core.aifs_encoder_utils", run_name="__main__")
-    output = capsys.readouterr().out
-    assert "AIFS Encoder Utils" in output
+    # Remove module from sys.modules to avoid RuntimeWarning about
+    # module found in sys.modules prior to execution
+    module_name = "multimodal_aifs.core.aifs_encoder_utils"
+    cached_module = sys.modules.pop(module_name, None)
+    try:
+        runpy.run_module(module_name, run_name="__main__", alter_sys=False)
+        output = capsys.readouterr().out
+        assert "AIFS Encoder Utils" in output
+    finally:
+        # Restore the cached module to avoid breaking other tests
+        if cached_module is not None:
+            sys.modules[module_name] = cached_module

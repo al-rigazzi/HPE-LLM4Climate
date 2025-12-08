@@ -15,14 +15,11 @@
 
 # pylint: disable=protected-access
 
-import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import numpy as np
 import pytest
 import torch
-import zarr
 
 from multimodal_aifs.training import ClimateTextDataLoader
 from multimodal_aifs.training.climate_dataloader import TrainingSample
@@ -35,55 +32,11 @@ class TestClimateTextDataLoaderReal:
 
     @pytest.fixture
     def real_test_zarr_path(self):
-        """Create a realistic Zarr file for testing with proper climate data structure."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            zarr_path = Path(temp_dir) / "realistic_test.zarr"
-
-            # Create realistic climate data structure
-            root = zarr.open(str(zarr_path), mode="w")
-
-            # Time dimension (small for testing)
-            n_timesteps = 10
-            root.create_dataset("time", data=np.arange(n_timesteps))
-
-            # Grid points (consistent for all variables)
-            grid_points = 2560  # Reduced from real size for testing
-
-            # All variables must have the same grid_points dimension
-            # Surface variables
-            for var_name in ["2t", "10u", "10v", "msl", "tp"]:
-                root.create_dataset(
-                    var_name,
-                    data=np.random.randn(n_timesteps, grid_points).astype(np.float32),
-                    chunks=(1, grid_points),
-                )
-
-            # Pressure level variables (same grid_points)
-            levels = [500, 700, 850]  # Fewer levels for testing
-            for level in levels:
-                for var in ["z", "t", "u", "v", "q", "w"]:
-                    var_name = f"{var}_{level}"
-                    root.create_dataset(
-                        var_name,
-                        data=np.random.randn(n_timesteps, grid_points).astype(np.float32),
-                        chunks=(1, grid_points),
-                    )
-
-            # Grid point coordinates (same grid_points)
-            root.create_dataset(
-                "cos_latitude", data=np.random.uniform(-1, 1, grid_points).astype(np.float32)
-            )
-            root.create_dataset(
-                "sin_latitude", data=np.random.uniform(-1, 1, grid_points).astype(np.float32)
-            )
-            root.create_dataset(
-                "cos_longitude", data=np.random.uniform(-1, 1, grid_points).astype(np.float32)
-            )
-            root.create_dataset(
-                "sin_longitude", data=np.random.uniform(-1, 1, grid_points).astype(np.float32)
-            )
-
-            yield str(zarr_path)
+        """Return path to the real ECMWF Zarr file for testing."""
+        zarr_path = Path(__file__).parent.parent.parent.parent / "data" / "real_ecmwf_latest.zarr"
+        if not zarr_path.exists():
+            pytest.skip(f"Real ECMWF Zarr file not found at {zarr_path}")
+        yield str(zarr_path)
 
     @pytest.fixture
     def real_dataloader_no_model(self, real_test_zarr_path):
@@ -95,7 +48,7 @@ class TestClimateTextDataLoaderReal:
             # Let it auto-detect device (will use MPS on macOS to catch compatibility issues)
             dataloader = ClimateTextDataLoader(
                 zarr_paths=[real_test_zarr_path],
-                mistral_model_name="mistralai/Ministral-8B-Instruct-2410",
+                mistral_model_name="mistralai/Ministral-3-8B-Instruct-2512",
                 batch_size=2,
                 samples_per_epoch=5,
                 max_prompt_length=512,
@@ -143,7 +96,7 @@ class TestClimateTextDataLoaderReal:
 
             dataloader = ClimateTextDataLoader(
                 zarr_paths=[real_test_zarr_path],
-                mistral_model_name="mistralai/Ministral-8B-Instruct-2410",
+                mistral_model_name="mistralai/Ministral-3-8B-Instruct-2512",
                 batch_size=4,
                 samples_per_epoch=20,
                 max_prompt_length=1024,

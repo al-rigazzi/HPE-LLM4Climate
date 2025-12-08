@@ -4,12 +4,17 @@ pandas
 xarray
 
 # Deep learning framework
-torch==2.5.0
-torchvision==0.20.0
+# Note: torch 2.9.1 required for Ministral-3-8B-Instruct-2512 support
+torch>=2.9.0
+torchvision>=0.24.0
+torchaudio>=2.9.0
 torch_geometric==2.4.0
+triton>=3.5.0  # Required for torch 2.9+
 
 # Natural Language Processing and Transformers
-transformers>=4.21.0
+# Note: Ministral-3-8B-Instruct-2512 requires transformers from git main (5.0.0.dev)
+transformers @ git+https://github.com/huggingface/transformers
+mistral_common>=1.8.0  # Required for Ministral-3 tokenizer
 
 # Quantization support for efficient LLM loading (CUDA only)
 # Note: bitsandbytes requires CUDA. On MPS/CPU, models load in full precision.
