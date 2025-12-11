@@ -32,15 +32,9 @@ jobs:
       with:
         path: |
           ${{ runner.os == 'ubuntu-latest' && '~/.cache/pip' || '~/Library/Caches/pip' }}
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'multimodal_aifs/requirements-aifs.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'multimodal_aifs/requirements-aifs-ci.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-
-    - name: Install system dependencies (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libhdf5-dev pkg-config
 
     - name: Install system dependencies (macOS)
       if: matrix.os == 'macos-latest'
@@ -60,7 +54,7 @@ jobs:
         if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
           export PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
         fi
-        pip install numpy pandas xarray zarr dask[array] h5py netcdf4
+        pip install numpy pandas xarray dask[array] h5py netcdf4
 
     - name: Install main requirements
       run: |
@@ -76,7 +70,7 @@ jobs:
         # Install scientific computing packages first
         pip install scipy scikit-learn matplotlib seaborn plotly
         # Try to install AIFS requirements, but don't fail if some packages are not available
-        pip install -r multimodal_aifs/requirements-aifs.txt || true
+        pip install -r multimodal_aifs/requirements-aifs-ci.txt || true
         # Ensure critical packages are installed
         pip install zarr xarray dask[array] h5py netcdf4 || true
         # Install additional ML packages (transformers is installed from git in requirements.txt)

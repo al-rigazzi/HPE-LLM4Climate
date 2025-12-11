@@ -1,0 +1,31 @@
+# AIFS Dependencies - Updated for AIFS-ENS-1.0 (CI version - excludes flash-attn)
+# Core AIFS packages
+anemoi-inference[huggingface]==0.6.0
+anemoi-models==0.6.0
+anemoi-graphs==0.6.0
+anemoi-datasets==0.5.23
+einops>=0.8.0
+
+# PyTorch - must match main requirements.txt
+torch>=2.9.0
+
+# Additional dependencies from AIFS notebook
+earthkit-regrid==0.4.0
+ecmwf-opendata
+
+# Zarr support for modern climate data formats
+zarr==2.18.4
+xarray==2025.11.0
+dask[array]>=2023.1.0
+
+# Optional cloud storage support
+s3fs>=2023.1.0  # For S3 Zarr datasets
+gcsfs>=2023.1.0  # For Google Cloud Zarr datasets
+
+# Flash attention disabled in CI due to build issues
+# flash-attn requires torch during build process which fails in isolated environments
+# AIFS works on CPU/MPS without flash_attn using PyTorch-based mock implementation
+
+# Environment variables for memory optimization:
+# PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
+# ANEMOI_INFERENCE_NUM_CHUNKS='16'  # Reduces memory from 38GB to 24GB
