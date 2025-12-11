@@ -458,7 +458,20 @@ def create_mock_zarr_dataset(output_path: str) -> str:
             # Default: standard normal
             data = rng.standard_normal(size=shape).astype(dtype)
 
-        root.create_dataset(var_name, data=data, chunks=shape, dtype=dtype)
+        # Create the dataset
+        ds = root.create_dataset(var_name, data=data, chunks=shape, dtype=dtype)
+
+        # Add _ARRAY_DIMENSIONS attribute based on shape
+        if len(shape) == 1:
+            if shape[0] == 542080:  # grid_point dimension
+                ds.attrs["_ARRAY_DIMENSIONS"] = ["grid_point"]
+            elif shape[0] == 2:  # time dimension
+                ds.attrs["_ARRAY_DIMENSIONS"] = ["time"]
+        elif len(shape) == 2 and shape == (2, 542080):
+            ds.attrs["_ARRAY_DIMENSIONS"] = ["time", "grid_point"]
+
+    # Consolidate metadata for xarray compatibility
+    zarr.consolidate_metadata(store)
 
     # Add zarr metadata
     root.attrs["description"] = "Mock ECMWF dataset for CI testing"
