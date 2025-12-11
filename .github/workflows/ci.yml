@@ -61,17 +61,20 @@ jobs:
 
     - name: Install core dependencies
       run: |
-        # Install PyTorch with appropriate backend for the platform
+        # On Ubuntu CI, use CPU-only PyTorch wheels for faster installation
         if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-          pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu
-        else
-          pip install torch==2.4.0 torchvision==0.19.0
+          export PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
         fi
         pip install numpy pandas xarray zarr dask[array] h5py netcdf4
 
     - name: Install main requirements
       run: |
-        pip install -r requirements.txt
+        # On Ubuntu CI, use CPU-only PyTorch wheels
+        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+        else
+          pip install -r requirements.txt
+        fi
 
     - name: Install AIFS requirements (with fallback)
       run: |
@@ -81,8 +84,8 @@ jobs:
         pip install -r multimodal_aifs/requirements-aifs.txt || true
         # Ensure critical packages are installed
         pip install zarr xarray dask[array] h5py netcdf4 || true
-        # Install additional ML packages that might be needed
-        pip install transformers accelerate datasets || true
+        # Install additional ML packages (transformers is installed from git in requirements.txt)
+        pip install accelerate datasets || true
 
     - name: Install test dependencies
       run: |
