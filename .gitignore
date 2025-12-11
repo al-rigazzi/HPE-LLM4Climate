@@ -31,3 +31,6 @@ coverage*
 
 # Local development files
 pr_description.md
+
+# Downloaded test data (regenerated via scripts/download_real_ecmwf_data.py)
+data/real_ecmwf_latest.zarr/

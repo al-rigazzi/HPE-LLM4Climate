@@ -363,6 +363,12 @@ def download_real_ecmwf_data(output_path: str, date: datetime | None = None):
     return output_path
 
 
+# Default fixed date for reproducibility.
+# This matches the date used for data/real_ecmwf_latest.zarr which can be used in tests.
+# The file contains timesteps at 2025-10-10 00:00 (t-6h) and 2025-10-10 06:00 (t0).
+DEFAULT_DATE = "2025-10-10 06:00"
+
+
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -377,9 +383,11 @@ def main():
         "--date",
         "-d",
         type=str,
+        default=DEFAULT_DATE,
         help=(
             "Target date (YYYY-MM-DD or YYYY-MM-DD HH:MM). "
-            "If not specified, uses latest available from ECMWF."
+            f"Defaults to {DEFAULT_DATE} for reproducibility. "
+            "Use 'latest' to fetch the most recent available data from ECMWF."
         ),
     )
 
@@ -388,7 +396,10 @@ def main():
     args = parser.parse_args()
 
     target_date = None
-    if args.date:
+    if args.date.lower() == "latest":
+        target_date = None  # Will use client.latest()
+        print("Using latest available date from ECMWF")
+    else:
         try:
             # Try full datetime format first, then just date
             if " " in args.date:
