@@ -15,7 +15,7 @@ ecmwf-opendata
 
 # Zarr support for modern climate data formats
 zarr==2.18.4
-xarray>=2023.1.0
+xarray==2025.11.0
 dask[array]>=2023.1.0
 
 # Optional cloud storage support
