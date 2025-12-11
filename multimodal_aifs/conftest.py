@@ -310,44 +310,221 @@ def llm_mock_status():
     }
 
 
+# =================== MOCK ZARR DATASET ===================
+# Exact structure matching real ECMWF data from download_real_ecmwf_data.py
+# Grid: 542080 points, Time: 2 timesteps, 94 variables total
+MOCK_ZARR_SPEC: dict[str, tuple[tuple[int, ...], str]] = {
+    # Coordinate variables
+    "grid_point": ((542080,), "int64"),
+    "latitude": ((542080,), "float64"),
+    "longitude": ((542080,), "float64"),
+    "time": ((2,), "int64"),
+    # All meteorological variables: (2, 542080) float64
+    **{
+        var: ((2, 542080), "float64")
+        for var in [
+            "100u",
+            "100v",
+            "10u",
+            "10v",
+            "2d",
+            "2t",
+            "cos_julian_day",
+            "cos_latitude",
+            "cos_local_time",
+            "cos_longitude",
+            "insolation",
+            "lsm",
+            "msl",
+            "sdor",
+            "sin_julian_day",
+            "sin_latitude",
+            "sin_local_time",
+            "sin_longitude",
+            "skt",
+            "slor",
+            "sp",
+            "stl1",
+            "stl2",
+            "swvl1",
+            "swvl2",
+            "tcw",
+            "z",
+        ]
+        + [f"q_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"t_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"u_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"v_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"w_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"z_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+    },
+}
+
+
+def create_mock_zarr_dataset(output_path: str) -> str:
+    """
+    Create a mock Zarr dataset with exact same structure as real ECMWF data.
+
+    The mock dataset has:
+    - 94 variables (same as real data)
+    - 542080 grid points (AIFS O96 reduced Gaussian grid)
+    - 2 timesteps
+    - Proper dtypes (float64 for data, int64 for indices/time)
+    - Realistic value ranges for each variable type
+
+    Args:
+        output_path: Path where the mock zarr dataset will be created
+
+    Returns:
+        The output path
+    """
+    import shutil
+
+    import zarr
+
+    output = Path(output_path)
+
+    # Remove existing mock dataset if present
+    if output.exists():
+        shutil.rmtree(output)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    # Create zarr store
+    store = zarr.DirectoryStore(str(output))
+    root = zarr.group(store, overwrite=True)
+
+    # Use a fixed seed for reproducibility
+    rng = np.random.default_rng(42)
+
+    for var_name, (shape, dtype) in MOCK_ZARR_SPEC.items():
+        if var_name == "grid_point":
+            data = np.arange(shape[0], dtype=dtype)
+        elif var_name == "latitude":
+            # Latitude range: -90 to 90
+            data = rng.uniform(-90, 90, size=shape).astype(dtype)
+        elif var_name == "longitude":
+            # Longitude range: 0 to 360
+            data = rng.uniform(0, 360, size=shape).astype(dtype)
+        elif var_name == "time":
+            # Two timesteps as nanoseconds since epoch
+            data = np.array([1733824800000000000, 1733846400000000000], dtype=dtype)
+        elif var_name.startswith("cos_") or var_name.startswith("sin_"):
+            # Trigonometric values: -1 to 1
+            data = rng.uniform(-1, 1, size=shape).astype(dtype)
+        elif var_name.startswith("t_") or var_name == "2t" or var_name == "skt":
+            # Temperature in Kelvin: ~200-320K
+            data = rng.uniform(200, 320, size=shape).astype(dtype)
+        elif var_name == "2d":
+            # Dewpoint temperature in Kelvin
+            data = rng.uniform(200, 300, size=shape).astype(dtype)
+        elif var_name.startswith("q_"):
+            # Specific humidity: 0-0.03 kg/kg
+            data = rng.uniform(0, 0.03, size=shape).astype(dtype)
+        elif var_name.startswith(("u_", "v_", "10u", "10v", "100u", "100v")):
+            # Wind components: -50 to 50 m/s
+            data = rng.uniform(-50, 50, size=shape).astype(dtype)
+        elif var_name.startswith("w_"):
+            # Vertical velocity: -1 to 1 Pa/s
+            data = rng.uniform(-1, 1, size=shape).astype(dtype)
+        elif var_name.startswith("z_") or var_name == "z":
+            # Geopotential: 0-60000 m^2/s^2
+            data = rng.uniform(0, 60000, size=shape).astype(dtype)
+        elif var_name == "sp":
+            # Surface pressure: 50000-105000 Pa
+            data = rng.uniform(50000, 105000, size=shape).astype(dtype)
+        elif var_name == "msl":
+            # Mean sea level pressure: 95000-105000 Pa
+            data = rng.uniform(95000, 105000, size=shape).astype(dtype)
+        elif var_name == "lsm":
+            # Land-sea mask: 0 or 1
+            data = rng.choice([0.0, 1.0], size=shape).astype(dtype)
+        elif var_name == "insolation":
+            # Insolation: 0-1400 W/m^2
+            data = rng.uniform(0, 1400, size=shape).astype(dtype)
+        elif var_name == "tcw":
+            # Total column water: 0-80 kg/m^2
+            data = rng.uniform(0, 80, size=shape).astype(dtype)
+        elif var_name in ("sdor", "slor"):
+            # Orography standard deviation / slope: 0-1000
+            data = rng.uniform(0, 1000, size=shape).astype(dtype)
+        elif var_name.startswith("stl"):
+            # Soil temperature: 250-310 K
+            data = rng.uniform(250, 310, size=shape).astype(dtype)
+        elif var_name.startswith("swvl"):
+            # Soil water: 0-0.5 m^3/m^3
+            data = rng.uniform(0, 0.5, size=shape).astype(dtype)
+        else:
+            # Default: standard normal
+            data = rng.standard_normal(size=shape).astype(dtype)
+
+        root.create_dataset(var_name, data=data, chunks=shape, dtype=dtype)
+
+    # Add zarr metadata
+    root.attrs["description"] = "Mock ECMWF dataset for CI testing"
+    root.attrs["source"] = "conftest.py:create_mock_zarr_dataset"
+    root.attrs["n_variables"] = len(MOCK_ZARR_SPEC)
+    root.attrs["grid_points"] = 542080
+    root.attrs["timesteps"] = 2
+
+    return str(output)
+
+
 @pytest.fixture(scope="session")
 def zarr_dataset_path():
-    """Get the real ECMWF zarr dataset path for testing."""
-    # Use real ECMWF data instead of synthetic data
-    zarr_path = "data/real_ecmwf_latest.zarr"
+    """Get the Zarr dataset path for testing.
 
-    print(f"Using real ECMWF Zarr dataset: {zarr_path}")
+    Uses real ECMWF data by default (USE_REAL_ZARR=true).
+    Set USE_REAL_ZARR=false to use mock data (for CI without download access).
+    """
+    use_real_zarr = get_env_bool("USE_REAL_ZARR", True)
+
+    if use_real_zarr:
+        zarr_path = "data/real_ecmwf_latest.zarr"
+        print(f"Using real ECMWF Zarr dataset: {zarr_path}")
+    else:
+        zarr_path = "data/mock_ecmwf_test.zarr"
+        print(f"Using mock Zarr dataset: {zarr_path} (USE_REAL_ZARR=false)")
 
     return zarr_path
 
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
-    """Ensure real ECMWF Zarr dataset exists for integration tests."""
+    """Ensure Zarr dataset exists for tests.
+
+    If USE_REAL_ZARR=true (default): Downloads real ECMWF data if missing.
+    If USE_REAL_ZARR=false: Creates mock dataset with exact same structure.
+    """
+    use_real_zarr = get_env_bool("USE_REAL_ZARR", True)
     zarr_path = Path(zarr_dataset_path)
 
     # Check if dataset already exists
     if zarr_path.exists():
-        print(f"Real ECMWF Zarr dataset already exists: {zarr_path}")
+        print(f"Zarr dataset already exists: {zarr_path}")
         return str(zarr_path)
 
-    print("📥 Downloading real ECMWF data for integration tests...")
+    if not use_real_zarr:
+        # Create mock dataset for CI
+        print("Creating mock Zarr dataset for CI testing (USE_REAL_ZARR=false)...")
+        create_mock_zarr_dataset(str(zarr_path))
+        print(f"Mock dataset created: {zarr_path}")
+        return str(zarr_path)
+
+    # Download real ECMWF data
+    print("Downloading real ECMWF data for tests...")
     print("This will download real meteorological data and may take a few minutes.")
 
     try:
-        # Import the download script
         import subprocess
 
-        # Ensure data directory exists
         zarr_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Download real ECMWF data using the download script
         script_path = Path(__file__).parent.parent / "scripts" / "download_real_ecmwf_data.py"
 
         if not script_path.exists():
             raise FileNotFoundError(f"Download script not found: {script_path}")
 
-        # Run the download script
         result = subprocess.run(
             [sys.executable, str(script_path), "--output", str(zarr_path)],
             capture_output=True,
@@ -367,9 +544,8 @@ def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
     except Exception as e:
         print(f"Failed to download real ECMWF dataset: {e}")
         print(f"   Error type: {type(e).__name__}")
-        # Fail the test session since we require real data
         raise RuntimeError(
-            f"Cannot run tests without real ECMWF data. "
+            f"Cannot run tests without ECMWF data. "
             f"Please run: python scripts/download_real_ecmwf_data.py --output {zarr_path}"
         ) from e
 

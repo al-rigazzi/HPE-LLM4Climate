@@ -21,11 +21,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        lfs: true
-
-    - name: Checkout LFS objects
-      run: git lfs pull
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -99,6 +94,7 @@ jobs:
       run: |
         echo "USE_MOCK_LLM=true" >> $GITHUB_ENV
         echo "USE_QUANTIZATION=false" >> $GITHUB_ENV
+        echo "USE_REAL_ZARR=false" >> $GITHUB_ENV
         echo "PYTHONPATH=." >> $GITHUB_ENV
         # Suppress zarr warnings to clean up test output
         echo "ZARR_V3_EXPERIMENTAL_API=1" >> $GITHUB_ENV
