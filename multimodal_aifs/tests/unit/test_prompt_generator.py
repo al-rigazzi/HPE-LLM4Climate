@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for ClimatePromptGenerator with Jinja2 templates."""
-
 # pylint: disable=protected-access
-
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock
@@ -25,9 +23,8 @@ from multimodal_aifs.training.location_masks import Location
 from multimodal_aifs.training.prompt_generator import ClimatePromptGenerator
 from multimodal_aifs.training.statistics_computer import VariableStatistics
 
+
 # pylint: disable=too-many-public-methods
-
-
 class TestClimatePromptGenerator:
     """Test suite for the Jinja2-based ClimatePromptGenerator."""
 
@@ -51,9 +48,7 @@ class TestClimatePromptGenerator:
                 min_value=285.0,
                 max_value=295.0,
                 mean_value=290.0,
-                grad_magnitude=0.1,
-                rot_magnitude=0.0,
-                div_magnitude=0.0,
+                std_value=1.0,
                 unit="K",
                 description="2m temperature",
             ),
@@ -62,9 +57,7 @@ class TestClimatePromptGenerator:
                 min_value=-5.0,
                 max_value=10.0,
                 mean_value=2.5,
-                grad_magnitude=0.05,
-                rot_magnitude=0.0,
-                div_magnitude=0.0,
+                std_value=1.0,
                 unit="m/s",
                 description="10m u-component of wind",
             ),
@@ -73,9 +66,7 @@ class TestClimatePromptGenerator:
                 min_value=-3.0,
                 max_value=8.0,
                 mean_value=1.5,
-                grad_magnitude=0.04,
-                rot_magnitude=0.0,
-                div_magnitude=0.0,
+                std_value=1.0,
                 unit="m/s",
                 description="10m v-component of wind",
             ),
@@ -84,9 +75,7 @@ class TestClimatePromptGenerator:
                 min_value=99000.0,
                 max_value=102000.0,
                 mean_value=101000.0,
-                grad_magnitude=50.0,
-                rot_magnitude=0.0,
-                div_magnitude=0.0,
+                std_value=1.0,
                 unit="Pa",
                 description="mean sea level pressure",
             ),
@@ -95,9 +84,7 @@ class TestClimatePromptGenerator:
                 min_value=0.0,
                 max_value=0.005,
                 mean_value=0.001,
-                grad_magnitude=0.0001,
-                rot_magnitude=0.0,
-                div_magnitude=0.0,
+                std_value=1.0,
                 unit="m",
                 description="total precipitation",
             ),
@@ -122,11 +109,9 @@ tp          0.0      0.005    0.001    0.0001"""
     def test_initialization_default_templates(self):
         """Test that generator initializes with default template directory."""
         generator = ClimatePromptGenerator()
-
         # Check that templates directory exists
         assert generator.templates_dir.exists()
         assert generator.templates_dir.name == "prompts"
-
         # Check that required template files exist
         required_templates = [
             "weather_description.jinja2",
@@ -136,7 +121,6 @@ tp          0.0      0.005    0.001    0.0001"""
             "basic.jinja2",
             "mistral_chat_wrapper.jinja2",
         ]
-
         for template in required_templates:
             template_path = generator.templates_dir / template
             assert template_path.exists(), f"Template {template} not found"
@@ -145,11 +129,9 @@ tp          0.0      0.005    0.001    0.0001"""
         """Test initialization with custom templates directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
-
             # Create a test template
             test_template = temp_path / "test.jinja2"
             test_template.write_text("Hello {{ name }}!")
-
             generator = ClimatePromptGenerator(templates_dir=temp_path)
             assert generator.templates_dir == temp_path
 
@@ -163,7 +145,6 @@ tp          0.0      0.005    0.001    0.0001"""
             statistics_table=statistics_table,
             task_type="weather_description",
         )
-
         # Check prompt structure
         assert "expert meteorologist" in prompt
         assert mock_location.name in prompt
@@ -171,13 +152,11 @@ tp          0.0      0.005    0.001    0.0001"""
         assert "45.00°N" in prompt
         assert "-120.00°E" in prompt
         assert statistics_table in prompt
-
         # Check task-specific content
         assert "Temperature conditions and thermal comfort" in prompt
         assert "Wind patterns and air circulation" in prompt
         assert "Precipitation and moisture levels" in prompt
         assert "Pressure systems" in prompt
-
         # Check context summary is included
         assert "average temperature" in prompt or "Current conditions" in prompt
 
@@ -191,12 +170,10 @@ tp          0.0      0.005    0.001    0.0001"""
             statistics_table=statistics_table,
             task_type="forecast",
         )
-
         # Check prompt structure
         assert "meteorological forecaster" in prompt
         assert mock_location.name in prompt
         assert statistics_table in prompt
-
         # Check forecast-specific content
         assert "short-term forecast" in prompt
         assert "6-12 hours" in prompt
@@ -213,13 +190,11 @@ tp          0.0      0.005    0.001    0.0001"""
             statistics_table=statistics_table,
             task_type="anomaly_detection",
         )
-
         # Check prompt structure
         assert "climate scientist" in prompt
         assert "anomalies" in prompt
         assert mock_location.name in prompt
         assert statistics_table in prompt
-
         # Check anomaly-specific content
         assert "Temperature extremes" in prompt
         assert "Abnormal pressure patterns" in prompt
@@ -232,13 +207,11 @@ tp          0.0      0.005    0.001    0.0001"""
         prompt = prompt_generator.generate_multimodal_training_prompt(
             location=mock_location, statistics=mock_statistics, statistics_table=statistics_table
         )
-
         # Check prompt structure (should be simpler)
         assert mock_location.description in prompt
         assert statistics_table in prompt
         assert "weather conditions" in prompt
         assert "temperature, wind, precipitation" in prompt
-
         # Should be more concise than other prompts
         assert len(prompt) < 1000
 
@@ -252,19 +225,15 @@ tp          0.0      0.005    0.001    0.0001"""
             statistics_table=statistics_table,
             task_type="basic",
         )
-
         # Check that it's a Q&A format
         assert "Q:" in prompt
         assert "A:" in prompt
-
         # Should contain human-readable variable descriptions
         descriptions = ["temperature at 2m", "wind", "pressure", "precipitation"]
         assert any(desc in prompt for desc in descriptions)
-
         # Should contain question patterns
         question_patterns = ["What is the", "What are the"]
         assert any(pattern in prompt for pattern in question_patterns)
-
         # Should contain expected statistical terms
         stat_terms = ["minimum", "maximum", "average"]
         assert any(term in prompt for term in stat_terms)
@@ -282,7 +251,6 @@ tp          0.0      0.005    0.001    0.0001"""
                 task_type="basic",
             )
             prompts.append(prompt)
-
         # Should have some variation in questions (not all identical)
         unique_prompts = set(prompts)
         assert len(unique_prompts) > 1, "Basic prompts should show some variation"
@@ -296,9 +264,7 @@ tp          0.0      0.005    0.001    0.0001"""
                 min_value=273.15,  # 0°C in Kelvin
                 max_value=293.15,  # 20°C in Kelvin
                 mean_value=283.15,  # 10°C in Kelvin
-                grad_magnitude=0.1,
-                rot_magnitude=0.0,
-                div_magnitude=0.0,
+                std_value=1.0,
                 unit="K",
                 description="2m temperature",
             ),
@@ -307,9 +273,7 @@ tp          0.0      0.005    0.001    0.0001"""
                 min_value=101325.0,  # Standard pressure in Pa
                 max_value=101325.0,
                 mean_value=101325.0,
-                grad_magnitude=0.0,
-                rot_magnitude=0.0,
-                div_magnitude=0.0,
+                std_value=1.0,
                 unit="Pa",
                 description="mean sea level pressure",
             ),
@@ -318,19 +282,15 @@ tp          0.0      0.005    0.001    0.0001"""
                 min_value=0.001,  # 1mm in meters
                 max_value=0.001,
                 mean_value=0.001,
-                grad_magnitude=0.0,
-                rot_magnitude=0.0,
-                div_magnitude=0.0,
+                std_value=1.0,
                 unit="m",
                 description="total precipitation",
             ),
         ]
-
         # Generate multiple prompts to test conversions
         found_temp = False
         found_pressure = False
         found_precip = False
-
         for _ in range(50):
             prompt = prompt_generator.generate_analysis_prompt(
                 location=mock_location,
@@ -338,11 +298,9 @@ tp          0.0      0.005    0.001    0.0001"""
                 statistics_table=statistics_table,
                 task_type="basic",
             )
-
             # Extract answer part (after "A:")
             if "A:" in prompt:
                 answer = prompt.split("A:")[1].strip()
-
                 # Check for converted units in answers only
                 if "temperature" in answer:
                     # Temperature should be in Celsius
@@ -351,13 +309,11 @@ tp          0.0      0.005    0.001    0.0001"""
                             "°C" in answer
                         ), f"Temperature should be converted to Celsius in: {answer}"
                         found_temp = True
-
                 if "pressure" in answer:
                     # Pressure should be in hPa
                     if "1013.25" in answer:
                         assert "hPa" in answer, f"Pressure should be converted to hPa in: {answer}"
                         found_pressure = True
-
                 if "precipitation" in answer:
                     # Precipitation should be in mm
                     if "1.0" in answer:
@@ -365,7 +321,6 @@ tp          0.0      0.005    0.001    0.0001"""
                             "mm" in answer
                         ), f"Precipitation should be converted to mm in: {answer}"
                         found_precip = True
-
         # Verify we tested at least some conversions
         assert (
             found_temp or found_pressure or found_precip
@@ -374,11 +329,9 @@ tp          0.0      0.005    0.001    0.0001"""
     def test_mistral_chat_formatting(self, prompt_generator):
         """Test Mistral chat format wrapper."""
         test_prompt = "This is a test prompt."
-
         # Test without system message
         formatted = prompt_generator.format_for_mistral(test_prompt)
         assert formatted == "<s>[INST] This is a test prompt. [/INST]"
-
         # Test with system message
         system_msg = "You are a helpful assistant."
         formatted_with_system = prompt_generator.format_for_mistral(test_prompt, system_msg)
@@ -400,7 +353,6 @@ tp          0.0      0.005    0.001    0.0001"""
     def test_context_summary_generation(self, prompt_generator, mock_statistics):
         """Test context summary generation from statistics."""
         context_summary = prompt_generator._build_context_summary(mock_statistics)
-
         # Should include temperature, wind, pressure, precipitation
         assert "16.9°C" in context_summary  # 290K - 273.15
         assert "2.9 m/s" in context_summary  # wind speed calculation
@@ -415,29 +367,23 @@ tp          0.0      0.005    0.001    0.0001"""
                 min_value=0.0,
                 max_value=1.0,
                 mean_value=0.5,
-                grad_magnitude=0.1,
-                rot_magnitude=0.0,
-                div_magnitude=0.0,
+                std_value=1.0,
                 unit="unitless",
                 description="irrelevant variable",
             )
         ]
-
         context_summary = prompt_generator._build_context_summary(empty_stats)
         assert context_summary == "various weather conditions"
 
     def test_extract_key_insights(self, prompt_generator, mock_statistics):
         """Test key insights extraction."""
         insights = prompt_generator.extract_key_insights(mock_statistics)
-
         # Temperature insight
         assert "temperature" in insights
         assert "Mild" in insights["temperature"]  # 16.9°C should be "Mild"
-
         # Wind insight
         assert "wind" in insights
         assert "Light winds" in insights["wind"]  # 2.9 m/s should be "Light"
-
         # Pressure insight
         assert "pressure" in insights
         assert "Normal pressure" in insights["pressure"]  # 1010 hPa is normal
@@ -445,11 +391,9 @@ tp          0.0      0.005    0.001    0.0001"""
     def test_create_instruction_format(self, prompt_generator, mock_location, statistics_table):
         """Test instruction format creation."""
         instruction = "Analyze the weather data."
-
         inst, input_data = prompt_generator.create_instruction_format(
             location=mock_location, statistics_table=statistics_table, instruction=instruction
         )
-
         assert inst == instruction
         assert mock_location.description in input_data
         assert "45.00°N" in input_data
@@ -467,7 +411,6 @@ tp          0.0      0.005    0.001    0.0001"""
             statistics_table=statistics_table,
             task_type="weather_description",
         )
-
         # Should still generate a valid prompt
         assert len(prompt) > 0
         assert mock_location.name in prompt
@@ -483,7 +426,6 @@ tp          0.0      0.005    0.001    0.0001"""
             statistics_table=statistics_table,
             task_type="weather_description",
         )
-
         # Should not contain any unrendered Jinja2 syntax
         assert "{{" not in prompt
         assert "}}" not in prompt
@@ -495,7 +437,6 @@ tp          0.0      0.005    0.001    0.0001"""
     ):
         """Test that all documented task types work."""
         task_types = ["weather_description", "forecast", "anomaly_detection"]
-
         for task_type in task_types:
             prompt = prompt_generator.generate_analysis_prompt(
                 location=mock_location,
@@ -503,7 +444,6 @@ tp          0.0      0.005    0.001    0.0001"""
                 statistics_table=statistics_table,
                 task_type=task_type,
             )
-
             # Each should produce a non-empty prompt
             assert len(prompt) > 100
             assert mock_location.name in prompt
@@ -528,7 +468,6 @@ class TestPromptTemplateFiles:
             "basic.jinja2",
             "mistral_chat_wrapper.jinja2",
         ]
-
         for template_file in required_templates:
             template_path = templates_dir / template_file
             assert template_path.exists(), f"Template file {template_file} not found"
@@ -539,10 +478,8 @@ class TestPromptTemplateFiles:
         from jinja2 import Environment, FileSystemLoader, TemplateSyntaxError
 
         env = Environment(loader=FileSystemLoader(str(templates_dir)))
-
         template_files = list(templates_dir.glob("*.jinja2"))
         assert len(template_files) > 0, "No template files found"
-
         for template_file in template_files:
             template_name = template_file.name
             try:
@@ -556,12 +493,10 @@ class TestPromptTemplateFiles:
         from jinja2 import Environment, FileSystemLoader, meta
 
         env = Environment(loader=FileSystemLoader(str(templates_dir)))
-
         # Test weather_description template
         template_source = env.loader.get_source(env, "weather_description.jinja2")
         parsed_content = env.parse(template_source)
         variables = meta.find_undeclared_variables(parsed_content)
-
         # Should reference key variables
         expected_vars = {"location", "statistics_table"}
         assert expected_vars.issubset(
@@ -574,11 +509,9 @@ class TestPromptTemplateFiles:
 
         env = Environment(loader=FileSystemLoader(str(templates_dir)))
         template = env.get_template("mistral_chat_wrapper.jinja2")
-
         # Test without system message
         result = template.render(prompt="Test prompt")
         assert result == "<s>[INST] Test prompt [/INST]"
-
         # Test with system message
         result_with_system = template.render(prompt="Test prompt", system_message="System message")
         assert result_with_system == "<s>[INST] System message\n\nTest prompt [/INST]"

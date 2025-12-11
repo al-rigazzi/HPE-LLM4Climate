@@ -228,10 +228,7 @@ class LocationMaskGenerator:
         dlat = lat2 - lat1
         dlon = lon2 - lon1
         cos_lat1 = torch.cos(torch.tensor(lat1, device=self.device))
-        a = (
-            torch.sin(dlat / 2) ** 2
-            + cos_lat1 * torch.cos(lat2) * torch.sin(dlon / 2) ** 2
-        )
+        a = torch.sin(dlat / 2) ** 2 + cos_lat1 * torch.cos(lat2) * torch.sin(dlon / 2) ** 2
         c = 2 * torch.arcsin(torch.sqrt(a))
         distance_deg = c * (180.0 / torch.pi)
 

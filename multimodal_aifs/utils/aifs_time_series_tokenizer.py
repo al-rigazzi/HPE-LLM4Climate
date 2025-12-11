@@ -272,7 +272,7 @@ class AIFSTimeSeriesTokenizer(nn.Module):
                 projected_encodings = self.spatial_to_transformer(time_series_tokens)
                 transformer_model = cast(nn.TransformerEncoder, self.temporal_model)
                 temporal_output = transformer_model(projected_encodings)
-                final_output = self.output_projection(temporal_output)
+                final_output: torch.Tensor = self.output_projection(temporal_output)
 
                 if self.verbose:
                     print(f"Final output shape: {final_output.shape}")

@@ -487,10 +487,10 @@ class ZarrClimateLoader:
                 if torch.any(nan_counts):
                     topk = min(5, tensor.shape[-1])
                     top_vals, top_idx = torch.topk(nan_counts.float(), k=topk)
-                    top_idx = top_idx.tolist()
-                    top_vals = top_vals.tolist()
+                    top_idx_list = top_idx.tolist()
+                    top_vals_list = top_vals.tolist()
                     print("   Vars with most NaNs (index -> count):")
-                    for var_index, count in zip(top_idx, top_vals):
+                    for var_index, count in zip(top_idx_list, top_vals_list):
                         print(f"      [{var_index}] -> {int(count)}")
 
             # Move to device and convert to FP16 if needed

@@ -400,20 +400,28 @@ class ClimateTextDataLoader(IterableDataset):
         # Remove token_type_ids if present - Mistral3 doesn't support it
         inputs.pop("token_type_ids", None)
 
+        # Build generation kwargs
+        generate_kwargs: dict = {
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "do_sample": True,
+        }
+        # Only set max_new_tokens if specified (None means no limit)
+        if self.max_response_length is not None:
+            generate_kwargs["max_new_tokens"] = self.max_response_length
+
         # Generate
         with torch.no_grad():
             with autocast_if_available(self.device):
                 outputs = self.mistral_model.generate(
                     **inputs,
-                    max_new_tokens=self.max_response_length,
-                    temperature=0.7,
-                    top_p=0.9,
-                    do_sample=True,
+                    **generate_kwargs,
                 )
 
-        # Decode response (remove prompt)
-        full_text = self.mistral_tokenizer.decode(outputs[0], skip_special_tokens=True)
-        response = full_text[len(formatted_prompt) :].strip()
+        # Decode only the new tokens (exclude the input prompt tokens)
+        input_length = inputs["input_ids"].shape[1]
+        response_tokens = outputs[0][input_length:]
+        response = self.mistral_tokenizer.decode(response_tokens, skip_special_tokens=True).strip()
 
         return response
 
@@ -458,7 +466,9 @@ class ClimateTextDataLoader(IterableDataset):
         )
 
         # Step 5: Format statistics table
-        statistics_table = self.statistics_computer.format_statistics_table(statistics, max_vars=20)
+        statistics_table = self.statistics_computer.format_statistics_table(
+            statistics, max_vars=None
+        )
 
         # Step 6: Generate prompt
         prompt = self.prompt_generator.generate_multimodal_training_prompt(
@@ -477,12 +487,20 @@ class ClimateTextDataLoader(IterableDataset):
             padding="max_length",
         )
 
+        # Tokenize response (handle None max_response_length)
+        response_tokenize_kwargs: dict = {
+            "return_tensors": "pt",
+            "truncation": self.max_response_length is not None,
+        }
+        if self.max_response_length is not None:
+            response_tokenize_kwargs["max_length"] = self.max_response_length
+            response_tokenize_kwargs["padding"] = "max_length"
+        else:
+            response_tokenize_kwargs["padding"] = True
+
         response_tokens = self.mistral_tokenizer(
             llm_response,
-            return_tensors="pt",
-            max_length=self.max_response_length,
-            truncation=True,
-            padding="max_length",
+            **response_tokenize_kwargs,
         )
 
         # Step 9: Create AIFS input tensor
@@ -587,15 +605,11 @@ class ClimateTextDataLoader(IterableDataset):
 
         print(f"\n💬 Prompt ({len(sample.prompt)} chars):")
         print("-" * 80)
-        print(sample.prompt[:500] + "..." if len(sample.prompt) > 500 else sample.prompt)
+        print(sample.prompt)
 
         print(f"\n🤖 LLM Response ({len(sample.llm_response)} chars):")
         print("-" * 80)
-        print(
-            sample.llm_response[:500] + "..."
-            if len(sample.llm_response) > 500
-            else sample.llm_response
-        )
+        print(sample.llm_response)
 
         print("\n🔢 Tokenization:")
         print(f"  Prompt tokens: {sample.prompt_tokens['input_ids'].shape}")

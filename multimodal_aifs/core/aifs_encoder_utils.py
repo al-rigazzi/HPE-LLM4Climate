@@ -87,8 +87,9 @@ class AIFSCompleteEncoder(nn.Module):
         # Prefer CUDA for the encoder when available to keep flash attention on GPU
         if self.device.type == "cuda" and not force_cpu:
             cuda_index = self.device.index
+            # torch.device.index can be None at runtime despite stubs saying int
             if cuda_index is None:
-                cuda_index = torch.cuda.current_device()
+                cuda_index = torch.cuda.current_device()  # type: ignore[unreachable]
             self.aifs_device = torch.device("cuda", cuda_index)
         else:
             self.aifs_device = torch.device("cpu")

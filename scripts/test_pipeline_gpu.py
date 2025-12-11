@@ -34,7 +34,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from multimodal_aifs.training import ClimateTextDataLoader
 from multimodal_aifs.training.location_masks import LocationMaskGenerator
 from multimodal_aifs.training.statistics_computer import ClimateStatisticsComputer
-from multimodal_aifs.utils.device_utils import get_best_device
 
 
 def test_location_mask_generator_gpu():
@@ -44,7 +43,7 @@ def test_location_mask_generator_gpu():
     print("=" * 80)
 
     # Get device from environment
-    analysis_gpu = os.environ.get("ANALYSIS_GPU", "1")
+    analysis_gpu = os.environ.get("ANALYSIS_GPU", "0")
     device = f"cuda:{analysis_gpu}" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
@@ -72,10 +71,12 @@ def test_location_mask_generator_gpu():
         print(f"  Masked points: {location.mask.sum().item()} / {location.mask.shape[0]}")
 
         # Verify mask is on correct device
-        assert str(location.mask.device) == str(generator.device), (
-            f"Mask device mismatch: {location.mask.device} vs {generator.device}"
-        )
-        assert location.mask.dtype == torch.bool, f"Mask dtype should be bool, got {location.mask.dtype}"
+        assert str(location.mask.device) == str(
+            generator.device
+        ), f"Mask device mismatch: {location.mask.device} vs {generator.device}"
+        assert (
+            location.mask.dtype == torch.bool
+        ), f"Mask dtype should be bool, got {location.mask.dtype}"
 
     print("\n[PASS] LocationMaskGenerator GPU test passed")
 
@@ -86,39 +87,43 @@ def test_statistics_computation():
     print("TEST 2: Statistics Computation")
     print("=" * 80)
 
-    analysis_gpu = os.environ.get("ANALYSIS_GPU", "1")
+    analysis_gpu = os.environ.get("ANALYSIS_GPU", "0")
     device = f"cuda:{analysis_gpu}" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
     # Create test data
     grid_points = 10000
     n_vars = 94
+    masked_count = 500  # Number of points to include in mask
 
     # Create random climate data on GPU
     climate_data = torch.randn(grid_points, n_vars, device=device)
 
-    # Create a location mask
-    generator = LocationMaskGenerator(grid_points=grid_points, seed=42, device=device)
-    location = generator.get_random_location()
+    # Create a simple test mask (first N points are True)
+    # This ensures we have a valid mask for statistics computation
+    mask = torch.zeros(grid_points, dtype=torch.bool, device=device)
+    mask[:masked_count] = True
 
     print(f"Climate data shape: {climate_data.shape}")
     print(f"Climate data device: {climate_data.device}")
-    print(f"Mask shape: {location.mask.shape}")
-    print(f"Masked points: {location.mask.sum().item()}")
+    print(f"Mask shape: {mask.shape}")
+    print(f"Masked points: {mask.sum().item()}")
 
     # Compute statistics
     computer = ClimateStatisticsComputer()
     statistics = computer.compute_statistics(
         climate_data.cpu(),  # Statistics computer expects CPU tensors
-        location.mask.cpu(),
+        mask.cpu(),
     )
 
     print(f"Computed statistics for {len(statistics)} variables")
+    assert len(statistics) == n_vars, f"Expected {n_vars} variables, got {len(statistics)}"
 
     # Format statistics table
-    table = computer.format_statistics_table(statistics, max_vars=10)
-    print("\nStatistics Table (first 10 variables):")
+    table = computer.format_statistics_table(statistics)
+    print("\nStatistics Table:")
     print(table)
+    assert "Variable" in table, "Statistics table should have header"
 
     print("\n[PASS] Statistics computation test passed")
 
@@ -151,9 +156,9 @@ def test_full_pipeline():
     print("DataLoader initialized successfully")
     print(f"Samples per epoch: {len(dataloader)}")
 
-    # Generate samples
+    # Generate samples with no response length limit
     print("\nGenerating samples...")
-    samples = dataloader.get_sample_preview(num_samples=3)
+    samples = dataloader.get_sample_preview(num_samples=3, max_response_length=None)
 
     for i, sample in enumerate(samples):
         print(f"\n--- Sample {i + 1} ---")
@@ -172,8 +177,14 @@ def test_full_pipeline():
         # Verify statistics table
         assert len(sample.statistics_table) > 100, "Statistics table seems too short"
         assert "Variable" in sample.statistics_table, "Statistics table missing header"
-        print("\nStatistics table (truncated):")
-        print(sample.statistics_table[:500] + "...")
+        print("\nStatistics table:")
+        print(sample.statistics_table)
+
+        # Print the LLM-generated weather description
+        print("\nLLM Response (weather description):")
+        print("-" * 60)
+        print(sample.llm_response)
+        print("-" * 60)
 
     print("\n[PASS] Full pipeline test passed")
 
@@ -269,7 +280,7 @@ def test_training_iteration():
 
     # Simple mock: compute mean of masked climate data
     masked_data = []
-    for i, sample in enumerate(samples):
+    for sample in samples:
         mask = sample.mask
         data = sample.climate_tensor_t1[mask]
         masked_data.append(data.mean())

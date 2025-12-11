@@ -56,6 +56,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from platform import system
+from typing import Any
 
 import numpy as np
 import xarray as xr
@@ -105,7 +106,7 @@ def get_open_data(date, param, levelist=None):
     Returns:
         Dictionary of fields with stacked data for two timesteps
     """
-    fields = defaultdict(list)
+    fields: dict[str, Any] = defaultdict(list)
 
     # Get data for current date and previous date (t-6h)
     for d in [date - timedelta(hours=6), date]:

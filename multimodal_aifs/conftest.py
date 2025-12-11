@@ -849,10 +849,10 @@ class AIFSClimateTextFusionWrapper(nn.Module):
                 # Move to device for MPS
                 if device_str == "mps":
                     print("   Moving model to MPS device...")
-                    self.mistral_model = self.mistral_model.to(device_str)  # type: ignore
+                    self.mistral_model = self.mistral_model.to(device_str)
 
                     if hasattr(self.mistral_model, "gradient_checkpointing_enable"):
-                        self.mistral_model.gradient_checkpointing_enable()
+                        self.mistral_model.gradient_checkpointing_enable()  # type: ignore[operator]
                         print("   Gradient checkpointing enabled")
 
                 assert self.mistral_model is not None
