@@ -9,7 +9,7 @@ torch>=2.9.0
 torchvision>=0.24.0
 torchaudio>=2.9.0
 torch_geometric==2.4.0
-triton>=3.5.0  # Required for torch 2.9+
+triton>=3.5.0; sys_platform == "linux"  # Required for torch 2.9+ (Linux only)
 
 # Natural Language Processing and Transformers
 # Note: Ministral-3-8B-Instruct-2512 requires transformers from git main (5.0.0.dev)
