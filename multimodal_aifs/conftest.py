@@ -459,7 +459,13 @@ def create_mock_zarr_dataset(output_path: str) -> str:
             data = rng.standard_normal(size=shape).astype(dtype)
 
         # Create the dataset
-        ds = root.create_dataset(var_name, data=data, chunks=shape, dtype=dtype)
+        if var_name == "lsm":
+            # For land-sea mask, set fill_value to -1 to avoid masking 0.0
+            ds = root.create_dataset(
+                var_name, data=data, chunks=shape, dtype=dtype, fill_value=-1.0
+            )
+        else:
+            ds = root.create_dataset(var_name, data=data, chunks=shape, dtype=dtype)
 
         # Add _ARRAY_DIMENSIONS attribute based on shape
         if len(shape) == 1:
