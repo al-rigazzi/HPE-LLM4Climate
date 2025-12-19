@@ -11,11 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Climate statistics computer for generating analytical summaries.
+"""Climate statistics computer for generating analytical summaries.
 
-This module computes statistical measures and differential operators
-(gradient, rotation, divergence) for climate variables.
+This module computes statistical measures for climate variables.
 """
 
 from dataclasses import dataclass
@@ -33,9 +31,7 @@ class VariableStatistics:
     min_value: float
     max_value: float
     mean_value: float
-    grad_magnitude: float  # Average gradient magnitude
-    rot_magnitude: float  # Average rotation magnitude (for vector fields)
-    div_magnitude: float  # Average divergence magnitude (for vector fields)
+    std_value: float
     unit: str
     description: str
 
@@ -45,10 +41,7 @@ class ClimateStatisticsComputer:
     Computes comprehensive statistics for climate variables.
 
     This class handles:
-    1. Basic statistics (min, max, mean)
-    2. Spatial gradients
-    3. Rotation (curl) for vector fields
-    4. Divergence for vector fields
+    1. Basic statistics (min, max, mean, stddev)
     """
 
     # Variable units and descriptions
@@ -99,20 +92,6 @@ class ClimateStatisticsComputer:
             grid_shape: Shape of the spatial grid (nlat, nlon) if known
         """
         self.grid_shape = grid_shape
-        self._init_variable_pairs()
-
-    def _init_variable_pairs(self) -> None:
-        """Identify vector field pairs (u, v components) for rotation/divergence."""
-        self.vector_pairs = []
-
-        # Surface and pressure level wind pairs
-        for prefix in ["10", "100"]:
-            self.vector_pairs.append((f"{prefix}u", f"{prefix}v"))
-
-        # Pressure level winds
-        pressure_levels = [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]
-        for level in pressure_levels:
-            self.vector_pairs.append((f"u_{level}", f"v_{level}"))
 
     def _should_analyze_variable(self, var_name: str) -> bool:
         """Check if a variable should be analyzed."""
@@ -142,103 +121,6 @@ class ClimateStatisticsComputer:
         # Default
         return ("unknown", var_name)
 
-    def compute_gradient(self, field: torch.Tensor, mask: torch.Tensor) -> float:
-        """
-        Compute average gradient magnitude over masked region.
-
-        Args:
-            field: Climate field [grid_points]
-            mask: Boolean mask [grid_points]
-
-        Returns:
-            Average gradient magnitude
-        """
-        if not mask.any():
-            return 0.0
-
-        # Extract masked values
-        masked_field = field[mask]
-
-        if len(masked_field) < 2:
-            return 0.0
-
-        # Simple gradient estimate using neighboring points
-        # For a proper implementation, would need actual grid topology
-        gradients = torch.abs(masked_field[1:] - masked_field[:-1])
-
-        return float(gradients.mean().item())
-
-    def compute_rotation(
-        self,
-        u_field: torch.Tensor,
-        v_field: torch.Tensor,
-        mask: torch.Tensor,
-    ) -> float:
-        """
-        Compute average rotation (curl) magnitude for vector field.
-
-        Args:
-            u_field: U-component [grid_points]
-            v_field: V-component [grid_points]
-            mask: Boolean mask [grid_points]
-
-        Returns:
-            Average rotation magnitude
-        """
-        if not mask.any():
-            return 0.0
-
-        # Extract masked values
-        u_masked = u_field[mask]
-        v_masked = v_field[mask]
-
-        if len(u_masked) < 2:
-            return 0.0
-
-        # Simplified rotation estimate
-        # Proper implementation would use actual spatial derivatives
-        du = torch.abs(u_masked[1:] - u_masked[:-1])
-        dv = torch.abs(v_masked[1:] - v_masked[:-1])
-
-        rotation = torch.sqrt(du**2 + dv**2)
-
-        return float(rotation.mean().item())
-
-    def compute_divergence(
-        self,
-        u_field: torch.Tensor,
-        v_field: torch.Tensor,
-        mask: torch.Tensor,
-    ) -> float:
-        """
-        Compute average divergence magnitude for vector field.
-
-        Args:
-            u_field: U-component [grid_points]
-            v_field: V-component [grid_points]
-            mask: Boolean mask [grid_points]
-
-        Returns:
-            Average divergence magnitude
-        """
-        if not mask.any():
-            return 0.0
-
-        # Extract masked values
-        u_masked = u_field[mask]
-        v_masked = v_field[mask]
-
-        if len(u_masked) < 2:
-            return 0.0
-
-        # Simplified divergence estimate
-        # Proper implementation would use spatial derivatives
-        divergence = torch.abs(u_masked[1:] - u_masked[:-1]) + torch.abs(
-            v_masked[1:] - v_masked[:-1]
-        )
-
-        return float(divergence.mean().item())
-
     def compute_statistics(
         self,
         climate_data: torch.Tensor,
@@ -267,9 +149,6 @@ class ClimateStatisticsComputer:
 
         statistics = []
 
-        # Create dictionary for quick lookup of vector pairs
-        vector_pair_dict = dict(self.vector_pairs)
-
         for i, var_name in enumerate(variable_names):
             if not self._should_analyze_variable(var_name):
                 continue
@@ -284,23 +163,7 @@ class ClimateStatisticsComputer:
             min_val = float(masked_field.min().item())
             max_val = float(masked_field.max().item())
             mean_val = float(masked_field.mean().item())
-
-            # Gradient
-            grad_mag = self.compute_gradient(field, mask)
-
-            # Rotation and divergence (for vector fields)
-            rot_mag = 0.0
-            div_mag = 0.0
-
-            if var_name in vector_pair_dict:
-                # This is a u-component, find its v-component
-                v_var_name = vector_pair_dict[var_name]
-                if v_var_name in variable_names:
-                    v_idx = variable_names.index(v_var_name)
-                    v_field = climate_data[:, v_idx]
-
-                    rot_mag = self.compute_rotation(field, v_field, mask)
-                    div_mag = self.compute_divergence(field, v_field, mask)
+            std_val = float(masked_field.std().item()) if len(masked_field) > 1 else 0.0
 
             # Get metadata
             unit, description = self._get_variable_metadata(var_name)
@@ -311,9 +174,7 @@ class ClimateStatisticsComputer:
                     min_value=min_val,
                     max_value=max_val,
                     mean_value=mean_val,
-                    grad_magnitude=grad_mag,
-                    rot_magnitude=rot_mag,
-                    div_magnitude=div_mag,
+                    std_value=std_val,
                     unit=unit,
                     description=description,
                 )
@@ -349,28 +210,20 @@ class ClimateStatisticsComputer:
 
         # Build table
         lines = []
-        lines.append("=" * 120)
-        lines.append(
-            f"{'Variable':<20} {'Min':<12} {'Max':<12} {'Mean':<12} "
-            f"{'Gradient':<12} {'Rotation':<12} {'Divergence':<12}"
-        )
-        lines.append("=" * 120)
+        lines.append("=" * 88)
+        lines.append(f"{'Variable':<20} {'Min':>14} {'Max':>14} {'Mean':>14} {'StdDev':>14}")
+        lines.append("=" * 88)
 
         for stat in statistics:
             # Format values with appropriate precision
-            min_str = f"{stat.min_value:11.4f}"
-            max_str = f"{stat.max_value:11.4f}"
-            mean_str = f"{stat.mean_value:11.4f}"
-            grad_str = f"{stat.grad_magnitude:11.4e}"
-            rot_str = f"{stat.rot_magnitude:11.4e}" if stat.rot_magnitude > 0 else "N/A"
-            div_str = f"{stat.div_magnitude:11.4e}" if stat.div_magnitude > 0 else "N/A"
+            min_str = f"{stat.min_value:14.4f}"
+            max_str = f"{stat.max_value:14.4f}"
+            mean_str = f"{stat.mean_value:14.4f}"
+            std_str = f"{stat.std_value:14.4f}"
 
-            lines.append(
-                f"{stat.variable_name:<20} {min_str} {max_str} {mean_str} "
-                f"{grad_str} {rot_str:<12} {div_str:<12}"
-            )
+            lines.append(f"{stat.variable_name:<20} {min_str} {max_str} {mean_str} {std_str}")
 
-        lines.append("=" * 120)
+        lines.append("=" * 88)
         lines.append("Units and descriptions:")
         for stat in statistics[:10]:  # Show first 10 descriptions
             lines.append(f"  {stat.variable_name}: {stat.description} ({stat.unit})")

@@ -15,7 +15,7 @@
 """
 Real Mistral Integration Test with Zarr Data
 
-This script tests the complete pipeline with actual Mistral-7B-Instruct-v0.3 model:
+This script tests the complete pipeline with actual Ministral-3-8B-Instruct-2512 model:
 Zarr → AIFS Tokenization → Real Mistral Processing → Multimodal Fusion
 
 Usage:
@@ -85,7 +85,7 @@ def test_real_mistral_with_zarr(
         else os.environ.get("USE_QUANTIZATION", "false").lower() in ("true", "1", "yes")
     )
     model_name = model_name or os.environ.get(
-        "LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3"
+        "LLM_MODEL_NAME", "mistralai/Ministral-3-8B-Instruct-2512"
     )
 
     print("\nStarting Real Mistral Integration Test (conftest)")
@@ -237,7 +237,7 @@ def test_real_mistral_with_zarr(
     print("\nReal Mistral Integration Test Complete!")
     print("Successfully processed climate data through:")
     print("   Zarr → AIFS tokenization")
-    print("   🤖 Real Mistral-7B-Instruct-v0.3 processing")
+    print("   🤖 Real Ministral-3-8B-Instruct-2512 processing")
     print("   🔗 Multimodal fusion")
     print("   Text generation")
 

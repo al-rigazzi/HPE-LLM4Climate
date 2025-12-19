@@ -326,7 +326,7 @@ class ZarrClimateLoader:
         batch_size: int = 1,
         normalize: bool = True,
         device: str | torch.device | None = None,
-        use_fp16: bool | None = None,
+        use_low_precision: bool | None = None,
         runner=None,
         use_forcing_pipeline: bool = True,
     ) -> torch.Tensor:
@@ -342,7 +342,8 @@ class ZarrClimateLoader:
             batch_size: Batch size (for creating batches from time series)
             normalize: Whether to normalize the data
             device: Device to move tensor to (auto-detected when None)
-            use_fp16: Whether to use FP16 (auto-enabled for CUDA/MPS when None)
+            use_low_precision: Whether to use low precision dtype (BF16 on CUDA if supported,
+                               FP16 on MPS, FP32 otherwise). Auto-detected when None.
             runner: SimpleRunner instance required for AIFS format data
             use_forcing_pipeline: Whether to use SimpleRunner pipeline (default: True)
 
@@ -359,9 +360,21 @@ class ZarrClimateLoader:
 
         target_device = resolve_device(device)
         configure_device_for_max_perf(target_device)
-        if use_fp16 is None:
-            use_fp16 = supports_amp(target_device)
-        tensor_dtype = torch.float16 if use_fp16 else torch.float32
+
+        # Determine optimal dtype: prefer BF16 on CUDA (wider dynamic range), FP16 on MPS
+        if use_low_precision is None:
+            use_low_precision = supports_amp(target_device)
+
+        if use_low_precision:
+            if target_device.type == "cuda" and torch.cuda.is_available():
+                bf16_supported = getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+                tensor_dtype = torch.bfloat16 if bf16_supported else torch.float16
+            elif target_device.type == "mps":
+                tensor_dtype = torch.float16
+            else:
+                tensor_dtype = torch.float32
+        else:
+            tensor_dtype = torch.float32
 
         # Validate requirements for AIFS format
         if runner is None:
@@ -435,18 +448,20 @@ class ZarrClimateLoader:
             }
             max_abs_value = float(tensor.abs().max().item())
 
+            # Check dynamic range limits based on dtype
+            # BF16 has same range as FP32 (~3.4e38), FP16 limit is 65504
             fp16_limit = 65504.0
             force_fp32 = False
 
-            if use_fp16 and max_abs_value > fp16_limit:
+            if use_low_precision and tensor_dtype == torch.float16 and max_abs_value > fp16_limit:
                 print(
-                    "⚠️  Tensor values exceed FP16 dynamic range "
+                    "Tensor values exceed FP16 dynamic range "
                     f"(|value|={max_abs_value:.2f} > {fp16_limit}). Keeping FP32 inputs."
                 )
                 force_fp32 = True
 
             if force_fp32:
-                use_fp16 = False
+                use_low_precision = False
                 tensor_dtype = torch.float32
 
             if should_log_stats:
@@ -472,10 +487,10 @@ class ZarrClimateLoader:
                 if torch.any(nan_counts):
                     topk = min(5, tensor.shape[-1])
                     top_vals, top_idx = torch.topk(nan_counts.float(), k=topk)
-                    top_idx = top_idx.tolist()
-                    top_vals = top_vals.tolist()
+                    top_idx_list = top_idx.tolist()
+                    top_vals_list = top_vals.tolist()
                     print("   Vars with most NaNs (index -> count):")
-                    for var_index, count in zip(top_idx, top_vals):
+                    for var_index, count in zip(top_idx_list, top_vals_list):
                         print(f"      [{var_index}] -> {int(count)}")
 
             # Move to device and convert to FP16 if needed

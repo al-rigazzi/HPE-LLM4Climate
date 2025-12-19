@@ -115,10 +115,7 @@ def test_input_preparation_with_simplerunner():
         print(f"  Ensemble: {tensor.shape[2]}")
         print(f"  Grid points: {tensor.shape[3]}")
         print(f"  Variables: {tensor.shape[4]} (94 physics + 9 forcings)")
-        print()
-        print("Key insight: SimpleRunner.prepare_input_tensor() handles all forcing")
-        print("computation automatically. Just provide the 94 physics variables!")
-        print()
+
         return True
 
     except Exception as e:

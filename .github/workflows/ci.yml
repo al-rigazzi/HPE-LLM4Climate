@@ -21,11 +21,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        lfs: true
-
-    - name: Checkout LFS objects
-      run: git lfs pull
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -37,15 +32,9 @@ jobs:
       with:
         path: |
           ${{ runner.os == 'ubuntu-latest' && '~/.cache/pip' || '~/Library/Caches/pip' }}
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'multimodal_aifs/requirements-aifs.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'multimodal_aifs/requirements-aifs-ci.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-
-    - name: Install system dependencies (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libhdf5-dev pkg-config
 
     - name: Install system dependencies (macOS)
       if: matrix.os == 'macos-latest'
@@ -61,28 +50,31 @@ jobs:
 
     - name: Install core dependencies
       run: |
-        # Install PyTorch with appropriate backend for the platform
+        # On Ubuntu CI, use CPU-only PyTorch wheels for faster installation
         if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-          pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cpu
-        else
-          pip install torch==2.4.0 torchvision==0.19.0
+          export PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
         fi
-        pip install numpy pandas xarray zarr dask[array] h5py netcdf4
+        pip install numpy pandas xarray dask[array] h5py netcdf4
 
     - name: Install main requirements
       run: |
-        pip install -r requirements.txt
+        # On Ubuntu CI, use CPU-only PyTorch wheels
+        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+        else
+          pip install -r requirements.txt
+        fi
 
     - name: Install AIFS requirements (with fallback)
       run: |
         # Install scientific computing packages first
         pip install scipy scikit-learn matplotlib seaborn plotly
         # Try to install AIFS requirements, but don't fail if some packages are not available
-        pip install -r multimodal_aifs/requirements-aifs.txt || true
+        pip install -r multimodal_aifs/requirements-aifs-ci.txt || true
         # Ensure critical packages are installed
         pip install zarr xarray dask[array] h5py netcdf4 || true
-        # Install additional ML packages that might be needed
-        pip install transformers accelerate datasets || true
+        # Install additional ML packages (transformers is installed from git in requirements.txt)
+        pip install accelerate datasets || true
 
     - name: Install test dependencies
       run: |
@@ -96,6 +88,7 @@ jobs:
       run: |
         echo "USE_MOCK_LLM=true" >> $GITHUB_ENV
         echo "USE_QUANTIZATION=false" >> $GITHUB_ENV
+        echo "USE_REAL_ZARR=false" >> $GITHUB_ENV
         echo "PYTHONPATH=." >> $GITHUB_ENV
         # Suppress zarr warnings to clean up test output
         echo "ZARR_V3_EXPERIMENTAL_API=1" >> $GITHUB_ENV

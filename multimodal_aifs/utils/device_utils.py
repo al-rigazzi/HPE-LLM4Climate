@@ -33,7 +33,7 @@ def _cuda_supports_bf16() -> bool:
 def _format_device(device: torch.device) -> str:
     if device.index is not None:
         return f"{device.type}:{device.index}"
-    return device.type
+    return device.type  # type: ignore[unreachable]
 
 
 def _select_cuda_device(spec: str = "cuda") -> torch.device:
@@ -163,7 +163,7 @@ def autocast_if_available(device: torch.device, dtype: torch.dtype | None = None
         dtype_to_use = torch.bfloat16
 
     if device.type == "cuda" and dtype_to_use == torch.bfloat16:
-        with torch.cuda.amp.autocast(dtype=torch.bfloat16):
+        with torch.amp.autocast("cuda", dtype=torch.bfloat16):
             yield
         return
 

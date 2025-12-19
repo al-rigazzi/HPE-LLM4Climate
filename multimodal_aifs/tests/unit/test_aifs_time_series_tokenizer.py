@@ -106,7 +106,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_tokenizer_initialization(self):
         """Test AIFSTimeSeriesTokenizer initialization with different configurations."""
-        print("\\nTesting Tokenizer Initialization")
+        print("\nTesting Tokenizer Initialization")
 
         tokenizer_default = self.create_test_tokenizer()
         self.assertEqual(tokenizer_default.temporal_modeling, "transformer")
@@ -123,7 +123,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_dtype_consistency(self):
         """Test dtype consistency across tokenizer operations."""
-        print("\\nTesting Dtype Consistency")
+        print("\nTesting Dtype Consistency")
 
         dtypes_to_test = [torch.float16, torch.float32, torch.float64]
 
@@ -263,7 +263,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_sequential_vs_parallel_processing(self):
         """Test that sequential and parallel processing configurations are valid."""
-        print("\\nTesting Sequential vs Parallel Processing")
+        print("\nTesting Sequential vs Parallel Processing")
 
         tokenizer = self.create_test_tokenizer()
 
@@ -321,7 +321,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_memory_efficiency(self):
         """Test memory usage configurations for different data sizes."""
-        print("\\nTesting Memory Efficiency")
+        print("\nTesting Memory Efficiency")
 
         test_configs = [
             ("Small", 1, 4, 3, (16, 16)),
@@ -359,7 +359,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_batch_encoding(self):
         """Test batch encoding functionality."""
-        print("\\n📦 Testing Batch Encoding")
+        print("\n📦 Testing Batch Encoding")
 
         tokenizer = self.create_test_tokenizer()
 
@@ -381,7 +381,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_performance_benchmarks(self):
         """Test performance configurations across different models."""
-        print("\\nTesting Performance Benchmarks")
+        print("\nTesting Performance Benchmarks")
 
         tokenizer = self.create_test_tokenizer()
         info = tokenizer.get_tokenizer_info()
@@ -407,7 +407,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_tokenizer_info(self):
         """Test tokenizer information retrieval."""
-        print("\\n📋 Testing Tokenizer Info")
+        print("\n📋 Testing Tokenizer Info")
 
         tokenizer = self.create_test_tokenizer()
         info = tokenizer.get_tokenizer_info()
@@ -439,7 +439,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_edge_cases(self):
         """Test edge cases and error handling."""
-        print("\\nTesting Edge Cases")
+        print("\nTesting Edge Cases")
 
         tokenizer = self.create_test_tokenizer()
 
@@ -464,7 +464,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_device_consistency(self):
         """Test device consistency across operations."""
-        print("\\nTesting Device Consistency")
+        print("\nTesting Device Consistency")
 
         device = self.device
         tokenizer = self.create_test_tokenizer()
@@ -486,7 +486,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_gradient_flow(self):
         """Test gradient flow configuration."""
-        print("\\nTesting Gradient Flow")
+        print("\nTesting Gradient Flow")
 
         tokenizer = self.create_test_tokenizer()
 
@@ -517,7 +517,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_aggregation_fallback_paths(self):
         """Test different encoder output shape handling."""
-        print("\\nTesting Aggregation Fallback Paths")
+        print("\nTesting Aggregation Fallback Paths")
 
         tokenizer = self.create_test_tokenizer()
 
@@ -543,7 +543,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_batch_parallel_error_conditions(self):
         """Test error handling in batch parallel processing."""
-        print("\\nTesting Batch Parallel Error Conditions")
+        print("\nTesting Batch Parallel Error Conditions")
 
         tokenizer = self.create_test_tokenizer()
 
@@ -572,7 +572,7 @@ class TestAIFSTimeSeriesTokenizer(unittest.TestCase):
 
     def test_amp_autocast_branches(self):
         """Test AMP/autocast conditional branches."""
-        print("\\nTesting AMP Autocast Branches")
+        print("\nTesting AMP Autocast Branches")
 
         # Create tokenizer with different dtypes to trigger AMP paths
         for dtype in [torch.float32, torch.bfloat16]:

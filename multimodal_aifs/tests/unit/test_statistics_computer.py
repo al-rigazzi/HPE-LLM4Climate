@@ -77,11 +77,11 @@ class TestClimateStatisticsComputer:
             assert isinstance(stat.min_value, float)
             assert isinstance(stat.max_value, float)
             assert isinstance(stat.mean_value, float)
-            assert isinstance(stat.grad_magnitude, float)
+            assert isinstance(stat.std_value, float)
 
             # Basic sanity checks
             assert stat.min_value <= stat.mean_value <= stat.max_value
-            assert stat.grad_magnitude >= 0
+            assert stat.std_value >= 0
 
     def test_compute_statistics_empty_mask(self, computer, sample_data, variable_names):
         """Test statistics computation with empty mask."""
@@ -104,8 +104,8 @@ class TestClimateStatisticsComputer:
             assert abs(stat.min_value - expected_value) < 1e-10
             assert abs(stat.max_value - expected_value) < 1e-10
             assert abs(stat.mean_value - expected_value) < 1e-10
-            # Gradient should be zero for single point
-            assert stat.grad_magnitude == 0
+            # Std should be zero for single point
+            assert stat.std_value == 0
 
     def test_compute_statistics_full_mask(self, computer, sample_data, variable_names):
         """Test statistics computation with full mask."""
@@ -133,7 +133,7 @@ class TestClimateStatisticsComputer:
         assert "Min" in table
         assert "Max" in table
         assert "Mean" in table
-        assert "Gradient" in table
+        assert "StdDev" in table
 
         # Should contain variable names
         for var_name in variable_names:
@@ -157,24 +157,27 @@ class TestClimateStatisticsComputer:
         assert "1.23456789" not in table  # Should be rounded
         assert "100.987654" not in table  # Should be rounded
 
-    def test_gradient_calculation(self, computer):
-        """Test gradient calculation with known data."""
-        # Create data with known gradient
-        x = np.linspace(0, 10, 11)
-        y = np.linspace(0, 10, 11)
+    def test_stddev_calculation(self, computer):
+        """Test standard deviation calculation with known data."""
+        # Create data with known std dev
         data = torch.tensor(
-            np.column_stack([x, y, x**2]), dtype=torch.float32
-        )  # Linear and quadratic
-        mask = torch.ones(11, dtype=torch.bool)
-        var_names = ["linear", "linear2", "quadratic"]
+            np.column_stack(
+                [
+                    np.ones(10),  # Zero std dev
+                    np.arange(10).astype(float),  # Positive std dev
+                ]
+            ),
+            dtype=torch.float32,
+        )
+        mask = torch.ones(10, dtype=torch.bool)
+        var_names = ["constant", "varying"]
 
         stats = computer.compute_statistics(data, mask, var_names)
 
-        # Linear data should have small gradient
-        assert stats[0].grad_magnitude >= 0
-        assert stats[1].grad_magnitude >= 0
-        # Quadratic should have larger gradient
-        assert stats[2].grad_magnitude > stats[0].grad_magnitude
+        # Constant data should have zero std
+        assert stats[0].std_value == 0.0
+        # Varying data should have positive std
+        assert stats[1].std_value > 0
 
     def test_coordinate_variables_excluded(self, computer):
         """Test that coordinate variables are excluded from analysis."""
@@ -214,9 +217,7 @@ class TestClimateStatisticsComputer:
             min_value=1.0,
             max_value=10.0,
             mean_value=5.5,
-            grad_magnitude=0.1,
-            rot_magnitude=0.05,
-            div_magnitude=0.02,
+            std_value=2.5,
             unit="m/s",
             description="test variable",
         )
@@ -225,9 +226,7 @@ class TestClimateStatisticsComputer:
         assert stat.min_value == 1.0
         assert stat.max_value == 10.0
         assert stat.mean_value == 5.5
-        assert stat.grad_magnitude == 0.1
-        assert stat.rot_magnitude == 0.05
-        assert stat.div_magnitude == 0.02
+        assert stat.std_value == 2.5
 
     def test_statistics_with_invalid_data(self, computer, sample_mask, variable_names):
         """Test statistics computation with invalid data."""

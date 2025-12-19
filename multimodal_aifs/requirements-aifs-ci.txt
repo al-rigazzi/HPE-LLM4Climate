@@ -1,4 +1,4 @@
-# AIFS Dependencies - Updated for AIFS-ENS-1.0
+# AIFS Dependencies - Updated for AIFS-ENS-1.0 (CI version - excludes flash-attn)
 # Core AIFS packages
 anemoi-inference[huggingface]==0.6.0
 anemoi-models==0.6.0
@@ -22,12 +22,10 @@ dask[array]>=2023.1.0
 s3fs>=2023.1.0  # For S3 Zarr datasets
 gcsfs>=2023.1.0  # For Google Cloud Zarr datasets
 
-# Flash attention for GPU acceleration (CUDA only)
-# Note: flash-attn must be compiled for your specific torch version
-# Install with: pip install flash-attn --no-build-isolation
-flash-attn>=2.8.0; sys_platform != "darwin"
+# Flash attention disabled in CI due to build issues
+# flash-attn requires torch during build process which fails in isolated environments
+# AIFS works on CPU/MPS without flash_attn using PyTorch-based mock implementation
 
-# Note: AIFS works on CPU/MPS without flash_attn using PyTorch-based mock implementation
 # Environment variables for memory optimization:
 # PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'
 # ANEMOI_INFERENCE_NUM_CHUNKS='16'  # Reduces memory from 38GB to 24GB

@@ -65,7 +65,6 @@ def setup_flash_attn_mock():
     is_macos = platform.system() == "Darwin"
 
     if not is_macos:
-        print("ℹ️ Skipping flash attention mock - real kernels enabled")
         return
 
     print("⚠️  Flash attention mock enabled for MacOS")
@@ -228,11 +227,9 @@ def pytest_sessionstart(session):
     # Set up flash attention mock FIRST (before any imports that might need it)
     setup_flash_attn_mock()
 
-    # Set ANEMOI chunking for memory optimization BEFORE any anemoi imports
-    # This is read at module import time in anemoi/models/layers/block.py
-    # and used to split operations during inference (reduces memory usage)
-    os.environ.setdefault("ANEMOI_INFERENCE_NUM_CHUNKS", "16")
-    print(f"ANEMOI_INFERENCE_NUM_CHUNKS set to {os.environ.get('ANEMOI_INFERENCE_NUM_CHUNKS')}")
+    # Print ANALYSIS_GPU environment variable for visibility
+    analysis_gpu = os.environ.get("ANALYSIS_GPU", "0")
+    print(f"ANALYSIS_GPU={analysis_gpu}")
 
     from multimodal_aifs.utils import get_best_device
 
@@ -303,7 +300,7 @@ def llm_mock_status():
     """Provide information about whether LLM mocking is enabled."""
     use_mock_llm = get_env_bool("USE_MOCK_LLM", False)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
-    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3")
+    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Ministral-3-8B-Instruct-2512")
 
     return {
         "use_mock_llm": use_mock_llm,
@@ -313,44 +310,240 @@ def llm_mock_status():
     }
 
 
+# =================== MOCK ZARR DATASET ===================
+# Exact structure matching real ECMWF data from download_real_ecmwf_data.py
+# Grid: 542080 points, Time: 2 timesteps, 94 variables total
+MOCK_ZARR_SPEC: dict[str, tuple[tuple[int, ...], str]] = {
+    # Coordinate variables
+    "grid_point": ((542080,), "int64"),
+    "latitude": ((542080,), "float64"),
+    "longitude": ((542080,), "float64"),
+    "time": ((2,), "int64"),
+    # All meteorological variables: (2, 542080) float64
+    **{
+        var: ((2, 542080), "float64")
+        for var in [
+            "100u",
+            "100v",
+            "10u",
+            "10v",
+            "2d",
+            "2t",
+            "cos_julian_day",
+            "cos_latitude",
+            "cos_local_time",
+            "cos_longitude",
+            "insolation",
+            "lsm",
+            "msl",
+            "sdor",
+            "sin_julian_day",
+            "sin_latitude",
+            "sin_local_time",
+            "sin_longitude",
+            "skt",
+            "slor",
+            "sp",
+            "stl1",
+            "stl2",
+            "swvl1",
+            "swvl2",
+            "tcw",
+            "z",
+        ]
+        + [f"q_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"t_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"u_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"v_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"w_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+        + [f"z_{p}" for p in [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]]
+    },
+}
+
+
+def create_mock_zarr_dataset(output_path: str) -> str:
+    """
+    Create a mock Zarr dataset with exact same structure as real ECMWF data.
+
+    The mock dataset has:
+    - 94 variables (same as real data)
+    - 542080 grid points (AIFS O96 reduced Gaussian grid)
+    - 2 timesteps
+    - Proper dtypes (float64 for data, int64 for indices/time)
+    - Realistic value ranges for each variable type
+
+    Args:
+        output_path: Path where the mock zarr dataset will be created
+
+    Returns:
+        The output path
+    """
+    import shutil
+
+    import zarr
+
+    output = Path(output_path)
+
+    # Remove existing mock dataset if present
+    if output.exists():
+        shutil.rmtree(output)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    # Create zarr store
+    store = zarr.DirectoryStore(str(output))
+    root = zarr.group(store, overwrite=True)
+
+    # Use a fixed seed for reproducibility
+    rng = np.random.default_rng(42)
+
+    for var_name, (shape, dtype) in MOCK_ZARR_SPEC.items():
+        if var_name == "grid_point":
+            data = np.arange(shape[0], dtype=dtype)
+        elif var_name == "latitude":
+            # Latitude range: -90 to 90
+            data = rng.uniform(-90, 90, size=shape).astype(dtype)
+        elif var_name == "longitude":
+            # Longitude range: 0 to 360
+            data = rng.uniform(0, 360, size=shape).astype(dtype)
+        elif var_name == "time":
+            # Two timesteps as nanoseconds since epoch
+            data = np.array([1733824800000000000, 1733846400000000000], dtype=dtype)
+        elif var_name.startswith("cos_") or var_name.startswith("sin_"):
+            # Trigonometric values: -1 to 1
+            data = rng.uniform(-1, 1, size=shape).astype(dtype)
+        elif var_name.startswith("t_") or var_name == "2t" or var_name == "skt":
+            # Temperature in Kelvin: ~200-320K
+            data = rng.uniform(200, 320, size=shape).astype(dtype)
+        elif var_name == "2d":
+            # Dewpoint temperature in Kelvin
+            data = rng.uniform(200, 300, size=shape).astype(dtype)
+        elif var_name.startswith("q_"):
+            # Specific humidity: 0-0.03 kg/kg
+            data = rng.uniform(0, 0.03, size=shape).astype(dtype)
+        elif var_name.startswith(("u_", "v_", "10u", "10v", "100u", "100v")):
+            # Wind components: -50 to 50 m/s
+            data = rng.uniform(-50, 50, size=shape).astype(dtype)
+        elif var_name.startswith("w_"):
+            # Vertical velocity: -1 to 1 Pa/s
+            data = rng.uniform(-1, 1, size=shape).astype(dtype)
+        elif var_name.startswith("z_") or var_name == "z":
+            # Geopotential: 0-60000 m^2/s^2
+            data = rng.uniform(0, 60000, size=shape).astype(dtype)
+        elif var_name == "sp":
+            # Surface pressure: 50000-105000 Pa
+            data = rng.uniform(50000, 105000, size=shape).astype(dtype)
+        elif var_name == "msl":
+            # Mean sea level pressure: 95000-105000 Pa
+            data = rng.uniform(95000, 105000, size=shape).astype(dtype)
+        elif var_name == "lsm":
+            # Land-sea mask: 0 or 1
+            data = rng.choice([0.0, 1.0], size=shape).astype(dtype)
+        elif var_name == "insolation":
+            # Insolation: 0-1400 W/m^2
+            data = rng.uniform(0, 1400, size=shape).astype(dtype)
+        elif var_name == "tcw":
+            # Total column water: 0-80 kg/m^2
+            data = rng.uniform(0, 80, size=shape).astype(dtype)
+        elif var_name in ("sdor", "slor"):
+            # Orography standard deviation / slope: 0-1000
+            data = rng.uniform(0, 1000, size=shape).astype(dtype)
+        elif var_name.startswith("stl"):
+            # Soil temperature: 250-310 K
+            data = rng.uniform(250, 310, size=shape).astype(dtype)
+        elif var_name.startswith("swvl"):
+            # Soil water: 0-0.5 m^3/m^3
+            data = rng.uniform(0, 0.5, size=shape).astype(dtype)
+        else:
+            # Default: standard normal
+            data = rng.standard_normal(size=shape).astype(dtype)
+
+        # Create the dataset
+        if var_name == "lsm":
+            # For land-sea mask, set fill_value to -1 to avoid masking 0.0
+            ds = root.create_dataset(
+                var_name, data=data, chunks=shape, dtype=dtype, fill_value=-1.0
+            )
+        else:
+            ds = root.create_dataset(var_name, data=data, chunks=shape, dtype=dtype)
+
+        # Add _ARRAY_DIMENSIONS attribute based on shape
+        if len(shape) == 1:
+            if shape[0] == 542080:  # grid_point dimension
+                ds.attrs["_ARRAY_DIMENSIONS"] = ["grid_point"]
+            elif shape[0] == 2:  # time dimension
+                ds.attrs["_ARRAY_DIMENSIONS"] = ["time"]
+        elif len(shape) == 2 and shape == (2, 542080):
+            ds.attrs["_ARRAY_DIMENSIONS"] = ["time", "grid_point"]
+
+    # Consolidate metadata for xarray compatibility
+    zarr.consolidate_metadata(store)
+
+    # Add zarr metadata
+    root.attrs["description"] = "Mock ECMWF dataset for CI testing"
+    root.attrs["source"] = "conftest.py:create_mock_zarr_dataset"
+    root.attrs["n_variables"] = len(MOCK_ZARR_SPEC)
+    root.attrs["grid_points"] = 542080
+    root.attrs["timesteps"] = 2
+
+    return str(output)
+
+
 @pytest.fixture(scope="session")
 def zarr_dataset_path():
-    """Get the real ECMWF zarr dataset path for testing."""
-    # Use real ECMWF data instead of synthetic data
-    zarr_path = "data/real_ecmwf_latest.zarr"
+    """Get the Zarr dataset path for testing.
 
-    print(f"Using real ECMWF Zarr dataset: {zarr_path}")
+    Uses real ECMWF data by default (USE_REAL_ZARR=true).
+    Set USE_REAL_ZARR=false to use mock data (for CI without download access).
+    """
+    use_real_zarr = get_env_bool("USE_REAL_ZARR", True)
+
+    if use_real_zarr:
+        zarr_path = "data/real_ecmwf_latest.zarr"
+        print(f"Using real ECMWF Zarr dataset: {zarr_path}")
+    else:
+        zarr_path = "data/mock_ecmwf_test.zarr"
+        print(f"Using mock Zarr dataset: {zarr_path} (USE_REAL_ZARR=false)")
 
     return zarr_path
 
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
-    """Ensure real ECMWF Zarr dataset exists for integration tests."""
+    """Ensure Zarr dataset exists for tests.
+
+    If USE_REAL_ZARR=true (default): Downloads real ECMWF data if missing.
+    If USE_REAL_ZARR=false: Creates mock dataset with exact same structure.
+    """
+    use_real_zarr = get_env_bool("USE_REAL_ZARR", True)
     zarr_path = Path(zarr_dataset_path)
 
     # Check if dataset already exists
     if zarr_path.exists():
-        print(f"Real ECMWF Zarr dataset already exists: {zarr_path}")
+        print(f"Zarr dataset already exists: {zarr_path}")
         return str(zarr_path)
 
-    print("📥 Downloading real ECMWF data for integration tests...")
+    if not use_real_zarr:
+        # Create mock dataset for CI
+        print("Creating mock Zarr dataset for CI testing (USE_REAL_ZARR=false)...")
+        create_mock_zarr_dataset(str(zarr_path))
+        print(f"Mock dataset created: {zarr_path}")
+        return str(zarr_path)
+
+    # Download real ECMWF data
+    print("Downloading real ECMWF data for tests...")
     print("This will download real meteorological data and may take a few minutes.")
 
     try:
-        # Import the download script
         import subprocess
 
-        # Ensure data directory exists
         zarr_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Download real ECMWF data using the download script
         script_path = Path(__file__).parent.parent / "scripts" / "download_real_ecmwf_data.py"
 
         if not script_path.exists():
             raise FileNotFoundError(f"Download script not found: {script_path}")
 
-        # Run the download script
         result = subprocess.run(
             [sys.executable, str(script_path), "--output", str(zarr_path)],
             capture_output=True,
@@ -370,9 +563,8 @@ def ensure_test_zarr_dataset(zarr_dataset_path):  # pylint: disable=W0621
     except Exception as e:
         print(f"Failed to download real ECMWF dataset: {e}")
         print(f"   Error type: {type(e).__name__}")
-        # Fail the test session since we require real data
         raise RuntimeError(
-            f"Cannot run tests without real ECMWF data. "
+            f"Cannot run tests without ECMWF data. "
             f"Please run: python scripts/download_real_ecmwf_data.py --output {zarr_path}"
         ) from e
 
@@ -444,7 +636,7 @@ class MockLLMModel(nn.Module):
 def llm_model_path():
     """Get path to local LLM model if available."""
     # Check for specific model name from environment
-    model_name = os.environ.get("LLM_MODEL_NAME", "Mistral-7B-Instruct-v0.3")
+    model_name = os.environ.get("LLM_MODEL_NAME", "Ministral-3-8B-Instruct-2512")
 
     possible_paths = [
         f"models/{model_name}",
@@ -471,7 +663,7 @@ def llm_model(llm_path, device):
 
     use_mock = get_env_bool("USE_MOCK_LLM", False)
     use_quantization = get_env_bool("USE_QUANTIZATION", False)
-    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Mistral-7B-Instruct-v0.3")
+    model_name = os.environ.get("LLM_MODEL_NAME", "mistralai/Ministral-3-8B-Instruct-2512")
 
     print("🤖 Loading LLM Model for Testing...")
     print(f"   Model: {model_name}")
@@ -503,52 +695,46 @@ def llm_model(llm_path, device):
 
     try:
         # Try to load real model
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import (
+            AutoTokenizer,
+            FineGrainedFP8Config,
+            Mistral3ForConditionalGeneration,
+        )
 
         # Setup flash attention mocking
         setup_flash_attn_mock()
 
-        if llm_path is not None:
-            print(f"Found local model at: {llm_path}")
-            model_path = llm_path
-        else:
-            print(f"🌐 Using HuggingFace model: {model_name}")
-            model_path = model_name
+        print(f"Using HuggingFace model: {model_name}")
 
         print("Loading real LLM model...")
 
-        # Handle quantization
-        quantization_config = None
-        if use_quantization:
-            try:
-                from transformers import BitsAndBytesConfig
-
-                quantization_config = BitsAndBytesConfig(
-                    load_in_8bit=True, llm_int8_enable_fp32_cpu_offload=True
-                )
-                print("Using 8-bit quantization")
-            except ImportError:
-                print("Quantization requested but BitsAndBytesConfig not available")
-
         # Load tokenizer
         tokenizer = AutoTokenizer.from_pretrained(
-            model_path, trust_remote_code=True, padding_side="left"
+            model_name, trust_remote_code=True, padding_side="left"
         )
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        # Load model
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            quantization_config=quantization_config,
-            torch_dtype=torch.float16 if device.type in ["cuda", "mps"] else torch.float32,
-            device_map="auto" if device.type == "cuda" else None,
-            low_cpu_mem_usage=True,
-            trust_remote_code=True,
-            attn_implementation="eager",  # Disable flash attention
+        # Load model with FP8 dequantization to BF16
+        load_kwargs: dict = {
+            "quantization_config": FineGrainedFP8Config(dequantize=True),
+            "low_cpu_mem_usage": True,
+            "trust_remote_code": True,
+        }
+
+        if device.type == "cuda":
+            load_kwargs["device_map"] = "auto"
+        else:
+            load_kwargs["device_map"] = "cpu"
+            load_kwargs["attn_implementation"] = "eager"
+
+        model = Mistral3ForConditionalGeneration.from_pretrained(
+            model_name,
+            **load_kwargs,
         )
 
-        model.to(device)
+        if device.type not in ("cpu", "cuda"):
+            model.to(device)
         model.eval()
 
         _MODEL_CACHE["llm_model"] = {
@@ -816,117 +1002,62 @@ class AIFSClimateTextFusionWrapper(nn.Module):
             # Load real Mistral model
             print("   Loading real Mistral model...")
             try:
-                from transformers import AutoModelForCausalLM, AutoTokenizer
+                from transformers import (
+                    AutoTokenizer,
+                    FineGrainedFP8Config,
+                    Mistral3ForConditionalGeneration,
+                )
 
-                model_name = "mistralai/Mistral-7B-Instruct-v0.3"
-                self.mistral_tokenizer = AutoTokenizer.from_pretrained(model_name)
+                model_name = "mistralai/Ministral-3-8B-Instruct-2512"
+                self.mistral_tokenizer = AutoTokenizer.from_pretrained(
+                    model_name, trust_remote_code=True
+                )
 
-                # Configure loading based on device capabilities
-                load_kwargs = {
-                    "torch_dtype": (
-                        torch.float16 if device_str in ["cuda", "mps"] else torch.float32
-                    ),
+                # Use FineGrainedFP8Config with dequantize to convert FP8 to BF16
+                load_kwargs: dict = {
+                    "quantization_config": FineGrainedFP8Config(dequantize=True),
                     "low_cpu_mem_usage": True,
+                    "trust_remote_code": True,
                 }
 
                 # CUDA-specific optimizations
                 if device_str == "cuda":
-                    # Use 4-bit quantization on CUDA for memory efficiency
-                    try:
-                        from transformers import BitsAndBytesConfig
-
-                        quantization_config = BitsAndBytesConfig(
-                            load_in_4bit=True,
-                            bnb_4bit_compute_dtype=torch.float16,
-                            bnb_4bit_use_double_quant=True,
-                            bnb_4bit_quant_type="nf4",
-                        )
-                        load_kwargs["quantization_config"] = quantization_config
-                        load_kwargs["device_map"] = "auto"
-                        print("   Using 4-bit quantization (CUDA)")
-                    except ImportError:
-                        print("   ⚠️  bitsandbytes not available, loading in float16")
-                        load_kwargs["device_map"] = "auto"
+                    load_kwargs["device_map"] = "auto"
+                    print("   Using auto device_map (CUDA)")
 
                 # MPS-specific optimizations
                 elif device_str == "mps":
-                    # MPS doesn't support bitsandbytes, but we can use several techniques:
-                    # 1. Load with reduced precision and optimize memory layout
-                    # 2. Use gradient checkpointing to reduce memory during inference
-                    # 3. Set MPS memory limit environment variable
                     print("   Optimizing for MPS (Apple Silicon)...")
+                    os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
+                    load_kwargs["device_map"] = "cpu"
+                    load_kwargs["attn_implementation"] = "eager"
 
-                    # Set MPS memory management
-                    os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = (
-                        "0.0"  # Aggressive memory management
-                    )
-
-                    # Load to CPU first with minimal memory footprint
-                    load_kwargs["device_map"] = None
-                    load_kwargs["torch_dtype"] = torch.float16
-
-                    # Enable additional memory optimizations
-                    try:
-                        # Try loading with memory-efficient attention if available
-                        self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                            model_name,
-                            **load_kwargs,
-                            use_flash_attention_2=False,  # Flash attention not available on MPS
-                            attn_implementation="eager",  # Use memory-efficient eager mode
-                        )
-                    except TypeError:
-                        # Fallback if attn_implementation not supported
-                        self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                            model_name,
-                            **load_kwargs,
-                        )
-
-                    print("   Moving model to MPS device...")
-                    self.mistral_model = self.mistral_model.to(device_str)  # type: ignore
-
-                    # Enable gradient checkpointing for memory efficiency during inference
-                    if hasattr(self.mistral_model, "gradient_checkpointing_enable"):
-                        self.mistral_model.gradient_checkpointing_enable()
-                        print("   ✅ Gradient checkpointing enabled")
-
-                    print("   ✅ MPS optimizations applied (float16 + checkpointing)")
-
-                # CPU or other devices
+                # CPU
                 else:
-                    self.mistral_model = AutoModelForCausalLM.from_pretrained(
-                        model_name, **load_kwargs
-                    )
-                    if device_str != "cpu":
-                        self.mistral_model = self.mistral_model.to(device_str)  # type: ignore
+                    load_kwargs["device_map"] = "cpu"
 
-                # CUDA-specific device movement (already on device via device_map)
-                if device_str == "cuda" and "device_map" not in load_kwargs:
-                    assert self.mistral_model is not None
+                self.mistral_model = Mistral3ForConditionalGeneration.from_pretrained(
+                    model_name,
+                    **load_kwargs,
+                )
+
+                # Move to device for MPS
+                if device_str == "mps":
+                    print("   Moving model to MPS device...")
                     self.mistral_model = self.mistral_model.to(device_str)
+
+                    if hasattr(self.mistral_model, "gradient_checkpointing_enable"):
+                        self.mistral_model.gradient_checkpointing_enable()  # type: ignore[operator]
+                        print("   Gradient checkpointing enabled")
 
                 assert self.mistral_model is not None
                 self.mistral_model.eval()
 
-                # Estimate memory usage with platform-specific details
+                # Estimate memory usage
                 param_count = sum(p.numel() for p in self.mistral_model.parameters())
-                if device_str == "cuda" and "quantization_config" in load_kwargs:
-                    estimated_gb = (param_count * 0.5) / 1e9  # 4-bit = 0.5 bytes per param
-                    print(
-                        f"   ✅ Real Mistral loaded on {device_str} (~{estimated_gb:.1f}GB, 4-bit)"
-                    )
-                elif device_str == "mps":
-                    bytes_per_param = 2 if load_kwargs["torch_dtype"] == torch.float16 else 4
-                    estimated_gb = (param_count * bytes_per_param) / 1e9
-                    # Gradient checkpointing can reduce peak memory by ~30-40% during inference
-                    reduced_gb = estimated_gb * 0.65  # Approximate reduction with checkpointing
-                    print(
-                        f"   ✅ Real Mistral loaded on MPS "
-                        f"(~{estimated_gb:.1f}GB base, ~{reduced_gb:.1f}GB peak with checkpointing)"
-                    )
-                else:
-                    bytes_per_param = 2 if load_kwargs["torch_dtype"] == torch.float16 else 4
-                    estimated_gb = (param_count * bytes_per_param) / 1e9
-                    print(f"   ✅ Real Mistral loaded on {device_str} (~{estimated_gb:.1f}GB)")
+                # BF16 = 2 bytes per param
+                estimated_gb = (param_count * 2) / 1e9
+                print(f"   Real Mistral loaded on {device_str} (~{estimated_gb:.1f}GB, BF16)")
 
             except Exception as e:
                 print(f"   ⚠️  Failed to load real Mistral: {e}")
@@ -1187,7 +1318,7 @@ def test_climate_data_fusion(test_device, zarr_dataset_path, aifs_model):  # pyl
     device = str(test_device)
 
     # Determine the appropriate floating point format based on device
-    use_fp16 = test_device.type in ["cuda", "mps"]
+    use_low_precision = test_device.type in ["cuda", "mps"]
 
     # Load real ECMWF data using ZarrClimateLoader with forcing pipeline
     loader = ZarrClimateLoader(zarr_dataset_path)
@@ -1204,7 +1335,7 @@ def test_climate_data_fusion(test_device, zarr_dataset_path, aifs_model):  # pyl
         batch_size=1,
         normalize=True,
         device=device,
-        use_fp16=use_fp16,
+        use_low_precision=use_low_precision,
         runner=runner,
         use_forcing_pipeline=True,
     )
@@ -1227,12 +1358,17 @@ def test_climate_data(test_device, zarr_dataset_path, aifs_model):  # pylint: di
     device = str(test_device)
 
     # Determine the appropriate floating point format based on device
-    if test_device.type in ["cuda", "mps"]:
+    # Prefer BF16 on CUDA (wider dynamic range), FP16 on MPS
+    if test_device.type == "cuda" and torch.cuda.is_available():
+        bf16_supported = getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+        dtype = torch.bfloat16 if bf16_supported else torch.float16
+        use_low_precision = True
+    elif test_device.type == "mps":
         dtype = torch.float16
-        use_fp16 = True
+        use_low_precision = True
     else:
         dtype = torch.float32
-        use_fp16 = False
+        use_low_precision = False
 
     # Load real ECMWF data using ZarrClimateLoader
     loader = ZarrClimateLoader(zarr_dataset_path)
@@ -1249,7 +1385,7 @@ def test_climate_data(test_device, zarr_dataset_path, aifs_model):  # pylint: di
         batch_size=1,
         normalize=True,
         device=device,
-        use_fp16=use_fp16,
+        use_low_precision=use_low_precision,
         runner=runner,
         use_forcing_pipeline=True,
     )  # Returns [batch, time, ensemble, grid, 103]

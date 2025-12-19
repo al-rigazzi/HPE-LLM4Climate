@@ -92,7 +92,7 @@ class ClimateTextDataLoader(IterableDataset):
     def __init__(
         self,
         zarr_paths: list[str] | str,
-        mistral_model_name: str = "mistralai/Ministral-8B-Instruct-2410",
+        mistral_model_name: str = "mistralai/Ministral-3-8B-Instruct-2512",
         batch_size: int = 1,
         samples_per_epoch: int = 1000,
         cache_mistral_model: bool = True,
@@ -124,8 +124,19 @@ class ClimateTextDataLoader(IterableDataset):
         self.cache_mistral_model = cache_mistral_model
         self.device = resolve_device(device)
         configure_device_for_max_perf(self.device)
-        self._use_fp16 = supports_amp(self.device)
-        self.tensor_dtype = torch.float16 if self._use_fp16 else torch.float32
+
+        # Determine optimal dtype: prefer BF16 on CUDA (wider dynamic range), FP16 on MPS
+        self._use_low_precision = supports_amp(self.device)
+        if self._use_low_precision:
+            if self.device.type == "cuda" and torch.cuda.is_available():
+                bf16_supported = getattr(torch.cuda, "is_bf16_supported", lambda: False)()
+                self.tensor_dtype = torch.bfloat16 if bf16_supported else torch.float16
+            elif self.device.type == "mps":
+                self.tensor_dtype = torch.float16
+            else:
+                self.tensor_dtype = torch.float32
+        else:
+            self.tensor_dtype = torch.float32
 
         # Initialize Zarr paths
         if isinstance(zarr_paths, str):
@@ -146,7 +157,9 @@ class ClimateTextDataLoader(IterableDataset):
         # Detect actual grid size from the first available dataset
         actual_grid_points = self._detect_grid_size()
 
-        self.location_generator = LocationMaskGenerator(grid_points=actual_grid_points, seed=seed)
+        self.location_generator = LocationMaskGenerator(
+            grid_points=actual_grid_points, seed=seed, device=self.device
+        )
         self.statistics_computer = ClimateStatisticsComputer()
         self.prompt_generator = ClimatePromptGenerator()  # Uses default templates directory
 
@@ -154,7 +167,10 @@ class ClimateTextDataLoader(IterableDataset):
         print(f"Loading tokenizer: {mistral_model_name}")
         from transformers import AutoTokenizer
 
-        self.mistral_tokenizer = AutoTokenizer.from_pretrained(mistral_model_name)
+        self.mistral_tokenizer = AutoTokenizer.from_pretrained(
+            mistral_model_name,
+            trust_remote_code=True,
+        )
 
         # Ensure tokenizer has pad token (required for padding)
         if self.mistral_tokenizer.pad_token is None:
@@ -175,27 +191,36 @@ class ClimateTextDataLoader(IterableDataset):
             self.mistral_tokenizer.pad_token = self.mistral_tokenizer.eos_token
 
         if self.cache_mistral_model:
-            from transformers import AutoModelForCausalLM
+            from transformers import (
+                FineGrainedFP8Config,
+                Mistral3ForConditionalGeneration,
+            )
 
             target_device = self.device
-            torch_dtype = torch.float16 if target_device.type != "cpu" else torch.float32
 
-            print(f"  Loading model for {target_device} ({torch_dtype})...")
+            print(f"  Loading model for {target_device} (BF16 dequantized)...")
 
-            load_kwargs = {
-                "torch_dtype": torch_dtype,
+            # Use FineGrainedFP8Config with dequantize to convert FP8 weights to BF16
+            load_kwargs: dict = {
+                "quantization_config": FineGrainedFP8Config(dequantize=True),
                 "low_cpu_mem_usage": True,
+                "trust_remote_code": True,
             }
+
+            if target_device.type == "cuda":
+                load_kwargs["device_map"] = "auto"
+            else:
+                load_kwargs["device_map"] = "cpu"
 
             if target_device.type == "mps":
                 load_kwargs["attn_implementation"] = "eager"
 
-            self.mistral_model = AutoModelForCausalLM.from_pretrained(
+            self.mistral_model = Mistral3ForConditionalGeneration.from_pretrained(
                 model_name,
                 **load_kwargs,
             )
 
-            if target_device.type != "cpu":
+            if target_device.type not in ("cpu", "cuda"):
                 print(f"   Moving model to {target_device}...")
                 self.mistral_model = self.mistral_model.to(target_device)
 
@@ -206,7 +231,7 @@ class ClimateTextDataLoader(IterableDataset):
                 self.mistral_model.gradient_checkpointing_enable()
                 print("  ✓ Gradient checkpointing enabled")
 
-            print(f"  ✓ Mistral model loaded in {torch_dtype} mode on {target_device}")
+            print(f"  ✓ Mistral model loaded (BF16 dequantized) on {target_device}")
         else:
             print("  ℹ Mistral will be loaded per-sample (memory efficient mode)")
 
@@ -372,20 +397,31 @@ class ClimateTextDataLoader(IterableDataset):
         # Move to target device explicitly
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
+        # Remove token_type_ids if present - Mistral3 doesn't support it
+        inputs.pop("token_type_ids", None)
+
+        # Build generation kwargs
+        generate_kwargs: dict = {
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "do_sample": True,
+        }
+        # Only set max_new_tokens if specified (None means no limit)
+        if self.max_response_length is not None:
+            generate_kwargs["max_new_tokens"] = self.max_response_length
+
         # Generate
         with torch.no_grad():
             with autocast_if_available(self.device):
                 outputs = self.mistral_model.generate(
                     **inputs,
-                    max_new_tokens=self.max_response_length,
-                    temperature=0.7,
-                    top_p=0.9,
-                    do_sample=True,
+                    **generate_kwargs,
                 )
 
-        # Decode response (remove prompt)
-        full_text = self.mistral_tokenizer.decode(outputs[0], skip_special_tokens=True)
-        response = full_text[len(formatted_prompt) :].strip()
+        # Decode only the new tokens (exclude the input prompt tokens)
+        input_length = inputs["input_ids"].shape[1]
+        response_tokens = outputs[0][input_length:]
+        response = self.mistral_tokenizer.decode(response_tokens, skip_special_tokens=True).strip()
 
         return response
 
@@ -430,7 +466,9 @@ class ClimateTextDataLoader(IterableDataset):
         )
 
         # Step 5: Format statistics table
-        statistics_table = self.statistics_computer.format_statistics_table(statistics, max_vars=20)
+        statistics_table = self.statistics_computer.format_statistics_table(
+            statistics, max_vars=None
+        )
 
         # Step 6: Generate prompt
         prompt = self.prompt_generator.generate_multimodal_training_prompt(
@@ -449,12 +487,20 @@ class ClimateTextDataLoader(IterableDataset):
             padding="max_length",
         )
 
+        # Tokenize response (handle None max_response_length)
+        response_tokenize_kwargs: dict = {
+            "return_tensors": "pt",
+            "truncation": self.max_response_length is not None,
+        }
+        if self.max_response_length is not None:
+            response_tokenize_kwargs["max_length"] = self.max_response_length
+            response_tokenize_kwargs["padding"] = "max_length"
+        else:
+            response_tokenize_kwargs["padding"] = True
+
         response_tokens = self.mistral_tokenizer(
             llm_response,
-            return_tensors="pt",
-            max_length=self.max_response_length,
-            truncation=True,
-            padding="max_length",
+            **response_tokenize_kwargs,
         )
 
         # Step 9: Create AIFS input tensor
@@ -559,15 +605,11 @@ class ClimateTextDataLoader(IterableDataset):
 
         print(f"\n💬 Prompt ({len(sample.prompt)} chars):")
         print("-" * 80)
-        print(sample.prompt[:500] + "..." if len(sample.prompt) > 500 else sample.prompt)
+        print(sample.prompt)
 
         print(f"\n🤖 LLM Response ({len(sample.llm_response)} chars):")
         print("-" * 80)
-        print(
-            sample.llm_response[:500] + "..."
-            if len(sample.llm_response) > 500
-            else sample.llm_response
-        )
+        print(sample.llm_response)
 
         print("\n🔢 Tokenization:")
         print(f"  Prompt tokens: {sample.prompt_tokens['input_ids'].shape}")

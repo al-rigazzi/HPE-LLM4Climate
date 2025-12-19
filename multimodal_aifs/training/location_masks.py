@@ -18,12 +18,14 @@ This module provides functionality to generate masks for specific geographic
 locations including continents, regions, countries, cities, states, and bodies of water.
 """
 
+import os
 import random
 from dataclasses import dataclass
 from typing import Literal
 
-import numpy as np
 import torch
+
+from ..utils.device_utils import resolve_device
 
 
 @dataclass
@@ -46,19 +48,38 @@ class LocationMaskGenerator:
     to isolate specific geographic regions for analysis.
     """
 
-    def __init__(self, grid_points: int = 542080, seed: int | None = None):
+    def __init__(
+        self,
+        grid_points: int = 542080,
+        seed: int | None = None,
+        device: str | torch.device | None = None,
+    ):
         """
         Initialize the location mask generator.
 
         Args:
             grid_points: Number of grid points in the AIFS model
             seed: Random seed for reproducibility
+            device: Device for tensor operations (defaults to ANALYSIS_GPU env var, then 'cuda:0')
         """
         self.grid_points = grid_points
         self.rng = random.Random(seed)
 
+        # Resolve device from ANALYSIS_GPU environment variable
+        if device is None:
+            analysis_gpu = os.environ.get("ANALYSIS_GPU", "0")
+            if torch.cuda.is_available():
+                device = f"cuda:{analysis_gpu}"
+            else:
+                device = "cpu"
+        self.device = resolve_device(device)
+
         # Pre-defined location database
         self._init_location_database()
+
+        # Pre-compute and cache the lat/lon grid
+        self._lat_grid: torch.Tensor | None = None
+        self._lon_grid: torch.Tensor | None = None
 
     def _init_location_database(self) -> None:
         """Initialize database of known locations with approximate coordinates."""
@@ -133,24 +154,36 @@ class LocationMaskGenerator:
             ],
         }
 
-    def _create_lat_lon_grid(self) -> tuple[np.ndarray, np.ndarray]:
+    def _create_lat_lon_grid(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Create latitude and longitude grids matching AIFS grid structure.
 
         Returns:
-            Tuple of (latitude, longitude) arrays of shape [grid_points]
+            Tuple of (latitude, longitude) tensors of shape [grid_points]
         """
+        # Return cached grids if available
+        if self._lat_grid is not None and self._lon_grid is not None:
+            return self._lat_grid, self._lon_grid
+
         # AIFS uses a reduced Gaussian grid
         # For now, approximate with uniform random sampling
         # This should be replaced with actual AIFS grid coordinates
 
         # Generate random lat/lon coordinates for each grid point
         # This is a placeholder until we have the actual AIFS grid topology
-        np.random.seed(42)  # Fixed seed for consistent grid
-        lat_flat = np.random.uniform(-90, 90, self.grid_points)
-        lon_flat = np.random.uniform(-180, 180, self.grid_points)
+        generator = torch.Generator(device="cpu").manual_seed(42)
+        lat_flat = torch.empty(self.grid_points, device="cpu").uniform_(
+            -90, 90, generator=generator
+        )
+        lon_flat = torch.empty(self.grid_points, device="cpu").uniform_(
+            -180, 180, generator=generator
+        )
 
-        return lat_flat, lon_flat
+        # Move to target device and cache
+        self._lat_grid = lat_flat.to(self.device)
+        self._lon_grid = lon_flat.to(self.device)
+
+        return self._lat_grid, self._lon_grid
 
     def _create_mask_for_location(
         self,
@@ -184,24 +217,25 @@ class LocationMaskGenerator:
         }
         actual_radius = radius_deg * radius_scaling.get(location_type, 1.0)
 
-        # Compute great circle distance (simplified)
-        # Convert to radians
-        lat1 = np.radians(center_lat)
-        lon1 = np.radians(center_lon)
-        lat2 = np.radians(lat_grid)
-        lon2 = np.radians(lon_grid)
+        # Convert to radians (using torch)
+        deg_to_rad = torch.pi / 180.0
+        lat1 = center_lat * deg_to_rad
+        lon1 = center_lon * deg_to_rad
+        lat2 = lat_grid * deg_to_rad
+        lon2 = lon_grid * deg_to_rad
 
         # Haversine formula
         dlat = lat2 - lat1
         dlon = lon2 - lon1
-        a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
-        c = 2 * np.arcsin(np.sqrt(a))
-        distance_deg = np.degrees(c)
+        cos_lat1 = torch.cos(torch.tensor(lat1, device=self.device))
+        a = torch.sin(dlat / 2) ** 2 + cos_lat1 * torch.cos(lat2) * torch.sin(dlon / 2) ** 2
+        c = 2 * torch.arcsin(torch.sqrt(a))
+        distance_deg = c * (180.0 / torch.pi)
 
         # Create mask
         mask = distance_deg <= actual_radius
 
-        return torch.from_numpy(mask)
+        return mask
 
     def get_random_location(self, location_type: str | None = None) -> Location:
         """
