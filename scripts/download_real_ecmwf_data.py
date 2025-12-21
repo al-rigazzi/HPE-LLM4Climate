@@ -206,9 +206,10 @@ def download_real_ecmwf_data(output_path: str, date: datetime | None = None):
     print("Loading AIFS model...")
     checkpoint = {"huggingface": "ecmwf/aifs-single-1.1"}
 
-    # Use CPU for AIFS runner as it's more reliable and doesn't require autocast
-    device = "cpu"
-    print(f"Using device: {device} (AIFS runner has better compatibility on CPU)")
+    # Use CUDA if available, otherwise CPU
+    import torch
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
 
     runner = SimpleRunner(checkpoint, device=device)
 
