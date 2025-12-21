@@ -208,6 +208,7 @@ def download_real_ecmwf_data(output_path: str, date: datetime | None = None):
 
     # Use CUDA if available, otherwise CPU
     import torch
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
