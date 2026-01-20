@@ -21,6 +21,7 @@ for 5-D climate time series data tokenization and multimodal applications.
 Usage:
     python -m pytest multimodal_aifs/tests/unit/test_aifs_time_series_tokenizer.py -v
 """
+
 # pylint: disable=redefined-outer-name,protected-access,too-many-public-methods
 
 
