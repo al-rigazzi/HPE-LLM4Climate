@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the core AIFS fusion and encoder utilities."""
+
 # pylint: disable=redefined-outer-name,protected-access,abstract-method
 
 from __future__ import annotations

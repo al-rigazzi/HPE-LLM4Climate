@@ -309,6 +309,93 @@ class AIFSCompleteEncoder(nn.Module):
         return data_embeddings
 
 
+def ensure_encoder_exists(
+    checkpoint_dir: str = DEFAULT_CHECKPOINT_DIR,
+    checkpoint_name: str = DEFAULT_CHECKPOINT_NAME,
+    device: str = "cpu",
+    verbose: bool = True,
+) -> str:
+    """
+    Ensure the AIFS encoder checkpoint exists, extracting it if necessary.
+
+    This function checks if the encoder checkpoint file exists. If not, it
+    downloads the AIFS model from HuggingFace and extracts the encoder.
+
+    Args:
+        checkpoint_dir: Directory for encoder checkpoints
+        checkpoint_name: Name of the checkpoint file
+        device: Device to use for extraction ("cpu", "cuda", "mps")
+        verbose: Whether to print progress messages
+
+    Returns:
+        Path to the encoder checkpoint file
+
+    Raises:
+        RuntimeError: If encoder extraction fails
+    """
+    checkpoint_path = os.path.join(checkpoint_dir, checkpoint_name)
+
+    if os.path.exists(checkpoint_path):
+        if verbose:
+            print(f"Encoder checkpoint found: {checkpoint_path}")
+        return checkpoint_path
+
+    if verbose:
+        print(f"Encoder checkpoint not found at {checkpoint_path}")
+        print("Extracting encoder from AIFS model (this may take a few minutes)...")
+
+    # Import here to avoid circular imports and delay heavy imports
+    try:
+        from anemoi.inference.runners.simple import SimpleRunner
+    except ImportError as exc:
+        raise RuntimeError(
+            "AIFS dependencies not available. Install with:\n"
+            "  pip install anemoi-inference[huggingface] anemoi-models"
+        ) from exc
+
+    # Create output directory
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    # Load AIFS model from HuggingFace
+    if verbose:
+        print("Loading AIFS-Single-1.1 from HuggingFace...")
+
+    checkpoint = {"huggingface": "ecmwf/aifs-single-1.1"}
+    runner = SimpleRunner(checkpoint, device=device)
+    aifs_model = runner.model
+
+    if verbose:
+        print(f"AIFS model loaded on {device}")
+
+    # Create encoder
+    encoder = AIFSCompleteEncoder(aifs_model, verbose=verbose, device=device)
+
+    # Generate sample output for checkpoint metadata
+    target_device = resolve_device(device)
+    amp_supported = target_device.type == "cuda" and torch.cuda.is_available()
+    dummy_dtype = torch.float16 if amp_supported else torch.float32
+
+    with torch.no_grad():
+        dummy_input = torch.randn(
+            1, 2, 1, AIFS_GRID_POINTS, 103, device=target_device, dtype=dummy_dtype
+        )
+        sample_output = encoder(dummy_input)
+
+    # Save encoder
+    save_aifs_encoder(
+        complete_encoder=encoder,
+        output_embeddings=sample_output,
+        checkpoint_dir=checkpoint_dir,
+        filename=checkpoint_name,
+        verbose=verbose,
+    )
+
+    if verbose:
+        print(f"Encoder extracted and saved to {checkpoint_path}")
+
+    return checkpoint_path
+
+
 def save_aifs_encoder(
     complete_encoder: AIFSCompleteEncoder,
     output_embeddings: torch.Tensor,

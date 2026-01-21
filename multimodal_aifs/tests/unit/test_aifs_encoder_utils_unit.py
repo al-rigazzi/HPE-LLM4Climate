@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Focused unit tests for ``multimodal_aifs.core.aifs_encoder_utils``."""
+
 # pylint: disable=abstract-method,arguments-differ
 
 from __future__ import annotations

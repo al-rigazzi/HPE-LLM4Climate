@@ -17,6 +17,7 @@ Test  AIFS Time Series Tokenizer
 
 This test validates that the updated tokenizer works with the new AIFSCompleteEncoder interface.
 """
+
 # pylint: disable=redefined-outer-name
 
 

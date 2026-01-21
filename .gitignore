@@ -7,13 +7,19 @@
 
 # Data and Model Files
 *.pt
+*.pth
 *.nc
 *.grib
 *.idx
 *.npy
 **/dataset/example_*
-**/extracted_models/**
 results/**
+
+# Encoder checkpoints (regenerated via scripts/extract_aifs_encoder.py)
+# Note: load_aifs_encoder.py and aifs_encoder_info.txt are tracked
+multimodal_aifs/models/extracted_models/*.pth
+multimodal_aifs/models/extracted_models/*.pt
+multimodal_aifs/models/extracted_models/*.json
 
 # Coverage
 .coverage*

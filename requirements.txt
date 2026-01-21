@@ -57,7 +57,7 @@ requests>=2.31.0
 # pycountry>=22.3.0
 
 # Code quality and development tools
-black>=24.0.0
+black==26.1.0
 isort>=5.12.0
 pylint>=3.0.0
 mypy>=1.8.0
