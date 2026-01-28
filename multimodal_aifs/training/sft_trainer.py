@@ -229,9 +229,7 @@ class SupervisedFinetuningTrainer:
 
         return inputs, labels
 
-    def train_step(
-        self, prompts: list[str], responses: list[str]
-    ) -> dict[str, float]:
+    def train_step(self, prompts: list[str], responses: list[str]) -> dict[str, float]:
         """
         Perform a single training step.
 
@@ -316,15 +314,11 @@ class SupervisedFinetuningTrainer:
 
             if self.scaler is not None:
                 self.scaler.unscale_(self.optimizer)
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), self.config.max_grad_norm
-                )
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.max_grad_norm)
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
             else:
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), self.config.max_grad_norm
-                )
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.max_grad_norm)
                 self.optimizer.step()
 
             self.optimizer.zero_grad()
@@ -332,9 +326,9 @@ class SupervisedFinetuningTrainer:
 
         return {
             "loss": sum(epoch_losses) / len(epoch_losses) if epoch_losses else 0.0,
-            "perplexity": sum(epoch_perplexities) / len(epoch_perplexities)
-            if epoch_perplexities
-            else 0.0,
+            "perplexity": (
+                sum(epoch_perplexities) / len(epoch_perplexities) if epoch_perplexities else 0.0
+            ),
         }
 
     def train(self) -> dict[str, list[float]]:
@@ -373,8 +367,7 @@ class SupervisedFinetuningTrainer:
                 self.best_loss = metrics["loss"]
 
             if self.checkpoint_manager is not None and (
-                (epoch + 1) % (self.config.save_steps // len(self.dataloader) + 1) == 0
-                or is_best
+                (epoch + 1) % (self.config.save_steps // len(self.dataloader) + 1) == 0 or is_best
             ):
                 previous_stages = [TrainingStage.RL_PRETRAINING.value]
 
@@ -425,9 +418,7 @@ class SupervisedFinetuningTrainer:
                 if sample_count >= num_samples:
                     break
 
-                inputs, labels = self._prepare_batch(
-                    [sample.prompt], [sample.llm_response]
-                )
+                inputs, labels = self._prepare_batch([sample.prompt], [sample.llm_response])
 
                 outputs = self.model(**inputs, labels=labels)
                 loss = outputs.loss

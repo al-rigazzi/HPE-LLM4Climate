@@ -406,8 +406,11 @@ class RLTrainer:
                     hidden_states = outputs.hidden_states[-1]
                     values = self.value_head(hidden_states)
 
-                    old_lp_sum = mb_old_log_probs.sum(dim=-1) if mb_old_log_probs.dim() > 1 \
+                    old_lp_sum = (
+                        mb_old_log_probs.sum(dim=-1)
+                        if mb_old_log_probs.dim() > 1
                         else mb_old_log_probs
+                    )
                     ratio = torch.exp(new_log_probs - old_lp_sum)
 
                     surr1 = ratio * mb_advantages
@@ -435,11 +438,7 @@ class RLTrainer:
                         with torch.no_grad():
                             ref_outputs = self.reference_model(**inputs)
                             ref_log_probs = torch.log_softmax(ref_outputs.logits, dim=-1)
-                        kl = (
-                            (torch.exp(log_probs) * (log_probs - ref_log_probs))
-                            .sum(dim=-1)
-                            .mean()
-                        )
+                        kl = (torch.exp(log_probs) * (log_probs - ref_log_probs)).sum(dim=-1).mean()
                         loss = loss + self.config.kl_penalty_coef * kl
                         total_kl += kl.item()
 
@@ -615,8 +614,7 @@ class RLTrainer:
                 self.best_reward = metrics["mean_reward"]
 
             if self.checkpoint_manager is not None and (
-                (epoch + 1) % (self.config.save_steps // len(self.dataloader) + 1) == 0
-                or is_best
+                (epoch + 1) % (self.config.save_steps // len(self.dataloader) + 1) == 0 or is_best
             ):
                 metadata = CheckpointMetadata(
                     stage=TrainingStage.RL_PRETRAINING,

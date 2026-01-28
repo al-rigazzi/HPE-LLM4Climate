@@ -371,9 +371,7 @@ class TrainingPipeline:
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Create command-line argument parser."""
-    parser = argparse.ArgumentParser(
-        description="Train climate LLM with verifiable RL rewards"
-    )
+    parser = argparse.ArgumentParser(description="Train climate LLM with verifiable RL rewards")
 
     parser.add_argument(
         "--stage",

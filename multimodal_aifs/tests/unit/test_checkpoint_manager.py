@@ -167,9 +167,7 @@ class TestCheckpointManager:
         assert manager.checkpoint_dir == temp_checkpoint_dir
         assert manager.checkpoint_dir.exists()
 
-    def test_save_checkpoint(
-        self, checkpoint_manager, simple_model, optimizer
-    ):
+    def test_save_checkpoint(self, checkpoint_manager, simple_model, optimizer):
         """Test saving a checkpoint."""
         metadata = CheckpointMetadata(
             stage=TrainingStage.RL_PRETRAINING,
@@ -190,9 +188,7 @@ class TestCheckpointManager:
         assert (path / "optimizer.pt").exists()
         assert (path / "metadata.json").exists()
 
-    def test_load_checkpoint(
-        self, checkpoint_manager, simple_model, optimizer
-    ):
+    def test_load_checkpoint(self, checkpoint_manager, simple_model, optimizer):
         """Test loading a checkpoint."""
         original_weights = simple_model.linear.weight.clone()
         simple_model.linear.weight.data.fill_(1.0)
@@ -224,9 +220,7 @@ class TestCheckpointManager:
         assert loaded_metadata.epoch == 1
         assert torch.allclose(new_model.linear.weight, simple_model.linear.weight)
 
-    def test_save_best_checkpoint(
-        self, checkpoint_manager, simple_model, optimizer
-    ):
+    def test_save_best_checkpoint(self, checkpoint_manager, simple_model, optimizer):
         """Test saving a best checkpoint."""
         metadata = CheckpointMetadata(
             stage=TrainingStage.RL_PRETRAINING,
@@ -246,9 +240,7 @@ class TestCheckpointManager:
         assert "best" in str(path)
         assert path.exists()
 
-    def test_get_latest_checkpoint(
-        self, checkpoint_manager, simple_model, optimizer
-    ):
+    def test_get_latest_checkpoint(self, checkpoint_manager, simple_model, optimizer):
         """Test getting the latest checkpoint."""
         for step in [100, 200, 300]:
             metadata = CheckpointMetadata(
@@ -263,17 +255,13 @@ class TestCheckpointManager:
                 metadata=metadata,
             )
 
-        path, metadata = checkpoint_manager.get_latest_checkpoint(
-            TrainingStage.RL_PRETRAINING
-        )
+        path, metadata = checkpoint_manager.get_latest_checkpoint(TrainingStage.RL_PRETRAINING)
 
         assert path is not None
         assert metadata is not None
         assert metadata.step == 300
 
-    def test_get_best_checkpoint(
-        self, checkpoint_manager, simple_model, optimizer
-    ):
+    def test_get_best_checkpoint(self, checkpoint_manager, simple_model, optimizer):
         """Test getting the best checkpoint."""
         metadata = CheckpointMetadata(
             stage=TrainingStage.RL_PRETRAINING,
@@ -290,17 +278,13 @@ class TestCheckpointManager:
             is_best=True,
         )
 
-        path, loaded_metadata = checkpoint_manager.get_best_checkpoint(
-            TrainingStage.RL_PRETRAINING
-        )
+        path, loaded_metadata = checkpoint_manager.get_best_checkpoint(TrainingStage.RL_PRETRAINING)
 
         assert path is not None
         assert loaded_metadata is not None
         assert loaded_metadata.step == 250
 
-    def test_has_checkpoint(
-        self, checkpoint_manager, simple_model, optimizer
-    ):
+    def test_has_checkpoint(self, checkpoint_manager, simple_model, optimizer):
         """Test checking if checkpoint exists."""
         assert not checkpoint_manager.has_checkpoint(TrainingStage.RL_PRETRAINING)
 
@@ -320,9 +304,7 @@ class TestCheckpointManager:
         assert checkpoint_manager.has_checkpoint(TrainingStage.RL_PRETRAINING, step=100)
         assert not checkpoint_manager.has_checkpoint(TrainingStage.RL_PRETRAINING, step=200)
 
-    def test_checkpoint_cleanup(
-        self, temp_checkpoint_dir, simple_model, optimizer
-    ):
+    def test_checkpoint_cleanup(self, temp_checkpoint_dir, simple_model, optimizer):
         """Test that old checkpoints are cleaned up."""
         manager = CheckpointManager(
             checkpoint_dir=temp_checkpoint_dir,
@@ -349,9 +331,7 @@ class TestCheckpointManager:
         checkpoint_steps = sorted(int(c.name.split("_")[1]) for c in checkpoints)
         assert checkpoint_steps == [300, 400]
 
-    def test_training_history(
-        self, checkpoint_manager, simple_model, optimizer
-    ):
+    def test_training_history(self, checkpoint_manager, simple_model, optimizer):
         """Test training history tracking."""
         for step in [100, 200]:
             metadata = CheckpointMetadata(
@@ -373,9 +353,7 @@ class TestCheckpointManager:
         assert history[0]["step"] == 100
         assert history[1]["step"] == 200
 
-    def test_get_previous_stage_path(
-        self, checkpoint_manager, simple_model, optimizer
-    ):
+    def test_get_previous_stage_path(self, checkpoint_manager, simple_model, optimizer):
         """Test getting previous stage path for SFT."""
         metadata = CheckpointMetadata(
             stage=TrainingStage.RL_PRETRAINING,
@@ -390,9 +368,7 @@ class TestCheckpointManager:
             is_best=True,
         )
 
-        rl_path = checkpoint_manager.get_previous_stage_path(
-            TrainingStage.SUPERVISED_FINETUNING
-        )
+        rl_path = checkpoint_manager.get_previous_stage_path(TrainingStage.SUPERVISED_FINETUNING)
 
         assert rl_path is not None
         assert "rl_pretraining" in str(rl_path)
@@ -406,9 +382,7 @@ class TestCheckpointManager:
                 step=9999,
             )
 
-    def test_save_without_optimizer(
-        self, checkpoint_manager, simple_model
-    ):
+    def test_save_without_optimizer(self, checkpoint_manager, simple_model):
         """Test saving checkpoint without optimizer."""
         metadata = CheckpointMetadata(
             stage=TrainingStage.RL_PRETRAINING,
@@ -427,9 +401,7 @@ class TestCheckpointManager:
         assert (path / "model.pt").exists()
         assert not (path / "optimizer.pt").exists()
 
-    def test_cross_stage_checkpoint_loading(
-        self, checkpoint_manager, simple_model, optimizer
-    ):
+    def test_cross_stage_checkpoint_loading(self, checkpoint_manager, simple_model, optimizer):
         """Test loading RL checkpoint for SFT initialization."""
         rl_metadata = CheckpointMetadata(
             stage=TrainingStage.RL_PRETRAINING,

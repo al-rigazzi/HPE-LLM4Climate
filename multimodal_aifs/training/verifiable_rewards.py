@@ -424,7 +424,8 @@ class VerifiableRewardComputer:
             Tuple of (reward, details_dict)
         """
         available_important = [
-            v for v in self.IMPORTANT_VARIABLES
+            v
+            for v in self.IMPORTANT_VARIABLES
             if any(stat.variable_name == v for stat in ground_truth)
         ]
 
@@ -559,16 +560,10 @@ class VerifiableRewardComputer:
         """
         extracted_values = self.extract_numerical_values(response)
 
-        num_accuracy, num_details = self.compute_numerical_accuracy(
-            extracted_values, ground_truth
-        )
-        trend_correct, trend_details = self.compute_trend_correctness(
-            response, ground_truth
-        )
+        num_accuracy, num_details = self.compute_numerical_accuracy(extracted_values, ground_truth)
+        trend_correct, trend_details = self.compute_trend_correctness(response, ground_truth)
         coverage, coverage_details = self.compute_coverage(response, ground_truth)
-        consistency, consistency_details = self.compute_consistency(
-            response, extracted_values
-        )
+        consistency, consistency_details = self.compute_consistency(response, extracted_values)
         format_quality, format_details = self.compute_format_quality(response)
 
         breakdown = RewardBreakdown(

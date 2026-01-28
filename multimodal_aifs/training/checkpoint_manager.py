@@ -196,9 +196,7 @@ class CheckpointManager:
         Returns:
             Path to the saved checkpoint directory
         """
-        checkpoint_path = self._get_checkpoint_path(
-            metadata.stage, metadata.step, is_best=is_best
-        )
+        checkpoint_path = self._get_checkpoint_path(metadata.stage, metadata.step, is_best=is_best)
         checkpoint_path.mkdir(parents=True, exist_ok=True)
 
         model_path = checkpoint_path / self.MODEL_FILENAME
@@ -312,9 +310,7 @@ class CheckpointManager:
             Tuple of (checkpoint_path, metadata) or (None, None) if no checkpoints
         """
         stage_dir = self._get_stage_dir(stage)
-        checkpoints = [
-            d for d in stage_dir.iterdir() if d.is_dir() and d.name.startswith("step_")
-        ]
+        checkpoints = [d for d in stage_dir.iterdir() if d.is_dir() and d.name.startswith("step_")]
 
         if not checkpoints:
             return None, None

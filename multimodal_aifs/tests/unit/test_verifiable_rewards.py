@@ -369,9 +369,7 @@ class TestVerifiableRewardComputer:
         assert rewards.shape == (3,)
         assert all(0.0 <= r <= 1.0 for r in rewards)
 
-    def test_compute_batch_rewards_mismatched_lengths(
-        self, reward_computer, sample_ground_truth
-    ):
+    def test_compute_batch_rewards_mismatched_lengths(self, reward_computer, sample_ground_truth):
         """Test batch reward computation with mismatched lengths."""
         responses = ["Temperature is 288K."]
         ground_truths = [sample_ground_truth] * 3
@@ -381,12 +379,8 @@ class TestVerifiableRewardComputer:
 
     def test_hallucination_penalty(self, sample_ground_truth):
         """Test that hallucinated values are penalized."""
-        computer_with_penalty = VerifiableRewardComputer(
-            penalize_hallucinations=True
-        )
-        computer_without_penalty = VerifiableRewardComputer(
-            penalize_hallucinations=False
-        )
+        computer_with_penalty = VerifiableRewardComputer(penalize_hallucinations=True)
+        computer_without_penalty = VerifiableRewardComputer(penalize_hallucinations=False)
 
         extracted = [
             ExtractedValue(
