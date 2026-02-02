@@ -146,6 +146,7 @@ echo "============================================"
 srun --ntasks="${SLURM_NTASKS}" \
      --gpus-per-task=1 \
      --cpus-per-task="${SLURM_CPUS_PER_TASK}" \
+     --unbuffered \
      bash -c '
         # Set local rank based on SLURM local task ID
         export LOCAL_RANK=${SLURM_LOCALID}
@@ -153,10 +154,13 @@ srun --ntasks="${SLURM_NTASKS}" \
 
         # Make all GPUs visible so that LOCAL_RANK device mapping works correctly
         export CUDA_VISIBLE_DEVICES=0,1,2,3
+        
+        # Ensure Python output is unbuffered
+        export PYTHONUNBUFFERED=1
 
         echo "Node: $(hostname), Rank: ${RANK}, Local Rank: ${LOCAL_RANK}, GPU: ${CUDA_VISIBLE_DEVICES}"
 
-        python -m multimodal_aifs.training.train_pipeline \
+        python -u -m multimodal_aifs.training.train_pipeline \
             --stage rl \
             --model-name "'"${MODEL_NAME}"'" \
             --zarr-paths "'"${ZARR_DATA}"'" \

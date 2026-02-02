@@ -307,4 +307,4 @@ def barrier() -> None:
 def print_rank0(message: str) -> None:
     """Print a message only on rank 0."""
     if is_main_process():
-        print(message)
+        print(message, flush=True)
