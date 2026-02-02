@@ -152,7 +152,7 @@ class TrainingPipeline:
         print_rank0("Initializing training pipeline components...")
 
         print_rank0(f"Loading tokenizer: {self.model_name}")
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_name,
@@ -164,12 +164,25 @@ class TrainingPipeline:
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
 
         print_rank0(f"Loading model: {self.model_name}")
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            trust_remote_code=True,
-            torch_dtype=torch.bfloat16,
-            low_cpu_mem_usage=True,
-        )
+        # Use Mistral3ForConditionalGeneration for Mistral 3 models
+        if "Ministral-3" in self.model_name or "Mistral-3" in self.model_name:
+            from transformers import Mistral3ForConditionalGeneration
+
+            self.model = Mistral3ForConditionalGeneration.from_pretrained(
+                self.model_name,
+                trust_remote_code=True,
+                dtype=torch.bfloat16,
+                low_cpu_mem_usage=True,
+            )
+        else:
+            from transformers import AutoModelForCausalLM
+
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                trust_remote_code=True,
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True,
+            )
 
         print_rank0("Initializing data loader")
         self.dataloader = ClimateTextDataLoader(
