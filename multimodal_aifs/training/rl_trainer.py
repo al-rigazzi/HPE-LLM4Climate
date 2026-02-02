@@ -258,11 +258,12 @@ class RLTrainer:
 
     def _get_hidden_size(self) -> int:
         """Get the hidden size of the model."""
-        if hasattr(self.model, "config"):
-            if hasattr(self.model.config, "hidden_size"):
-                return self.model.config.hidden_size
-            if hasattr(self.model.config, "d_model"):
-                return self.model.config.d_model
+        model = unwrap_model(self.model)
+        if hasattr(model, "config"):
+            if hasattr(model.config, "hidden_size"):
+                return model.config.hidden_size
+            if hasattr(model.config, "d_model"):
+                return model.config.d_model
         return 4096
 
     def generate_response(self, prompt: str) -> tuple[str, torch.Tensor]:
@@ -287,8 +288,10 @@ class RLTrainer:
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         inputs.pop("token_type_ids", None)
 
+        # Use unwrapped model for generation (DDP wrapper doesn't have .generate())
+        model = unwrap_model(self.model)
         with torch.no_grad():
-            outputs = self.model.generate(
+            outputs = model.generate(
                 **inputs,
                 max_new_tokens=self.config.max_response_length,
                 temperature=self.config.temperature,

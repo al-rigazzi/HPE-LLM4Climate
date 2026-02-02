@@ -27,3 +27,503 @@ Distributed training enabled: 8 processes
 Initializing training pipeline components...
 Loading tokenizer: mistralai/Ministral-3-8B-Instruct-2512
 Loading model: mistralai/Ministral-3-8B-Instruct-2512
+blancapeak001:1628380:1628380 [2] NCCL INFO cudaDriverVersion 12080
+blancapeak001:1628380:1628380 [2] NCCL INFO Bootstrap: Using bond0:172.17.32.113<0>
+blancapeak001:1628380:1628380 [2] NCCL INFO NCCL version 2.27.5+cuda12.9
+blancapeak001:1628380:1628380 [2] NCCL INFO Comm config Blocking set to 1
+blancapeak001:1628380:1630369 [2] NCCL INFO NET/Plugin: Could not find: libnccl-net.so. 
+blancapeak001:1628380:1630369 [2] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+blancapeak001:1628380:1630369 [2] NCCL INFO Failed to open libibverbs.so[.1]
+blancapeak001:1628380:1630369 [2] NCCL INFO NET/Socket : Using [0]bond0:172.17.32.113<0> [1]hsn0:192.168.64.33<0> [2]hsn1:192.168.64.55<0> [3]hsn2:192.168.64.42<0> [4]hsn3:192.168.64.44<0>
+blancapeak001:1628380:1630369 [2] NCCL INFO Initialized NET plugin Socket
+blancapeak001:1628380:1630369 [2] NCCL INFO Assigned NET plugin Socket to comm
+blancapeak001:1628380:1630369 [2] NCCL INFO Using network Socket
+blancapeak001:1628380:1630369 [2] NCCL INFO ncclCommInitRankConfig comm 0x40bdcd10 rank 2 nranks 8 cudaDev 2 nvmlDev 2 busId 2901000 commId 0xd1bef1698c792870 - Init START
+blancapeak001:1628380:1630369 [2] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+blancapeak001:1628380:1630369 [2] NCCL INFO Bootstrap timings total 2.805893 (create 0.000054, send 0.000242, recv 0.030976, ring 2.774146, delay 0.000001)
+blancapeak001:1628380:1630369 [2] NCCL INFO Setting affinity for GPU 2 to 144-215
+blancapeak001:1628380:1630369 [2] NCCL INFO NVLS multicast support is not available on dev 2 (NVLS_NCHANNELS 0)
+blancapeak001:1628380:1630369 [2] NCCL INFO comm 0x40bdcd10 rank 2 nRanks 8 nNodes 2 localRanks 4 localRank 2 MNNVL 0
+blancapeak001:1628380:1630369 [2] NCCL INFO Trees [0] 3/-1/-1->2->1 [1] 3/-1/-1->2->1 [2] 0/6/-1->2->-1 [3] 1/-1/-1->2->0 [4] 3/-1/-1->2->1 [5] 3/-1/-1->2->1 [6] 0/-1/-1->2->6 [7] 1/-1/-1->2->0
+blancapeak001:1628380:1630369 [2] NCCL INFO P2P Chunksize set to 131072
+blancapeak001:1628380:1630369 [2] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+blancapeak001:1628380:1630375 [2] NCCL INFO [Proxy Service] Device 2 CPU core 175
+blancapeak001:1628380:1630378 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 178
+blancapeak001:1628380:1630369 [2] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+blancapeak001:1628380:1630369 [2] NCCL INFO 8 coll channels, 8 collnet channels, 0 nvls channels, 8 p2p channels, 2 p2p channels per peer
+blancapeak001:1628380:1630369 [2] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+blancapeak001:1628380:1630369 [2] NCCL INFO ncclCommInitRankConfig comm 0x40bdcd10 rank 2 nranks 8 cudaDev 2 nvmlDev 2 busId 2901000 commId 0xd1bef1698c792870 - Init COMPLETE
+blancapeak001:1628380:1630369 [2] NCCL INFO Init timings - ncclCommInitRankConfig: rank 2 nranks 8 total 8.94 (kernels 3.40, alloc 2.65, bootstrap 2.81, allgathers 0.01, topo 0.02, graphs 0.01, connections 0.02, rest 0.02)
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 00/0 : 2[2] -> 3[3] via P2P/CUMEM
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 04/0 : 2[2] -> 3[3] via P2P/CUMEM
+blancapeak001:1628380:1630386 [2] NCCL INFO [Proxy Progress] Device 2 CPU core 180
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 02/0 : 6[2] -> 2[2] [receive] via NET/Socket/3
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 06/0 : 6[2] -> 2[2] [receive] via NET/Socket/3
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 03/0 : 2[2] -> 6[2] [send] via NET/Socket/3
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 07/0 : 2[2] -> 6[2] [send] via NET/Socket/3
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 02/0 : 2[2] -> 0[0] via P2P/CUMEM
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 06/0 : 2[2] -> 0[0] via P2P/CUMEM
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 01/0 : 2[2] -> 1[1] via P2P/CUMEM
+blancapeak001:1628380:1630382 [2] NCCL INFO Channel 05/0 : 2[2] -> 1[1] via P2P/CUMEM
+blancapeak001:1628380:1630382 [2] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 01/0 : 2[2] -> 3[3] via P2P/CUMEM
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 05/0 : 2[2] -> 3[3] via P2P/CUMEM
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 02/0 : 2[2] -> 6[2] [send] via NET/Socket/3
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 06/0 : 2[2] -> 6[2] [send] via NET/Socket/3
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 03/0 : 2[2] -> 0[0] via P2P/CUMEM
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 07/0 : 2[2] -> 0[0] via P2P/CUMEM
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 00/0 : 2[2] -> 1[1] via P2P/CUMEM
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 03/0 : 2[2] -> 1[1] via P2P/CUMEM
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 04/0 : 2[2] -> 1[1] via P2P/CUMEM
+blancapeak001:1628380:1630392 [2] NCCL INFO Channel 07/0 : 2[2] -> 1[1] via P2P/CUMEM
+blancapeak001:1628380:1630392 [2] NCCL INFO Connected all trees
+blancapeak001:1628380:1628380 [2] NCCL INFO comm 0x40bdcd10 rank 2 nranks 8 cudaDev 2 busId 2901000 - Destroy COMPLETE
+blancapeak001:1628378:1628378 [0] NCCL INFO Bootstrap: Using bond0:172.17.32.113<0>
+blancapeak001:1628378:1628378 [0] NCCL INFO cudaDriverVersion 12080
+blancapeak001:1628378:1628378 [0] NCCL INFO NCCL version 2.27.5+cuda12.9
+blancapeak001:1628378:1628378 [0] NCCL INFO Comm config Blocking set to 1
+blancapeak001:1628378:1630366 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so. 
+blancapeak001:1628378:1630366 [0] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+blancapeak001:1628378:1630366 [0] NCCL INFO Failed to open libibverbs.so[.1]
+blancapeak001:1628378:1630366 [0] NCCL INFO NET/Socket : Using [0]bond0:172.17.32.113<0> [1]hsn0:192.168.64.33<0> [2]hsn1:192.168.64.55<0> [3]hsn2:192.168.64.42<0> [4]hsn3:192.168.64.44<0>
+blancapeak001:1628378:1630366 [0] NCCL INFO Initialized NET plugin Socket
+blancapeak001:1628378:1630366 [0] NCCL INFO Assigned NET plugin Socket to comm
+blancapeak001:1628378:1630366 [0] NCCL INFO Using network Socket
+blancapeak001:1628378:1630366 [0] NCCL INFO ncclCommInitRankConfig comm 0xed2dea0 rank 0 nranks 8 cudaDev 0 nvmlDev 0 busId 901000 commId 0xd1bef1698c792870 - Init START
+blancapeak001:1628378:1630366 [0] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+blancapeak001:1628378:1630366 [0] NCCL INFO Bootstrap timings total 2.821260 (create 0.000040, send 0.000130, recv 0.015589, ring 0.000699, delay 0.000001)
+blancapeak001:1628378:1630366 [0] NCCL INFO Setting affinity for GPU 0 to 0-71
+blancapeak001:1628378:1630366 [0] NCCL INFO NVLS multicast support is not available on dev 0 (NVLS_NCHANNELS 0)
+blancapeak001:1628378:1630366 [0] NCCL INFO comm 0xed2dea0 rank 0 nRanks 8 nNodes 2 localRanks 4 localRank 0 MNNVL 0
+blancapeak001:1628378:1630366 [0] NCCL INFO Channel 00/08 : 0 1 2 3 7 6 5 4
+blancapeak001:1628378:1630366 [0] NCCL INFO Channel 01/08 : 0 4 5 6 7 3 2 1
+blancapeak001:1628378:1630366 [0] NCCL INFO Channel 02/08 : 0 3 1 5 4 7 6 2
+blancapeak001:1628378:1630366 [0] NCCL INFO Channel 03/08 : 0 3 2 6 4 7 5 1
+blancapeak001:1628378:1630366 [0] NCCL INFO Channel 04/08 : 0 1 2 3 7 6 5 4
+blancapeak001:1628378:1630366 [0] NCCL INFO Channel 05/08 : 0 4 5 6 7 3 2 1
+blancapeak001:1628378:1630366 [0] NCCL INFO Channel 06/08 : 0 3 1 5 4 7 6 2
+blancapeak001:1628378:1630366 [0] NCCL INFO Channel 07/08 : 0 3 2 6 4 7 5 1
+blancapeak001:1628378:1630366 [0] NCCL INFO Trees [0] 1/4/-1->0->-1 [1] -1/-1/-1->0->3 [2] 1/-1/-1->0->2 [3] 2/-1/-1->0->3 [4] 1/-1/-1->0->4 [5] -1/-1/-1->0->3 [6] 1/-1/-1->0->2 [7] 2/-1/-1->0->3
+blancapeak001:1628378:1630366 [0] NCCL INFO P2P Chunksize set to 131072
+blancapeak001:1628378:1630366 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+blancapeak001:1628378:1630366 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0
+blancapeak001:1628378:1630376 [0] NCCL INFO [Proxy Service] Device 0 CPU core 22
+blancapeak001:1628378:1630380 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 23
+blancapeak001:1628378:1630366 [0] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+blancapeak001:1628378:1630366 [0] NCCL INFO 8 coll channels, 8 collnet channels, 0 nvls channels, 8 p2p channels, 2 p2p channels per peer
+blancapeak001:1628378:1630366 [0] NCCL INFO CC Off, workFifoBytes 1048576
+blancapeak001:1628378:1630366 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+blancapeak001:1628378:1630366 [0] NCCL INFO ncclCommInitRankConfig comm 0xed2dea0 rank 0 nranks 8 cudaDev 0 nvmlDev 0 busId 901000 commId 0xd1bef1698c792870 - Init COMPLETE
+blancapeak001:1628378:1630366 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 0 nranks 8 total 8.96 (kernels 3.42, alloc 2.64, bootstrap 2.82, allgathers 0.01, topo 0.03, graphs 0.01, connections 0.02, rest 0.02)
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 00/0 : 0[0] -> 1[1] via P2P/CUMEM
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 04/0 : 0[0] -> 1[1] via P2P/CUMEM
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 02/0 : 0[0] -> 3[3] via P2P/CUMEM
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 03/0 : 0[0] -> 3[3] via P2P/CUMEM
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 06/0 : 0[0] -> 3[3] via P2P/CUMEM
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 07/0 : 0[0] -> 3[3] via P2P/CUMEM
+blancapeak001:1628378:1630389 [0] NCCL INFO [Proxy Progress] Device 0 CPU core 24
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 00/0 : 4[0] -> 0[0] [receive] via NET/Socket/1
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 04/0 : 4[0] -> 0[0] [receive] via NET/Socket/1
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 01/0 : 0[0] -> 4[0] [send] via NET/Socket/1
+blancapeak001:1628378:1630383 [0] NCCL INFO Channel 05/0 : 0[0] -> 4[0] [send] via NET/Socket/1
+blancapeak001:1628378:1630383 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 02/0 : 0[0] -> 1[1] via P2P/CUMEM
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 06/0 : 0[0] -> 1[1] via P2P/CUMEM
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 02/0 : 0[0] -> 2[2] via P2P/CUMEM
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 03/0 : 0[0] -> 2[2] via P2P/CUMEM
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 06/0 : 0[0] -> 2[2] via P2P/CUMEM
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 07/0 : 0[0] -> 2[2] via P2P/CUMEM
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 01/0 : 0[0] -> 3[3] via P2P/CUMEM
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 05/0 : 0[0] -> 3[3] via P2P/CUMEM
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 00/0 : 0[0] -> 4[0] [send] via NET/Socket/1
+blancapeak001:1628378:1630390 [0] NCCL INFO Channel 04/0 : 0[0] -> 4[0] [send] via NET/Socket/1
+blancapeak001:1628378:1630390 [0] NCCL INFO Connected all trees
+blancapeak001:1628378:1628378 [0] NCCL INFO comm 0xed2dea0 rank 0 nranks 8 cudaDev 0 busId 901000 - Destroy COMPLETE
+blancapeak001:1628379:1628379 [3] NCCL INFO cudaDriverVersion 12080
+blancapeak001:1628379:1628379 [3] NCCL INFO Bootstrap: Using bond0:172.17.32.113<0>
+blancapeak001:1628379:1628379 [3] NCCL INFO NCCL version 2.27.5+cuda12.9
+blancapeak001:1628379:1628379 [3] NCCL INFO Comm config Blocking set to 1
+blancapeak001:1628379:1630367 [3] NCCL INFO NET/Plugin: Could not find: libnccl-net.so. 
+blancapeak001:1628379:1630367 [3] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+blancapeak001:1628379:1630367 [3] NCCL INFO Failed to open libibverbs.so[.1]
+blancapeak001:1628379:1630367 [3] NCCL INFO NET/Socket : Using [0]bond0:172.17.32.113<0> [1]hsn0:192.168.64.33<0> [2]hsn1:192.168.64.55<0> [3]hsn2:192.168.64.42<0> [4]hsn3:192.168.64.44<0>
+blancapeak001:1628379:1630367 [3] NCCL INFO Initialized NET plugin Socket
+blancapeak001:1628379:1630367 [3] NCCL INFO Assigned NET plugin Socket to comm
+blancapeak001:1628379:1630367 [3] NCCL INFO Using network Socket
+blancapeak001:1628379:1630367 [3] NCCL INFO ncclCommInitRankConfig comm 0x1abed7b0 rank 3 nranks 8 cudaDev 3 nvmlDev 3 busId 3901000 commId 0xd1bef1698c792870 - Init START
+blancapeak001:1628379:1630367 [3] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+blancapeak001:1628379:1630367 [3] NCCL INFO Bootstrap timings total 2.774995 (create 0.000048, send 0.000216, recv 2.773256, ring 0.000709, delay 0.000001)
+blancapeak001:1628379:1630367 [3] NCCL INFO Setting affinity for GPU 3 to 216-287
+blancapeak001:1628379:1630367 [3] NCCL INFO NVLS multicast support is not available on dev 3 (NVLS_NCHANNELS 0)
+blancapeak001:1628379:1630367 [3] NCCL INFO comm 0x1abed7b0 rank 3 nRanks 8 nNodes 2 localRanks 4 localRank 3 MNNVL 0
+blancapeak001:1628379:1630367 [3] NCCL INFO Trees [0] -1/-1/-1->3->2 [1] 0/-1/-1->3->2 [2] -1/-1/-1->3->1 [3] 0/7/-1->3->-1 [4] -1/-1/-1->3->2 [5] 0/-1/-1->3->2 [6] -1/-1/-1->3->1 [7] 0/-1/-1->3->7
+blancapeak001:1628379:1630367 [3] NCCL INFO P2P Chunksize set to 131072
+blancapeak001:1628379:1630367 [3] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+blancapeak001:1628379:1630377 [3] NCCL INFO [Proxy Service] Device 3 CPU core 283
+blancapeak001:1628379:1630381 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 284
+blancapeak001:1628379:1630367 [3] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+blancapeak001:1628379:1630367 [3] NCCL INFO 8 coll channels, 8 collnet channels, 0 nvls channels, 8 p2p channels, 2 p2p channels per peer
+blancapeak001:1628379:1630367 [3] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+blancapeak001:1628379:1630367 [3] NCCL INFO ncclCommInitRankConfig comm 0x1abed7b0 rank 3 nranks 8 cudaDev 3 nvmlDev 3 busId 3901000 commId 0xd1bef1698c792870 - Init COMPLETE
+blancapeak001:1628379:1630367 [3] NCCL INFO Init timings - ncclCommInitRankConfig: rank 3 nranks 8 total 8.94 (kernels 4.52, alloc 1.57, bootstrap 2.78, allgathers 0.01, topo 0.02, graphs 0.01, connections 0.02, rest 0.02)
+blancapeak001:1628379:1630388 [3] NCCL INFO [Proxy Progress] Device 3 CPU core 286
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 01/0 : 7[3] -> 3[3] [receive] via NET/Socket/4
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 05/0 : 7[3] -> 3[3] [receive] via NET/Socket/4
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 00/0 : 3[3] -> 7[3] [send] via NET/Socket/4
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 04/0 : 3[3] -> 7[3] [send] via NET/Socket/4
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 02/0 : 3[3] -> 1[1] via P2P/CUMEM
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 06/0 : 3[3] -> 1[1] via P2P/CUMEM
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 01/0 : 3[3] -> 2[2] via P2P/CUMEM
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 03/0 : 3[3] -> 2[2] via P2P/CUMEM
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 05/0 : 3[3] -> 2[2] via P2P/CUMEM
+blancapeak001:1628379:1630384 [3] NCCL INFO Channel 07/0 : 3[3] -> 2[2] via P2P/CUMEM
+blancapeak001:1628379:1630384 [3] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 03/0 : 7[3] -> 3[3] [receive] via NET/Socket/4
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 07/0 : 7[3] -> 3[3] [receive] via NET/Socket/4
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 03/0 : 3[3] -> 7[3] [send] via NET/Socket/4
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 07/0 : 3[3] -> 7[3] [send] via NET/Socket/4
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 01/0 : 3[3] -> 0[0] via P2P/CUMEM
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 03/0 : 3[3] -> 0[0] via P2P/CUMEM
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 05/0 : 3[3] -> 0[0] via P2P/CUMEM
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 07/0 : 3[3] -> 0[0] via P2P/CUMEM
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 00/0 : 3[3] -> 2[2] via P2P/CUMEM
+blancapeak001:1628379:1630393 [3] NCCL INFO Channel 04/0 : 3[3] -> 2[2] via P2P/CUMEM
+blancapeak001:1628379:1630393 [3] NCCL INFO Connected all trees
+blancapeak001:1628379:1628379 [3] NCCL INFO comm 0x1abed7b0 rank 3 nranks 8 cudaDev 3 busId 3901000 - Destroy COMPLETE
+blancapeak001:1628381:1628381 [1] NCCL INFO cudaDriverVersion 12080
+blancapeak001:1628381:1628381 [1] NCCL INFO Bootstrap: Using bond0:172.17.32.113<0>
+blancapeak001:1628381:1628381 [1] NCCL INFO NCCL version 2.27.5+cuda12.9
+blancapeak001:1628381:1628381 [1] NCCL INFO Comm config Blocking set to 1
+blancapeak001:1628381:1630368 [1] NCCL INFO NET/Plugin: Could not find: libnccl-net.so. 
+blancapeak001:1628381:1630368 [1] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+blancapeak001:1628381:1630368 [1] NCCL INFO Failed to open libibverbs.so[.1]
+blancapeak001:1628381:1630368 [1] NCCL INFO NET/Socket : Using [0]bond0:172.17.32.113<0> [1]hsn0:192.168.64.33<0> [2]hsn1:192.168.64.55<0> [3]hsn2:192.168.64.42<0> [4]hsn3:192.168.64.44<0>
+blancapeak001:1628381:1630368 [1] NCCL INFO Initialized NET plugin Socket
+blancapeak001:1628381:1630368 [1] NCCL INFO Assigned NET plugin Socket to comm
+blancapeak001:1628381:1630368 [1] NCCL INFO Using network Socket
+blancapeak001:1628381:1630368 [1] NCCL INFO ncclCommInitRankConfig comm 0xbdef610 rank 1 nranks 8 cudaDev 1 nvmlDev 1 busId 1901000 commId 0xd1bef1698c792870 - Init START
+blancapeak001:1628381:1630368 [1] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+blancapeak001:1628381:1630368 [1] NCCL INFO Bootstrap timings total 2.805934 (create 0.000050, send 0.000173, recv 0.000306, ring 2.804966, delay 0.000001)
+blancapeak001:1628381:1630368 [1] NCCL INFO Setting affinity for GPU 1 to 72-143
+blancapeak001:1628381:1630368 [1] NCCL INFO NVLS multicast support is not available on dev 1 (NVLS_NCHANNELS 0)
+blancapeak001:1628381:1630368 [1] NCCL INFO comm 0xbdef610 rank 1 nRanks 8 nNodes 2 localRanks 4 localRank 1 MNNVL 0
+blancapeak001:1628381:1630368 [1] NCCL INFO Trees [0] 2/-1/-1->1->0 [1] 2/5/-1->1->-1 [2] 3/-1/-1->1->0 [3] -1/-1/-1->1->2 [4] 2/-1/-1->1->0 [5] 2/-1/-1->1->5 [6] 3/-1/-1->1->0 [7] -1/-1/-1->1->2
+blancapeak001:1628381:1630368 [1] NCCL INFO P2P Chunksize set to 131072
+blancapeak001:1628381:1630368 [1] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+blancapeak001:1628381:1630374 [1] NCCL INFO [Proxy Service] Device 1 CPU core 83
+blancapeak001:1628381:1630379 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 84
+blancapeak001:1628381:1630368 [1] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+blancapeak001:1628381:1630368 [1] NCCL INFO 8 coll channels, 8 collnet channels, 0 nvls channels, 8 p2p channels, 2 p2p channels per peer
+blancapeak001:1628381:1630368 [1] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+blancapeak001:1628381:1630368 [1] NCCL INFO ncclCommInitRankConfig comm 0xbdef610 rank 1 nranks 8 cudaDev 1 nvmlDev 1 busId 1901000 commId 0xd1bef1698c792870 - Init COMPLETE
+blancapeak001:1628381:1630368 [1] NCCL INFO Init timings - ncclCommInitRankConfig: rank 1 nranks 8 total 8.94 (kernels 3.40, alloc 2.65, bootstrap 2.81, allgathers 0.01, topo 0.03, graphs 0.01, connections 0.02, rest 0.02)
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 00/0 : 1[1] -> 2[2] via P2P/CUMEM
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 04/0 : 1[1] -> 2[2] via P2P/CUMEM
+blancapeak001:1628381:1630387 [1] NCCL INFO [Proxy Progress] Device 1 CPU core 85
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 03/0 : 5[1] -> 1[1] [receive] via NET/Socket/2
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 07/0 : 5[1] -> 1[1] [receive] via NET/Socket/2
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 02/0 : 1[1] -> 5[1] [send] via NET/Socket/2
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 06/0 : 1[1] -> 5[1] [send] via NET/Socket/2
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 01/0 : 1[1] -> 0[0] via P2P/CUMEM
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 03/0 : 1[1] -> 0[0] via P2P/CUMEM
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 05/0 : 1[1] -> 0[0] via P2P/CUMEM
+blancapeak001:1628381:1630385 [1] NCCL INFO Channel 07/0 : 1[1] -> 0[0] via P2P/CUMEM
+blancapeak001:1628381:1630385 [1] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 01/0 : 1[1] -> 2[2] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 03/0 : 1[1] -> 2[2] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 05/0 : 1[1] -> 2[2] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 07/0 : 1[1] -> 2[2] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 02/0 : 1[1] -> 3[3] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 06/0 : 1[1] -> 3[3] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 01/0 : 5[1] -> 1[1] [receive] via NET/Socket/2
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 05/0 : 5[1] -> 1[1] [receive] via NET/Socket/2
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 01/0 : 1[1] -> 5[1] [send] via NET/Socket/2
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 05/0 : 1[1] -> 5[1] [send] via NET/Socket/2
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 00/0 : 1[1] -> 0[0] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 02/0 : 1[1] -> 0[0] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 04/0 : 1[1] -> 0[0] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Channel 06/0 : 1[1] -> 0[0] via P2P/CUMEM
+blancapeak001:1628381:1630391 [1] NCCL INFO Connected all trees
+blancapeak001:1628381:1628381 [1] NCCL INFO comm 0xbdef610 rank 1 nranks 8 cudaDev 1 busId 1901000 - Destroy COMPLETE
+Initializing climate-text dataloader components...
+  ✓ Loaded real_ecmwf_latest.zarr: 2 timesteps
+Using externally provided tokenizer
+Using externally provided model
+DataLoader initialized:
+  - Zarr files: 1
+  - Samples per epoch: 400
+  - Device: cuda:2
+Initializing data loader
+Initializing climate-text dataloader components...
+  ✓ Loaded real_ecmwf_latest.zarr: 2 timesteps
+Using externally provided tokenizer
+Using externally provided model
+DataLoader initialized:
+  - Zarr files: 1
+  - Samples per epoch: 400
+  - Device: cuda:0
+Pipeline initialization complete
+
+============================================================
+STAGE 1: RL Pre-training with Verifiable Rewards
+============================================================
+Starting RL training for 3 epochs
+Device: cuda:0
+Mixed precision: True
+Distributed training: 8 processes
+Initializing climate-text dataloader components...
+  ✓ Loaded real_ecmwf_latest.zarr: 2 timesteps
+Using externally provided tokenizer
+Using externally provided model
+DataLoader initialized:
+  - Zarr files: 1
+  - Samples per epoch: 400
+  - Device: cuda:3
+Initializing climate-text dataloader components...
+  ✓ Loaded real_ecmwf_latest.zarr: 2 timesteps
+Using externally provided tokenizer
+Using externally provided model
+DataLoader initialized:
+  - Zarr files: 1
+  - Samples per epoch: 400
+  - Device: cuda:1
+blancapeak002:186635:186635 [3] NCCL INFO cudaDriverVersion 12080
+blancapeak002:186635:186635 [3] NCCL INFO Bootstrap: Using bond0:172.17.32.107<0>
+blancapeak002:186635:186635 [3] NCCL INFO NCCL version 2.27.5+cuda12.9
+blancapeak002:186635:186635 [3] NCCL INFO Comm config Blocking set to 1
+blancapeak002:186635:188616 [3] NCCL INFO NET/Plugin: Could not find: libnccl-net.so. 
+blancapeak002:186635:188616 [3] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+blancapeak002:186635:188616 [3] NCCL INFO Failed to open libibverbs.so[.1]
+blancapeak002:186635:188616 [3] NCCL INFO NET/Socket : Using [0]bond0:172.17.32.107<0> [1]hsn0:192.168.64.54<0> [2]hsn1:192.168.64.59<0> [3]hsn2:192.168.64.56<0> [4]hsn3:192.168.64.50<0>
+blancapeak002:186635:188616 [3] NCCL INFO Initialized NET plugin Socket
+blancapeak002:186635:188616 [3] NCCL INFO Assigned NET plugin Socket to comm
+blancapeak002:186635:188616 [3] NCCL INFO Using network Socket
+blancapeak002:186635:188616 [3] NCCL INFO ncclCommInitRankConfig comm 0x1e7bb590 rank 7 nranks 8 cudaDev 3 nvmlDev 3 busId 3901000 commId 0xd1bef1698c792870 - Init START
+blancapeak002:186635:188616 [3] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+blancapeak002:186635:188616 [3] NCCL INFO Bootstrap timings total 0.001709 (create 0.000053, send 0.000195, recv 0.000301, ring 0.000398, delay 0.000001)
+blancapeak002:186635:188616 [3] NCCL INFO Setting affinity for GPU 3 to 216-287
+blancapeak002:186635:188616 [3] NCCL INFO NVLS multicast support is not available on dev 3 (NVLS_NCHANNELS 0)
+blancapeak002:186635:188616 [3] NCCL INFO comm 0x1e7bb590 rank 7 nRanks 8 nNodes 2 localRanks 4 localRank 3 MNNVL 0
+blancapeak002:186635:188616 [3] NCCL INFO Trees [0] -1/-1/-1->7->6 [1] 4/-1/-1->7->6 [2] -1/-1/-1->7->5 [3] 4/-1/-1->7->3 [4] -1/-1/-1->7->6 [5] 4/-1/-1->7->6 [6] -1/-1/-1->7->5 [7] 4/3/-1->7->-1
+blancapeak002:186635:188616 [3] NCCL INFO P2P Chunksize set to 131072
+blancapeak002:186635:188616 [3] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+blancapeak002:186635:188622 [3] NCCL INFO [Proxy Service] Device 3 CPU core 244
+blancapeak002:186635:188626 [3] NCCL INFO [Proxy Service UDS] Device 3 CPU core 245
+blancapeak002:186635:188616 [3] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+blancapeak002:186635:188616 [3] NCCL INFO 8 coll channels, 8 collnet channels, 0 nvls channels, 8 p2p channels, 2 p2p channels per peer
+blancapeak002:186635:188616 [3] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+blancapeak002:186635:188616 [3] NCCL INFO ncclCommInitRankConfig comm 0x1e7bb590 rank 7 nranks 8 cudaDev 3 nvmlDev 3 busId 3901000 commId 0xd1bef1698c792870 - Init COMPLETE
+blancapeak002:186635:188616 [3] NCCL INFO Init timings - ncclCommInitRankConfig: rank 7 nranks 8 total 2.20 (kernels 0.34, alloc 1.75, bootstrap 0.00, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.02, rest 0.04)
+blancapeak002:186635:188636 [3] NCCL INFO [Proxy Progress] Device 3 CPU core 247
+blancapeak002:186635:188633 [3] NCCL INFO Channel 00/0 : 3[3] -> 7[3] [receive] via NET/Socket/4
+blancapeak002:186635:188633 [3] NCCL INFO Channel 04/0 : 3[3] -> 7[3] [receive] via NET/Socket/4
+blancapeak002:186635:188633 [3] NCCL INFO Channel 01/0 : 7[3] -> 3[3] [send] via NET/Socket/4
+blancapeak002:186635:188633 [3] NCCL INFO Channel 05/0 : 7[3] -> 3[3] [send] via NET/Socket/4
+blancapeak002:186635:188633 [3] NCCL INFO Channel 03/0 : 7[3] -> 5[1] via P2P/CUMEM
+blancapeak002:186635:188633 [3] NCCL INFO Channel 07/0 : 7[3] -> 5[1] via P2P/CUMEM
+blancapeak002:186635:188633 [3] NCCL INFO Channel 00/0 : 7[3] -> 6[2] via P2P/CUMEM
+blancapeak002:186635:188633 [3] NCCL INFO Channel 02/0 : 7[3] -> 6[2] via P2P/CUMEM
+blancapeak002:186635:188633 [3] NCCL INFO Channel 04/0 : 7[3] -> 6[2] via P2P/CUMEM
+blancapeak002:186635:188633 [3] NCCL INFO Channel 06/0 : 7[3] -> 6[2] via P2P/CUMEM
+blancapeak002:186635:188633 [3] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+blancapeak002:186635:188639 [3] NCCL INFO Channel 03/0 : 3[3] -> 7[3] [receive] via NET/Socket/4
+blancapeak002:186635:188639 [3] NCCL INFO Channel 07/0 : 3[3] -> 7[3] [receive] via NET/Socket/4
+blancapeak002:186635:188639 [3] NCCL INFO Channel 03/0 : 7[3] -> 3[3] [send] via NET/Socket/4
+blancapeak002:186635:188639 [3] NCCL INFO Channel 07/0 : 7[3] -> 3[3] [send] via NET/Socket/4
+blancapeak002:186635:188639 [3] NCCL INFO Channel 01/0 : 7[3] -> 4[0] via P2P/CUMEM
+blancapeak002:186635:188639 [3] NCCL INFO Channel 03/0 : 7[3] -> 4[0] via P2P/CUMEM
+blancapeak002:186635:188639 [3] NCCL INFO Channel 05/0 : 7[3] -> 4[0] via P2P/CUMEM
+blancapeak002:186635:188639 [3] NCCL INFO Channel 07/0 : 7[3] -> 4[0] via P2P/CUMEM
+blancapeak002:186635:188639 [3] NCCL INFO Channel 02/0 : 7[3] -> 5[1] via P2P/CUMEM
+blancapeak002:186635:188639 [3] NCCL INFO Channel 06/0 : 7[3] -> 5[1] via P2P/CUMEM
+blancapeak002:186635:188639 [3] NCCL INFO Channel 01/0 : 7[3] -> 6[2] via P2P/CUMEM
+blancapeak002:186635:188639 [3] NCCL INFO Channel 05/0 : 7[3] -> 6[2] via P2P/CUMEM
+blancapeak002:186635:188639 [3] NCCL INFO Connected all trees
+blancapeak002:186635:186635 [3] NCCL INFO comm 0x1e7bb590 rank 7 nranks 8 cudaDev 3 busId 3901000 - Destroy COMPLETE
+blancapeak002:186634:186634 [1] NCCL INFO cudaDriverVersion 12080
+blancapeak002:186634:186634 [1] NCCL INFO Bootstrap: Using bond0:172.17.32.107<0>
+blancapeak002:186634:186634 [1] NCCL INFO NCCL version 2.27.5+cuda12.9
+blancapeak002:186634:186634 [1] NCCL INFO Comm config Blocking set to 1
+blancapeak002:186634:188617 [1] NCCL INFO NET/Plugin: Could not find: libnccl-net.so. 
+blancapeak002:186634:188617 [1] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+blancapeak002:186634:188617 [1] NCCL INFO Failed to open libibverbs.so[.1]
+blancapeak002:186634:188617 [1] NCCL INFO NET/Socket : Using [0]bond0:172.17.32.107<0> [1]hsn0:192.168.64.54<0> [2]hsn1:192.168.64.59<0> [3]hsn2:192.168.64.56<0> [4]hsn3:192.168.64.50<0>
+blancapeak002:186634:188617 [1] NCCL INFO Initialized NET plugin Socket
+blancapeak002:186634:188617 [1] NCCL INFO Assigned NET plugin Socket to comm
+blancapeak002:186634:188617 [1] NCCL INFO Using network Socket
+blancapeak002:186634:188617 [1] NCCL INFO ncclCommInitRankConfig comm 0x3bc143e0 rank 5 nranks 8 cudaDev 1 nvmlDev 1 busId 1901000 commId 0xd1bef1698c792870 - Init START
+blancapeak002:186634:188617 [1] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+blancapeak002:186634:188617 [1] NCCL INFO Bootstrap timings total 0.001871 (create 0.000046, send 0.000197, recv 0.000572, ring 0.000598, delay 0.000001)
+blancapeak002:186634:188617 [1] NCCL INFO Setting affinity for GPU 1 to 72-143
+blancapeak002:186634:188617 [1] NCCL INFO NVLS multicast support is not available on dev 1 (NVLS_NCHANNELS 0)
+blancapeak002:186634:188617 [1] NCCL INFO comm 0x3bc143e0 rank 5 nRanks 8 nNodes 2 localRanks 4 localRank 1 MNNVL 0
+blancapeak002:186634:188617 [1] NCCL INFO Trees [0] 6/-1/-1->5->4 [1] 6/-1/-1->5->1 [2] 7/-1/-1->5->4 [3] -1/-1/-1->5->6 [4] 6/-1/-1->5->4 [5] 6/1/-1->5->-1 [6] 7/-1/-1->5->4 [7] -1/-1/-1->5->6
+blancapeak002:186634:188617 [1] NCCL INFO P2P Chunksize set to 131072
+blancapeak002:186634:188617 [1] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+blancapeak002:186634:188623 [1] NCCL INFO [Proxy Service] Device 1 CPU core 90
+blancapeak002:186634:188627 [1] NCCL INFO [Proxy Service UDS] Device 1 CPU core 93
+blancapeak002:186634:188617 [1] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+blancapeak002:186634:188617 [1] NCCL INFO 8 coll channels, 8 collnet channels, 0 nvls channels, 8 p2p channels, 2 p2p channels per peer
+blancapeak002:186634:188617 [1] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+blancapeak002:186634:188617 [1] NCCL INFO ncclCommInitRankConfig comm 0x3bc143e0 rank 5 nranks 8 cudaDev 1 nvmlDev 1 busId 1901000 commId 0xd1bef1698c792870 - Init COMPLETE
+blancapeak002:186634:188617 [1] NCCL INFO Init timings - ncclCommInitRankConfig: rank 5 nranks 8 total 2.20 (kernels 0.34, alloc 1.75, bootstrap 0.00, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.02, rest 0.04)
+blancapeak002:186634:188632 [1] NCCL INFO Channel 01/0 : 5[1] -> 6[2] via P2P/CUMEM
+blancapeak002:186634:188632 [1] NCCL INFO Channel 05/0 : 5[1] -> 6[2] via P2P/CUMEM
+blancapeak002:186634:188635 [1] NCCL INFO [Proxy Progress] Device 1 CPU core 92
+blancapeak002:186634:188632 [1] NCCL INFO Channel 02/0 : 1[1] -> 5[1] [receive] via NET/Socket/2
+blancapeak002:186634:188632 [1] NCCL INFO Channel 06/0 : 1[1] -> 5[1] [receive] via NET/Socket/2
+blancapeak002:186634:188632 [1] NCCL INFO Channel 03/0 : 5[1] -> 1[1] [send] via NET/Socket/2
+blancapeak002:186634:188632 [1] NCCL INFO Channel 07/0 : 5[1] -> 1[1] [send] via NET/Socket/2
+blancapeak002:186634:188632 [1] NCCL INFO Channel 00/0 : 5[1] -> 4[0] via P2P/CUMEM
+blancapeak002:186634:188632 [1] NCCL INFO Channel 02/0 : 5[1] -> 4[0] via P2P/CUMEM
+blancapeak002:186634:188632 [1] NCCL INFO Channel 04/0 : 5[1] -> 4[0] via P2P/CUMEM
+blancapeak002:186634:188632 [1] NCCL INFO Channel 06/0 : 5[1] -> 4[0] via P2P/CUMEM
+blancapeak002:186634:188632 [1] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+blancapeak002:186634:188638 [1] NCCL INFO Channel 00/0 : 5[1] -> 6[2] via P2P/CUMEM
+blancapeak002:186634:188638 [1] NCCL INFO Channel 03/0 : 5[1] -> 6[2] via P2P/CUMEM
+blancapeak002:186634:188638 [1] NCCL INFO Channel 04/0 : 5[1] -> 6[2] via P2P/CUMEM
+blancapeak002:186634:188638 [1] NCCL INFO Channel 07/0 : 5[1] -> 6[2] via P2P/CUMEM
+blancapeak002:186634:188638 [1] NCCL INFO Channel 02/0 : 5[1] -> 7[3] via P2P/CUMEM
+blancapeak002:186634:188638 [1] NCCL INFO Channel 06/0 : 5[1] -> 7[3] via P2P/CUMEM
+blancapeak002:186634:188638 [1] NCCL INFO Channel 01/0 : 1[1] -> 5[1] [receive] via NET/Socket/2
+blancapeak002:186634:188638 [1] NCCL INFO Channel 05/0 : 1[1] -> 5[1] [receive] via NET/Socket/2
+blancapeak002:186634:188638 [1] NCCL INFO Channel 01/0 : 5[1] -> 1[1] [send] via NET/Socket/2
+blancapeak002:186634:188638 [1] NCCL INFO Channel 05/0 : 5[1] -> 1[1] [send] via NET/Socket/2
+blancapeak002:186634:188638 [1] NCCL INFO Connected all trees
+blancapeak002:186634:186634 [1] NCCL INFO comm 0x3bc143e0 rank 5 nranks 8 cudaDev 1 busId 1901000 - Destroy COMPLETE
+blancapeak002:186636:186636 [0] NCCL INFO cudaDriverVersion 12080
+blancapeak002:186636:186636 [0] NCCL INFO Bootstrap: Using bond0:172.17.32.107<0>
+blancapeak002:186636:186636 [0] NCCL INFO NCCL version 2.27.5+cuda12.9
+blancapeak002:186636:186636 [0] NCCL INFO Comm config Blocking set to 1
+blancapeak002:186636:188614 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so. 
+blancapeak002:186636:188614 [0] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+blancapeak002:186636:188614 [0] NCCL INFO Failed to open libibverbs.so[.1]
+blancapeak002:186636:188614 [0] NCCL INFO NET/Socket : Using [0]bond0:172.17.32.107<0> [1]hsn0:192.168.64.54<0> [2]hsn1:192.168.64.59<0> [3]hsn2:192.168.64.56<0> [4]hsn3:192.168.64.50<0>
+blancapeak002:186636:188614 [0] NCCL INFO Initialized NET plugin Socket
+blancapeak002:186636:188614 [0] NCCL INFO Assigned NET plugin Socket to comm
+blancapeak002:186636:188614 [0] NCCL INFO Using network Socket
+blancapeak002:186636:188614 [0] NCCL INFO ncclCommInitRankConfig comm 0x2fb631d0 rank 4 nranks 8 cudaDev 0 nvmlDev 0 busId 901000 commId 0xd1bef1698c792870 - Init START
+blancapeak002:186636:188614 [0] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+blancapeak002:186636:188614 [0] NCCL INFO Bootstrap timings total 0.001926 (create 0.000036, send 0.000179, recv 0.000398, ring 0.000828, delay 0.000001)
+blancapeak002:186636:188614 [0] NCCL INFO Setting affinity for GPU 0 to 0-71
+blancapeak002:186636:188614 [0] NCCL INFO NVLS multicast support is not available on dev 0 (NVLS_NCHANNELS 0)
+blancapeak002:186636:188614 [0] NCCL INFO comm 0x2fb631d0 rank 4 nRanks 8 nNodes 2 localRanks 4 localRank 0 MNNVL 0
+blancapeak002:186636:188614 [0] NCCL INFO Trees [0] 5/-1/-1->4->0 [1] -1/-1/-1->4->7 [2] 5/-1/-1->4->6 [3] 6/-1/-1->4->7 [4] 5/0/-1->4->-1 [5] -1/-1/-1->4->7 [6] 5/-1/-1->4->6 [7] 6/-1/-1->4->7
+blancapeak002:186636:188614 [0] NCCL INFO P2P Chunksize set to 131072
+blancapeak002:186636:188614 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+blancapeak002:186636:188625 [0] NCCL INFO [Proxy Service] Device 0 CPU core 42
+blancapeak002:186636:188629 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 43
+blancapeak002:186636:188614 [0] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+blancapeak002:186636:188614 [0] NCCL INFO 8 coll channels, 8 collnet channels, 0 nvls channels, 8 p2p channels, 2 p2p channels per peer
+blancapeak002:186636:188614 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+blancapeak002:186636:188614 [0] NCCL INFO ncclCommInitRankConfig comm 0x2fb631d0 rank 4 nranks 8 cudaDev 0 nvmlDev 0 busId 901000 commId 0xd1bef1698c792870 - Init COMPLETE
+blancapeak002:186636:188614 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 4 nranks 8 total 2.21 (kernels 0.35, alloc 1.75, bootstrap 0.00, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.02, rest 0.04)
+blancapeak002:186636:188631 [0] NCCL INFO Channel 01/0 : 4[0] -> 5[1] via P2P/CUMEM
+blancapeak002:186636:188631 [0] NCCL INFO Channel 05/0 : 4[0] -> 5[1] via P2P/CUMEM
+blancapeak002:186636:188631 [0] NCCL INFO Channel 02/0 : 4[0] -> 7[3] via P2P/CUMEM
+blancapeak002:186636:188631 [0] NCCL INFO Channel 03/0 : 4[0] -> 7[3] via P2P/CUMEM
+blancapeak002:186636:188631 [0] NCCL INFO Channel 06/0 : 4[0] -> 7[3] via P2P/CUMEM
+blancapeak002:186636:188631 [0] NCCL INFO Channel 07/0 : 4[0] -> 7[3] via P2P/CUMEM
+blancapeak002:186636:188637 [0] NCCL INFO [Proxy Progress] Device 0 CPU core 45
+blancapeak002:186636:188631 [0] NCCL INFO Channel 01/0 : 0[0] -> 4[0] [receive] via NET/Socket/1
+blancapeak002:186636:188631 [0] NCCL INFO Channel 05/0 : 0[0] -> 4[0] [receive] via NET/Socket/1
+blancapeak002:186636:188631 [0] NCCL INFO Channel 00/0 : 4[0] -> 0[0] [send] via NET/Socket/1
+blancapeak002:186636:188631 [0] NCCL INFO Channel 04/0 : 4[0] -> 0[0] [send] via NET/Socket/1
+blancapeak002:186636:188631 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+blancapeak002:186636:188640 [0] NCCL INFO Channel 00/0 : 4[0] -> 5[1] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 02/0 : 4[0] -> 5[1] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 04/0 : 4[0] -> 5[1] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 06/0 : 4[0] -> 5[1] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 02/0 : 4[0] -> 6[2] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 03/0 : 4[0] -> 6[2] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 06/0 : 4[0] -> 6[2] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 07/0 : 4[0] -> 6[2] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 01/0 : 4[0] -> 7[3] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 05/0 : 4[0] -> 7[3] via P2P/CUMEM
+blancapeak002:186636:188640 [0] NCCL INFO Channel 00/0 : 0[0] -> 4[0] [receive] via NET/Socket/1
+blancapeak002:186636:188640 [0] NCCL INFO Channel 04/0 : 0[0] -> 4[0] [receive] via NET/Socket/1
+blancapeak002:186636:188640 [0] NCCL INFO Connected all trees
+blancapeak002:186636:186636 [0] NCCL INFO comm 0x2fb631d0 rank 4 nranks 8 cudaDev 0 busId 901000 - Destroy COMPLETE
+Initializing climate-text dataloader components...
+  ✓ Loaded real_ecmwf_latest.zarr: 2 timesteps
+Using externally provided tokenizer
+Using externally provided model
+DataLoader initialized:
+  - Zarr files: 1
+  - Samples per epoch: 400
+  - Device: cuda:0
+Initializing climate-text dataloader components...
+  ✓ Loaded real_ecmwf_latest.zarr: 2 timesteps
+Using externally provided tokenizer
+Using externally provided model
+DataLoader initialized:
+  - Zarr files: 1
+  - Samples per epoch: 400
+  - Device: cuda:3
+Initializing climate-text dataloader components...
+  ✓ Loaded real_ecmwf_latest.zarr: 2 timesteps
+Using externally provided tokenizer
+Using externally provided model
+DataLoader initialized:
+  - Zarr files: 1
+  - Samples per epoch: 400
+  - Device: cuda:1
+blancapeak002:186637:186637 [2] NCCL INFO cudaDriverVersion 12080
+blancapeak002:186637:186637 [2] NCCL INFO Bootstrap: Using bond0:172.17.32.107<0>
+blancapeak002:186637:186637 [2] NCCL INFO NCCL version 2.27.5+cuda12.9
+blancapeak002:186637:186637 [2] NCCL INFO Comm config Blocking set to 1
+blancapeak002:186637:188615 [2] NCCL INFO NET/Plugin: Could not find: libnccl-net.so. 
+blancapeak002:186637:188615 [2] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+blancapeak002:186637:188615 [2] NCCL INFO Failed to open libibverbs.so[.1]
+blancapeak002:186637:188615 [2] NCCL INFO NET/Socket : Using [0]bond0:172.17.32.107<0> [1]hsn0:192.168.64.54<0> [2]hsn1:192.168.64.59<0> [3]hsn2:192.168.64.56<0> [4]hsn3:192.168.64.50<0>
+blancapeak002:186637:188615 [2] NCCL INFO Initialized NET plugin Socket
+blancapeak002:186637:188615 [2] NCCL INFO Assigned NET plugin Socket to comm
+blancapeak002:186637:188615 [2] NCCL INFO Using network Socket
+blancapeak002:186637:188615 [2] NCCL INFO ncclCommInitRankConfig comm 0x2f2473d0 rank 6 nranks 8 cudaDev 2 nvmlDev 2 busId 2901000 commId 0xd1bef1698c792870 - Init START
+blancapeak002:186637:188615 [2] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+blancapeak002:186637:188615 [2] NCCL INFO Bootstrap timings total 0.001690 (create 0.000051, send 0.000257, recv 0.000496, ring 0.000394, delay 0.000001)
+blancapeak002:186637:188615 [2] NCCL INFO Setting affinity for GPU 2 to 144-215
+blancapeak002:186637:188615 [2] NCCL INFO NVLS multicast support is not available on dev 2 (NVLS_NCHANNELS 0)
+blancapeak002:186637:188615 [2] NCCL INFO comm 0x2f2473d0 rank 6 nRanks 8 nNodes 2 localRanks 4 localRank 2 MNNVL 0
+blancapeak002:186637:188615 [2] NCCL INFO Trees [0] 7/-1/-1->6->5 [1] 7/-1/-1->6->5 [2] 4/-1/-1->6->2 [3] 5/-1/-1->6->4 [4] 7/-1/-1->6->5 [5] 7/-1/-1->6->5 [6] 4/2/-1->6->-1 [7] 5/-1/-1->6->4
+blancapeak002:186637:188615 [2] NCCL INFO P2P Chunksize set to 131072
+blancapeak002:186637:188615 [2] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so. 
+blancapeak002:186637:188624 [2] NCCL INFO [Proxy Service] Device 2 CPU core 156
+blancapeak002:186637:188628 [2] NCCL INFO [Proxy Service UDS] Device 2 CPU core 158
+blancapeak002:186637:188615 [2] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+blancapeak002:186637:188615 [2] NCCL INFO 8 coll channels, 8 collnet channels, 0 nvls channels, 8 p2p channels, 2 p2p channels per peer
+blancapeak002:186637:188615 [2] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so. Using internal tuner plugin.
+blancapeak002:186637:188615 [2] NCCL INFO ncclCommInitRankConfig comm 0x2f2473d0 rank 6 nranks 8 cudaDev 2 nvmlDev 2 busId 2901000 commId 0xd1bef1698c792870 - Init COMPLETE
+blancapeak002:186637:188615 [2] NCCL INFO Init timings - ncclCommInitRankConfig: rank 6 nranks 8 total 2.20 (kernels 0.37, alloc 1.73, bootstrap 0.00, allgathers 0.00, topo 0.03, graphs 0.01, connections 0.01, rest 0.05)
+blancapeak002:186637:188630 [2] NCCL INFO Channel 01/0 : 6[2] -> 7[3] via P2P/CUMEM
+blancapeak002:186637:188630 [2] NCCL INFO Channel 05/0 : 6[2] -> 7[3] via P2P/CUMEM
+blancapeak002:186637:188634 [2] NCCL INFO [Proxy Progress] Device 2 CPU core 161
+blancapeak002:186637:188630 [2] NCCL INFO Channel 03/0 : 2[2] -> 6[2] [receive] via NET/Socket/3
+blancapeak002:186637:188630 [2] NCCL INFO Channel 07/0 : 2[2] -> 6[2] [receive] via NET/Socket/3
+blancapeak002:186637:188630 [2] NCCL INFO Channel 02/0 : 6[2] -> 2[2] [send] via NET/Socket/3
+blancapeak002:186637:188630 [2] NCCL INFO Channel 06/0 : 6[2] -> 2[2] [send] via NET/Socket/3
+blancapeak002:186637:188630 [2] NCCL INFO Channel 03/0 : 6[2] -> 4[0] via P2P/CUMEM
+blancapeak002:186637:188630 [2] NCCL INFO Channel 07/0 : 6[2] -> 4[0] via P2P/CUMEM
+blancapeak002:186637:188630 [2] NCCL INFO Channel 00/0 : 6[2] -> 5[1] via P2P/CUMEM
+blancapeak002:186637:188630 [2] NCCL INFO Channel 04/0 : 6[2] -> 5[1] via P2P/CUMEM
+blancapeak002:186637:188630 [2] NCCL INFO Connected all rings, use ring PXN 0 GDR 0
+blancapeak002:186637:188641 [2] NCCL INFO Channel 00/0 : 6[2] -> 7[3] via P2P/CUMEM
+blancapeak002:186637:188641 [2] NCCL INFO Channel 04/0 : 6[2] -> 7[3] via P2P/CUMEM
+blancapeak002:186637:188641 [2] NCCL INFO Channel 02/0 : 2[2] -> 6[2] [receive] via NET/Socket/3
+blancapeak002:186637:188641 [2] NCCL INFO Channel 06/0 : 2[2] -> 6[2] [receive] via NET/Socket/3
+blancapeak002:186637:188641 [2] NCCL INFO Channel 02/0 : 6[2] -> 4[0] via P2P/CUMEM
+blancapeak002:186637:188641 [2] NCCL INFO Channel 06/0 : 6[2] -> 4[0] via P2P/CUMEM
+blancapeak002:186637:188641 [2] NCCL INFO Channel 01/0 : 6[2] -> 5[1] via P2P/CUMEM
+blancapeak002:186637:188641 [2] NCCL INFO Channel 03/0 : 6[2] -> 5[1] via P2P/CUMEM
+blancapeak002:186637:188641 [2] NCCL INFO Channel 05/0 : 6[2] -> 5[1] via P2P/CUMEM
+blancapeak002:186637:188641 [2] NCCL INFO Channel 07/0 : 6[2] -> 5[1] via P2P/CUMEM
+blancapeak002:186637:188641 [2] NCCL INFO Connected all trees
+blancapeak002:186637:186637 [2] NCCL INFO comm 0x2f2473d0 rank 6 nranks 8 cudaDev 2 busId 2901000 - Destroy COMPLETE
+Initializing climate-text dataloader components...
+  ✓ Loaded real_ecmwf_latest.zarr: 2 timesteps
+Using externally provided tokenizer
+Using externally provided model
+DataLoader initialized:
+  - Zarr files: 1
+  - Samples per epoch: 400
+  - Device: cuda:2
