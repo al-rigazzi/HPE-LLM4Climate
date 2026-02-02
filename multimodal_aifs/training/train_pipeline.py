@@ -32,6 +32,7 @@ import torch
 import yaml
 
 from ..utils.distributed_utils import (
+    barrier,
     cleanup_distributed,
     is_distributed,
     is_main_process,
@@ -158,6 +159,10 @@ class TrainingPipeline:
         original_log_level = logging.get_verbosity()
         logging.set_verbosity_error()
 
+        # In distributed mode, only rank 0 downloads first to avoid cache race conditions
+        if is_distributed() and not is_main_process():
+            barrier()  # Wait for rank 0 to finish downloading
+
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_name,
             trust_remote_code=True,
@@ -191,6 +196,10 @@ class TrainingPipeline:
                 torch_dtype=torch.bfloat16,
                 low_cpu_mem_usage=True,
             )
+
+        # Rank 0 signals it's done downloading
+        if is_distributed() and is_main_process():
+            barrier()
 
         # Restore original logging level
         logging.set_verbosity(original_log_level)
