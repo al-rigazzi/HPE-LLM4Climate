@@ -152,7 +152,11 @@ class TrainingPipeline:
         print_rank0("Initializing training pipeline components...")
 
         print_rank0(f"Loading tokenizer: {self.model_name}")
-        from transformers import AutoTokenizer
+        from transformers import AutoTokenizer, logging
+
+        # Reduce transformers logging verbosity during model loading
+        original_log_level = logging.get_verbosity()
+        logging.set_verbosity_error()
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_name,
@@ -187,6 +191,10 @@ class TrainingPipeline:
                 torch_dtype=torch.bfloat16,
                 low_cpu_mem_usage=True,
             )
+
+        # Restore original logging level
+        logging.set_verbosity(original_log_level)
+        print_rank0("Model loaded successfully")
 
         print_rank0("Initializing data loader")
         self.dataloader = ClimateTextDataLoader(
