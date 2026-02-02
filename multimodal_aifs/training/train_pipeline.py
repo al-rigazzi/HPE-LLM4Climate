@@ -24,6 +24,7 @@ structure for seamless transitions.
 """
 
 import argparse
+import os
 from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
@@ -195,7 +196,7 @@ class TrainingPipeline:
 
             # For FP8 models in DDP, load directly to current GPU
             device_map = {"": torch.cuda.current_device()} if torch.cuda.is_available() else "cpu"
-            
+
             load_kwargs = {
                 "trust_remote_code": True,
                 "dtype": torch.bfloat16,
@@ -203,17 +204,26 @@ class TrainingPipeline:
                 "device_map": device_map,
             }
 
-            # Rank 0 loads first to populate cache
-            if is_distributed() and is_main_process():
-                self.model = Mistral3ForConditionalGeneration.from_pretrained(
-                    self.model_name, **load_kwargs
-                )
-                barrier()  # Signal to other ranks
-            elif is_distributed():
-                barrier()  # Wait for rank 0
-                self.model = Mistral3ForConditionalGeneration.from_pretrained(
-                    self.model_name, **load_kwargs
-                )
+            # Multi-node model loading: local_rank 0 on each node loads first
+            # to populate the node-local HF cache, then other ranks load.
+            # This avoids cache race conditions in multi-node setups.
+            local_rank = int(os.environ.get("LOCAL_RANK", 0))
+            is_local_main = local_rank == 0
+
+            if is_distributed():
+                # Local rank 0 on each node loads first
+                if is_local_main:
+                    print_rank0(f"Local rank 0 loading model on this node...")
+                    self.model = Mistral3ForConditionalGeneration.from_pretrained(
+                        self.model_name, **load_kwargs
+                    )
+                # All ranks synchronize after local rank 0s finish
+                barrier()
+                # Now other local ranks load from cached files
+                if not is_local_main:
+                    self.model = Mistral3ForConditionalGeneration.from_pretrained(
+                        self.model_name, **load_kwargs
+                    )
             else:
                 self.model = Mistral3ForConditionalGeneration.from_pretrained(
                     self.model_name, **load_kwargs

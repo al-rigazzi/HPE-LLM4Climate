@@ -85,6 +85,12 @@ cd "${PROJECT_DIR}"
 # Get your token from https://huggingface.co/settings/tokens
 export HF_TOKEN="${HF_TOKEN:-}"
 
+# Set shared HF cache directory on the shared filesystem
+# This ensures all nodes use the same cache, avoiding download race conditions
+export HF_HOME="${HF_HOME:-${PROJECT_DIR}/.cache/huggingface}"
+export TRANSFORMERS_CACHE="${HF_HOME}/hub"
+mkdir -p "${HF_HOME}"
+
 # ============================================================================
 # Distributed Training Setup
 # ============================================================================
