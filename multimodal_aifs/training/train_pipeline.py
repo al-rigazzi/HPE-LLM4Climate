@@ -159,14 +159,30 @@ class TrainingPipeline:
         original_log_level = logging.get_verbosity()
         logging.set_verbosity_error()
 
-        # In distributed mode, only rank 0 downloads first to avoid cache race conditions
+        # Disable tqdm progress bars for non-main processes
+        import os
         if is_distributed() and not is_main_process():
-            barrier()  # Wait for rank 0 to finish downloading
+            os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+            os.environ["TQDM_DISABLE"] = "1"
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.model_name,
-            trust_remote_code=True,
-        )
+        # In distributed mode, rank 0 loads first to populate cache
+        if is_distributed() and is_main_process():
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name,
+                trust_remote_code=True,
+            )
+            barrier()  # Signal to other ranks that cache is ready
+        elif is_distributed():
+            barrier()  # Wait for rank 0 to populate cache
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name,
+                trust_remote_code=True,
+            )
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name,
+                trust_remote_code=True,
+            )
 
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -180,13 +196,28 @@ class TrainingPipeline:
             # For FP8 models in DDP, load directly to current GPU
             device_map = {"": torch.cuda.current_device()} if torch.cuda.is_available() else "cpu"
             
-            self.model = Mistral3ForConditionalGeneration.from_pretrained(
-                self.model_name,
-                trust_remote_code=True,
-                dtype=torch.bfloat16,
-                low_cpu_mem_usage=True,
-                device_map=device_map,
-            )
+            load_kwargs = {
+                "trust_remote_code": True,
+                "dtype": torch.bfloat16,
+                "low_cpu_mem_usage": True,
+                "device_map": device_map,
+            }
+
+            # Rank 0 loads first to populate cache
+            if is_distributed() and is_main_process():
+                self.model = Mistral3ForConditionalGeneration.from_pretrained(
+                    self.model_name, **load_kwargs
+                )
+                barrier()  # Signal to other ranks
+            elif is_distributed():
+                barrier()  # Wait for rank 0
+                self.model = Mistral3ForConditionalGeneration.from_pretrained(
+                    self.model_name, **load_kwargs
+                )
+            else:
+                self.model = Mistral3ForConditionalGeneration.from_pretrained(
+                    self.model_name, **load_kwargs
+                )
         else:
             from transformers import AutoModelForCausalLM
 
@@ -197,8 +228,8 @@ class TrainingPipeline:
                 low_cpu_mem_usage=True,
             )
 
-        # Rank 0 signals it's done downloading
-        if is_distributed() and is_main_process():
+        # Final sync to ensure all ranks have loaded
+        if is_distributed():
             barrier()
 
         # Restore original logging level
