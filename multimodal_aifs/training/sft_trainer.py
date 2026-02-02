@@ -33,6 +33,18 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 
 from ..utils.device_utils import autocast_if_available, resolve_device, supports_amp
+from ..utils.distributed_utils import (
+    all_reduce_mean,
+    barrier,
+    get_local_rank,
+    get_world_size,
+    is_distributed,
+    is_main_process,
+    print_rank0,
+    setup_distributed,
+    unwrap_model,
+    wrap_model_ddp,
+)
 from .checkpoint_manager import CheckpointManager, CheckpointMetadata, TrainingStage
 from .climate_dataloader import ClimateTextDataLoader
 
@@ -61,6 +73,10 @@ class SFTConfig:
     device: str = "auto"
     mixed_precision: bool = True
     seed: int = 42
+
+    # Distributed training settings
+    distributed: bool = False
+    find_unused_parameters: bool = False
 
 
 class SupervisedFinetuningTrainer:
@@ -95,7 +111,19 @@ class SupervisedFinetuningTrainer:
             checkpoint_manager: Optional checkpoint manager
         """
         self.config = config
-        self.device = resolve_device(config.device if config.device != "auto" else None)
+
+        # Setup distributed training if enabled
+        self._distributed = config.distributed or is_distributed()
+        if self._distributed:
+            self._dist_config = setup_distributed()
+            self._local_rank = get_local_rank()
+            self._world_size = get_world_size()
+            self.device = torch.device(f"cuda:{self._local_rank}")
+        else:
+            self._local_rank = 0
+            self._world_size = 1
+            self.device = resolve_device(config.device if config.device != "auto" else None)
+
         self._amp_supported = supports_amp(self.device)
         self._use_amp = config.mixed_precision and self._amp_supported
 
@@ -104,8 +132,19 @@ class SupervisedFinetuningTrainer:
         self.dataloader = dataloader
         self.checkpoint_manager = checkpoint_manager
 
+        # Wrap model with DDP if distributed
+        if self._distributed:
+            self.model = wrap_model_ddp(
+                self.model,
+                self._local_rank,
+                find_unused_parameters=config.find_unused_parameters,
+            )
+
+        # Get parameters from potentially DDP-wrapped model
+        model_params = unwrap_model(self.model).parameters()
+
         self.optimizer = AdamW(
-            self.model.parameters(),
+            model_params,
             lr=config.learning_rate,
             weight_decay=config.weight_decay,
         )
@@ -343,20 +382,32 @@ class SupervisedFinetuningTrainer:
             "perplexity": [],
         }
 
-        print(f"Starting supervised fine-tuning for {self.config.epochs} epochs")
-        print(f"Device: {self.device}")
-        print(f"Mixed precision: {self._use_amp}")
+        print_rank0(f"Starting supervised fine-tuning for {self.config.epochs} epochs")
+        print_rank0(f"Device: {self.device}")
+        print_rank0(f"Mixed precision: {self._use_amp}")
+        if self._distributed:
+            print_rank0(f"Distributed training: {self._world_size} processes")
 
         for epoch in range(self.config.epochs):
             self.epoch = epoch
 
+            # Synchronize before each epoch
+            if self._distributed:
+                barrier()
+
             metrics = self.train_epoch()
+
+            # Aggregate metrics across all processes
+            if self._distributed:
+                for key, value in metrics.items():
+                    tensor = torch.tensor(value, device=self.device)
+                    metrics[key] = all_reduce_mean(tensor).item()
 
             for key, values in history.items():
                 if key in metrics:
                     values.append(metrics[key])
 
-            print(
+            print_rank0(
                 f"Epoch {epoch + 1}/{self.config.epochs} - "
                 f"Loss: {metrics['loss']:.4f}, "
                 f"Perplexity: {metrics['perplexity']:.2f}"
@@ -366,9 +417,17 @@ class SupervisedFinetuningTrainer:
             if is_best:
                 self.best_loss = metrics["loss"]
 
-            if self.checkpoint_manager is not None and (
-                (epoch + 1) % (self.config.save_steps // len(self.dataloader) + 1) == 0 or is_best
-            ):
+            # Only save checkpoints on main process
+            should_save = (
+                self.checkpoint_manager is not None
+                and is_main_process()
+                and (
+                    (epoch + 1) % (self.config.save_steps // max(1, len(self.dataloader)) + 1) == 0
+                    or is_best
+                )
+            )
+
+            if should_save:
                 previous_stages = [TrainingStage.RL_PRETRAINING.value]
 
                 metadata = CheckpointMetadata(
@@ -379,12 +438,16 @@ class SupervisedFinetuningTrainer:
                     config={
                         "learning_rate": self.config.learning_rate,
                         "batch_size": self.config.batch_size,
+                        "world_size": self._world_size,
                     },
                     previous_stages=previous_stages,
                 )
 
+                # Save unwrapped model for DDP
+                model_to_save = unwrap_model(self.model)
+
                 self.checkpoint_manager.save_checkpoint(
-                    model=self.model,
+                    model=model_to_save,
                     optimizer=self.optimizer,
                     scheduler=self.scheduler,
                     metadata=metadata,
@@ -392,9 +455,13 @@ class SupervisedFinetuningTrainer:
                 )
 
                 if is_best:
-                    print(f"  New best model saved (loss: {self.best_loss:.4f})")
+                    print_rank0(f"  New best model saved (loss: {self.best_loss:.4f})")
 
-        print("Supervised fine-tuning complete")
+            # Synchronize after saving
+            if self._distributed:
+                barrier()
+
+        print_rank0("Supervised fine-tuning complete")
         return history
 
     def evaluate(self, num_samples: int = 50) -> dict[str, float]:

@@ -119,20 +119,20 @@ config = RLTrainingConfig(
     clip_epsilon=0.2,
     value_loss_coef=0.5,
     entropy_coef=0.01,
-    
+
     # GAE parameters
     gamma=0.99,
     gae_lambda=0.95,
-    
+
     # Training settings
     batch_size=4,
     gradient_accumulation_steps=8,
     max_grad_norm=1.0,
-    
+
     # KL penalty
     kl_penalty_coef=0.1,
     target_kl=0.01,
-    
+
     # Mixed precision
     use_mixed_precision=True,
 )
@@ -156,14 +156,14 @@ config = SFTConfig(
     num_epochs=3,
     batch_size=8,
     gradient_accumulation_steps=4,
-    
+
     # Warmup and decay
     warmup_ratio=0.1,
     weight_decay=0.01,
-    
+
     # Response-only loss (only compute loss on response tokens)
     response_only_loss=True,
-    
+
     # Evaluation
     eval_steps=500,
     save_steps=1000,
@@ -386,16 +386,113 @@ config = RLTrainingConfig(
     # Gradient accumulation to simulate larger batches
     batch_size=1,
     gradient_accumulation_steps=32,
-    
+
     # Mixed precision
     use_mixed_precision=True,
-    
+
     # Gradient checkpointing (set on model)
     # model.gradient_checkpointing_enable()
 )
 ```
 
 See [MEMORY_OPTIMIZATION.md](./MEMORY_OPTIMIZATION.md) for detailed memory optimization strategies.
+
+## SLURM and Distributed Training
+
+The training pipeline supports multi-node, multi-GPU training using PyTorch DistributedDataParallel (DDP). SLURM batch scripts are provided for running on HPC clusters.
+
+### SLURM Job Scripts
+
+Two SLURM scripts are provided in `multimodal_aifs/training/`:
+
+- `slurm_rl_training.sh` - Multi-node RL training (default: 2 nodes × 4 GPUs)
+- `slurm_sft_training.sh` - Single-node SFT training (default: 1 node × 4 GPUs)
+
+### Quick SLURM Submission
+
+```bash
+# Submit RL training job
+sbatch multimodal_aifs/training/slurm_rl_training.sh
+
+# Submit SFT training after RL completes
+sbatch --dependency=afterok:<rl_job_id> multimodal_aifs/training/slurm_sft_training.sh
+
+# Override parameters at submission
+sbatch --nodes=4 multimodal_aifs/training/slurm_rl_training.sh
+```
+
+### Environment Variables
+
+Configure training via environment variables:
+
+```bash
+# Paths
+export PROJECT_DIR=/path/to/HPE-LLM4Climate
+export ZARR_DATA=/path/to/climate/data.zarr
+export CHECKPOINT_DIR=/path/to/checkpoints
+
+# Model
+export MODEL_NAME=mistralai/Ministral-3-8B-Instruct-2512
+
+# Training hyperparameters
+export RL_EPOCHS=5
+export SFT_EPOCHS=3
+export BATCH_SIZE=4
+export LEARNING_RATE=1e-5
+
+# Submit with custom settings
+sbatch multimodal_aifs/training/slurm_rl_training.sh
+```
+
+### Chain RL → SFT Jobs
+
+To automatically run SFT after RL training:
+
+```bash
+# Submit RL job and capture job ID
+RL_JOB=$(sbatch --parsable multimodal_aifs/training/slurm_rl_training.sh)
+echo "RL Job ID: ${RL_JOB}"
+
+# Submit SFT with dependency on RL completion
+export RL_CHECKPOINT_DIR=/path/to/checkpoints/rl_training_${RL_JOB}
+sbatch --dependency=afterok:${RL_JOB} multimodal_aifs/training/slurm_sft_training.sh
+```
+
+### Distributed Training Configuration
+
+The training automatically detects SLURM environment variables:
+- `SLURM_NTASKS` → World size
+- `SLURM_PROCID` → Global rank
+- `SLURM_LOCALID` → Local rank (GPU index)
+- `SLURM_NODELIST` → Master address extraction
+
+For manual distributed training without SLURM:
+
+```bash
+# Set environment variables manually
+export MASTER_ADDR=node001
+export MASTER_PORT=29500
+export WORLD_SIZE=8
+export RANK=0
+export LOCAL_RANK=0
+
+python -m multimodal_aifs.training.train_pipeline \
+    --stage rl \
+    --zarr-paths /path/to/data.zarr \
+    --device cuda
+```
+
+### NCCL Settings
+
+The SLURM scripts configure NCCL for optimal multi-node performance:
+
+```bash
+export NCCL_DEBUG=INFO
+export NCCL_IB_DISABLE=0
+export NCCL_NET_GDR_LEVEL=2
+```
+
+Adjust these based on your cluster's network configuration.
 
 ## Troubleshooting
 
@@ -422,6 +519,16 @@ See [MEMORY_OPTIMIZATION.md](./MEMORY_OPTIMIZATION.md) for detailed memory optim
 - Check checkpoint directory permissions
 - Verify stage metadata in checkpoint
 
+**5. NCCL timeout in distributed training**
+- Increase `NCCL_TIMEOUT` environment variable
+- Check network connectivity between nodes
+- Verify firewall allows NCCL ports
+
+**6. Uneven GPU memory usage**
+- Ensure all processes start simultaneously
+- Check that batch sizes are identical across ranks
+- Verify data sharding is correct
+
 ### Logging
 
 Enable verbose logging for debugging:
@@ -437,11 +544,11 @@ Run the training pipeline tests:
 
 ```bash
 # All training tests
-pytest multimodal_aifs/tests/test_verifiable_rewards.py -v
-pytest multimodal_aifs/tests/test_checkpoint_manager.py -v
+pytest multimodal_aifs/tests/unit/test_verifiable_rewards.py -v
+pytest multimodal_aifs/tests/unit/test_checkpoint_manager.py -v
 
 # Specific test classes
-pytest multimodal_aifs/tests/test_verifiable_rewards.py::TestRewardBreakdown -v
+pytest multimodal_aifs/tests/unit/test_verifiable_rewards.py::TestRewardBreakdown -v
 ```
 
 ## Related Documentation

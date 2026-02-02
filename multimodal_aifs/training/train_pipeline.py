@@ -31,6 +31,14 @@ from pathlib import Path
 import torch
 import yaml
 
+from ..utils.distributed_utils import (
+    cleanup_distributed,
+    is_distributed,
+    is_main_process,
+    print_rank0,
+    setup_distributed,
+    should_use_distributed,
+)
 from .checkpoint_manager import CheckpointManager, TrainingStage
 from .climate_dataloader import ClimateTextDataLoader
 from .rl_trainer import RLTrainer, RLTrainingConfig
@@ -141,9 +149,9 @@ class TrainingPipeline:
         if self._initialized:
             return
 
-        print("Initializing training pipeline components...")
+        print_rank0("Initializing training pipeline components...")
 
-        print(f"Loading tokenizer: {self.model_name}")
+        print_rank0(f"Loading tokenizer: {self.model_name}")
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -155,7 +163,7 @@ class TrainingPipeline:
             self.tokenizer.pad_token = self.tokenizer.eos_token
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
 
-        print(f"Loading model: {self.model_name}")
+        print_rank0(f"Loading model: {self.model_name}")
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_name,
             trust_remote_code=True,
@@ -163,17 +171,19 @@ class TrainingPipeline:
             low_cpu_mem_usage=True,
         )
 
-        print("Initializing data loader")
+        print_rank0("Initializing data loader")
         self.dataloader = ClimateTextDataLoader(
             zarr_paths=self.zarr_paths,
             mistral_model_name=self.model_name,
             samples_per_epoch=self.rl_config.batch_size * 100,
             cache_mistral_model=False,
+            external_model=self.model,
+            external_tokenizer=self.tokenizer,
             seed=self.rl_config.seed,
         )
 
         self._initialized = True
-        print("Pipeline initialization complete")
+        print_rank0("Pipeline initialization complete")
 
     def run_rl_training(self) -> dict[str, list[float]]:
         """
@@ -184,9 +194,9 @@ class TrainingPipeline:
         """
         self.initialize()
 
-        print("\n" + "=" * 60)
-        print("STAGE 1: RL Pre-training with Verifiable Rewards")
-        print("=" * 60)
+        print_rank0("\n" + "=" * 60)
+        print_rank0("STAGE 1: RL Pre-training with Verifiable Rewards")
+        print_rank0("=" * 60)
 
         trainer = RLTrainer(
             model=self.model,
@@ -198,8 +208,9 @@ class TrainingPipeline:
 
         history = trainer.train()
 
-        print("\nRL training complete")
-        print(f"Final reward: {history['mean_reward'][-1]:.4f}")
+        print_rank0("\nRL training complete")
+        if history["mean_reward"]:
+            print_rank0(f"Final reward: {history['mean_reward'][-1]:.4f}")
 
         return history
 
@@ -215,9 +226,9 @@ class TrainingPipeline:
         """
         self.initialize()
 
-        print("\n" + "=" * 60)
-        print("STAGE 2: Supervised Fine-tuning")
-        print("=" * 60)
+        print_rank0("\n" + "=" * 60)
+        print_rank0("STAGE 2: Supervised Fine-tuning")
+        print_rank0("=" * 60)
 
         if from_rl_checkpoint:
             if self.checkpoint_manager.has_checkpoint(TrainingStage.RL_PRETRAINING):
@@ -229,7 +240,7 @@ class TrainingPipeline:
                     checkpoint_manager=self.checkpoint_manager,
                 )
             else:
-                print("No RL checkpoint found, starting SFT from scratch")
+                print_rank0("No RL checkpoint found, starting SFT from scratch")
                 trainer = SupervisedFinetuningTrainer(
                     model=self.model,
                     tokenizer=self.tokenizer,
@@ -248,8 +259,9 @@ class TrainingPipeline:
 
         history = trainer.train()
 
-        print("\nSupervised fine-tuning complete")
-        print(f"Final loss: {history['loss'][-1]:.4f}")
+        print_rank0("\nSupervised fine-tuning complete")
+        if history["loss"]:
+            print_rank0(f"Final loss: {history['loss'][-1]:.4f}")
 
         return history
 
@@ -264,19 +276,21 @@ class TrainingPipeline:
         Returns:
             Dictionary with 'rl' and 'sft' training histories
         """
-        print("\n" + "#" * 60)
-        print("FULL TRAINING PIPELINE: RL + SFT")
-        print("#" * 60)
+        print_rank0("\n" + "#" * 60)
+        print_rank0("FULL TRAINING PIPELINE: RL + SFT")
+        print_rank0("#" * 60)
 
         rl_history = self.run_rl_training()
 
         sft_history = self.run_sft_training(from_rl_checkpoint=True)
 
-        print("\n" + "#" * 60)
-        print("TRAINING PIPELINE COMPLETE")
-        print("#" * 60)
-        print(f"RL final reward: {rl_history['mean_reward'][-1]:.4f}")
-        print(f"SFT final loss: {sft_history['loss'][-1]:.4f}")
+        print_rank0("\n" + "#" * 60)
+        print_rank0("TRAINING PIPELINE COMPLETE")
+        print_rank0("#" * 60)
+        if rl_history["mean_reward"]:
+            print_rank0(f"RL final reward: {rl_history['mean_reward'][-1]:.4f}")
+        if sft_history["loss"]:
+            print_rank0(f"SFT final loss: {sft_history['loss'][-1]:.4f}")
 
         return {"rl": rl_history, "sft": sft_history}
 
@@ -294,7 +308,7 @@ class TrainingPipeline:
         """
         self.initialize()
 
-        print(f"\nEvaluating model from {stage.value} checkpoint...")
+        print_rank0(f"\nEvaluating model from {stage.value} checkpoint...")
 
         if self.checkpoint_manager.has_checkpoint(stage):
             self.checkpoint_manager.load_checkpoint(
@@ -303,7 +317,7 @@ class TrainingPipeline:
                 load_best=True,
             )
         else:
-            print(f"No {stage.value} checkpoint found, using current model state")
+            print_rank0(f"No {stage.value} checkpoint found, using current model state")
 
         if stage == TrainingStage.RL_PRETRAINING:
             trainer = RLTrainer(
@@ -322,9 +336,9 @@ class TrainingPipeline:
             )
             metrics = trainer.evaluate()
 
-        print("Evaluation results:")
+        print_rank0("Evaluation results:")
         for key, value in metrics.items():
-            print(f"  {key}: {value:.4f}")
+            print_rank0(f"  {key}: {value:.4f}")
 
         return metrics
 
@@ -340,7 +354,7 @@ class TrainingPipeline:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        print(f"Saving final model to {output_path}")
+        print_rank0(f"Saving final model to {output_path}")
 
         if self.checkpoint_manager.has_checkpoint(TrainingStage.SUPERVISED_FINETUNING):
             self.checkpoint_manager.load_checkpoint(
@@ -366,7 +380,7 @@ class TrainingPipeline:
         }
         save_config(config, output_path / "training_config.yaml")
 
-        print(f"Model saved to {output_path}")
+        print_rank0(f"Model saved to {output_path}")
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -467,57 +481,77 @@ def main() -> None:
     parser = create_argument_parser()
     args = parser.parse_args()
 
-    if args.config:
-        config = load_config(args.config)
-        rl_config_dict = config.get("rl", {})
-        sft_config_dict = config.get("sft", {})
-    else:
-        rl_config_dict = {}
-        sft_config_dict = {}
+    # Setup distributed training if environment variables indicate it
+    # Must be done BEFORE any other operations to ensure print_rank0 works
+    dist_config = None
+    use_distributed = should_use_distributed()
+    if use_distributed:
+        dist_config = setup_distributed()
+        print_rank0(f"Distributed training enabled: {dist_config.world_size} processes")
 
-    rl_config_dict.update(
-        {
-            "epochs": args.rl_epochs,
-            "learning_rate": args.learning_rate,
-            "batch_size": args.batch_size,
-            "device": args.device,
-            "seed": args.seed,
-        }
-    )
+    try:
+        if args.config:
+            config = load_config(args.config)
+            rl_config_dict = config.get("rl", {})
+            sft_config_dict = config.get("sft", {})
+        else:
+            rl_config_dict = {}
+            sft_config_dict = {}
 
-    sft_config_dict.update(
-        {
-            "epochs": args.sft_epochs,
-            "learning_rate": args.learning_rate * 2,
-            "batch_size": args.batch_size,
-            "device": args.device,
-            "seed": args.seed,
-        }
-    )
+        # Enable distributed training in configs if detected
+        distributed = is_distributed()
 
-    rl_config = RLTrainingConfig(**rl_config_dict)
-    sft_config = SFTConfig(**sft_config_dict)
+        rl_config_dict.update(
+            {
+                "epochs": args.rl_epochs,
+                "learning_rate": args.learning_rate,
+                "batch_size": args.batch_size,
+                "device": args.device,
+                "seed": args.seed,
+                "distributed": distributed,
+            }
+        )
 
-    pipeline = TrainingPipeline(
-        model_name=args.model_name,
-        zarr_paths=args.zarr_paths,
-        checkpoint_dir=args.checkpoint_dir,
-        rl_config=rl_config,
-        sft_config=sft_config,
-        device=args.device,
-    )
+        sft_config_dict.update(
+            {
+                "epochs": args.sft_epochs,
+                "learning_rate": args.learning_rate * 2,
+                "batch_size": args.batch_size,
+                "device": args.device,
+                "seed": args.seed,
+                "distributed": distributed,
+            }
+        )
 
-    if args.stage == "rl":
-        pipeline.run_rl_training()
-    elif args.stage == "sft":
-        pipeline.run_sft_training(from_rl_checkpoint=True)
-    elif args.stage == "full":
-        pipeline.run_full_pipeline()
-    elif args.stage == "evaluate":
-        pipeline.evaluate()
+        rl_config = RLTrainingConfig(**rl_config_dict)
+        sft_config = SFTConfig(**sft_config_dict)
 
-    if args.output_dir:
-        pipeline.save_final_model(args.output_dir)
+        pipeline = TrainingPipeline(
+            model_name=args.model_name,
+            zarr_paths=args.zarr_paths,
+            checkpoint_dir=args.checkpoint_dir,
+            rl_config=rl_config,
+            sft_config=sft_config,
+            device=args.device,
+        )
+
+        if args.stage == "rl":
+            pipeline.run_rl_training()
+        elif args.stage == "sft":
+            pipeline.run_sft_training(from_rl_checkpoint=True)
+        elif args.stage == "full":
+            pipeline.run_full_pipeline()
+        elif args.stage == "evaluate":
+            pipeline.evaluate()
+
+        # Only save on main process for distributed training
+        if args.output_dir and is_main_process():
+            pipeline.save_final_model(args.output_dir)
+
+    finally:
+        # Clean up distributed training
+        if dist_config is not None:
+            cleanup_distributed()
 
 
 if __name__ == "__main__":

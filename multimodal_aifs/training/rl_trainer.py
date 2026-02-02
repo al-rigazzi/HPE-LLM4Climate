@@ -35,6 +35,18 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from ..utils.device_utils import autocast_if_available, resolve_device, supports_amp
+from ..utils.distributed_utils import (
+    all_reduce_mean,
+    barrier,
+    get_local_rank,
+    get_world_size,
+    is_distributed,
+    is_main_process,
+    print_rank0,
+    setup_distributed,
+    unwrap_model,
+    wrap_model_ddp,
+)
 from .checkpoint_manager import CheckpointManager, CheckpointMetadata, TrainingStage
 from .climate_dataloader import ClimateTextDataLoader, TrainingSample
 from .statistics_computer import VariableStatistics
@@ -76,6 +88,10 @@ class RLTrainingConfig:
     device: str = "auto"
     mixed_precision: bool = True
     seed: int = 42
+
+    # Distributed training settings
+    distributed: bool = False
+    find_unused_parameters: bool = False
 
 
 @dataclass
@@ -161,7 +177,19 @@ class RLTrainer:
             reference_model: Optional frozen reference model for KL penalty
         """
         self.config = config
-        self.device = resolve_device(config.device if config.device != "auto" else None)
+
+        # Setup distributed training if enabled
+        self._distributed = config.distributed or is_distributed()
+        if self._distributed:
+            self._dist_config = setup_distributed()
+            self._local_rank = get_local_rank()
+            self._world_size = get_world_size()
+            self.device = torch.device(f"cuda:{self._local_rank}")
+        else:
+            self._local_rank = 0
+            self._world_size = 1
+            self.device = resolve_device(config.device if config.device != "auto" else None)
+
         self._amp_supported = supports_amp(self.device)
         self._use_amp = config.mixed_precision and self._amp_supported
 
@@ -169,6 +197,14 @@ class RLTrainer:
         self.tokenizer = tokenizer
         self.dataloader = dataloader
         self.checkpoint_manager = checkpoint_manager
+
+        # Wrap model with DDP if distributed
+        if self._distributed:
+            self.model = wrap_model_ddp(
+                self.model,
+                self._local_rank,
+                find_unused_parameters=config.find_unused_parameters,
+            )
 
         if reference_model is not None:
             self.reference_model = reference_model.to(self.device)
@@ -181,13 +217,25 @@ class RLTrainer:
         hidden_size = self._get_hidden_size()
         self.value_head = ValueHead(hidden_size).to(self.device)
 
+        # Wrap value head with DDP if distributed
+        if self._distributed:
+            self.value_head = wrap_model_ddp(
+                self.value_head,
+                self._local_rank,
+                find_unused_parameters=config.find_unused_parameters,
+            )
+
         self.reward_computer = VerifiableRewardComputer(
             numerical_tolerance=config.numerical_tolerance,
             penalize_hallucinations=config.penalize_hallucinations,
         )
 
+        # Get parameters from potentially DDP-wrapped models
+        model_params = unwrap_model(self.model).parameters()
+        value_head_params = unwrap_model(self.value_head).parameters()
+
         self.optimizer = AdamW(
-            list(self.model.parameters()) + list(self.value_head.parameters()),
+            list(model_params) + list(value_head_params),
             lr=config.learning_rate,
             weight_decay=0.01,
         )
@@ -195,7 +243,7 @@ class RLTrainer:
         total_steps = config.epochs * len(dataloader) // config.gradient_accumulation_steps
         self.scheduler = CosineAnnealingLR(
             self.optimizer,
-            T_max=total_steps,
+            T_max=max(1, total_steps),
             eta_min=config.learning_rate * 0.1,
         )
 
@@ -589,20 +637,32 @@ class RLTrainer:
             "numerical_accuracy": [],
         }
 
-        print(f"Starting RL training for {self.config.epochs} epochs")
-        print(f"Device: {self.device}")
-        print(f"Mixed precision: {self._use_amp}")
+        print_rank0(f"Starting RL training for {self.config.epochs} epochs")
+        print_rank0(f"Device: {self.device}")
+        print_rank0(f"Mixed precision: {self._use_amp}")
+        if self._distributed:
+            print_rank0(f"Distributed training: {self._world_size} processes")
 
         for epoch in range(self.config.epochs):
             self.epoch = epoch
 
+            # Synchronize before each epoch
+            if self._distributed:
+                barrier()
+
             metrics = self.train_epoch()
+
+            # Aggregate metrics across all processes
+            if self._distributed:
+                for key in metrics:
+                    tensor = torch.tensor(metrics[key], device=self.device)
+                    metrics[key] = all_reduce_mean(tensor).item()
 
             for key, values in history.items():
                 if key in metrics:
                     values.append(metrics[key])
 
-            print(
+            print_rank0(
                 f"Epoch {epoch + 1}/{self.config.epochs} - "
                 f"Reward: {metrics['mean_reward']:.4f}, "
                 f"Policy Loss: {metrics['policy_loss']:.4f}, "
@@ -613,9 +673,17 @@ class RLTrainer:
             if is_best:
                 self.best_reward = metrics["mean_reward"]
 
-            if self.checkpoint_manager is not None and (
-                (epoch + 1) % (self.config.save_steps // len(self.dataloader) + 1) == 0 or is_best
-            ):
+            # Only save checkpoints on main process
+            should_save = (
+                self.checkpoint_manager is not None
+                and is_main_process()
+                and (
+                    (epoch + 1) % (self.config.save_steps // max(1, len(self.dataloader)) + 1) == 0
+                    or is_best
+                )
+            )
+
+            if should_save:
                 metadata = CheckpointMetadata(
                     stage=TrainingStage.RL_PRETRAINING,
                     step=self.global_step,
@@ -625,11 +693,15 @@ class RLTrainer:
                         "learning_rate": self.config.learning_rate,
                         "ppo_epochs": self.config.ppo_epochs,
                         "clip_epsilon": self.config.clip_epsilon,
+                        "world_size": self._world_size,
                     },
                 )
 
+                # Save unwrapped model for DDP
+                model_to_save = unwrap_model(self.model)
+
                 self.checkpoint_manager.save_checkpoint(
-                    model=self.model,
+                    model=model_to_save,
                     optimizer=self.optimizer,
                     scheduler=self.scheduler,
                     metadata=metadata,
@@ -637,9 +709,13 @@ class RLTrainer:
                 )
 
                 if is_best:
-                    print(f"  New best model saved (reward: {self.best_reward:.4f})")
+                    print_rank0(f"  New best model saved (reward: {self.best_reward:.4f})")
 
-        print("RL training complete")
+            # Synchronize after saving
+            if self._distributed:
+                barrier()
+
+        print_rank0("RL training complete")
         return history
 
     def evaluate(self, num_samples: int = 50) -> dict[str, float]:
