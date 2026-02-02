@@ -91,6 +91,9 @@ export HF_HOME="${HF_HOME:-${PROJECT_DIR}/.cache/huggingface}"
 export TRANSFORMERS_CACHE="${HF_HOME}/hub"
 mkdir -p "${HF_HOME}"
 
+# Ensure Python output is unbuffered for real-time logging
+export PYTHONUNBUFFERED=1
+
 # ============================================================================
 # Distributed Training Setup
 # ============================================================================
