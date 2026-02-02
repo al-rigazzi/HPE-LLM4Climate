@@ -1,10 +1,10 @@
 ============================================
-Job ID: 29880
+Job ID: 29916
 Job Name: rl-training
 Nodes: 2
 Tasks per node: 4
 GPUs per node: 4
-Node list: blancapeak[001,014]
+Node list: blancapeak[001-002]
 ============================================
 ============================================
 Distributed Training Configuration
@@ -13,16 +13,16 @@ Master Port: 29500
 World Size: 8
 GPUs per Node: 4
 ============================================
-Starting RL training at Mon Feb  2 02:12:48 PM CST 2026
+Starting RL training at Mon Feb  2 03:39:42 PM CST 2026
 ============================================
+Node: blancapeak001, Rank: 3, Local Rank: 3, GPU: 0,1,2,3
 Node: blancapeak001, Rank: 0, Local Rank: 0, GPU: 0,1,2,3
 Node: blancapeak001, Rank: 2, Local Rank: 2, GPU: 0,1,2,3
 Node: blancapeak001, Rank: 1, Local Rank: 1, GPU: 0,1,2,3
-Node: blancapeak001, Rank: 3, Local Rank: 3, GPU: 0,1,2,3
-Node: blancapeak014, Rank: 7, Local Rank: 3, GPU: 0,1,2,3
-Node: blancapeak014, Rank: 4, Local Rank: 0, GPU: 0,1,2,3
-Node: blancapeak014, Rank: 6, Local Rank: 2, GPU: 0,1,2,3
-Node: blancapeak014, Rank: 5, Local Rank: 1, GPU: 0,1,2,3
+Node: blancapeak002, Rank: 4, Local Rank: 0, GPU: 0,1,2,3
+Node: blancapeak002, Rank: 6, Local Rank: 2, GPU: 0,1,2,3
+Node: blancapeak002, Rank: 5, Local Rank: 1, GPU: 0,1,2,3
+Node: blancapeak002, Rank: 7, Local Rank: 3, GPU: 0,1,2,3
 Distributed training enabled: 8 processes
 Initializing training pipeline components...
 Loading tokenizer: mistralai/Ministral-3-8B-Instruct-2512

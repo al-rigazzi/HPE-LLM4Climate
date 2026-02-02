@@ -168,11 +168,15 @@ class TrainingPipeline:
         if "Ministral-3" in self.model_name or "Mistral-3" in self.model_name:
             from transformers import Mistral3ForConditionalGeneration
 
+            # For FP8 models in DDP, load directly to current GPU
+            device_map = {"": torch.cuda.current_device()} if torch.cuda.is_available() else "cpu"
+            
             self.model = Mistral3ForConditionalGeneration.from_pretrained(
                 self.model_name,
                 trust_remote_code=True,
                 dtype=torch.bfloat16,
                 low_cpu_mem_usage=True,
+                device_map=device_map,
             )
         else:
             from transformers import AutoModelForCausalLM
