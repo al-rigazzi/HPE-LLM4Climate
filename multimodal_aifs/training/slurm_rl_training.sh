@@ -53,7 +53,9 @@ OUTPUT_DIR="${OUTPUT_DIR:-${PROJECT_DIR}/outputs/rl_model_${SLURM_JOB_ID}}"
 MODEL_NAME="${MODEL_NAME:-mistralai/Ministral-3-8B-Instruct-2512}"
 
 # Training hyperparameters
-RL_EPOCHS="${RL_EPOCHS:-3}"
+# Using 24 epochs with 50 samples each = 1200 total samples
+# This saves checkpoints every ~45 min instead of every ~6 hours
+RL_EPOCHS="${RL_EPOCHS:-24}"
 BATCH_SIZE="${BATCH_SIZE:-4}"
 LEARNING_RATE="${LEARNING_RATE:-1e-5}"
 SEED="${SEED:-42}"
@@ -89,6 +91,7 @@ export HF_TOKEN="${HF_TOKEN:-}"
 # This ensures all nodes use the same cache, avoiding download race conditions
 export HF_HOME="${HF_HOME:-${PROJECT_DIR}/.cache/huggingface}"
 export TRANSFORMERS_CACHE="${HF_HOME}/hub"
+export TQDM_DISABLE=1
 mkdir -p "${HF_HOME}"
 
 # Ensure Python output is unbuffered for real-time logging

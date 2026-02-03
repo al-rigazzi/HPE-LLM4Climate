@@ -217,7 +217,10 @@ def wrap_model_ddp(
     if not is_distributed():
         return model
 
-    if torch.cuda.is_available():
+    # Skip .to() if model was loaded with device_map (already on correct device)
+    # Check for device_map attribute or hf_device_map
+    has_device_map = hasattr(model, "hf_device_map") or hasattr(model, "device_map")
+    if torch.cuda.is_available() and not has_device_map:
         model = model.to(local_rank)
 
     return DDP(

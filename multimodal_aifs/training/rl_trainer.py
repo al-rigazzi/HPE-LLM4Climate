@@ -193,7 +193,12 @@ class RLTrainer:
         self._amp_supported = supports_amp(self.device)
         self._use_amp = config.mixed_precision and self._amp_supported
 
-        self.model = model.to(self.device)
+        # Skip .to() if model was loaded with device_map (already on correct device)
+        has_device_map = hasattr(model, "hf_device_map") or hasattr(model, "device_map")
+        if not has_device_map:
+            self.model = model.to(self.device)
+        else:
+            self.model = model
         self.tokenizer = tokenizer
         self.dataloader = dataloader
         self.checkpoint_manager = checkpoint_manager
@@ -388,6 +393,9 @@ class RLTrainer:
             if sample_count >= num_samples:
                 break
 
+            if sample_count % 20 == 0:
+                print_rank0(f"  [{sample_count}/{num_samples}] Generating response...")
+
             response, log_probs = self.generate_response(sample.prompt)
 
             ground_truth = self.dataloader.statistics_computer.compute_statistics(
@@ -548,7 +556,9 @@ class RLTrainer:
             "coverage": [],
         }
 
+        print_rank0(f"Collecting {len(self.dataloader)} rollouts...")
         rollouts = list(self.collect_rollouts(len(self.dataloader)))
+        print_rank0(f"  Rollouts collected")
 
         prompts = [r[0].prompt for r in rollouts]
         responses = [r[1] for r in rollouts]
@@ -557,6 +567,7 @@ class RLTrainer:
         breakdowns = [r[4] for r in rollouts]
         samples = [r[0] for r in rollouts]
 
+        print_rank0(f"Processing batch data...")
         max_len = max(lp.shape[0] for lp in log_probs_list)
         padded_log_probs = []
         for lp in log_probs_list:
@@ -605,7 +616,9 @@ class RLTrainer:
             returns=returns,
         )
 
+        print_rank0(f"Running PPO step...")
         metrics = self.ppo_step(batch)
+        print_rank0(f"  PPO step complete")
 
         for key in ["policy_loss", "value_loss", "entropy", "kl_divergence"]:
             epoch_metrics[key].append(metrics[key])

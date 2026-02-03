@@ -210,12 +210,21 @@ class TrainingPipeline:
                 "device_map": device_map,
             }
 
-            # With shared HF_HOME, all ranks can load in parallel from the same cache.
-            # The tokenizer loading already ensured the cache is populated.
-            print_rank0("Loading model (all ranks in parallel)...")
+            # Staggered model loading to reduce I/O contention:
+            # Load sequentially by local_rank to avoid 8 simultaneous loads
+            import time
+            if is_distributed():
+                # Each rank waits based on local_rank to stagger loading
+                stagger_delay = local_rank * 5  # 5 seconds between each rank
+                if stagger_delay > 0:
+                    print(f"Rank {os.environ.get('RANK', 0)} waiting {stagger_delay}s before loading...", flush=True)
+                    time.sleep(stagger_delay)
+
+            print(f"Rank {os.environ.get('RANK', 0)} loading model...", flush=True)
             self.model = Mistral3ForConditionalGeneration.from_pretrained(
                 self.model_name, **load_kwargs
             )
+            print(f"Rank {os.environ.get('RANK', 0)} model loaded.", flush=True)
         else:
             from transformers import AutoModelForCausalLM
 
@@ -226,21 +235,26 @@ class TrainingPipeline:
                 low_cpu_mem_usage=True,
             )
 
-        # Note: We intentionally skip barrier after model loading because:
-        # 1. Model loading for 8B params can take 15+ minutes
-        # 2. NCCL default timeout is 10 minutes
-        # 3. Each rank loads independently from shared cache
-        # The DDP wrapper will synchronize model parameters when needed.
+        # Barrier after model loading to ensure all ranks finished before proceeding.
+        # With staggered loading (5s delay per rank) max wait is ~20s for first rank.
+        # Added 20-min timeout to NCCL to handle any longer delays.
+        if is_distributed():
+            import torch.distributed as dist
+            print(f"Rank {os.environ.get('RANK', 0)} waiting at model sync barrier...", flush=True)
+            dist.barrier()
+            print(f"Rank {os.environ.get('RANK', 0)} passed model sync barrier.", flush=True)
 
         # Restore original logging level
         logging.set_verbosity(original_log_level)
         print_rank0("Model loaded successfully")
 
         print_rank0("Initializing data loader")
+        # Use smaller samples_per_epoch (50) to checkpoint more frequently.
+        # Increase epochs proportionally to maintain total training samples.
         self.dataloader = ClimateTextDataLoader(
             zarr_paths=self.zarr_paths,
             mistral_model_name=self.model_name,
-            samples_per_epoch=self.rl_config.batch_size * 100,
+            samples_per_epoch=50,
             cache_mistral_model=False,
             external_model=self.model,
             external_tokenizer=self.tokenizer,
