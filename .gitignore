@@ -35,6 +35,9 @@ coverage*
 # OS-specific
 .DS_Store
 
+# Core dumps
+core
+
 # Local development files
 pr_description.md
 

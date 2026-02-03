@@ -210,26 +210,12 @@ class TrainingPipeline:
                 "device_map": device_map,
             }
 
-            # Multi-node model loading: uses is_local_main from tokenizer section
-
-            if is_distributed():
-                # Local rank 0 on each node loads first
-                if is_local_main:
-                    print_rank0(f"Local rank 0 loading model on this node...")
-                    self.model = Mistral3ForConditionalGeneration.from_pretrained(
-                        self.model_name, **load_kwargs
-                    )
-                # All ranks synchronize after local rank 0s finish
-                barrier()
-                # Now other local ranks load from cached files
-                if not is_local_main:
-                    self.model = Mistral3ForConditionalGeneration.from_pretrained(
-                        self.model_name, **load_kwargs
-                    )
-            else:
-                self.model = Mistral3ForConditionalGeneration.from_pretrained(
-                    self.model_name, **load_kwargs
-                )
+            # With shared HF_HOME, all ranks can load in parallel from the same cache.
+            # The tokenizer loading already ensured the cache is populated.
+            print_rank0("Loading model (all ranks in parallel)...")
+            self.model = Mistral3ForConditionalGeneration.from_pretrained(
+                self.model_name, **load_kwargs
+            )
         else:
             from transformers import AutoModelForCausalLM
 

@@ -1,0 +1,33 @@
+============================================
+Job ID: 30149
+Job Name: rl-training
+Nodes: 2
+Tasks per node: 4
+GPUs per node: 4
+Node list: blancapeak[001-002]
+============================================
+============================================
+Distributed Training Configuration
+Master Address: blancapeak001
+Master Port: 29500
+World Size: 8
+GPUs per Node: 4
+============================================
+Starting RL training at Tue Feb  3 03:07:21 AM CST 2026
+============================================
+Node: blancapeak001, Rank: 0, Local Rank: 0, GPU: 0,1,2,3
+Node: blancapeak001, Rank: 3, Local Rank: 3, GPU: 0,1,2,3
+Node: blancapeak001, Rank: 1, Local Rank: 1, GPU: 0,1,2,3
+Node: blancapeak001, Rank: 2, Local Rank: 2, GPU: 0,1,2,3
+Node: blancapeak002, Rank: 4, Local Rank: 0, GPU: 0,1,2,3
+Node: blancapeak002, Rank: 6, Local Rank: 2, GPU: 0,1,2,3
+Node: blancapeak002, Rank: 7, Local Rank: 3, GPU: 0,1,2,3
+Node: blancapeak002, Rank: 5, Local Rank: 1, GPU: 0,1,2,3
+Distributed training enabled: 8 processes
+Initializing training pipeline components...
+Loading tokenizer: mistralai/Ministral-3-8B-Instruct-2512
+Local rank 0 loading tokenizer on this node...
+NCCL version 2.27.5+cuda12.9
+Tokenizer loaded successfully
+Loading model: mistralai/Ministral-3-8B-Instruct-2512
+Local rank 0 loading model on this node...
