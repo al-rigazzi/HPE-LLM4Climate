@@ -226,9 +226,11 @@ class TrainingPipeline:
                 low_cpu_mem_usage=True,
             )
 
-        # Final sync to ensure all ranks have loaded
-        if is_distributed():
-            barrier()
+        # Note: We intentionally skip barrier after model loading because:
+        # 1. Model loading for 8B params can take 15+ minutes
+        # 2. NCCL default timeout is 10 minutes
+        # 3. Each rank loads independently from shared cache
+        # The DDP wrapper will synchronize model parameters when needed.
 
         # Restore original logging level
         logging.set_verbosity(original_log_level)

@@ -158,6 +158,10 @@ srun --ntasks="${SLURM_NTASKS}" \
         # Ensure Python output is unbuffered
         export PYTHONUNBUFFERED=1
 
+        # Reduce NCCL verbosity and increase timeout to 20 minutes for large model loading
+        export NCCL_DEBUG=WARN
+        export NCCL_TIMEOUT=1200
+
         echo "Node: $(hostname), Rank: ${RANK}, Local Rank: ${LOCAL_RANK}, GPU: ${CUDA_VISIBLE_DEVICES}"
 
         python -u -m multimodal_aifs.training.train_pipeline \

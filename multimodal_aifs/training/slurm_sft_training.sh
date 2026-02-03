@@ -172,6 +172,9 @@ srun --ntasks="${SLURM_NTASKS}" \
         # Reduce NCCL verbosity to only show warnings and errors
         export NCCL_DEBUG=WARN
 
+        # Increase NCCL timeout to 20 minutes for large model loading
+        export NCCL_TIMEOUT=1200
+
         echo "Node: $(hostname), Rank: ${RANK}, Local Rank: ${LOCAL_RANK}, GPU: ${CUDA_VISIBLE_DEVICES}"
 
         python -u -m multimodal_aifs.training.train_pipeline \
