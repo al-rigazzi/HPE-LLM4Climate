@@ -165,9 +165,12 @@ srun --ntasks="${SLURM_NTASKS}" \
 
         # Make all GPUs visible so that LOCAL_RANK device mapping works correctly
         export CUDA_VISIBLE_DEVICES=0,1,2,3
-        
+
         # Ensure Python output is unbuffered
         export PYTHONUNBUFFERED=1
+
+        # Reduce NCCL verbosity to only show warnings and errors
+        export NCCL_DEBUG=WARN
 
         echo "Node: $(hostname), Rank: ${RANK}, Local Rank: ${LOCAL_RANK}, GPU: ${CUDA_VISIBLE_DEVICES}"
 

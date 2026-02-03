@@ -162,23 +162,28 @@ class TrainingPipeline:
 
         # Disable tqdm progress bars for non-main processes
         import os
+        local_rank = int(os.environ.get("LOCAL_RANK", 0))
+        is_local_main = local_rank == 0
+
         if is_distributed() and not is_main_process():
             os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
             os.environ["TQDM_DISABLE"] = "1"
 
-        # In distributed mode, rank 0 loads first to populate cache
-        if is_distributed() and is_main_process():
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
-                trust_remote_code=True,
-            )
-            barrier()  # Signal to other ranks that cache is ready
-        elif is_distributed():
-            barrier()  # Wait for rank 0 to populate cache
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
-                trust_remote_code=True,
-            )
+        # Multi-node tokenizer loading: local_rank 0 on each node loads first
+        # to populate the node-local HF cache, then other ranks load.
+        if is_distributed():
+            if is_local_main:
+                print_rank0("Local rank 0 loading tokenizer on this node...")
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_name,
+                    trust_remote_code=True,
+                )
+            barrier()  # Sync after local rank 0s finish
+            if not is_local_main:
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_name,
+                    trust_remote_code=True,
+                )
         else:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name,
@@ -189,6 +194,7 @@ class TrainingPipeline:
             self.tokenizer.pad_token = self.tokenizer.eos_token
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
 
+        print_rank0("Tokenizer loaded successfully")
         print_rank0(f"Loading model: {self.model_name}")
         # Use Mistral3ForConditionalGeneration for Mistral 3 models
         if "Ministral-3" in self.model_name or "Mistral-3" in self.model_name:
@@ -204,11 +210,7 @@ class TrainingPipeline:
                 "device_map": device_map,
             }
 
-            # Multi-node model loading: local_rank 0 on each node loads first
-            # to populate the node-local HF cache, then other ranks load.
-            # This avoids cache race conditions in multi-node setups.
-            local_rank = int(os.environ.get("LOCAL_RANK", 0))
-            is_local_main = local_rank == 0
+            # Multi-node model loading: uses is_local_main from tokenizer section
 
             if is_distributed():
                 # Local rank 0 on each node loads first
