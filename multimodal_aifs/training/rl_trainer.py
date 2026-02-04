@@ -27,6 +27,7 @@ Key features:
 """
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Iterator
 
 import torch
@@ -86,12 +87,12 @@ class RLTrainingConfig:
     penalize_hallucinations: bool = True
 
     device: str = "auto"
-    mixed_precision: bool = True
+    mixed_precision: bool = False
     seed: int = 42
 
     # Distributed training settings
     distributed: bool = False
-    find_unused_parameters: bool = False
+    find_unused_parameters: bool = True
 
 
 @dataclass
@@ -221,6 +222,10 @@ class RLTrainer:
 
         hidden_size = self._get_hidden_size()
         self.value_head = ValueHead(hidden_size).to(self.device)
+
+        # Match value head dtype to the model dtype to avoid matmul dtype mismatch
+        model_dtype = next(unwrap_model(self.model).parameters()).dtype
+        self.value_head = self.value_head.to(model_dtype)
 
         # Wrap value head with DDP if distributed
         if self._distributed:
@@ -394,7 +399,8 @@ class RLTrainer:
                 break
 
             if sample_count % 20 == 0:
-                print_rank0(f"  [{sample_count}/{num_samples}] Generating response...")
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print_rank0(f"  [{timestamp}] [{sample_count}/{num_samples}] Generating response...")
 
             response, log_probs = self.generate_response(sample.prompt)
 
@@ -556,9 +562,11 @@ class RLTrainer:
             "coverage": [],
         }
 
-        print_rank0(f"Collecting {len(self.dataloader)} rollouts...")
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print_rank0(f"[{timestamp}] Collecting {len(self.dataloader)} rollouts...")
         rollouts = list(self.collect_rollouts(len(self.dataloader)))
-        print_rank0(f"  Rollouts collected")
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print_rank0(f"[{timestamp}] Rollouts collected")
 
         prompts = [r[0].prompt for r in rollouts]
         responses = [r[1] for r in rollouts]
@@ -567,7 +575,8 @@ class RLTrainer:
         breakdowns = [r[4] for r in rollouts]
         samples = [r[0] for r in rollouts]
 
-        print_rank0(f"Processing batch data...")
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print_rank0(f"[{timestamp}] Processing batch data...")
         max_len = max(lp.shape[0] for lp in log_probs_list)
         padded_log_probs = []
         for lp in log_probs_list:
@@ -616,9 +625,11 @@ class RLTrainer:
             returns=returns,
         )
 
-        print_rank0(f"Running PPO step...")
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print_rank0(f"[{timestamp}] Running PPO step...")
         metrics = self.ppo_step(batch)
-        print_rank0(f"  PPO step complete")
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print_rank0(f"[{timestamp}] PPO step complete")
 
         for key in ["policy_loss", "value_loss", "entropy", "kl_divergence"]:
             epoch_metrics[key].append(metrics[key])
