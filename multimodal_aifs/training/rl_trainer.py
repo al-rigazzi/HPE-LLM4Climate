@@ -28,6 +28,7 @@ Key features:
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Iterator
 
 import torch
@@ -64,6 +65,7 @@ class RLTrainingConfig:
     batch_size: int = 4
     mini_batch_size: int = 2
     gradient_accumulation_steps: int = 4
+    value_batch_size: int = 4
     max_grad_norm: float = 1.0
 
     gamma: float = 0.99
@@ -80,11 +82,13 @@ class RLTrainingConfig:
     log_steps: int = 10
 
     max_response_length: int = 512
+    max_prompt_length: int = 512
     temperature: float = 0.7
     top_p: float = 0.9
 
     numerical_tolerance: float = 0.1
     penalize_hallucinations: bool = True
+    reward_scale: float = 1.0
 
     device: str = "auto"
     mixed_precision: bool = False
@@ -238,6 +242,7 @@ class RLTrainer:
         self.reward_computer = VerifiableRewardComputer(
             numerical_tolerance=config.numerical_tolerance,
             penalize_hallucinations=config.penalize_hallucinations,
+            reward_scale=config.reward_scale,
         )
 
         # Get parameters from potentially DDP-wrapped models
@@ -260,6 +265,7 @@ class RLTrainer:
         self.global_step = 0
         self.epoch = 0
         self.best_reward = float("-inf")
+        self.start_epoch = 0
 
         if self._use_amp and self.device.type == "cuda":
             self.scaler = torch.amp.GradScaler("cuda")
@@ -291,7 +297,7 @@ class RLTrainer:
         inputs = self.tokenizer(
             prompt,
             return_tensors="pt",
-            max_length=self.config.max_response_length,
+            max_length=self.config.max_prompt_length,
             truncation=True,
             padding=True,
         )
@@ -377,7 +383,13 @@ class RLTrainer:
             advantages[t] = delta + self.config.gamma * self.config.gae_lambda * next_advantage
             returns[t] = advantages[t] + values[t]
 
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+        adv_std = advantages.std()
+        if adv_std > 1e-6:
+            advantages = (advantages - advantages.mean()) / (adv_std + 1e-8)
+        else:
+            # Constant rewards produce zero std; use unnormalized advantages
+            # so the value baseline can still provide gradient signal.
+            advantages = advantages - advantages.mean()
 
         return advantages, returns
 
@@ -400,7 +412,9 @@ class RLTrainer:
 
             if sample_count % 20 == 0:
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                print_rank0(f"  [{timestamp}] [{sample_count}/{num_samples}] Generating response...")
+                print_rank0(
+                    f"  [{timestamp}] [{sample_count}/{num_samples}] Generating response..."
+                )
 
             response, log_probs = self.generate_response(sample.prompt)
 
@@ -450,13 +464,23 @@ class RLTrainer:
                 mb_advantages = batch.advantages[mb_indices]
                 mb_returns = batch.returns[mb_indices]
 
+                # Tokenize prompts and combined texts separately to find response tokens
+                prompt_inputs = self.tokenizer(
+                    mb_prompts,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=self.config.max_prompt_length,
+                )
+                prompt_lengths = prompt_inputs["attention_mask"].sum(dim=1)
+
                 combined_texts = [f"{p} {r}" for p, r in zip(mb_prompts, mb_responses)]
                 inputs = self.tokenizer(
                     combined_texts,
                     return_tensors="pt",
                     padding=True,
                     truncation=True,
-                    max_length=self.config.max_response_length * 2,
+                    max_length=self.config.max_prompt_length + self.config.max_response_length,
                 )
                 inputs = {k: v.to(self.device) for k, v in inputs.items()}
                 inputs.pop("token_type_ids", None)
@@ -465,18 +489,54 @@ class RLTrainer:
                     outputs = self.model(**inputs, output_hidden_states=True)
                     logits = outputs.logits
 
+                    # Compute log probs for the actual generated tokens
+                    # logits shape: [batch, seq_len, vocab_size]
+                    # We need log prob of each token at the position before it
                     log_probs = torch.log_softmax(logits, dim=-1)
-                    new_log_probs = log_probs[:, -1, :].mean(dim=-1)
+
+                    # Get the input_ids (target tokens)
+                    target_ids = inputs["input_ids"]
+
+                    # Gather log probs for actual tokens (shift by 1 for autoregressive)
+                    # log_probs[:, :-1] predicts tokens at positions 1, 2, ...
+                    # target_ids[:, 1:] are the actual tokens at positions 1, 2, ...
+                    shifted_log_probs = log_probs[:, :-1, :]
+                    shifted_targets = target_ids[:, 1:]
+
+                    # Gather the log prob of each actual token
+                    token_log_probs = torch.gather(
+                        shifted_log_probs, dim=-1, index=shifted_targets.unsqueeze(-1)
+                    ).squeeze(-1)
+
+                    # Mask out padding and prompt tokens - only count response tokens
+                    attention_mask = inputs["attention_mask"][:, 1:]  # Shifted mask
+                    batch_size_mb = token_log_probs.shape[0]
+
+                    # Create mask for response tokens only (after prompt)
+                    response_mask = torch.zeros_like(attention_mask, dtype=torch.bool)
+                    for b in range(batch_size_mb):
+                        prompt_len = int(prompt_lengths[b].item())
+                        response_mask[b, prompt_len:] = attention_mask[b, prompt_len:].bool()
+
+                    # Compute AVERAGE log prob per response token (not sum!)
+                    # This prevents ratio explosion with long sequences
+                    masked_log_probs = token_log_probs * response_mask.float()
+                    response_token_count = response_mask.sum(dim=-1).clamp(min=1).float()
+                    new_log_probs = masked_log_probs.sum(dim=-1) / response_token_count  # [batch]
 
                     hidden_states = outputs.hidden_states[-1]
                     values = self.value_head(hidden_states)
 
-                    old_lp_sum = (
-                        mb_old_log_probs.sum(dim=-1)
-                        if mb_old_log_probs.dim() > 1
-                        else mb_old_log_probs
-                    )
-                    ratio = torch.exp(new_log_probs - old_lp_sum)
+                    # Old log probs are stored per-token; compute average
+                    if mb_old_log_probs.dim() > 1:
+                        old_token_count = (mb_old_log_probs != 0).sum(dim=-1).clamp(min=1).float()
+                        old_lp_avg = mb_old_log_probs.sum(dim=-1) / old_token_count
+                    else:
+                        old_lp_avg = mb_old_log_probs
+
+                    # Ratio of average log probs - stays in reasonable range
+                    log_ratio = torch.clamp(new_log_probs - old_lp_avg, min=-5, max=5)
+                    ratio = torch.exp(log_ratio)
 
                     surr1 = ratio * mb_advantages
                     surr2 = (
@@ -491,7 +551,10 @@ class RLTrainer:
 
                     value_loss = 0.5 * ((values - mb_returns) ** 2).mean()
 
-                    entropy = -(torch.exp(log_probs) * log_probs).sum(dim=-1).mean()
+                    # Compute entropy only over response tokens
+                    # Approximate entropy from token log probs: H ≈ -mean(log_prob)
+                    # response_token_count already computed above
+                    entropy = -new_log_probs.mean()  # new_log_probs is already avg per token
 
                     loss = (
                         policy_loss
@@ -499,11 +562,24 @@ class RLTrainer:
                         - self.config.entropy_coef * entropy
                     )
 
+                    # Check for NaN/Inf and skip bad batches
+                    if not torch.isfinite(loss):
+                        print_rank0(
+                            f"  Warning: Skipping batch with non-finite loss: {loss.item()}"
+                        )
+                        continue
+
                     if self.reference_model is not None:
                         with torch.no_grad():
                             ref_outputs = self.reference_model(**inputs)
                             ref_log_probs = torch.log_softmax(ref_outputs.logits, dim=-1)
-                        kl = (torch.exp(log_probs) * (log_probs - ref_log_probs)).sum(dim=-1).mean()
+                        # KL only over response tokens
+                        ref_token_log_probs = torch.gather(
+                            ref_log_probs[:, :-1, :], dim=-1, index=shifted_targets.unsqueeze(-1)
+                        ).squeeze(-1)
+                        kl_per_token = token_log_probs - ref_token_log_probs
+                        masked_kl = (kl_per_token * response_mask.float()).sum(dim=-1)
+                        kl = (masked_kl / response_token_count).mean()
                         loss = loss + self.config.kl_penalty_coef * kl
                         total_kl += kl.item()
 
@@ -568,12 +644,29 @@ class RLTrainer:
         timestamp = datetime.now().strftime("%H:%M:%S")
         print_rank0(f"[{timestamp}] Rollouts collected")
 
+        # Log a sample response for diagnostics (first rollout only)
+        if rollouts:
+            sample_response = rollouts[0][1]
+            sample_reward = rollouts[0][3]
+            sample_breakdown = rollouts[0][4]
+            print_rank0(
+                f"  Sample response (reward={sample_reward:.4f}, "
+                f"num_acc={sample_breakdown.numerical_accuracy:.4f}, "
+                f"coverage={sample_breakdown.coverage:.4f}):"
+            )
+            # Print first 300 chars to keep log concise
+            print_rank0(f"  >>> {sample_response[:300]}")
+
         prompts = [r[0].prompt for r in rollouts]
         responses = [r[1] for r in rollouts]
         log_probs_list = [r[2] for r in rollouts]
         rewards_list = [r[3] for r in rollouts]
         breakdowns = [r[4] for r in rollouts]
         samples = [r[0] for r in rollouts]
+
+        response_token_lengths = [
+            len(self.tokenizer.encode(response, add_special_tokens=False)) for response in responses
+        ]
 
         timestamp = datetime.now().strftime("%H:%M:%S")
         print_rank0(f"[{timestamp}] Processing batch data...")
@@ -589,20 +682,29 @@ class RLTrainer:
         rewards = torch.tensor(rewards_list, dtype=torch.float32, device=self.device)
         epoch_rewards.extend(rewards_list)
 
+        # Value head uses shorter prompt tokenization to save memory;
+        # long prompts are not needed for a scalar value estimate.
+        value_max_len = min(self.config.max_prompt_length, self.config.max_response_length * 2)
+        values_chunks = []
         with torch.no_grad():
-            dummy_inputs = self.tokenizer(
-                prompts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=self.config.max_response_length,
-            )
-            dummy_inputs = {k: v.to(self.device) for k, v in dummy_inputs.items()}
-            dummy_inputs.pop("token_type_ids", None)
+            for start in range(0, len(prompts), self.config.value_batch_size):
+                end = min(start + self.config.value_batch_size, len(prompts))
+                prompt_batch = prompts[start:end]
+                dummy_inputs = self.tokenizer(
+                    prompt_batch,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=value_max_len,
+                )
+                dummy_inputs = {k: v.to(self.device) for k, v in dummy_inputs.items()}
+                dummy_inputs.pop("token_type_ids", None)
 
-            outputs = self.model(**dummy_inputs, output_hidden_states=True)
-            hidden_states = outputs.hidden_states[-1]
-            values = self.value_head(hidden_states)
+                outputs = self.model(**dummy_inputs, output_hidden_states=True)
+                hidden_states = outputs.hidden_states[-1]
+                values_chunks.append(self.value_head(hidden_states))
+
+        values = torch.cat(values_chunks, dim=0)
 
         advantages, returns = self.compute_advantages(rewards, values)
 
@@ -647,6 +749,25 @@ class RLTrainer:
             for key, values in epoch_metrics.items()
         }
         avg_metrics["mean_reward"] = sum(epoch_rewards) / len(epoch_rewards)
+        avg_metrics["reward_min"] = min(epoch_rewards) if epoch_rewards else 0.0
+        avg_metrics["reward_max"] = max(epoch_rewards) if epoch_rewards else 0.0
+
+        avg_metrics["response_length_mean"] = (
+            sum(response_token_lengths) / len(response_token_lengths)
+            if response_token_lengths
+            else 0.0
+        )
+        avg_metrics["response_length_min"] = (
+            min(response_token_lengths) if response_token_lengths else 0.0
+        )
+        avg_metrics["response_length_max"] = (
+            max(response_token_lengths) if response_token_lengths else 0.0
+        )
+
+        for key in ["numerical_accuracy", "trend_correctness", "coverage"]:
+            values = epoch_metrics.get(key, [])
+            avg_metrics[f"{key}_min"] = min(values) if values else 0.0
+            avg_metrics[f"{key}_max"] = max(values) if values else 0.0
 
         return avg_metrics
 
@@ -670,7 +791,7 @@ class RLTrainer:
         if self._distributed:
             print_rank0(f"Distributed training: {self._world_size} processes")
 
-        for epoch in range(self.config.epochs):
+        for epoch in range(self.start_epoch, self.config.epochs):
             self.epoch = epoch
 
             # Synchronize before each epoch
@@ -683,7 +804,14 @@ class RLTrainer:
             if self._distributed:
                 for key in metrics:
                     tensor = torch.tensor(metrics[key], device=self.device)
-                    metrics[key] = all_reduce_mean(tensor).item()
+                    if key.endswith("_min"):
+                        torch.distributed.all_reduce(tensor, op=torch.distributed.ReduceOp.MIN)
+                        metrics[key] = tensor.item()
+                    elif key.endswith("_max"):
+                        torch.distributed.all_reduce(tensor, op=torch.distributed.ReduceOp.MAX)
+                        metrics[key] = tensor.item()
+                    else:
+                        metrics[key] = all_reduce_mean(tensor).item()
 
             for key, values in history.items():
                 if key in metrics:
@@ -694,6 +822,21 @@ class RLTrainer:
                 f"Reward: {metrics['mean_reward']:.4f}, "
                 f"Policy Loss: {metrics['policy_loss']:.4f}, "
                 f"Numerical Accuracy: {metrics['numerical_accuracy']:.4f}"
+            )
+
+            print_rank0(
+                "  Reward(min/mean/max): "
+                f"{metrics['reward_min']:.4f}/"
+                f"{metrics['mean_reward']:.4f}/"
+                f"{metrics['reward_max']:.4f} | "
+                "Response tokens(min/mean/max): "
+                f"{metrics['response_length_min']:.0f}/"
+                f"{metrics['response_length_mean']:.1f}/"
+                f"{metrics['response_length_max']:.0f} | "
+                "Coverage(min/mean/max): "
+                f"{metrics['coverage_min']:.4f}/"
+                f"{metrics['coverage']:.4f}/"
+                f"{metrics['coverage_max']:.4f}"
             )
 
             is_best = metrics["mean_reward"] > self.best_reward
@@ -733,6 +876,7 @@ class RLTrainer:
                     scheduler=self.scheduler,
                     metadata=metadata,
                     is_best=is_best,
+                    extra_state={"value_head": unwrap_model(self.value_head)},
                 )
 
                 if is_best:
@@ -744,6 +888,42 @@ class RLTrainer:
 
         print_rank0("RL training complete")
         return history
+
+    def resume_from_checkpoint(self, checkpoint_path: str | Path) -> None:
+        """
+        Resume training from a checkpoint path.
+
+        Args:
+            checkpoint_path: Path to a checkpoint directory
+        """
+        if self.checkpoint_manager is None:
+            raise ValueError("Checkpoint manager is required to resume training")
+
+        if self._distributed:
+            barrier()
+
+        metadata = self.checkpoint_manager.load_checkpoint(
+            model=unwrap_model(self.model),
+            optimizer=self.optimizer,
+            scheduler=self.scheduler,
+            checkpoint_path=checkpoint_path,
+            device=self.device,
+            extra_state={"value_head": unwrap_model(self.value_head)},
+        )
+
+        self.global_step = metadata.step
+        self.start_epoch = metadata.epoch + 1
+        self.best_reward = max(
+            self.best_reward,
+            float(metadata.metrics.get("mean_reward", self.best_reward)),
+        )
+
+        print_rank0(
+            "Resumed RL training from checkpoint " f"(epoch {metadata.epoch}, step {metadata.step})"
+        )
+
+        if self._distributed:
+            barrier()
 
     def evaluate(self, num_samples: int = 50) -> dict[str, float]:
         """

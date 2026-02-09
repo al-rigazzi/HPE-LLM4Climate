@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=rl-training
 #SBATCH --partition=blancapeak
-#SBATCH --nodes=2
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
 #SBATCH --cpus-per-task=72
@@ -53,12 +53,17 @@ OUTPUT_DIR="${OUTPUT_DIR:-${PROJECT_DIR}/outputs/rl_model_${SLURM_JOB_ID}}"
 MODEL_NAME="${MODEL_NAME:-mistralai/Ministral-3-8B-Instruct-2512}"
 
 # Training hyperparameters
-# Using 24 epochs with 50 samples each = 1200 total samples
-# This saves checkpoints every ~45 min instead of every ~6 hours
-RL_EPOCHS="${RL_EPOCHS:-24}"
+# Using 12 epochs with 50 samples each
+RL_EPOCHS="${RL_EPOCHS:-12}"
 BATCH_SIZE="${BATCH_SIZE:-4}"
 LEARNING_RATE="${LEARNING_RATE:-1e-5}"
+
+echo "Learning rate: ${LEARNING_RATE}"
+
 SEED="${SEED:-42}"
+
+# Resume configuration
+RESUME_FROM="${RESUME_FROM:-}"
 
 # ============================================================================
 # Environment Setup
@@ -167,6 +172,11 @@ srun --ntasks="${SLURM_NTASKS}" \
 
         echo "Node: $(hostname), Rank: ${RANK}, Local Rank: ${LOCAL_RANK}, GPU: ${CUDA_VISIBLE_DEVICES}"
 
+        RESUME_ARGS=""
+        if [[ -n "${RESUME_FROM}" ]]; then
+            RESUME_ARGS="--resume-from ${RESUME_FROM} --resume-stage rl"
+        fi
+
         python -u -m multimodal_aifs.training.train_pipeline \
             --stage rl \
             --model-name "'"${MODEL_NAME}"'" \
@@ -177,7 +187,8 @@ srun --ntasks="${SLURM_NTASKS}" \
             --batch-size "'"${BATCH_SIZE}"'" \
             --learning-rate "'"${LEARNING_RATE}"'" \
             --seed "'"${SEED}"'" \
-            --device cuda
+            --device cuda \
+            ${RESUME_ARGS}
      '
 
 TRAIN_EXIT_CODE=$?

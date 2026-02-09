@@ -229,17 +229,34 @@ class ClimatePromptGenerator:
         statistic_types = ["minimum", "maximum", "average"]
         stat_type = random.choice(statistic_types)
 
+        # Add bounding box coordinates to location description for better alignment
+        location_with_coords = location.description
+        bbox_str = location.format_bbox_string()
+        if bbox_str:
+            location_with_coords = f"{location.description} (bbox: {bbox_str})"
+
+        response_format = "Answer with a single numeric value and unit only."
+
         if stat_type == "minimum":
             value = stat.min_value
-            question = f"What is the minimum {var_description} in {location.description}?"
+            question = (
+                f"What is the minimum {var_description} in {location_with_coords}? "
+                f"{response_format}"
+            )
 
         elif stat_type == "maximum":
             value = stat.max_value
-            question = f"What is the maximum {var_description} in {location.description}?"
+            question = (
+                f"What is the maximum {var_description} in {location_with_coords}? "
+                f"{response_format}"
+            )
 
         else:  # average
             value = stat.mean_value
-            question = f"What is the average {var_description} in {location.description}?"
+            question = (
+                f"What is the average {var_description} in {location_with_coords}? "
+                f"{response_format}"
+            )
 
         # Format the value with appropriate units and precision
         formatted_value = self._format_value_with_units(value, stat.variable_name)

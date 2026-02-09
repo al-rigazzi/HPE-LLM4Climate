@@ -26,6 +26,7 @@ Key features:
 """
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import torch
 from torch import nn
@@ -159,6 +160,7 @@ class SupervisedFinetuningTrainer:
         self.global_step = 0
         self.epoch = 0
         self.best_loss = float("inf")
+        self.start_epoch = 0
 
         if self._use_amp and self.device.type == "cuda":
             self.scaler = torch.amp.GradScaler("cuda")
@@ -388,7 +390,7 @@ class SupervisedFinetuningTrainer:
         if self._distributed:
             print_rank0(f"Distributed training: {self._world_size} processes")
 
-        for epoch in range(self.config.epochs):
+        for epoch in range(self.start_epoch, self.config.epochs):
             self.epoch = epoch
 
             # Synchronize before each epoch
@@ -463,6 +465,42 @@ class SupervisedFinetuningTrainer:
 
         print_rank0("Supervised fine-tuning complete")
         return history
+
+    def resume_from_checkpoint(self, checkpoint_path: str | Path) -> None:
+        """
+        Resume SFT training from a checkpoint path.
+
+        Args:
+            checkpoint_path: Path to a checkpoint directory
+        """
+        if self.checkpoint_manager is None:
+            raise ValueError("Checkpoint manager is required to resume training")
+
+        if self._distributed:
+            barrier()
+
+        metadata = self.checkpoint_manager.load_checkpoint(
+            model=unwrap_model(self.model),
+            optimizer=self.optimizer,
+            scheduler=self.scheduler,
+            checkpoint_path=checkpoint_path,
+            device=self.device,
+        )
+
+        self.global_step = metadata.step
+        self.start_epoch = metadata.epoch + 1
+        self.best_loss = min(
+            self.best_loss,
+            float(metadata.metrics.get("loss", self.best_loss)),
+        )
+
+        print_rank0(
+            "Resumed SFT training from checkpoint "
+            f"(epoch {metadata.epoch}, step {metadata.step})"
+        )
+
+        if self._distributed:
+            barrier()
 
     def evaluate(self, num_samples: int = 50) -> dict[str, float]:
         """

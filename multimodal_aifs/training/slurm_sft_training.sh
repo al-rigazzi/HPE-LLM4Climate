@@ -69,6 +69,10 @@ BATCH_SIZE="${BATCH_SIZE:-8}"
 LEARNING_RATE="${LEARNING_RATE:-2e-5}"
 SEED="${SEED:-42}"
 
+# Resume configuration
+SFT_INIT="${SFT_INIT:-rl}"
+RESUME_FROM="${RESUME_FROM:-}"
+
 # ============================================================================
 # Environment Setup
 # ============================================================================
@@ -177,6 +181,15 @@ srun --ntasks="${SLURM_NTASKS}" \
 
         echo "Node: $(hostname), Rank: ${RANK}, Local Rank: ${LOCAL_RANK}, GPU: ${CUDA_VISIBLE_DEVICES}"
 
+        RESUME_ARGS=""
+        if [[ "${SFT_INIT}" == "resume" ]]; then
+            if [[ -z "${RESUME_FROM}" ]]; then
+                echo "RESUME_FROM is required when SFT_INIT=resume" >&2
+                exit 1
+            fi
+            RESUME_ARGS="--resume-from ${RESUME_FROM} --resume-stage sft"
+        fi
+
         python -u -m multimodal_aifs.training.train_pipeline \
             --stage sft \
             --model-name "'"${MODEL_NAME}"'" \
@@ -187,7 +200,9 @@ srun --ntasks="${SLURM_NTASKS}" \
             --batch-size "'"${BATCH_SIZE}"'" \
             --learning-rate "'"${LEARNING_RATE}"'" \
             --seed "'"${SEED}"'" \
-            --device cuda
+            --device cuda \
+            --sft-init "'"${SFT_INIT}"'" \
+            ${RESUME_ARGS}
      '
 
 TRAIN_EXIT_CODE=$?

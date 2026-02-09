@@ -60,11 +60,11 @@ class RewardBreakdown:
     def __post_init__(self) -> None:
         """Compute total reward after initialization."""
         self.total = (
-            0.4 * self.numerical_accuracy
-            + 0.25 * self.trend_correctness
-            + 0.2 * self.coverage
-            + 0.1 * self.consistency
-            + 0.05 * self.format_quality
+            0.35 * self.numerical_accuracy
+            + 0.225 * self.trend_correctness
+            + 0.35 * self.coverage
+            + 0.075 * self.consistency
+            + 0.0 * self.format_quality
         )
 
 
@@ -575,6 +575,13 @@ class VerifiableRewardComputer:
         )
 
         total_reward = breakdown.total * self.reward_scale
+
+        # Apply zero-coverage penalty: multiply by 0.5 if no important variables are mentioned
+        if coverage < 0.01:  # coverage=0 (no important variables mentioned)
+            total_reward *= 0.5
+        # Apply coverage bonus for high coverage: reward well-structured responses
+        elif coverage >= 0.67:  # 6+ out of 9 variables
+            total_reward *= 1.1
 
         if return_breakdown:
             details = {

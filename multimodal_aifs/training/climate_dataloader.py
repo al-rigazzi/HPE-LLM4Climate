@@ -99,7 +99,7 @@ class ClimateTextDataLoader(IterableDataset):
         device: str | torch.device | None = None,
         seed: int | None = None,
         max_prompt_length: int = 2048,
-        max_response_length: int = 512,
+        max_response_length: int = 384,
         external_model: torch.nn.Module | None = None,
         external_tokenizer: "PreTrainedTokenizer | None" = None,
     ):

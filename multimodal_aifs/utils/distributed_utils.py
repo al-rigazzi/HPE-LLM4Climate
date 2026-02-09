@@ -175,6 +175,7 @@ def setup_distributed(config: DistributedConfig | None = None) -> DistributedCon
     if not dist.is_initialized():
         # Use 20-minute timeout for large model loading (default is 10 min)
         from datetime import timedelta
+
         timeout = timedelta(minutes=20)
         dist.init_process_group(
             backend=config.backend,

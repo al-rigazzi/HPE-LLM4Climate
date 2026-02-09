@@ -35,6 +35,7 @@ import yaml
 from ..utils.distributed_utils import (
     barrier,
     cleanup_distributed,
+    get_rank,
     is_distributed,
     is_main_process,
     print_rank0,
@@ -162,6 +163,7 @@ class TrainingPipeline:
 
         # Disable tqdm progress bars for non-main processes
         import os
+
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
         is_local_main = local_rank == 0
 
@@ -213,11 +215,15 @@ class TrainingPipeline:
             # Staggered model loading to reduce I/O contention:
             # Load sequentially by local_rank to avoid 8 simultaneous loads
             import time
+
             if is_distributed():
                 # Each rank waits based on local_rank to stagger loading
                 stagger_delay = local_rank * 5  # 5 seconds between each rank
                 if stagger_delay > 0:
-                    print(f"Rank {os.environ.get('RANK', 0)} waiting {stagger_delay}s before loading...", flush=True)
+                    print(
+                        f"Rank {os.environ.get('RANK', 0)} waiting {stagger_delay}s before loading...",
+                        flush=True,
+                    )
                     time.sleep(stagger_delay)
 
             print(f"Rank {os.environ.get('RANK', 0)} loading model...", flush=True)
@@ -240,6 +246,7 @@ class TrainingPipeline:
         # Added 20-min timeout to NCCL to handle any longer delays.
         if is_distributed():
             import torch.distributed as dist
+
             print(f"Rank {os.environ.get('RANK', 0)} waiting at model sync barrier...", flush=True)
             dist.barrier()
             print(f"Rank {os.environ.get('RANK', 0)} passed model sync barrier.", flush=True)
@@ -249,22 +256,25 @@ class TrainingPipeline:
         print_rank0("Model loaded successfully")
 
         print_rank0("Initializing data loader")
-        # Use smaller samples_per_epoch (50) to checkpoint more frequently.
-        # Increase epochs proportionally to maintain total training samples.
+        # Offset seed by rank to ensure each GPU generates different samples
+        # while maintaining reproducibility across runs
+        rank = get_rank() if is_distributed() else 0
+        local_seed = self.rl_config.seed + rank
+
         self.dataloader = ClimateTextDataLoader(
             zarr_paths=self.zarr_paths,
             mistral_model_name=self.model_name,
-            samples_per_epoch=50,
+            samples_per_epoch=60,
             cache_mistral_model=False,
             external_model=self.model,
             external_tokenizer=self.tokenizer,
-            seed=self.rl_config.seed,
+            seed=local_seed,
         )
 
         self._initialized = True
         print_rank0("Pipeline initialization complete")
 
-    def run_rl_training(self) -> dict[str, list[float]]:
+    def run_rl_training(self, resume_from: str | Path | None = None) -> dict[str, list[float]]:
         """
         Run RL pre-training with verifiable rewards.
 
@@ -285,6 +295,9 @@ class TrainingPipeline:
             checkpoint_manager=self.checkpoint_manager,
         )
 
+        if resume_from is not None:
+            trainer.resume_from_checkpoint(resume_from)
+
         history = trainer.train()
 
         print_rank0("\nRL training complete")
@@ -293,12 +306,17 @@ class TrainingPipeline:
 
         return history
 
-    def run_sft_training(self, from_rl_checkpoint: bool = True) -> dict[str, list[float]]:
+    def run_sft_training(
+        self,
+        sft_init: str = "rl",
+        resume_from: str | Path | None = None,
+    ) -> dict[str, list[float]]:
         """
         Run supervised fine-tuning.
 
         Args:
-            from_rl_checkpoint: If True, initialize from RL checkpoint
+            sft_init: Initialization mode: 'rl', 'resume', or 'fresh'
+            resume_from: Checkpoint path for resume mode
 
         Returns:
             Training history dictionary
@@ -309,7 +327,18 @@ class TrainingPipeline:
         print_rank0("STAGE 2: Supervised Fine-tuning")
         print_rank0("=" * 60)
 
-        if from_rl_checkpoint:
+        if sft_init == "resume":
+            if resume_from is None:
+                raise ValueError("resume_from is required when sft_init='resume'")
+            trainer = SupervisedFinetuningTrainer(
+                model=self.model,
+                tokenizer=self.tokenizer,
+                dataloader=self.dataloader,
+                config=self.sft_config,
+                checkpoint_manager=self.checkpoint_manager,
+            )
+            trainer.resume_from_checkpoint(resume_from)
+        elif sft_init == "rl":
             if self.checkpoint_manager.has_checkpoint(TrainingStage.RL_PRETRAINING):
                 trainer = SupervisedFinetuningTrainer.from_rl_checkpoint(
                     model=self.model,
@@ -327,7 +356,7 @@ class TrainingPipeline:
                     config=self.sft_config,
                     checkpoint_manager=self.checkpoint_manager,
                 )
-        else:
+        elif sft_init == "fresh":
             trainer = SupervisedFinetuningTrainer(
                 model=self.model,
                 tokenizer=self.tokenizer,
@@ -335,6 +364,8 @@ class TrainingPipeline:
                 config=self.sft_config,
                 checkpoint_manager=self.checkpoint_manager,
             )
+        else:
+            raise ValueError(f"Unsupported SFT init mode: {sft_init}")
 
         history = trainer.train()
 
@@ -361,7 +392,7 @@ class TrainingPipeline:
 
         rl_history = self.run_rl_training()
 
-        sft_history = self.run_sft_training(from_rl_checkpoint=True)
+        sft_history = self.run_sft_training(sft_init="rl")
 
         print_rank0("\n" + "#" * 60)
         print_rank0("TRAINING PIPELINE COMPLETE")
@@ -497,6 +528,29 @@ def create_argument_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--resume-from",
+        type=str,
+        default=None,
+        help="Path to checkpoint directory to resume from",
+    )
+
+    parser.add_argument(
+        "--resume-stage",
+        type=str,
+        choices=["rl", "sft"],
+        default=None,
+        help="Training stage to resume (rl or sft)",
+    )
+
+    parser.add_argument(
+        "--sft-init",
+        type=str,
+        choices=["rl", "resume", "fresh"],
+        default="rl",
+        help="SFT initialization mode (rl, resume, fresh)",
+    )
+
+    parser.add_argument(
         "--output-dir",
         type=str,
         default=None,
@@ -527,8 +581,8 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--learning-rate",
         type=float,
-        default=1e-5,
-        help="Learning rate for training",
+        default=None,
+        help="Learning rate for training (default: use config defaults)",
     )
 
     parser.add_argument(
@@ -583,7 +637,6 @@ def main() -> None:
         rl_config_dict.update(
             {
                 "epochs": args.rl_epochs,
-                "learning_rate": args.learning_rate,
                 "batch_size": args.batch_size,
                 "device": args.device,
                 "seed": args.seed,
@@ -591,16 +644,23 @@ def main() -> None:
             }
         )
 
+        # Only override learning rate if explicitly provided via CLI
+        if args.learning_rate is not None:
+            rl_config_dict["learning_rate"] = args.learning_rate
+
         sft_config_dict.update(
             {
                 "epochs": args.sft_epochs,
-                "learning_rate": args.learning_rate * 2,
                 "batch_size": args.batch_size,
                 "device": args.device,
                 "seed": args.seed,
                 "distributed": distributed,
             }
         )
+
+        # SFT learning rate: 2× the RL rate
+        if args.learning_rate is not None:
+            sft_config_dict["learning_rate"] = args.learning_rate * 2
 
         rl_config = RLTrainingConfig(**rl_config_dict)
         sft_config = SFTConfig(**sft_config_dict)
@@ -614,10 +674,23 @@ def main() -> None:
             device=args.device,
         )
 
+        if args.resume_from and args.resume_stage is None:
+            raise ValueError("--resume-stage must be set when --resume-from is used")
+
+        if args.resume_from:
+            print_rank0(
+                f"Resuming {args.resume_stage} training from checkpoint: {args.resume_from}"
+            )
+
+        if args.stage == "full" and args.resume_from:
+            raise ValueError("Resume is only supported for 'rl' or 'sft' stages")
+
         if args.stage == "rl":
-            pipeline.run_rl_training()
+            resume_from = args.resume_from if args.resume_stage == "rl" else None
+            pipeline.run_rl_training(resume_from=resume_from)
         elif args.stage == "sft":
-            pipeline.run_sft_training(from_rl_checkpoint=True)
+            resume_from = args.resume_from if args.resume_stage == "sft" else None
+            pipeline.run_sft_training(sft_init=args.sft_init, resume_from=resume_from)
         elif args.stage == "full":
             pipeline.run_full_pipeline()
         elif args.stage == "evaluate":

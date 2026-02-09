@@ -102,6 +102,7 @@ class CheckpointManager:
     MODEL_FILENAME = "model.pt"
     OPTIMIZER_FILENAME = "optimizer.pt"
     SCHEDULER_FILENAME = "scheduler.pt"
+    VALUE_HEAD_FILENAME = "value_head.pt"
     METADATA_FILENAME = "metadata.json"
     TRAINING_LOG_FILENAME = "training_log.json"
 
@@ -182,6 +183,7 @@ class CheckpointManager:
         scheduler: torch.optim.lr_scheduler.LRScheduler | None,
         metadata: CheckpointMetadata,
         is_best: bool = False,
+        extra_state: dict[str, nn.Module] | None = None,
     ) -> Path:
         """
         Save a training checkpoint.
@@ -192,6 +194,7 @@ class CheckpointManager:
             scheduler: Learning rate scheduler (optional)
             metadata: Checkpoint metadata
             is_best: Whether this is the best checkpoint so far
+            extra_state: Optional extra modules to save (e.g. value head)
 
         Returns:
             Path to the saved checkpoint directory
@@ -209,6 +212,13 @@ class CheckpointManager:
         if self.save_scheduler and scheduler is not None:
             scheduler_path = checkpoint_path / self.SCHEDULER_FILENAME
             torch.save(scheduler.state_dict(), scheduler_path)
+
+        if extra_state:
+            for key, module in extra_state.items():
+                if not isinstance(module, nn.Module):
+                    raise TypeError(f"Extra state '{key}' must be an nn.Module")
+                extra_path = checkpoint_path / f"{key}.pt"
+                torch.save(module.state_dict(), extra_path)
 
         metadata_path = checkpoint_path / self.METADATA_FILENAME
         with open(metadata_path, "w", encoding="utf-8") as f:
@@ -241,6 +251,7 @@ class CheckpointManager:
         load_best: bool = False,
         checkpoint_path: str | Path | None = None,
         device: str | torch.device = "cpu",
+        extra_state: dict[str, nn.Module] | None = None,
     ) -> CheckpointMetadata:
         """
         Load a training checkpoint.
@@ -254,6 +265,7 @@ class CheckpointManager:
             load_best: Whether to load the best checkpoint
             checkpoint_path: Direct path to checkpoint (overrides stage/step)
             device: Device to load tensors to
+            extra_state: Optional extra modules to load (e.g. value head)
 
         Returns:
             Checkpoint metadata
@@ -289,6 +301,17 @@ class CheckpointManager:
             if scheduler_path.exists():
                 scheduler.load_state_dict(
                     torch.load(scheduler_path, map_location=device, weights_only=True)
+                )
+
+        if extra_state:
+            for key, module in extra_state.items():
+                if not isinstance(module, nn.Module):
+                    raise TypeError(f"Extra state '{key}' must be an nn.Module")
+                extra_path = path / f"{key}.pt"
+                if not extra_path.exists():
+                    raise FileNotFoundError(f"Extra state file not found: {extra_path}")
+                module.load_state_dict(
+                    torch.load(extra_path, map_location=device, weights_only=True)
                 )
 
         metadata_path = path / self.METADATA_FILENAME

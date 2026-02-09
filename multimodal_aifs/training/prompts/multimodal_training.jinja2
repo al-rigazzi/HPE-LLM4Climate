@@ -2,4 +2,12 @@ Analyze the weather conditions in {{ location.description }} based on the follow
 
 {{ statistics_table }}
 
-Describe the weather conditions, including temperature, wind, precipitation, and any notable atmospheric patterns.
+Provide a structured analysis of the weather conditions. Your response MUST explicitly mention and analyze the following variables:
+- Temperature at 2m (2t) and dew point (2d)
+- Sea level pressure (msl) and surface pressure (sp)
+- Wind components at 10m (10u and 10v)
+- Total column water (tcw) or precipitation-related variables
+- Geopotential heights and temperature at upper levels (z_500, t_850)
+- Specific humidity at 700hPa (q_700)
+
+For each variable, describe its values, patterns, and implications for weather conditions.
