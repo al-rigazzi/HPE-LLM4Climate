@@ -60,11 +60,11 @@ class RewardBreakdown:
     def __post_init__(self) -> None:
         """Compute total reward after initialization."""
         self.total = (
-            0.35 * self.numerical_accuracy
-            + 0.225 * self.trend_correctness
-            + 0.35 * self.coverage
-            + 0.075 * self.consistency
-            + 0.0 * self.format_quality
+            0.30 * self.numerical_accuracy
+            + 0.20 * self.trend_correctness
+            + 0.30 * self.coverage
+            + 0.05 * self.consistency
+            + 0.15 * self.format_quality
         )
 
 
@@ -116,6 +116,7 @@ class VerifiableRewardComputer:
         use_relative_error: bool = True,
         penalize_hallucinations: bool = True,
         reward_scale: float = 1.0,
+        reward_mode: str = "full",
     ):
         """
         Initialize the reward computer.
@@ -126,11 +127,13 @@ class VerifiableRewardComputer:
             use_relative_error: If True, use relative error; otherwise absolute
             penalize_hallucinations: If True, penalize values not in ground truth
             reward_scale: Scale factor for final reward
+            reward_mode: "full" (all components) or "rl_only" (numerical accuracy only)
         """
         self.numerical_tolerance = numerical_tolerance
         self.use_relative_error = use_relative_error
         self.penalize_hallucinations = penalize_hallucinations
         self.reward_scale = reward_scale
+        self.reward_mode = reward_mode
 
         self._variable_patterns = self._compile_variable_patterns()
 
@@ -508,7 +511,9 @@ class VerifiableRewardComputer:
         """
         Compute format quality reward.
 
-        Checks for proper formatting, units, and structure.
+        Checks for proper formatting and penalises responses that
+        echo structured input formats (tables, JSON, key-value lines)
+        instead of producing natural-language narrative.
 
         Args:
             text: LLM response text
@@ -522,22 +527,41 @@ class VerifiableRewardComputer:
         has_units = bool(re.search(r"\d+\.?\d*\s*[A-Za-z°%]+", text))
         details["checks"]["has_units"] = has_units
         if has_units:
-            score += 0.3
+            score += 0.2
 
         has_structure = bool(re.search(r"[\.\n]", text)) and len(text) > 100
         details["checks"]["has_structure"] = has_structure
         if has_structure:
-            score += 0.2
+            score += 0.1
 
         proper_length = 50 < len(text) < 2000
         details["checks"]["proper_length"] = proper_length
         if proper_length:
-            score += 0.2
+            score += 0.1
 
         no_repetition = len(set(text.split())) / max(len(text.split()), 1) > 0.3
         details["checks"]["no_repetition"] = no_repetition
         if no_repetition:
-            score += 0.3
+            score += 0.2
+
+        # Penalise echoing structured input formats
+        table_echo = bool(re.search(r"={4,}", text)) or bool(
+            re.search(r"Variable\s+Min\s+Max", text, re.IGNORECASE)
+        )
+        json_echo = text.count("{") > 2 and bool(
+            re.search(r'"\w+"\s*:\s*\{', text)
+        )
+        kv_echo = len(re.findall(r"\w+:\s*min=.*max=.*mean=", text)) > 1
+
+        details["checks"]["table_echo"] = table_echo
+        details["checks"]["json_echo"] = json_echo
+        details["checks"]["kv_echo"] = kv_echo
+
+        is_echo = table_echo or json_echo or kv_echo
+        details["checks"]["is_echo"] = is_echo
+
+        if not is_echo:
+            score += 0.4
 
         return score, details
 
@@ -566,6 +590,23 @@ class VerifiableRewardComputer:
         consistency, consistency_details = self.compute_consistency(response, extracted_values)
         format_quality, format_details = self.compute_format_quality(response)
 
+        # Compute weighted total based on reward_mode
+        if self.reward_mode == "rl_only":
+            # Stage 1: Focus on numerical accuracy only
+            total_weighted = num_accuracy
+        elif self.reward_mode == "full":
+            # Stage 2+: Balanced reward with all components
+            # format_quality penalises echoing (tables/JSON/KV) in responses
+            total_weighted = (
+                0.30 * num_accuracy
+                + 0.20 * trend_correct
+                + 0.30 * coverage
+                + 0.05 * consistency
+                + 0.15 * format_quality
+            )
+        else:
+            raise ValueError(f"Unknown reward_mode: {self.reward_mode}")
+
         breakdown = RewardBreakdown(
             numerical_accuracy=num_accuracy,
             trend_correctness=trend_correct,
@@ -573,15 +614,18 @@ class VerifiableRewardComputer:
             consistency=consistency,
             format_quality=format_quality,
         )
+        # Store computed total for reference
+        breakdown.total = total_weighted
 
-        total_reward = breakdown.total * self.reward_scale
+        total_reward = total_weighted * self.reward_scale
 
-        # Apply zero-coverage penalty: multiply by 0.5 if no important variables are mentioned
-        if coverage < 0.01:  # coverage=0 (no important variables mentioned)
-            total_reward *= 0.5
-        # Apply coverage bonus for high coverage: reward well-structured responses
-        elif coverage >= 0.67:  # 6+ out of 9 variables
-            total_reward *= 1.1
+        # Apply zero-coverage penalty only in full mode
+        if self.reward_mode == "full":
+            if coverage < 0.01:  # coverage=0 (no important variables mentioned)
+                total_reward *= 0.1
+            # Apply coverage bonus for high coverage: reward well-structured responses
+            elif coverage >= 0.67:  # 6+ out of 9 variables
+                total_reward *= 1.1
 
         if return_breakdown:
             details = {

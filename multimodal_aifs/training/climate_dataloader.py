@@ -483,13 +483,16 @@ class ClimateTextDataLoader(IterableDataset):
             avg_tensor, mask, variable_names=ALL_AIFS_VARIABLES
         )
 
-        # Step 5: Format statistics table
+        # Step 5: Format statistics table and narrative
         statistics_table = self.statistics_computer.format_statistics_table(
             statistics, max_vars=None
         )
+        statistics_narrative = self.statistics_computer.format_statistics_narrative(
+            statistics, max_vars=None
+        )
 
-        # Step 6: Generate prompt
-        prompt = self.prompt_generator.generate_multimodal_training_prompt(
+        # Step 6: Generate prompt (table input + reward penalises echo)
+        prompt = self.prompt_generator.generate_rl_training_prompt(
             location, statistics, statistics_table
         )
 

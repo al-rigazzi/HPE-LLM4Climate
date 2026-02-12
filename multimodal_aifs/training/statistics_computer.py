@@ -231,3 +231,45 @@ class ClimateStatisticsComputer:
             lines.append(f"  ... and {len(statistics) - 10} more variables")
 
         return "\n".join(lines)
+
+    def format_statistics_narrative(
+        self, statistics: list[VariableStatistics], max_vars: int | None = 20
+    ) -> str:
+        """
+        Format statistics as a JSON object.
+
+        JSON is clearly machine-readable input, which prevents language
+        models from echoing the data format back in their responses.
+
+        Args:
+            statistics: List of VariableStatistics
+            max_vars: Maximum number of variables to include (None for all)
+
+        Returns:
+            JSON-formatted statistics string
+        """
+        import json
+
+        if not statistics:
+            return "No statistics available."
+
+        # Limit number of variables if requested
+        if max_vars is not None and len(statistics) > max_vars:
+            priority_vars = ["2t", "msl", "10u", "10v", "tp", "tcw", "z"]
+            priority_stats = [
+                s for s in statistics if any(p in s.variable_name for p in priority_vars)
+            ]
+            other_stats = [s for s in statistics if s not in priority_stats]
+            statistics = priority_stats[:max_vars] + other_stats[: max_vars - len(priority_stats)]
+
+        data: dict[str, dict[str, float | str]] = {}
+        for stat in statistics:
+            data[stat.variable_name] = {
+                "min": round(stat.min_value, 4),
+                "max": round(stat.max_value, 4),
+                "mean": round(stat.mean_value, 4),
+                "std": round(stat.std_value, 4),
+                "unit": stat.unit,
+            }
+
+        return json.dumps(data, indent=2)

@@ -113,24 +113,24 @@ class ClimatePromptGenerator:
             context_summary=context_summary,
         )
 
-    def generate_multimodal_training_prompt(
+    def generate_rl_training_prompt(
         self,
         location: Location,
         statistics: list[VariableStatistics],
         statistics_table: str,
     ) -> str:
         """
-        Generate a prompt specifically for multimodal training.
+        Generate a prompt specifically for RL training.
 
         Args:
             location: Location object
             statistics: Variable statistics (unused but kept for compatibility)
-            statistics_table: Formatted table
+            statistics_table: Formatted statistics table
 
         Returns:
             Training-optimized prompt
         """
-        template = self.env.get_template("multimodal_training.jinja2")
+        template = self.env.get_template("rl_training.jinja2")
         return template.render(
             location=location,
             statistics_table=statistics_table,

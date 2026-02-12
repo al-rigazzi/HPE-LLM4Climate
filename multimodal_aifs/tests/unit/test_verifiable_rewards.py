@@ -61,7 +61,7 @@ class TestRewardBreakdown:
             format_quality=1.0,
         )
 
-        expected_total = 0.4 * 1.0 + 0.25 * 1.0 + 0.2 * 1.0 + 0.1 * 1.0 + 0.05 * 1.0
+        expected_total = 0.30 * 1.0 + 0.20 * 1.0 + 0.30 * 1.0 + 0.05 * 1.0 + 0.15 * 1.0
         assert abs(breakdown.total - expected_total) < 1e-6
 
     def test_total_with_partial_scores(self):
@@ -74,7 +74,7 @@ class TestRewardBreakdown:
             format_quality=0.7,
         )
 
-        expected_total = 0.4 * 0.8 + 0.25 * 0.6 + 0.2 * 0.5 + 0.1 * 1.0 + 0.05 * 0.7
+        expected_total = 0.30 * 0.8 + 0.20 * 0.6 + 0.30 * 0.5 + 0.05 * 1.0 + 0.15 * 0.7
         assert abs(breakdown.total - expected_total) < 1e-6
 
 
@@ -315,8 +315,47 @@ class TestVerifiableRewardComputer:
 
         quality, details = reward_computer.compute_format_quality(text)
 
-        assert quality < 0.5
+        assert quality < 0.7
         assert not details["checks"]["proper_length"]
+        assert not details["checks"]["has_structure"]
+
+    def test_compute_format_quality_table_echo(self, reward_computer):
+        """Test that table-echoing responses are penalised."""
+        text = (
+            "========================\n"
+            "Variable      Min      Max      Mean\n"
+            "========================\n"
+            "2t           273.0    303.0    288.0\n"
+            "msl        99000.0 103000.0 101325.0\n"
+        )
+        quality, details = reward_computer.compute_format_quality(text)
+        assert details["checks"]["table_echo"]
+        assert details["checks"]["is_echo"]
+        assert quality < 0.7
+
+    def test_compute_format_quality_json_echo(self, reward_computer):
+        """Test that JSON-echoing responses are penalised."""
+        text = (
+            '{"2t": {"min": 273.0, "max": 303.0}, '
+            '"msl": {"min": 99000.0, "max": 103000.0}, '
+            '"10u": {"min": -10.0, "max": 10.0}}'
+        )
+        quality, details = reward_computer.compute_format_quality(text)
+        assert details["checks"]["json_echo"]
+        assert details["checks"]["is_echo"]
+
+    def test_compute_format_quality_no_echo(self, reward_computer):
+        """Test that narrative responses are not flagged as echo."""
+        text = (
+            "The weather analysis shows the following conditions:\n"
+            "Temperature: 288K (approximately 15°C)\n"
+            "Pressure: 101325Pa\n"
+            "Wind: 5.5m/s from the northwest.\n"
+            "These conditions indicate stable weather patterns."
+        )
+        quality, details = reward_computer.compute_format_quality(text)
+        assert not details["checks"]["is_echo"]
+        assert quality > 0.7
 
     def test_compute_reward_full(self, reward_computer, sample_ground_truth):
         """Test full reward computation."""

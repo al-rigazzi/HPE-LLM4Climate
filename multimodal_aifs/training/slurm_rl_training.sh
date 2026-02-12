@@ -57,8 +57,10 @@ MODEL_NAME="${MODEL_NAME:-mistralai/Ministral-3-8B-Instruct-2512}"
 RL_EPOCHS="${RL_EPOCHS:-12}"
 BATCH_SIZE="${BATCH_SIZE:-4}"
 LEARNING_RATE="${LEARNING_RATE:-1e-5}"
+REWARD_MODE="${REWARD_MODE:-full}"
 
 echo "Learning rate: ${LEARNING_RATE}"
+echo "Reward mode: ${REWARD_MODE}"
 
 SEED="${SEED:-42}"
 
@@ -186,6 +188,7 @@ srun --ntasks="${SLURM_NTASKS}" \
             --rl-epochs "'"${RL_EPOCHS}"'" \
             --batch-size "'"${BATCH_SIZE}"'" \
             --learning-rate "'"${LEARNING_RATE}"'" \
+            --reward-mode "'"${REWARD_MODE}"'" \
             --seed "'"${SEED}"'" \
             --device cuda \
             ${RESUME_ARGS}

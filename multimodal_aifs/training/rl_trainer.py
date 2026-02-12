@@ -94,6 +94,9 @@ class RLTrainingConfig:
     mixed_precision: bool = False
     seed: int = 42
 
+    # Reward mode: "rl_only" (numerical accuracy only) or "full" (all components)
+    reward_mode: str = "full"
+
     # Distributed training settings
     distributed: bool = False
     find_unused_parameters: bool = True
@@ -243,6 +246,7 @@ class RLTrainer:
             numerical_tolerance=config.numerical_tolerance,
             penalize_hallucinations=config.penalize_hallucinations,
             reward_scale=config.reward_scale,
+            reward_mode=config.reward_mode,
         )
 
         # Get parameters from potentially DDP-wrapped models

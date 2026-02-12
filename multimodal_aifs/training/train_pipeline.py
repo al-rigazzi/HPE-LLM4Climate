@@ -606,6 +606,14 @@ def create_argument_parser() -> argparse.ArgumentParser:
         help="Random seed",
     )
 
+    parser.add_argument(
+        "--reward-mode",
+        type=str,
+        default="full",
+        choices=["rl_only", "full"],
+        help="Reward mode: rl_only (numerical accuracy) or full (all components)",
+    )
+
     return parser
 
 
@@ -641,6 +649,7 @@ def main() -> None:
                 "device": args.device,
                 "seed": args.seed,
                 "distributed": distributed,
+                "reward_mode": args.reward_mode,
             }
         )
 
