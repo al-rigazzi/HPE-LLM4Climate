@@ -229,6 +229,23 @@ pytest multimodal_aifs/tests/integration/ -v
 # Zarr integration tests
 pytest multimodal_aifs/tests/integration/zarr/ -v
 ```
+
+### Resume Training
+
+```bash
+# Resume RL from a checkpoint directory
+RESUME_FROM=/path/to/checkpoints/rl_pretraining/step_500 \
+sbatch multimodal_aifs/training/slurm_rl_training.sh
+
+# Resume SFT from a checkpoint directory
+SFT_INIT=resume RESUME_FROM=/path/to/checkpoints/supervised_finetuning/step_200 \
+sbatch multimodal_aifs/training/slurm_sft_training.sh
+
+# Start SFT fresh or from RL checkpoint
+SFT_INIT=fresh sbatch multimodal_aifs/training/slurm_sft_training.sh
+SFT_INIT=rl sbatch multimodal_aifs/training/slurm_sft_training.sh
+```
+
 ## Configuration
 
 ### Environment Variables

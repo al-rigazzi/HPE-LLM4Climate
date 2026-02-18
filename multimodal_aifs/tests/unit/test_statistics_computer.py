@@ -275,3 +275,58 @@ class TestClimateStatisticsComputer:
         # Should contain scientific notation for extreme values
         lines = table.split("\n")
         assert len(lines) > 0
+
+    def test_format_statistics_narrative_basic(
+        self, computer, sample_data, sample_mask, variable_names
+    ):
+        """Test JSON statistics formatting."""
+        import json
+
+        stats = computer.compute_statistics(sample_data, sample_mask, variable_names)
+        narrative = computer.format_statistics_narrative(stats)
+
+        assert isinstance(narrative, str)
+        assert len(narrative) > 0
+
+        # Should be valid JSON
+        parsed = json.loads(narrative)
+        assert isinstance(parsed, dict)
+
+        # Should contain all variable names as keys
+        for var_name in variable_names:
+            assert var_name in parsed
+            assert "min" in parsed[var_name]
+            assert "max" in parsed[var_name]
+            assert "mean" in parsed[var_name]
+            assert "std" in parsed[var_name]
+            assert "unit" in parsed[var_name]
+
+        # Must NOT contain tabular formatting
+        assert "====" not in narrative
+        assert "StdDev" not in narrative
+
+    def test_format_statistics_narrative_empty(self, computer):
+        """Test JSON formatting with empty statistics."""
+        narrative = computer.format_statistics_narrative([])
+        assert narrative == "No statistics available."
+
+    def test_format_statistics_narrative_includes_units(self, computer):
+        """Test that JSON format includes units."""
+        import json
+
+        stat = VariableStatistics(
+            variable_name="2t",
+            min_value=250.0,
+            max_value=310.0,
+            mean_value=285.0,
+            std_value=12.0,
+            unit="K",
+            description="2-meter temperature",
+        )
+        narrative = computer.format_statistics_narrative([stat])
+        parsed = json.loads(narrative)
+        assert parsed["2t"]["unit"] == "K"
+        assert parsed["2t"]["min"] == 250.0
+        assert parsed["2t"]["max"] == 310.0
+        assert parsed["2t"]["mean"] == 285.0
+        assert parsed["2t"]["std"] == 12.0

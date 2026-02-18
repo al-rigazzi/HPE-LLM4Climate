@@ -118,7 +118,7 @@ tp          0.0      0.005    0.001    0.0001"""
             "weather_description.jinja2",
             "forecast.jinja2",
             "anomaly_detection.jinja2",
-            "multimodal_training.jinja2",
+            "rl_training.jinja2",
             "basic.jinja2",
             "mistral_chat_wrapper.jinja2",
         ]
@@ -201,20 +201,22 @@ tp          0.0      0.005    0.001    0.0001"""
         assert "Abnormal pressure patterns" in prompt
         assert "severe weather potential" in prompt
 
-    def test_multimodal_training_prompt_generation(
+    def test_rl_training_prompt_generation(
         self, prompt_generator, mock_location, mock_statistics, statistics_table
     ):
-        """Test multimodal training prompt generation."""
-        prompt = prompt_generator.generate_multimodal_training_prompt(
+        """Test RL training prompt generation."""
+        prompt = prompt_generator.generate_rl_training_prompt(
             location=mock_location, statistics=mock_statistics, statistics_table=statistics_table
         )
-        # Check prompt structure (should be simpler)
+        # Check prompt structure
         assert mock_location.description in prompt
         assert statistics_table in prompt
-        assert "weather conditions" in prompt
-        assert "temperature, wind, precipitation" in prompt
-        # Should be more concise than other prompts
-        assert len(prompt) < 1000
+        # Should request natural language output
+        assert "natural language" in prompt
+        # Should discourage echoing
+        assert "Do NOT reproduce" in prompt
+        # Should be concise
+        assert len(prompt) < 1500
 
     def test_basic_prompt_generation(
         self, prompt_generator, mock_location, mock_statistics, statistics_table
@@ -465,7 +467,7 @@ class TestPromptTemplateFiles:
             "weather_description.jinja2",
             "forecast.jinja2",
             "anomaly_detection.jinja2",
-            "multimodal_training.jinja2",
+            "rl_training.jinja2",
             "basic.jinja2",
             "mistral_chat_wrapper.jinja2",
         ]

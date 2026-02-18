@@ -38,6 +38,26 @@ class Location:
     center_lat: float
     center_lon: float
     description: str
+    # Bounding box corners: (lat, lon) tuples
+    bbox_nw: tuple[float, float] | None = None  # Northwest corner (max_lat, min_lon)
+    bbox_se: tuple[float, float] | None = None  # Southeast corner (min_lat, max_lon)
+
+    def format_bbox_string(self) -> str:
+        """Format bounding box as human-readable string with coordinates."""
+        if self.bbox_nw is None or self.bbox_se is None:
+            return ""
+
+        def format_lat(lat: float) -> str:
+            direction = "N" if lat >= 0 else "S"
+            return f"{abs(lat):.1f}°{direction}"
+
+        def format_lon(lon: float) -> str:
+            direction = "E" if lon >= 0 else "W"
+            return f"{abs(lon):.1f}°{direction}"
+
+        nw_lat, nw_lon = self.bbox_nw
+        se_lat, se_lon = self.bbox_se
+        return f"from {format_lat(se_lat)} to {format_lat(nw_lat)}, {format_lon(nw_lon)} to {format_lon(se_lon)}"
 
 
 class LocationMaskGenerator:
@@ -237,6 +257,40 @@ class LocationMaskGenerator:
 
         return mask
 
+    def _compute_bounding_box(
+        self, mask: torch.Tensor
+    ) -> tuple[tuple[float, float], tuple[float, float]]:
+        """
+        Compute bounding box from mask.
+
+        Args:
+            mask: Boolean mask tensor [grid_points]
+
+        Returns:
+            Tuple of (bbox_nw, bbox_se) where each is (lat, lon)
+        """
+        lat_grid, lon_grid = self._create_lat_lon_grid()
+
+        # Get coordinates of masked points
+        masked_lats = lat_grid[mask]
+        masked_lons = lon_grid[mask]
+
+        if len(masked_lats) == 0:
+            return (0.0, 0.0), (0.0, 0.0)
+
+        # Compute bounds
+        max_lat = float(masked_lats.max().item())
+        min_lat = float(masked_lats.min().item())
+        max_lon = float(masked_lons.max().item())
+        min_lon = float(masked_lons.min().item())
+
+        # NW corner: max_lat, min_lon
+        # SE corner: min_lat, max_lon
+        bbox_nw = (max_lat, min_lon)
+        bbox_se = (min_lat, max_lon)
+
+        return bbox_nw, bbox_se
+
     def get_random_location(self, location_type: str | None = None) -> Location:
         """
         Generate a random location with its mask.
@@ -269,6 +323,9 @@ class LocationMaskGenerator:
             "bodies_of_water": "body_of_water",
         }
 
+        # Compute bounding box from mask
+        bbox_nw, bbox_se = self._compute_bounding_box(mask)
+
         return Location(
             name=name,
             location_type=type_mapping[location_type],
@@ -276,6 +333,8 @@ class LocationMaskGenerator:
             center_lat=lat,
             center_lon=lon,
             description=description,
+            bbox_nw=bbox_nw,
+            bbox_se=bbox_se,
         )
 
     def get_location_by_name(self, name: str) -> Location | None:
@@ -306,6 +365,9 @@ class LocationMaskGenerator:
                         lat, lon, radius_deg=1.0, location_type=type_mapping[location_type]
                     )
 
+                    # Compute bounding box from mask
+                    bbox_nw, bbox_se = self._compute_bounding_box(mask)
+
                     return Location(
                         name=loc_name,
                         location_type=type_mapping[location_type],
@@ -313,6 +375,8 @@ class LocationMaskGenerator:
                         center_lat=lat,
                         center_lon=lon,
                         description=description,
+                        bbox_nw=bbox_nw,
+                        bbox_se=bbox_se,
                     )
 
         return None

@@ -9,7 +9,7 @@ This directory contains Jinja2 templates for generating climate analysis prompts
 - **`weather_description.jinja2`** - Detailed weather condition analysis prompts
 - **`forecast.jinja2`** - Short-term forecasting analysis prompts
 - **`anomaly_detection.jinja2`** - Atmospheric anomaly detection prompts
-- **`multimodal_training.jinja2`** - Simplified prompts for training
+- **`rl_training.jinja2`** - Numeric-only output for RL training stage
 
 ### Formatting Templates
 

@@ -92,14 +92,16 @@ class ClimateTextDataLoader(IterableDataset):
     def __init__(
         self,
         zarr_paths: list[str] | str,
-        mistral_model_name: str = "mistralai/Ministral-3-8B-Instruct-2512",
+        mistral_model_name: str = "mistralai/Mistral-7B-Instruct-v0.3",
         batch_size: int = 1,
         samples_per_epoch: int = 1000,
         cache_mistral_model: bool = True,
         device: str | torch.device | None = None,
         seed: int | None = None,
         max_prompt_length: int = 2048,
-        max_response_length: int = 512,
+        max_response_length: int = 384,
+        external_model: torch.nn.Module | None = None,
+        external_tokenizer: "PreTrainedTokenizer | None" = None,
     ):
         """
         Initialize the climate-text dataloader.
@@ -114,6 +116,8 @@ class ClimateTextDataLoader(IterableDataset):
             seed: Random seed for reproducibility
             max_prompt_length: Maximum prompt token length
             max_response_length: Maximum response token length
+            external_model: Pre-loaded model to use instead of loading a new one
+            external_tokenizer: Pre-loaded tokenizer to use instead of loading a new one
         """
         super().__init__()
 
@@ -163,22 +167,36 @@ class ClimateTextDataLoader(IterableDataset):
         self.statistics_computer = ClimateStatisticsComputer()
         self.prompt_generator = ClimatePromptGenerator()  # Uses default templates directory
 
-        # Initialize tokenizer and model for Mistral
-        print(f"Loading tokenizer: {mistral_model_name}")
-        from transformers import AutoTokenizer
+        # Use external model/tokenizer if provided, otherwise load new ones
+        if external_tokenizer is not None:
+            self.mistral_tokenizer = external_tokenizer
+            print("Using externally provided tokenizer")
+        else:
+            # Initialize tokenizer and model for Mistral
+            print(f"Loading tokenizer: {mistral_model_name}")
+            from transformers import AutoTokenizer
 
-        self.mistral_tokenizer = AutoTokenizer.from_pretrained(
-            mistral_model_name,
-            trust_remote_code=True,
-        )
+            self.mistral_tokenizer = AutoTokenizer.from_pretrained(
+                mistral_model_name,
+                trust_remote_code=True,
+            )
 
         # Ensure tokenizer has pad token (required for padding)
         if self.mistral_tokenizer.pad_token is None:
             self.mistral_tokenizer.pad_token = self.mistral_tokenizer.eos_token
             self.mistral_tokenizer.pad_token_id = self.mistral_tokenizer.eos_token_id
 
-        print(f"Loading Mistral model: {mistral_model_name}")
-        self._initialize_mistral_model(mistral_model_name)
+        if external_model is not None:
+            self.mistral_model = external_model
+            print("Using externally provided model")
+        elif self.cache_mistral_model:
+            print(f"Loading Mistral model: {mistral_model_name}")
+            self._initialize_mistral_model(mistral_model_name)
+        else:
+            raise ValueError(
+                "Either external_model must be provided, or cache_mistral_model must be True. "
+                "The dataloader requires a model for generating responses."
+            )
 
         print("DataLoader initialized:")
         print(f"  - Zarr files: {len(self.zarr_paths)}")
@@ -465,13 +483,16 @@ class ClimateTextDataLoader(IterableDataset):
             avg_tensor, mask, variable_names=ALL_AIFS_VARIABLES
         )
 
-        # Step 5: Format statistics table
+        # Step 5: Format statistics table and narrative
         statistics_table = self.statistics_computer.format_statistics_table(
             statistics, max_vars=None
         )
+        statistics_narrative = self.statistics_computer.format_statistics_narrative(
+            statistics, max_vars=None
+        )
 
-        # Step 6: Generate prompt
-        prompt = self.prompt_generator.generate_multimodal_training_prompt(
+        # Step 6: Generate prompt (table input + reward penalises echo)
+        prompt = self.prompt_generator.generate_rl_training_prompt(
             location, statistics, statistics_table
         )
 

@@ -20,6 +20,9 @@ results/**
 multimodal_aifs/models/extracted_models/*.pth
 multimodal_aifs/models/extracted_models/*.pt
 multimodal_aifs/models/extracted_models/*.json
+**/checkpoints/*
+logs/*
+outputs/*
 
 # Coverage
 .coverage*
@@ -34,6 +37,9 @@ coverage*
 
 # OS-specific
 .DS_Store
+
+# Core dumps
+core
 
 # Local development files
 pr_description.md

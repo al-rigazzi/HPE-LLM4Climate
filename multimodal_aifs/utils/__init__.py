@@ -24,6 +24,25 @@ from .climate_data_utils import (
     create_synthetic_climate_data,
 )
 from .device_utils import get_best_device
+from .distributed_utils import (
+    DistributedConfig,
+    all_gather_object,
+    all_reduce_mean,
+    barrier,
+    broadcast_object,
+    cleanup_distributed,
+    get_distributed_config_from_env,
+    get_local_rank,
+    get_rank,
+    get_world_size,
+    is_distributed,
+    is_main_process,
+    print_rank0,
+    setup_distributed,
+    should_use_distributed,
+    unwrap_model,
+    wrap_model_ddp,
+)
 from .location_utils import (
     COMMON_RESOLUTIONS,
     EARTH_RADIUS_KM,
@@ -47,6 +66,24 @@ __all__ = [
     "create_synthetic_climate_data",
     # Device utilities
     "get_best_device",
+    # Distributed training utilities
+    "DistributedConfig",
+    "setup_distributed",
+    "cleanup_distributed",
+    "is_distributed",
+    "is_main_process",
+    "get_rank",
+    "get_world_size",
+    "get_local_rank",
+    "wrap_model_ddp",
+    "unwrap_model",
+    "all_reduce_mean",
+    "all_gather_object",
+    "broadcast_object",
+    "barrier",
+    "print_rank0",
+    "get_distributed_config_from_env",
+    "should_use_distributed",
     # Location utilities
     "LocationUtils",
     "GridUtils",
