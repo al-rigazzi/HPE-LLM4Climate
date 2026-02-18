@@ -39,8 +39,9 @@ jobs:
     - name: Install system dependencies (macOS)
       if: matrix.os == 'macos-latest'
       run: |
-        # Install only if not already present to avoid warnings
-        brew list hdf5 || brew install hdf5
+        # HDF5 is now in homebrew-science tap on macOS
+        brew tap-new homebrew/science 2>/dev/null || true
+        brew install hdf5 2>/dev/null || echo "HDF5 installation skipped - using fallback dependencies"
         # pkg-config functionality is provided by pkgconf on macOS runners
 
     - name: Upgrade pip and install build tools

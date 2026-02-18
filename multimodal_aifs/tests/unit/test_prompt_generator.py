@@ -467,7 +467,7 @@ class TestPromptTemplateFiles:
             "weather_description.jinja2",
             "forecast.jinja2",
             "anomaly_detection.jinja2",
-            "multimodal_training.jinja2",
+            "rl_training.jinja2",
             "basic.jinja2",
             "mistral_chat_wrapper.jinja2",
         ]
