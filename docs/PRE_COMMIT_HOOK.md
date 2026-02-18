@@ -1,66 +1,48 @@
-# Pre-commit Hook Documentation
+# Pre-commit Hooks (Current Setup)
 
-## Overview
-This repository includes a pre-commit hook that automatically runs code formatting tools on staged Python files before each commit.
+This repository uses `.pre-commit-config.yaml` with standard hooks plus optional local formatting hooks.
 
-## Features
-- **Automatic Import Sorting**: Runs `isort` to sort and organize Python imports
-- **Code Formatting**: Runs `black` to format Python code according to PEP 8 standards
-- **Graceful Degradation**: Only runs tools that are available in the environment
-- **Non-blocking**: If tools are not installed, the hook provides helpful installation instructions but doesn't block commits
-
-## What It Does
-1. Detects staged Python files (`.py` files)
-2. Runs `isort` if available to sort imports
-3. Runs `black` if available to format code
-4. Re-stages any modified files
-5. Provides helpful feedback and installation tips
-
-## Installation Instructions
-To get the most out of this hook, install the recommended tools:
+## Install
 
 ```bash
-# Using pip
-pip install isort black
-
-# Using conda
-conda install -c conda-forge isort black
+pip install pre-commit
+pre-commit install
 ```
 
-## Hook Behavior
-- ✅ **Runs automatically** on every `git commit`
-- ✅ **Non-destructive** - only formats staged files
-- ✅ **Helpful messages** - tells you what it's doing
-- ✅ **Installation tips** - suggests how to install missing tools
-- ✅ **Fast** - only processes staged Python files
+## What Runs on Commit
 
-## Example Output
+From `pre-commit-hooks`:
+
+- trailing whitespace cleanup
+- end-of-file fixer
+- YAML validation
+- large file checks
+- merge conflict checks
+- debug statement checks
+
+From local hooks (for `multimodal_aifs/*.py`):
+
+- optional `isort` formatting (runs only if command is available)
+- optional `black` formatting (runs only if command is available)
+
+## Manual Hook Stages
+
+The repository also includes manual-stage fallback hooks for official `isort` and `black` repos.
+
+Run all hooks manually:
+
+```bash
+pre-commit run --all-files
 ```
-🔧 Running pre-commit hooks...
-📁 Found staged Python files:
-multimodal_aifs/core/aifs_climate_fusion.py
 
-🔄 Running isort...
-✅ isort: No changes needed
+Run manual-stage formatters explicitly:
 
-🔄 Running black...
-✅ black: No changes needed
-
-🔄 Re-staging potentially modified files...
-✅ Files re-staged
-
-🎉 Pre-commit hooks completed successfully!
+```bash
+pre-commit run isort --hook-stage manual --all-files
+pre-commit run black --hook-stage manual --all-files
 ```
 
-## Customization
-The hook is located at `.git/hooks/pre-commit`. You can modify it to:
-- Add additional formatting tools
-- Change formatting options
-- Add custom checks
-- Skip certain file patterns
+## Notes
 
-## Benefits
-- **Consistent Code Style**: All committed code follows the same formatting standards
-- **Automatic**: No need to remember to run formatters manually
-- **Team Consistency**: Ensures all team members' code follows the same style
-- **CI/CD Ready**: Code is already properly formatted when pushed to CI/CD pipelines
+- Hook scope is intentionally focused on `multimodal_aifs/*.py`
+- CI still enforces formatting/linting checks independently

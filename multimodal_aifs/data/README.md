@@ -1,60 +1,24 @@
-# ECMWF Data Cache
+# Data Notes
 
-This directory contains cached ECMWF climate data for the multimodal AIFS climate analysis system.
+This package-level data directory is documentation-only in the current layout.
 
-**Note: This directory contains legacy cached data that is no longer used. The project now exclusively uses Zarr format datasets loaded directly from ECMWF sources.**
+## Active Dataset Path
 
-## Legacy Cache Files (No Longer Used)
+The active project dataset used by loaders/tests is at repository level:
 
-The cached ECMWF data files contain weather forecast and atmospheric parameters processed for climate analysis. These are binary numpy arrays that have been extracted and cached from GRIB format for faster access during development and testing.
+- `data/real_ecmwf_latest.zarr`
 
-**These files are not referenced in the current codebase and can be safely removed.**
+## Loading Path in Code
 
-## Current Data Pipeline
+Data ingestion is handled by:
 
-The project now uses:
-- **Zarr format datasets** downloaded from ECMWF Open Data API
-- **ZarrClimateLoader** for data loading and AIFS tensor conversion
-- **Direct integration** with AIFS models without intermediate caching
+- `multimodal_aifs/utils/zarr_data_loader.py`
 
-## Legacy Data Files (for reference only)
+## Test Behavior
 
-The cached ECMWF data files contained weather data from ECMWF forecasts with the following variables:
+- `USE_REAL_ZARR=true` uses real dataset flow
+- `USE_REAL_ZARR=false` enables mock Zarr generation in test fixtures
 
-**Surface-level variables (sfc):**
-- 10u, 10v: 10m u/v wind components
-- 2t: 2m temperature
-- msl: Mean sea level pressure
-- skt: Skin temperature
-- sp: Surface pressure
-- tcw: Total column water
-- lsm: Land sea mask
-- z: Geopotential
-- slor, sdor: Slope parameters
+## Recommendation
 
-**Pressure-level variables:**
-- gh: Geopotential height
-- t: Temperature
-- u, v: Wind components
-- w: Vertical velocity
-- q: Specific humidity
-- Levels: 1000, 925, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100, 50 hPa
-
-**Additional variables:**
-- vsw: Vertical integral of water vapour
-- sot: Soil temperature
-
-### Working with Cache Files
-```python
-import numpy as np
-
-# Load cached ECMWF data
-data = np.load('multimodal_aifs/data/grib/ecmwf_20250910_12_10u_10v_2d_2t_msl_skt_sp_tcw_lsm_z_slor_sdor_sfc.cache.npy')
-print(f"Cached data shape: {data.shape}")
-
-# Load pressure-level data
-pressure_data = np.load('multimodal_aifs/data/grib/ecmwf_20250910_12_gh_t_u_v_w_q_1000_925_850_700_600_500_400_300_250_200_150_100_50.cache.npy')
-print(f"Pressure data shape: {pressure_data.shape}")
-```
-
-These cached files are automatically used by the AIFS processor for climate data analysis and can be used directly with numpy for debugging or analysis purposes.
+Keep this directory for package documentation and avoid storing large runtime datasets here.
