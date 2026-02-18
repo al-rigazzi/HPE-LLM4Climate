@@ -548,9 +548,7 @@ class VerifiableRewardComputer:
         table_echo = bool(re.search(r"={4,}", text)) or bool(
             re.search(r"Variable\s+Min\s+Max", text, re.IGNORECASE)
         )
-        json_echo = text.count("{") > 2 and bool(
-            re.search(r'"\w+"\s*:\s*\{', text)
-        )
+        json_echo = text.count("{") > 2 and bool(re.search(r'"\w+"\s*:\s*\{', text))
         kv_echo = len(re.findall(r"\w+:\s*min=.*max=.*mean=", text)) > 1
 
         details["checks"]["table_echo"] = table_echo
