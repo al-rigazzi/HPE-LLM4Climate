@@ -1,0 +1,197 @@
+# GitLab CI/CD Pipeline for HPE LLM4Climate
+# Mirrors the GitHub Actions workflow while using GitLab native features
+
+stages:
+  - test
+  - lint
+  - security
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  USE_MOCK_LLM: "true"
+  USE_QUANTIZATION: "false"
+  USE_REAL_ZARR: "false"
+  PYTHONPATH: "."
+  ZARR_V3_EXPERIMENTAL_API: "1"
+  PYTORCH_MPS_HIGH_WATERMARK_RATIO: "2.0"
+  PYTORCH_ENABLE_MPS_FALLBACK: "1"
+  ANEMOI_INFERENCE_NUM_CHUNKS: "16"
+
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+# ============================================================================
+# Test Jobs
+# ============================================================================
+
+test:unit:ubuntu:
+  stage: test
+  image: python:3.12-slim
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends libhdf5-dev pkg-config build-essential
+    - python -m pip install --upgrade pip
+    - pip install wheel setuptools
+    - pip install --extra-index-url https://download.pytorch.org/whl/cpu numpy pandas xarray dask[array] h5py netcdf4
+    - pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+    - pip install scipy scikit-learn matplotlib seaborn plotly
+    - pip install -r multimodal_aifs/requirements-aifs-ci.txt || true
+    - pip install zarr xarray dask[array] h5py netcdf4 || true
+    - pip install accelerate datasets || true
+    - pip install pytest pytest-cov pytest-xdist
+    - pip install -e .
+    - rm -rf .pytest_cache && find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+  script:
+    - python -m pytest multimodal_aifs/tests/unit/ -v --tb=short --maxfail=5
+  artifacts:
+    when: always
+    reports:
+      junit: test-results-unit.xml
+    paths:
+      - htmlcov/
+    expire_in: 30 days
+  retry:
+    max: 1
+    when: runner_system_failure
+
+test:integration:ubuntu:
+  stage: test
+  image: python:3.12-slim
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends libhdf5-dev pkg-config build-essential
+    - python -m pip install --upgrade pip
+    - pip install wheel setuptools
+    - pip install --extra-index-url https://download.pytorch.org/whl/cpu numpy pandas xarray dask[array] h5py netcdf4
+    - pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+    - pip install scipy scikit-learn matplotlib seaborn plotly
+    - pip install -r multimodal_aifs/requirements-aifs-ci.txt || true
+    - pip install zarr xarray dask[array] h5py netcdf4 || true
+    - pip install accelerate datasets || true
+    - pip install pytest pytest-cov pytest-xdist
+    - pip install -e .
+    - rm -rf .pytest_cache && find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+  script:
+    - python -m pytest multimodal_aifs/tests/integration/zarr/test_zarr_integration.py::test_zarr_to_aifs_pipeline -v --tb=short -m "not large_memory"
+  artifacts:
+    when: always
+    reports:
+      junit: test-results-integration.xml
+    paths:
+      - htmlcov/
+    expire_in: 30 days
+  retry:
+    max: 1
+    when: runner_system_failure
+
+# ============================================================================
+# Code Quality Jobs
+# ============================================================================
+
+lint:black:
+  stage: lint
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install black[jupyter]
+  script:
+    - black --check --diff --extend-exclude="\.git/|\.pytest_cache/|__pycache__|build/|dist/" .
+
+lint:isort:
+  stage: lint
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install isort
+  script:
+    - isort --check-only --diff --skip-gitignore .
+
+lint:flake8:
+  stage: lint
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install flake8
+  script:
+    - flake8 multimodal_aifs/ --count --select=E9,F63,F7,F82 --show-source --statistics
+  allow_failure: true
+
+lint:pylint:
+  stage: lint
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install pylint
+    - apt-get update && apt-get install -y --no-install-recommends libhdf5-dev pkg-config build-essential
+    - pip install numpy xarray h5py netcdf4 dask[array] PyYAML
+  script:
+    - pylint multimodal_aifs/ --errors-only --disable=import-error,no-member,too-few-public-methods
+  allow_failure: true
+
+lint:mypy:
+  stage: lint
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install mypy
+    - apt-get update && apt-get install -y --no-install-recommends libhdf5-dev pkg-config build-essential
+    - pip install numpy xarray h5py netcdf4 dask[array] PyYAML
+  script:
+    - mypy multimodal_aifs/ --no-error-summary 2>&1 | head -50 || true
+  allow_failure: true
+
+# ============================================================================
+# Security Jobs
+# ============================================================================
+
+security:safety:
+  stage: security
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install safety
+  script:
+    - safety check --json --output safety-results.json || true
+  artifacts:
+    paths:
+      - safety-results.json
+    expire_in: 90 days
+    when: always
+
+security:bandit:
+  stage: security
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install bandit[toml]
+  script:
+    - bandit -r multimodal_aifs/ -f json -o bandit-results.json || true
+  artifacts:
+    paths:
+      - bandit-results.json
+    expire_in: 90 days
+    when: always
+
+# ============================================================================
+# Optional: macOS Testing (requires GitLab Runner with macOS executor)
+# ============================================================================
+# Uncomment the following job if you have a macOS GitLab Runner available
+#
+# test:unit:macos:
+#   stage: test
+#   tags:
+#     - macos
+#   before_script:
+#     - brew install hdf5 2>/dev/null || echo "HDF5 installation skipped"
+#     - python3 -m pip install --upgrade pip
+#     - pip install wheel setuptools
+#     - pip install numpy pandas xarray dask[array] h5py netcdf4
+#     - pip install -r requirements.txt
+#     - pip install scipy scikit-learn matplotlib seaborn plotly
+#     - pip install -r multimodal_aifs/requirements-aifs-ci.txt || true
+#     - pip install zarr xarray dask[array] h5py netcdf4 || true
+#     - pip install accelerate datasets || true
+#     - pip install pytest pytest-cov pytest-xdist
+#     - pip install -e .
+#   script:
+#     - python -m pytest multimodal_aifs/tests/unit/ -v --tb=short --maxfail=5
