@@ -136,6 +136,27 @@ tp          0.0      0.005    0.001    0.0001"""
             generator = ClimatePromptGenerator(templates_dir=temp_path)
             assert generator.templates_dir == temp_path
 
+    def test_rl_template_available_after_file_removal(self, mock_location):
+        """Test RL template rendering from in-memory cache after filesystem deletion."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            rl_template = temp_path / "rl_training.jinja2"
+            rl_template.write_text(
+                "Analyze the climate data for {{ location.description }}.\\n{{ statistics_table }}",
+                encoding="utf-8",
+            )
+
+            generator = ClimatePromptGenerator(templates_dir=temp_path)
+            rl_template.unlink()
+
+            prompt = generator.generate_rl_training_prompt(
+                location=mock_location,
+                statistics=[],
+                statistics_table="stats",
+            )
+            assert "Test Location" in prompt
+            assert "stats" in prompt
+
     def test_weather_description_prompt_generation(
         self, prompt_generator, mock_location, mock_statistics, statistics_table
     ):

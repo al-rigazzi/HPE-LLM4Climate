@@ -20,7 +20,7 @@ and climate statistics for querying the Mistral model using template files.
 
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import ChoiceLoader, DictLoader, Environment, FileSystemLoader, TemplateNotFound
 
 from .location_masks import Location
 from .statistics_computer import VariableStatistics
@@ -47,12 +47,58 @@ class ClimatePromptGenerator:
         if templates_dir is None:
             templates_dir = Path(__file__).parent / "prompts"
 
-        self.templates_dir = Path(templates_dir)
+        self.templates_dir = Path(templates_dir).resolve()
+        self._template_sources = self._load_template_sources()
         self.env = Environment(
-            loader=FileSystemLoader(str(self.templates_dir)),
+            loader=ChoiceLoader(
+                [
+                    DictLoader(self._template_sources),
+                    FileSystemLoader(str(self.templates_dir)),
+                ]
+            ),
             trim_blocks=True,
             lstrip_blocks=True,
+            auto_reload=False,
         )
+
+    def _load_template_sources(self) -> dict[str, str]:
+        """Load all local Jinja2 templates into memory for robust runtime access."""
+        if not self.templates_dir.exists():
+            raise FileNotFoundError(f"Templates directory not found: {self.templates_dir}")
+
+        template_sources: dict[str, str] = {}
+        for template_path in sorted(self.templates_dir.glob("*.jinja2")):
+            template_sources[template_path.name] = template_path.read_text(encoding="utf-8")
+
+        if not template_sources:
+            raise FileNotFoundError(f"No Jinja2 templates found in directory: {self.templates_dir}")
+
+        return template_sources
+
+    def _reload_templates(self) -> None:
+        """Reload templates and refresh loaders after transient filesystem issues."""
+        self._template_sources = self._load_template_sources()
+        self.env.loader = ChoiceLoader(
+            [
+                DictLoader(self._template_sources),
+                FileSystemLoader(str(self.templates_dir)),
+            ]
+        )
+
+    def _get_template(self, template_name: str):
+        """Get template with a single reload retry for transient shared-filesystem misses."""
+        try:
+            return self.env.get_template(template_name)
+        except TemplateNotFound:
+            self._reload_templates()
+            try:
+                return self.env.get_template(template_name)
+            except TemplateNotFound as retry_exc:
+                available = sorted(self._template_sources.keys())
+                raise FileNotFoundError(
+                    f"Template '{template_name}' not found in {self.templates_dir}. "
+                    f"Available templates: {available}"
+                ) from retry_exc
 
     def generate_analysis_prompt(
         self,
@@ -88,7 +134,7 @@ class ClimatePromptGenerator:
             )
 
         template_name = template_map[task_type]
-        template = self.env.get_template(template_name)
+        template = self._get_template(template_name)
 
         # Build context summary for weather description
         context_summary = None
@@ -130,7 +176,7 @@ class ClimatePromptGenerator:
         Returns:
             Training-optimized prompt
         """
-        template = self.env.get_template("rl_training.jinja2")
+        template = self._get_template("rl_training.jinja2")
         return template.render(
             location=location,
             statistics_table=statistics_table,
@@ -151,7 +197,7 @@ class ClimatePromptGenerator:
         Returns:
             Formatted prompt string
         """
-        template = self.env.get_template("mistral_chat_wrapper.jinja2")
+        template = self._get_template("mistral_chat_wrapper.jinja2")
         return template.render(
             prompt=prompt,
             system_message=system_message,
