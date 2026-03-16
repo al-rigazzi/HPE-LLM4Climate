@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repository has been discontinued. Please reach out to emearesearchlab@hpe.com for current status.
+
 # HPE-LLM4Climate
 
 Multimodal climate analysis project combining an ECMWF AIFS encoder and a text LLM.
